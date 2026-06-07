@@ -1,128 +1,140 @@
 import React, { useRef, useState, useEffect } from 'react';
 
-export default function SegmentedNOPInput({ value, onChange }) {
-  const [segments, setSegments] = useState({
-    prov: '33',
-    kab: '03',
-    kec: '',
-    kel: '',
-    blok: '',
-    nourut: '',
-    kode: ''
-  });
+const charMap = [
+  { seg: 'prov', len: 2 },
+  { seg: 'kab', len: 2 },
+  { seg: 'kec', len: 3 },
+  { seg: 'kel', len: 3 },
+  { seg: 'blok', len: 3 },
+  { seg: 'nourut', len: 4 },
+  { seg: 'kode', len: 1 }
+];
 
-  const refs = {
-    kec: useRef(null),
-    kel: useRef(null),
-    blok: useRef(null),
-    nourut: useRef(null),
-    kode: useRef(null),
-  };
+export default function SegmentedNOPInput({ value, onChange, label, showHeaders }) {
+  const [chars, setChars] = useState(Array(18).fill(''));
+  const refs = useRef([]);
 
   useEffect(() => {
     if (value) {
-      setSegments(prev => ({ ...prev, ...value }));
+      let newChars = [];
+      charMap.forEach(({ seg, len }) => {
+        const segStr = (value[seg] || '').padEnd(len, '');
+        for (let i = 0; i < len; i++) {
+          newChars.push(segStr[i] || '');
+        }
+      });
+      setChars(newChars);
     }
   }, [value]);
 
-  const handleChange = (field, length, nextField, e) => {
-    const val = e.target.value.replace(/\D/g, ''); // Numbers only
-    const updated = { ...segments, [field]: val };
-    setSegments(updated);
+  const handleChange = (e, index) => {
+    const val = e.target.value.replace(/\D/g, '');
+    const char = val.slice(-1);
+    
+    if (char) {
+      updateChar(index, char);
+      if (index < 17) {
+        refs.current[index + 1]?.focus();
+      }
+    } else {
+      updateChar(index, '');
+    }
+  };
+
+  const handleKeyDown = (e, index) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      if (chars[index]) {
+        updateChar(index, '');
+      } else if (index > 4) { // Don't go back into KAB (indices 0-3)
+        updateChar(index - 1, '');
+        refs.current[index - 1]?.focus();
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      refs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 17) {
+      refs.current[index + 1]?.focus();
+    }
+  };
+
+  const updateChar = (index, char) => {
+    if (index < 4) return; // prov and kab are read-only
+    const newChars = [...chars];
+    newChars[index] = char;
+    
+    // Reconstruct value object
+    let cIdx = 0;
+    const newValue = {};
+    charMap.forEach(({ seg, len }) => {
+      let segStr = '';
+      for (let i = 0; i < len; i++) {
+        segStr += newChars[cIdx] || '';
+        cIdx++;
+      }
+      newValue[seg] = segStr;
+    });
+    
     if (onChange) {
-      onChange(updated);
-    }
-
-    if (val.length === length && nextField) {
-      refs[nextField].current?.focus();
+      onChange(newValue);
     }
   };
 
-  const handleKeyDown = (field, prevField, e) => {
-    if (e.key === 'Backspace' && segments[field].length === 0 && prevField) {
-      refs[prevField].current?.focus();
-    }
-  };
+  // Groups for rendering
+  const groups = [
+    { label: 'PROV', count: 2 },
+    { label: 'KAB', count: 2 },
+    { label: 'KEC', count: 3 },
+    { label: 'KEL/DES', count: 3 },
+    { label: 'BLOK', count: 3 },
+    { label: 'No. URUT', count: 4 },
+    { label: 'KODE', count: 1 }
+  ];
+
+  let boxIndex = 0;
 
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap gap-1 items-center">
-        <input
-          type="text"
-          className="nop-box bg-surface-container text-on-surface-variant cursor-not-allowed select-none"
-          maxLength={2}
-          readOnly
-          value={segments.prov}
-        />
-        <input
-          type="text"
-          className="nop-box bg-surface-container text-on-surface-variant cursor-not-allowed select-none"
-          maxLength={2}
-          readOnly
-          value={segments.kab}
-        />
-        <span className="self-center font-bold text-outline">.</span>
-        
-        <input
-          ref={refs.kec}
-          type="text"
-          className="nop-box focus:border-primary"
-          maxLength={3}
-          placeholder="000"
-          value={segments.kec}
-          onChange={(e) => handleChange('kec', 3, 'kel', e)}
-          onKeyDown={(e) => handleKeyDown('kec', null, e)}
-        />
-        <span className="self-center font-bold text-outline">.</span>
-
-        <input
-          ref={refs.kel}
-          type="text"
-          className="nop-box focus:border-primary"
-          maxLength={3}
-          placeholder="000"
-          value={segments.kel}
-          onChange={(e) => handleChange('kel', 3, 'blok', e)}
-          onKeyDown={(e) => handleKeyDown('kel', 'kec', e)}
-        />
-        <span className="self-center font-bold text-outline">.</span>
-
-        <input
-          ref={refs.blok}
-          type="text"
-          className="nop-box focus:border-primary"
-          maxLength={3}
-          placeholder="000"
-          value={segments.blok}
-          onChange={(e) => handleChange('blok', 3, 'nourut', e)}
-          onKeyDown={(e) => handleKeyDown('blok', 'kel', e)}
-        />
-        <span className="self-center font-bold text-outline">.</span>
-
-        <input
-          ref={refs.nourut}
-          type="text"
-          className="nop-box focus:border-primary"
-          maxLength={4}
-          placeholder="0000"
-          value={segments.nourut}
-          onChange={(e) => handleChange('nourut', 4, 'kode', e)}
-          onKeyDown={(e) => handleKeyDown('nourut', 'blok', e)}
-        />
-        <span className="self-center font-bold text-outline">.</span>
-
-        <input
-          ref={refs.kode}
-          type="text"
-          className="nop-box focus:border-primary"
-          maxLength={1}
-          placeholder="0"
-          value={segments.kode}
-          onChange={(e) => handleChange('kode', 1, null, e)}
-          onKeyDown={(e) => handleKeyDown('kode', 'nourut', e)}
-        />
+    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full">
+      {label && (
+        <div className="w-40 font-bold text-on-surface whitespace-nowrap md:text-right md:pr-2">
+          {label}
+        </div>
+      )}
+      <div className="flex flex-nowrap gap-2 sm:gap-3">
+        {groups.map((g, gIdx) => (
+          <div key={gIdx} className="flex flex-col gap-1 items-center">
+            {/* Header always takes space so alignment matches even if showHeaders is false, just invisible */}
+            <span className={`text-[10px] sm:text-[11px] font-bold text-on-surface-variant uppercase tracking-wider ${!showHeaders && 'invisible'}`}>
+              {g.label}
+            </span>
+            <div className="flex gap-1">
+              {Array.from({ length: g.count }).map((_, i) => {
+                const currentIndex = boxIndex++;
+                const isReadOnly = currentIndex < 4;
+                return (
+                  <input
+                    key={currentIndex}
+                    ref={el => refs.current[currentIndex] = el}
+                    type="text"
+                    inputMode="numeric"
+                    className={`w-7 h-9 sm:w-9 sm:h-11 border rounded-md text-center font-data-mono font-bold text-base sm:text-lg focus:outline-none transition-all ${
+                      isReadOnly 
+                        ? 'bg-surface-container-high text-on-surface border-outline cursor-not-allowed select-none' 
+                        : 'bg-white text-on-surface border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary shadow-sm'
+                    }`}
+                    value={chars[currentIndex]}
+                    onChange={(e) => handleChange(e, currentIndex)}
+                    onKeyDown={(e) => handleKeyDown(e, currentIndex)}
+                    readOnly={isReadOnly}
+                    onClick={() => {
+                      if (!isReadOnly) refs.current[currentIndex]?.select();
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
-      <p className="text-[12px] text-on-surface-variant italic mt-1">Format: Prov.Kab.Kec.Kel.Blok.NoUrut.Kode</p>
     </div>
   );
 }

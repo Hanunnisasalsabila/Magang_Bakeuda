@@ -15,6 +15,15 @@ export default function FormulirSPOP({ onNavigate }) {
       nourut: '',
       kode: ''
     },
+    nopBersama: {
+      prov: '33',
+      kab: '03',
+      kec: '',
+      kel: '',
+      blok: '',
+      nourut: '',
+      kode: ''
+    },
     nopAsal: '',
     noSpptLama: '',
     nik: '',
@@ -125,10 +134,11 @@ export default function FormulirSPOP({ onNavigate }) {
                     1. JENIS TRANSAKSI &amp; NOP
                   </h4>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="font-label-sm text-primary block">Pilih Jenis Transaksi</label>
-                    <div className="space-y-3">
+                <div className="space-y-8">
+                  {/* Jenis Transaksi */}
+                  <div className="space-y-4 max-w-3xl">
+                    <label className="font-label-sm text-primary block font-bold">Pilih Jenis Transaksi</label>
+                    <div className="flex flex-col sm:flex-row gap-3">
                       {[
                         { val: 'baru', label: '1. Perekaman Data/Objek Baru' },
                         { val: 'update', label: '2. Pemutakhiran Data/Update Data Lama' },
@@ -136,7 +146,11 @@ export default function FormulirSPOP({ onNavigate }) {
                       ].map((t) => (
                         <label
                           key={t.val}
-                          className="flex items-center gap-3 p-4 border border-outline-variant rounded hover:bg-surface-container-low cursor-pointer transition-colors"
+                          className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-colors flex-1 ${
+                            formData.transaksi === t.val 
+                              ? 'border-primary bg-primary/5 shadow-sm' 
+                              : 'border-outline-variant hover:bg-surface-container-low'
+                          }`}
                         >
                           <input
                             type="radio"
@@ -146,19 +160,32 @@ export default function FormulirSPOP({ onNavigate }) {
                             onChange={(e) => handleTextChange('transaksi', e)}
                             className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
                           />
-                          <span className="font-body-md text-on-surface">{t.label}</span>
+                          <span className="font-body-md text-on-surface font-semibold">{t.label}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <label className="font-label-sm text-primary block">
-                        Nomor Objek Pajak (NOP)
-                      </label>
-                      <SegmentedNOPInput value={formData.nop} onChange={handleNopChange} />
+
+                  {/* NOP Section */}
+                  <div className="space-y-4 overflow-x-auto pb-4 custom-scrollbar">
+                    <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                      <div className="space-y-4">
+                        <SegmentedNOPInput 
+                          value={formData.nop} 
+                          onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
+                          label="2. NOP"
+                          showHeaders={true}
+                        />
+                        <SegmentedNOPInput 
+                          value={formData.nopBersama} 
+                          onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                          label="3. NOP BERSAMA"
+                          showHeaders={false}
+                        />
+                      </div>
                     </div>
-                    <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20">
+                    
+                    <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
                       <div className="flex gap-2 items-start">
                         <span className="material-symbols-outlined text-tertiary">info</span>
                         <div>
