@@ -1,0 +1,14 @@
+enum Role {
+  admin
+  petugas
+}
+
+model User {
+  id           String   @id @default(uuid())
+  nama_lengkap String
+  username     String   @unique
+  password     String
+  role         Role
+  kode_wilayah String
+  created_at   DateTime @default(now())
+}
