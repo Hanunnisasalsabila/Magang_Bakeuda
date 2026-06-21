@@ -1,0 +1,28 @@
+enum StatusBayar {
+  BELUM_BAYAR
+  LUNAS
+  KEDALUWARSA
+}
+
+model Sppt {
+  id_sppt           String      @id @default(uuid())
+  nop               String      @db.VarChar(18)
+  tahun_pajak       Int // YEAR disimpan sebagai Int
+  njop_kena_pajak   Decimal     @db.Decimal(15, 2)
+  njoptkp           Decimal     @db.Decimal(15, 2)
+  tarif_pbb         Decimal     @db.Decimal(5, 4)
+  pbb_terutang      Decimal     @db.Decimal(15, 2)
+  tgl_jatuh_tempo   DateTime // DATE → DateTime
+  status_bayar      StatusBayar @default(BELUM_BAYAR)
+  tgl_bayar         DateTime? // DATE → DateTime
+  generated_by      String // FK → users.id_user
+  generated_at      DateTime    @default(now())
+  id_transaksi_asal String? // FK → transaksi_spop
+
+  // ── Relasi ──
+  objek_pajak    ObjekPajak     @relation(fields: [nop], references: [nop])
+  generator      User           @relation("GeneratedByUser", fields: [generated_by], references: [id_user])
+  transaksi_asal TransaksiSpop? @relation("TransaksiAsalSppt", fields: [id_transaksi_asal], references: [id_transaksi])
+
+  @@map("sppt")
+}

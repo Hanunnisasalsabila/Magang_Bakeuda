@@ -1,0 +1,43 @@
+enum StatusWp {
+  PEMILIK
+  PENYEWA
+  PENGGARAP
+  PEMAKAI
+}
+
+enum Pekerjaan {
+  PNS
+  TNI_POLRI
+  PEGAWAI_SWASTA
+  WIRASWASTA
+  PETANI
+  NELAYAN
+  PENSIUNAN
+  LAINNYA
+}
+
+model SubjekPajak {
+  nik                String    @id @db.VarChar(16)
+  nama_subjek        String    @db.VarChar(100)
+  status_wp          StatusWp
+  pekerjaan          Pekerjaan
+  npwp               String?   @db.VarChar(20)
+  no_hp              String?   @db.VarChar(15)
+  alamat_jalan       String    @db.VarChar(255)
+  blok_kav_no_subjek String?   @db.VarChar(50)
+  rw                 String?   @db.VarChar(5)
+  rt                 String?   @db.VarChar(5)
+  kelurahan          String    @db.VarChar(100)
+  kabupaten          String    @db.VarChar(100)
+  kode_pos           String?   @db.VarChar(5)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  created_by         String // FK → users.id_user
+
+  // ── Relasi ──
+  user          User                    @relation("CreatedByUser", fields: [created_by], references: [id_user])
+  objek_pajak   ObjekPajak[]
+  detail_tujuan DetailTransaksiTujuan[]
+
+  @@map("subjek_pajak")
+}
