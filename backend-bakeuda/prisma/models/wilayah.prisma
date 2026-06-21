@@ -1,0 +1,14 @@
+model Wilayah {
+  kode_wilayah String @id @db.VarChar(10)
+  nama_desa    String @db.VarChar(100)
+  kode_kel     String @db.VarChar(5)
+  kecamatan    String @db.VarChar(100)
+  kode_kec     String @db.VarChar(5)
+  kabupaten    String @db.VarChar(100)
+  kode_kab     String @db.VarChar(5)
+
+  // ── Relasi ──
+  users User[]
+
+  @@map("wilayah")
+}

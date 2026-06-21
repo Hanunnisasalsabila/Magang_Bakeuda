@@ -1,0 +1,41 @@
+enum JenisTanah {
+  TANAH_BANGUNAN
+  TANAH_PERTANIAN
+  TANAH_PERKEBUNAN
+  TANAH_KEHUTANAN
+  TANAH_LAINNYA
+}
+
+model ObjekPajak {
+  nop              String     @id @db.VarChar(18)
+  nik_subjek       String     @db.VarChar(16)
+  no_persil        String?    @db.VarChar(20)
+  jalan_op         String     @db.VarChar(255)
+  blok_kav_no      String?    @db.VarChar(50)
+  rw_op            String?    @db.VarChar(5)
+  rt_op            String?    @db.VarChar(5)
+  kelurahan_op     String     @db.VarChar(100)
+  kecamatan_op     String     @db.VarChar(100)
+  luas_tanah       Decimal    @db.Decimal(10, 2)
+  zona_nilai_tanah String?    @db.VarChar(10)
+  jenis_tanah      JenisTanah
+  jumlah_bangunan  Int        @default(0)
+  luas_bangunan    Decimal    @default(0) @db.Decimal(10, 2)
+  njop_tanah       Decimal?   @db.Decimal(15, 2)
+  njop_bangunan    Decimal?   @db.Decimal(15, 2)
+  njop_total       Decimal?   @db.Decimal(15, 2)
+  tahun_penilaian  Int? // YEAR disimpan sebagai Int di PostgreSQL
+  status_aktif     Boolean    @default(true)
+  nonaktif_oleh    String? // FK → users.id_user
+  nonaktif_at      DateTime?
+  created_at       DateTime   @default(now())
+
+  // ── Relasi ──
+  subjek_pajak  SubjekPajak           @relation(fields: [nik_subjek], references: [nik])
+  user_nonaktif User?                 @relation("NonaktifOlehUser", fields: [nonaktif_oleh], references: [id_user])
+  transaksi     TransaksiSpop[]       @relation("ObjekBersama")
+  detail_asal   DetailTransaksiAsal[]
+  sppt          Sppt[]
+
+  @@map("objek_pajak")
+}

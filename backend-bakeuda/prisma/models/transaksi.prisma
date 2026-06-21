@@ -1,0 +1,82 @@
+enum JenisTransaksi {
+  BARU
+  MUTASI
+  PECAH
+  GABUNG
+  PERUBAHAN_DATA
+}
+
+enum StatusAjuan {
+  DRAFT
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+  REVISI
+}
+
+// ── Transaksi SPOP ──
+
+model TransaksiSpop {
+  id_transaksi      String         @id @default(uuid())
+  no_formulir       String?        @db.VarChar(20)
+  id_user           String // FK → users.id_user (pengaju DESA)
+  tahun_pajak       Int // YEAR disimpan sebagai Int
+  jenis_transaksi   JenisTransaksi
+  nop_bersama       String?        @db.VarChar(18)
+  no_sppt_lama      String?        @db.VarChar(20)
+  nama_pengaju      String?        @db.VarChar(100)
+  menggunakan_kuasa Boolean        @default(false)
+  tanggal_pengajuan DateTime // DATE → DateTime di Prisma
+  status_ajuan      StatusAjuan    @default(DRAFT)
+  id_verifikator    String? // FK → users.id_user (verifikator BAKEUDA)
+  verified_at       DateTime?
+  catatan_bakeuda   String? // TEXT
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  // ── Relasi ──
+  pengaju       User                    @relation("PengajuUser", fields: [id_user], references: [id_user])
+  verifikator   User?                   @relation("VerifikatorUser", fields: [id_verifikator], references: [id_user])
+  objek_bersama ObjekPajak?             @relation("ObjekBersama", fields: [nop_bersama], references: [nop])
+  detail_asal   DetailTransaksiAsal[]
+  detail_tujuan DetailTransaksiTujuan[]
+  lampiran      LampiranDokumen[]
+  sppt          Sppt[]                  @relation("TransaksiAsalSppt")
+
+  @@map("transaksi_spop")
+}
+
+// ── Detail Transaksi Asal ──
+
+model DetailTransaksiAsal {
+  id_detail_asal             String  @id @default(uuid())
+  id_transaksi               String // FK → transaksi_spop
+  nop_asal                   String? @db.VarChar(18)
+  nonaktifkan_saat_disetujui Boolean @default(true)
+
+  // ── Relasi ──
+  transaksi  TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
+  objek_asal ObjekPajak?   @relation(fields: [nop_asal], references: [nop])
+
+  @@map("detail_transaksi_asal")
+}
+
+// ── Detail Transaksi Tujuan ──
+
+model DetailTransaksiTujuan {
+  id_detail_tujuan     String     @id @default(uuid())
+  id_transaksi         String // FK → transaksi_spop
+  nik_calon_subjek     String     @db.VarChar(16)
+  luas_tanah_baru      Decimal    @db.Decimal(10, 2)
+  luas_bangunan_baru   Decimal    @default(0) @db.Decimal(10, 2)
+  jumlah_bangunan_baru Int        @default(0)
+  jenis_tanah_baru     JenisTanah
+  no_persil_baru       String?    @db.VarChar(20)
+  nop_generated        String?    @db.VarChar(18)
+
+  // ── Relasi ──
+  transaksi    TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
+  calon_subjek SubjekPajak   @relation(fields: [nik_calon_subjek], references: [nik])
+
+  @@map("detail_transaksi_tujuan")
+}

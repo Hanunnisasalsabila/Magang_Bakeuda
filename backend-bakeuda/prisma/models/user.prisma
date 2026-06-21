@@ -1,0 +1,27 @@
+enum Role {
+  DESA
+  BAKEUDA
+}
+
+model User {
+  id_user       String   @id @default(uuid())
+  username      String   @unique @db.VarChar(50)
+  password_hash String   @db.VarChar(255)
+  nama_lengkap  String   @db.VarChar(100)
+  role          Role
+  kode_wilayah  String?  @db.VarChar(10)
+  nip           String?  @db.VarChar(25)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  // ── Relasi ──
+  wilayah                Wilayah?          @relation(fields: [kode_wilayah], references: [kode_wilayah])
+  subjek_pajak_dibuat    SubjekPajak[]     @relation("CreatedByUser")
+  objek_nonaktif         ObjekPajak[]      @relation("NonaktifOlehUser")
+  transaksi_diajukan     TransaksiSpop[]   @relation("PengajuUser")
+  transaksi_diverifikasi TransaksiSpop[]   @relation("VerifikatorUser")
+  lampiran_diupload      LampiranDokumen[] @relation("UploadedByUser")
+  sppt_digenerate        Sppt[]            @relation("GeneratedByUser")
+
+  @@map("users")
+}
