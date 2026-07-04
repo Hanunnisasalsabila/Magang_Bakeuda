@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Role } from './generated/index.js';
+import { PrismaClient, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
@@ -8,20 +8,34 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('Admin@12345', 12);
+  // 1. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
+  const adminExists = await prisma.user.findFirst({
+    where: { role: Role.BAKEUDA },
+  });
 
-  const admin = await prisma.user.upsert({
+  if (adminExists) {
+    console.log('✅ Seeder dilewati: Admin BAKEUDA sudah ada di database.');
+    return;
+  }
+
+  // 2. Gunakan password dari ENV, atau generate password random sementara
+  const rawPassword = process.env.ADMIN_PASSWORD || Math.random().toString(36).slice(-8) + 'A1@';
+  const hashedPassword = await bcrypt.hash(rawPassword, 12);
+
+  // 3. Buat Admin BAKEUDA default
+  const adminBakeuda = await prisma.user.upsert({
     where: { username: 'admin' },
     update: {},
     create: {
-      nama_lengkap: 'Administrator Bakeuda',
+      nama_lengkap: 'Super Admin BAKEUDA',
       username: 'admin',
       password_hash: hashedPassword,
       role: Role.BAKEUDA,
-      kode_wilayah: 'KW-001',
+      force_change_password: true, // Wajib ganti password di login pertama
     },
   });
 
+  // 4. Buat akun DESA untuk testing
   const desa = await prisma.user.upsert({
     where: { username: 'desa01' },
     update: {},
@@ -30,12 +44,16 @@ async function main() {
       username: 'desa01',
       password_hash: hashedPassword,
       role: Role.DESA,
-      kode_wilayah: 'KW-001',
+      force_change_password: true,
     },
   });
 
-  console.log('✅ Seed berhasil:', admin.username, `(${admin.role})`);
-  console.log('✅ Seed berhasil:', desa.username, `(${desa.role})`);
+  console.log('✅ Seeder berhasil dijalankan!');
+  console.log('---');
+  console.log(`👤 Username : ${adminBakeuda.username}`);
+  console.log(`🔑 Password : ${rawPassword}`);
+  console.log('---');
+  console.log('⚠️  HARAP SIMPAN PASSWORD INI. Anda akan dipaksa untuk mengubahnya pada saat login pertama.');
 }
 
 main()

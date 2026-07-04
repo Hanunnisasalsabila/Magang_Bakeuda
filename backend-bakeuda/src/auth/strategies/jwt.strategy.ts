@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Role } from '@prisma/client';
 
 export interface JwtPayload {
   userId: string;
   username: string;
-  role: 'admin' | 'petugas';
+  role: Role;
   kode_wilayah: string;
 }
 
@@ -22,12 +23,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  validate(payload: JwtPayload): JwtPayload {
-    return {
-      userId: payload.userId,
-      username: payload.username,
-      role: payload.role,
-      kode_wilayah: payload.kode_wilayah,
-    };
-  }
+validate(payload: JwtPayload) {
+  return {
+    id_user: payload.userId,
+    username: payload.username,
+    role: payload.role,
+    kode_wilayah: payload.kode_wilayah,
+  };
+}
 }

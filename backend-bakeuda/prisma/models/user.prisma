@@ -11,8 +11,8 @@ model User {
   role          Role
   kode_wilayah  String?  @db.VarChar(10)
   nip           String?  @db.VarChar(25)
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
+  is_active             Boolean  @default(true)
+  created_at            DateTime @default(now())
 
   // ── Relasi ──
   wilayah                Wilayah?          @relation(fields: [kode_wilayah], references: [kode_wilayah])
