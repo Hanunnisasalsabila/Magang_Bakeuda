@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient, Role } from '../generated/prisma/client.js';
+import { PrismaClient, Role } from './generated/index.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
@@ -14,15 +14,28 @@ async function main() {
     where: { username: 'admin' },
     update: {},
     create: {
-      nama_lengkap: 'Administrator',
+      nama_lengkap: 'Administrator Bakeuda',
       username: 'admin',
-      password: hashedPassword,
-      role: Role.admin,
+      password_hash: hashedPassword,
+      role: Role.BAKEUDA,
+      kode_wilayah: 'KW-001',
+    },
+  });
+
+  const desa = await prisma.user.upsert({
+    where: { username: 'desa01' },
+    update: {},
+    create: {
+      nama_lengkap: 'Perangkat Desa 01',
+      username: 'desa01',
+      password_hash: hashedPassword,
+      role: Role.DESA,
       kode_wilayah: 'KW-001',
     },
   });
 
   console.log('✅ Seed berhasil:', admin.username, `(${admin.role})`);
+  console.log('✅ Seed berhasil:', desa.username, `(${desa.role})`);
 }
 
 main()

@@ -7,6 +7,9 @@ async function bootstrap() {
 
   // Global prefix: semua route dimulai dengan /api
   app.setGlobalPrefix('api');
+  
+  // Enable CORS
+  app.enableCors();
 
   // ValidationPipe: validasi DTO otomatis
   app.useGlobalPipes(
