@@ -6,29 +6,45 @@ enum JenisTanah {
   TANAH_LAINNYA
 }
 
+// ─────────────────────────────────────────
+// HEADER — 1 baris per NOP
+// ─────────────────────────────────────────
+
 model ObjekPajak {
-  nop              String     @id @db.VarChar(18)
-  nik_subjek       String     @db.VarChar(16)
-  no_persil        String?    @db.VarChar(20)
-  jalan_op         String     @db.VarChar(255)
-  blok_kav_no      String?    @db.VarChar(50)
-  rw_op            String?    @db.VarChar(5)
-  rt_op            String?    @db.VarChar(5)
-  kelurahan_op     String     @db.VarChar(100)
-  kecamatan_op     String     @db.VarChar(100)
-  luas_tanah       Decimal    @db.Decimal(10, 2)
-  zona_nilai_tanah String?    @db.VarChar(10)
-  jenis_tanah      JenisTanah
-  jumlah_bangunan  Int        @default(0)
-  luas_bangunan    Decimal    @default(0) @db.Decimal(10, 2)
-  njop_tanah       Decimal?   @db.Decimal(15, 2)
-  njop_bangunan    Decimal?   @db.Decimal(15, 2)
-  njop_total       Decimal?   @db.Decimal(15, 2)
-  tahun_penilaian  Int? // YEAR disimpan sebagai Int di PostgreSQL
-  status_aktif     Boolean    @default(true)
-  nonaktif_oleh    String? // FK → users.id_user
-  nonaktif_at      DateTime?
-  created_at       DateTime   @default(now())
+  nop String @id @db.VarChar(18)
+
+  // Komponen pembentuk NOP (sesuai struktur legacy SISMIOP)
+  kode_propinsi  String @db.VarChar(2)
+  kode_dati2     String @db.VarChar(2)
+  kode_kecamatan String @db.VarChar(3)
+  kode_kelurahan String @db.VarChar(3)
+  kode_blok      String @db.VarChar(3)
+  no_urut        String @db.VarChar(4)
+  kode_jenis_op  String @db.VarChar(1)
+
+  nik_subjek   String     @db.VarChar(16)
+  no_persil    String?    @db.VarChar(20)
+  jalan_op     String     @db.VarChar(255)
+  blok_kav_no  String?    @db.VarChar(50)
+  rw_op        String?    @db.VarChar(5)
+  rt_op        String?    @db.VarChar(5)
+  kelurahan_op String     @db.VarChar(100)
+  kecamatan_op String     @db.VarChar(100)
+  jenis_tanah  JenisTanah
+
+  // Agregat (dihitung ulang dari relasi bumi/bangunan setiap update)
+  luas_tanah      Decimal  @default(0) @db.Decimal(10, 2)
+  luas_bangunan   Decimal  @default(0) @db.Decimal(10, 2)
+  jumlah_bangunan Int      @default(0)
+  njop_tanah      Decimal? @db.Decimal(15, 2)
+  njop_bangunan   Decimal? @db.Decimal(15, 2)
+  njop_total      Decimal? @db.Decimal(15, 2)
+  tahun_penilaian Int?
+
+  status_aktif  Boolean   @default(true)
+  nonaktif_oleh String?
+  nonaktif_at   DateTime?
+  created_at    DateTime  @default(now())
 
   // ── Relasi ──
   subjek_pajak  SubjekPajak           @relation(fields: [nik_subjek], references: [nik])
@@ -37,5 +53,65 @@ model ObjekPajak {
   detail_asal   DetailTransaksiAsal[]
   sppt          Sppt[]
 
+  bumi     ObjekBumi[]
+  bangunan ObjekBangunan[]
+
+  @@unique([kode_propinsi, kode_dati2, kode_kecamatan, kode_kelurahan, kode_blok, no_urut, kode_jenis_op])
+  @@index([nik_subjek])
   @@map("objek_pajak")
+}
+
+// ─────────────────────────────────────────
+// DETAIL TANAH — bisa >1 per NOP (dari DAT_OP_BUMI)
+// ─────────────────────────────────────────
+
+model ObjekBumi {
+  id_bumi           String   @id @default(uuid())
+  nop               String   @db.VarChar(18)
+  no_bumi           Int      @default(1) // urutan bumi ke berapa dalam 1 NOP
+  kode_znt          String?  @db.VarChar(2) // Kode Zona Nilai Tanah
+  luas_bumi         Decimal  @default(0) @db.Decimal(12, 2)
+  jenis_bumi        String?  @db.VarChar(1)
+  nilai_sistem_bumi Decimal  @default(0) @db.Decimal(15, 2)
+  status_blokir     Boolean  @default(false) // 0=aktif/1=blokir dari legacy
+  keterangan_blokir String?  @db.VarChar(150)
+  tahun_blokir      String?  @db.VarChar(4)
+  updated_at        DateTime @updatedAt
+
+  objek_pajak ObjekPajak @relation(fields: [nop], references: [nop], onDelete: Cascade)
+
+  @@unique([nop, no_bumi])
+  @@map("objek_bumi")
+}
+
+// ─────────────────────────────────────────
+// DETAIL BANGUNAN — bisa >1 per NOP (dari DAT_OP_BANGUNAN)
+// ─────────────────────────────────────────
+
+model ObjekBangunan {
+  id_bangunan           String   @id @default(uuid())
+  nop                   String   @db.VarChar(18)
+  no_bangunan           Int // urutan bangunan ke berapa
+  kode_jpb              String?  @db.VarChar(2) // Jenis Penggunaan Bangunan
+  no_formulir_lspop     String?  @db.VarChar(11)
+  tahun_dibangun        Int?
+  tahun_renovasi        Int?
+  luas_bangunan         Decimal  @default(0) @db.Decimal(12, 2)
+  jumlah_lantai         Int      @default(1)
+  kondisi_bangunan      String?  @db.VarChar(1)
+  jenis_konstruksi      String?  @db.VarChar(1)
+  jenis_atap            String?  @db.VarChar(1)
+  kode_dinding          String?  @db.VarChar(1)
+  kode_lantai           String?  @db.VarChar(1)
+  kode_langit_langit    String?  @db.VarChar(1)
+  nilai_sistem_bangunan Decimal? @db.Decimal(15, 2)
+  tanggal_pendataan     DateTime @default(now())
+  nip_pendata           String?  @db.VarChar(20)
+  keterangan_jpb        String?  @db.VarChar(50)
+  created_at            DateTime @default(now())
+
+  objek_pajak ObjekPajak @relation(fields: [nop], references: [nop], onDelete: Cascade)
+
+  @@unique([nop, no_bangunan])
+  @@map("objek_bangunan")
 }

@@ -5,6 +5,10 @@ import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
+import { WilayahModule } from './wilayah/wilayah.module.js';
+import { SubjekPajakModule } from './subjek-pajak/subjek-pajak.module.js';
+import { ObjekPajakModule } from './objek-pajak/objek-pajak.module.js';
+import { SpptModule } from './sppt/sppt.module.js';
 
 @Module({
   imports: [
@@ -12,6 +16,10 @@ import { UsersModule } from './users/users.module.js';
     PrismaModule,
     AuthModule,
     UsersModule,
+    WilayahModule,
+    SubjekPajakModule,
+    ObjekPajakModule,
+    SpptModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -20,7 +20,7 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles('BAKEUDA')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
