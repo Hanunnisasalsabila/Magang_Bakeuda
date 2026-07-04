@@ -18,16 +18,20 @@ enum Pekerjaan {
 
 model SubjekPajak {
   nik                String    @id @db.VarChar(16)
+  legacy_subjek_id   String?   @unique @db.VarChar(30) // ref SUBJEK_PAJAK_ID lama
   nama_subjek        String    @db.VarChar(100)
   status_wp          StatusWp
   pekerjaan          Pekerjaan
   npwp               String?   @db.VarChar(20)
+  npwpd              String?   @db.VarChar(50) // dari legacy NPWPD
   no_hp              String?   @db.VarChar(15)
+  email              String?   @db.VarChar(100) // dari legacy EMAIL
   alamat_jalan       String    @db.VarChar(255)
   blok_kav_no_subjek String?   @db.VarChar(50)
   rw                 String?   @db.VarChar(5)
   rt                 String?   @db.VarChar(5)
   kelurahan          String    @db.VarChar(100)
+  kecamatan          String?   @db.VarChar(100) // dari legacy KECAMATAN_WP
   kabupaten          String    @db.VarChar(100)
   kode_pos           String?   @db.VarChar(5)
   created_at         DateTime  @default(now())
@@ -39,5 +43,6 @@ model SubjekPajak {
   objek_pajak   ObjekPajak[]
   detail_tujuan DetailTransaksiTujuan[]
 
+  @@index([nama_subjek])
   @@map("subjek_pajak")
 }

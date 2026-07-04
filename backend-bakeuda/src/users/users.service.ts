@@ -8,11 +8,11 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePetugasDto } from './dto/create-petugas.dto.js';
 import { UpdatePetugasDto } from './dto/update-petugas.dto.js';
-import { Role } from '../../generated/prisma/client.js';
+import { Role } from '@prisma/client';
 
 // SELECT field yang aman (tanpa password)
 const safeUserSelect = {
-  id: true,
+  id_user: true,
   nama_lengkap: true,
   username: true,
   role: true,
@@ -46,8 +46,8 @@ export class UsersService {
       data: {
         nama_lengkap,
         username,
-        password: hashedPassword,
-        role: Role.petugas,
+        password_hash: hashedPassword,
+        role: Role.DESA,
         kode_wilayah,
       },
       select: safeUserSelect,
@@ -66,7 +66,7 @@ export class UsersService {
 
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
+      where: { id_user: id },
       select: safeUserSelect,
     });
 
@@ -74,8 +74,8 @@ export class UsersService {
       throw new NotFoundException('Petugas tidak ditemukan');
     }
 
-    if (user.role !== Role.petugas) {
-      throw new BadRequestException('User ini bukan petugas');
+    if (user.role !== Role.DESA) {
+      throw new BadRequestException('User ini bukan role DESA');
     }
 
     return { success: true, data: user };
@@ -92,7 +92,7 @@ export class UsersService {
           contains: username,
           mode: 'insensitive',
         },
-        role: Role.petugas,
+        role: Role.DESA,
       },
       select: safeUserSelect,
       orderBy: { created_at: 'desc' },
@@ -122,16 +122,16 @@ export class UsersService {
 
     // Cek apakah petugas exist
     const existing = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, role: true },
+      where: { id_user: id },
+      select: { id_user: true, role: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Petugas tidak ditemukan');
     }
 
-    if (existing.role !== Role.petugas) {
-      throw new BadRequestException('Hanya petugas yang bisa diupdate');
+    if (existing.role !== Role.DESA) {
+      throw new BadRequestException('Hanya user DESA yang bisa diupdate');
     }
 
     // Cek apakah username baru sudah dipakai user lain
@@ -139,9 +139,9 @@ export class UsersService {
       const usernameConflict = await this.prisma.user.findFirst({
         where: {
           username: dto.username,
-          NOT: { id },
+          NOT: { id_user: id },
         },
-        select: { id: true },
+        select: { id_user: true },
       });
 
       if (usernameConflict) {
@@ -152,11 +152,12 @@ export class UsersService {
     // Hash password baru jika ada
     const dataToUpdate: Record<string, unknown> = { ...dto };
     if (dto.password) {
-      dataToUpdate.password = await bcrypt.hash(dto.password, 12);
+      dataToUpdate.password_hash = await bcrypt.hash(dto.password, 12);
+      delete dataToUpdate.password;
     }
 
     const updated = await this.prisma.user.update({
-      where: { id },
+      where: { id_user: id },
       data: dataToUpdate,
       select: safeUserSelect,
     });
@@ -174,19 +175,19 @@ export class UsersService {
 
   async deletePetugas(id: string) {
     const existing = await this.prisma.user.findUnique({
-      where: { id },
-      select: { id: true, role: true, username: true },
+      where: { id_user: id },
+      select: { id_user: true, role: true, username: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Petugas tidak ditemukan');
     }
 
-    if (existing.role !== Role.petugas) {
-      throw new BadRequestException('Hanya petugas yang bisa dihapus');
+    if (existing.role !== Role.DESA) {
+      throw new BadRequestException('Hanya user DESA yang bisa dihapus');
     }
 
-    await this.prisma.user.delete({ where: { id } });
+    await this.prisma.user.delete({ where: { id_user: id } });
 
     return {
       success: true,

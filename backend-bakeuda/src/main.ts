@@ -17,6 +17,15 @@ async function bootstrap() {
     }),
   );
 
+  // Tambahkan CORS manual
+  app.enableCors({
+    origin: 'http://localhost:5173', // Vite development server
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
