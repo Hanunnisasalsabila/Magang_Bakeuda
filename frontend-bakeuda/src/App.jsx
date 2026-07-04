@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AppLayout from './components/AppLayout';
+import Login from './pages/Login';
 
 // Import Pages
 import DashboardDesa from './pages/DashboardDesa';
@@ -12,8 +13,34 @@ import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 
 export default function App() {
-  const [role, setRole] = useState('desa'); // 'desa' or 'admin'
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [role, setRole] = useState('desa'); 
   const [activePage, setActivePage] = useState('dashboard_desa');
+
+  // Cek sesi saat aplikasi dimuat
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+      const user = JSON.parse(userStr);
+      setIsAuthenticated(true);
+      setRole(user.role.toLowerCase());
+      setActivePage(user.role === 'BAKEUDA' ? 'dashboard_admin' : 'dashboard_desa');
+    }
+  }, []);
+
+  const handleLoginSuccess = (userRole) => {
+    setIsAuthenticated(true);
+    setRole(userRole);
+    setActivePage(userRole === 'bakeuda' ? 'dashboard_admin' : 'dashboard_desa');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsAuthenticated(false);
+    setRole('desa');
+  };
 
   // Page title mapping
   const pageTitles = {
@@ -82,30 +109,19 @@ export default function App() {
           </div>
         );
       case 'logout':
-        return (
-          <div className="p-gutter flex flex-col items-center justify-center text-center py-20">
-            <div className="w-16 h-16 bg-error-container text-error rounded-full flex items-center justify-center mb-6 shadow-sm">
-              <span className="material-symbols-outlined text-3xl">logout</span>
-            </div>
-            <h3 className="text-2xl font-bold text-primary">Anda Telah Keluar</h3>
-            <p className="text-on-surface-variant text-sm mt-2 max-w-sm">
-              Terima kasih telah menggunakan SIPD Purbalingga. Untuk masuk kembali, silakan muat ulang halaman.
-            </p>
-            <button
-              onClick={() => {
-                setRole('desa');
-                setActivePage('dashboard_desa');
-              }}
-              className="mt-6 px-6 py-2 bg-primary text-on-primary font-bold rounded-full text-sm hover:shadow transition-all"
-            >
-              Masuk Kembali
-            </button>
-          </div>
-        );
+        // Langsung eksekusi logout ketika page ini dirender
+        handleLogout();
+        return null; // Tidak perlu nampilin apa-apa, karena isAuthenticated akan jadi false dan masuk ke halaman Login
+
       default:
         return <DashboardDesa onNavigate={setActivePage} />;
     }
   };
+
+  // Jika belum login, tampilkan halaman Login
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <AppLayout
