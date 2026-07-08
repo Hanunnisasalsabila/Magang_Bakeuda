@@ -17,6 +17,7 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
       ]
     : [
         { id: 'dashboard_admin', label: 'Dashboard', icon: 'dashboard' },
+        { id: 'manajemen_akun_desa', label: 'Akun Desa', icon: 'manage_accounts' },
         { id: 'antrean_verifikasi', label: 'Antrean', icon: 'fact_check' },
         { id: 'detail_review', label: 'Review', icon: 'rate_review' },
         { id: 'profil', label: 'Profil', icon: 'person' },

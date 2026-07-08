@@ -8,6 +8,35 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // 0. Buat Data Wilayah Dummy (Standar SISMIOP: Kec 3 digit, Desa 3 digit, total 10 digit tanpa titik)
+  const wilayah1 = await prisma.wilayah.upsert({
+    where: { kode_wilayah: '3303010001' },
+    update: {},
+    create: {
+      kode_wilayah: '3303010001',
+      nama_desa: 'KEDUNGBENDA',
+      kode_kel: '001',
+      kecamatan: 'KEMANGKON',
+      kode_kec: '010',
+      kabupaten: 'KAB. PURBALINGGA',
+      kode_kab: '03',
+    },
+  });
+
+  const wilayah2 = await prisma.wilayah.upsert({
+    where: { kode_wilayah: '3303010002' },
+    update: {},
+    create: {
+      kode_wilayah: '3303010002',
+      nama_desa: 'BOKOL',
+      kode_kel: '002',
+      kecamatan: 'KEMANGKON',
+      kode_kec: '010',
+      kabupaten: 'KAB. PURBALINGGA',
+      kode_kab: '03',
+    },
+  });
+
   // 1. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
   const adminExists = await prisma.user.findFirst({
     where: { role: Role.BAKEUDA },
@@ -44,6 +73,7 @@ async function main() {
       username: 'desa01',
       password_hash: hashedPassword,
       role: Role.DESA,
+      kode_wilayah: wilayah1.kode_wilayah,
       force_change_password: true,
     },
   });
