@@ -1,47 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../utils/axios';
 
 export default function ProfilPengguna({ role }) {
   const isDesa = role === 'desa';
-  const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [tfaEnabled, setTfaEnabled] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [profileData, setProfileData] = useState(
-    isDesa
-      ? {
-          name: 'Pratama Yusuf',
-          nip: '19950812 202003 1 002',
-          role: 'Perangkat Desa Kel. Onje',
-          email: 'pratama.yusuf@purbalinggakab.go.id',
-          phone: '821-4567-8901',
-          dept: 'Pelayanan Publik Desa',
-          avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+  const [profileData, setProfileData] = useState({
+    name: '',
+    nip: '',
+    role: '',
+    email: '',
+    phone: '',
+    dept: '',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        if (response.data.success) {
+          const data = response.data.data;
+          setProfileData({
+            name: data.nama_lengkap,
+            nip: data.nip || '-',
+            role: data.role === 'DESA' ? `Perangkat Desa ${data.wilayah?.nama_desa || ''}` : 'Verifikator BKD',
+            email: '-', // Placeholder as it's not in schema yet
+            phone: '-', // Placeholder
+            dept: data.wilayah ? `Kec. ${data.wilayah.kecamatan}` : '-',
+            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+          });
         }
-      : {
-          name: 'Drs. H. Ahmad Sudirman',
-          nip: '19820524 201001 1 008',
-          role: 'Verifikator BKD',
-          email: 'ahmad.sudirman@purbalinggakab.go.id',
-          phone: '812-3456-7890',
-          dept: 'Bidang PBB dan BPHTB',
-          avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxbF9pjIIiLDorpixCyJnsp0PPncjH8kAb3SjfdDF11I0-wMqD2Cc69xWuSz7UlGCYRu7G7Htm7YbfsLCJ8dK05Sf4WFUuVIlyeGJJXQdsv5qmc1y1JbFC0RTS5iUKjf5ABz_2WIc8siF6TtJQ3xobUEcqpb4Xn92Epf6kj8qnmDyHQxeeD3D-0IWLqXlCWLuokRnZN34wvJG6pczoJFsJsCIZOZi_ya4gU34pwdjSIiRCLILFbspj_a2t_aQDiIQf_NJCcu1oMx78'
-        }
-  );
-
-  const handleInputChange = (field, e) => {
-    setProfileData(prev => ({ ...prev, [field]: e.target.value }));
-  };
-
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 4000);
-    }, 1200);
-  };
+      } catch (err) {
+        setError('Gagal memuat profil');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, []);
 
   const activities = isDesa
     ? [
@@ -72,6 +73,9 @@ export default function ProfilPengguna({ role }) {
           iconBg: 'bg-primary-container text-on-primary-container',
         },
       ];
+
+  if (isLoading) return <div className="p-8 text-center mt-20"><span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span><p className="mt-4">Memuat Profil...</p></div>;
+  if (error) return <div className="p-8 text-center text-error mt-20">{error}</div>;
 
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto space-y-8 w-full">
@@ -108,24 +112,10 @@ export default function ProfilPengguna({ role }) {
           </div>
           <div className="flex gap-3 mb-2 w-full md:w-auto">
             <button
-              onClick={() => alert('Fitur edit foto / info detail.')}
+              onClick={() => alert('Fitur edit foto dalam pengembangan.')}
               className="flex-1 md:flex-none px-6 py-2 border border-outline text-primary font-bold text-sm rounded-lg hover:bg-surface-container-low transition-colors active:scale-95 focus:outline-none"
             >
               Ubah Foto
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 md:flex-none px-6 py-2 bg-primary text-on-primary font-bold text-sm rounded-lg hover:shadow-lg transition-all active:scale-95 focus:outline-none flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                  Menyimpan...
-                </>
-              ) : (
-                'Simpan Profil'
-              )}
             </button>
           </div>
         </div>
@@ -148,8 +138,8 @@ export default function ProfilPengguna({ role }) {
                 <input
                   type="text"
                   value={profileData.name}
-                  onChange={(e) => handleInputChange('name', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
+                  readOnly
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
                 />
               </div>
               <div className="space-y-1">
@@ -170,8 +160,8 @@ export default function ProfilPengguna({ role }) {
                 <input
                   type="email"
                   value={profileData.email}
-                  onChange={(e) => handleInputChange('email', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
+                  readOnly
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
                 />
               </div>
               <div className="space-y-1">
@@ -185,8 +175,8 @@ export default function ProfilPengguna({ role }) {
                   <input
                     type="text"
                     value={profileData.phone}
-                    onChange={(e) => handleInputChange('phone', e)}
-                    className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-r-lg px-4 py-3 font-body-md text-on-surface"
+                    readOnly
+                    className="w-full bg-surface-container border border-outline-variant rounded-r-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
                   />
                 </div>
               </div>
@@ -197,8 +187,8 @@ export default function ProfilPengguna({ role }) {
                 <input
                   type="text"
                   value={profileData.dept}
-                  onChange={(e) => handleInputChange('dept', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
+                  readOnly
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
                 />
               </div>
             </div>

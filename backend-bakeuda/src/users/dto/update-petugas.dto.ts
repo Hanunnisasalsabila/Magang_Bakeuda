@@ -4,6 +4,7 @@ import {
   MinLength,
   Matches,
   IsNotEmpty,
+  MaxLength,
 } from 'class-validator';
 import { ValidateIf } from 'class-validator';
 
@@ -30,4 +31,9 @@ export class UpdatePetugasDto {
   @IsString()
   @IsNotEmpty({ message: 'Kode wilayah tidak boleh kosong' })
   kode_wilayah?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(25, { message: 'NIP maksimal 25 karakter' })
+  nip?: string;
 }

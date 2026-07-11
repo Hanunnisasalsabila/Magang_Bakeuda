@@ -80,4 +80,31 @@ export class AuthService {
       message: 'Password berhasil diubah. Silakan gunakan password baru untuk login.',
     };
   }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id_user: userId },
+      select: {
+        id_user: true,
+        nama_lengkap: true,
+        username: true,
+        role: true,
+        kode_wilayah: true,
+        nip: true,
+        wilayah: {
+          select: {
+            nama_desa: true,
+            kecamatan: true,
+          }
+        }
+      }
+    });
+
+    if (!user) throw new UnauthorizedException('User tidak ditemukan');
+
+    return {
+      success: true,
+      data: user,
+    };
+  }
 }

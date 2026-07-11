@@ -17,6 +17,7 @@ export default function ManajemenAkunDesa() {
     username: '',
     password: '',
     kode_wilayah: '',
+    nip: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -59,7 +60,7 @@ export default function ManajemenAkunDesa() {
   const openAddModal = () => {
     setModalMode('add');
     setSelectedUser(null);
-    setFormData({ nama_lengkap: '', username: '', password: '', kode_wilayah: '' });
+    setFormData({ nama_lengkap: '', username: '', password: '', kode_wilayah: '', nip: '' });
     setFormError('');
     setIsModalOpen(true);
   };
@@ -71,7 +72,8 @@ export default function ManajemenAkunDesa() {
       nama_lengkap: user.nama_lengkap, 
       username: user.username, 
       password: '', // Kosongkan password saat edit (hanya diisi jika ingin diganti)
-      kode_wilayah: user.kode_wilayah || '' 
+      kode_wilayah: user.kode_wilayah || '',
+      nip: user.nip || ''
     });
     setFormError('');
     setIsModalOpen(true);
@@ -160,6 +162,7 @@ export default function ManajemenAkunDesa() {
             <thead>
               <tr className="bg-surface-container-low text-on-surface-variant font-label-md uppercase tracking-wider">
                 <th className="py-4 px-6 font-bold">Nama Lengkap</th>
+                <th className="py-4 px-6 font-bold">NIP</th>
                 <th className="py-4 px-6 font-bold">Username</th>
                 <th className="py-4 px-6 font-bold">Kode Wilayah</th>
                 <th className="py-4 px-6 font-bold text-center">Aksi</th>
@@ -168,21 +171,21 @@ export default function ManajemenAkunDesa() {
             <tbody className="divide-y divide-outline-variant/50 font-body-md text-on-surface">
               {isLoading ? (
                 <tr>
-                  <td colSpan="4" className="py-12 text-center text-on-surface-variant">
+                  <td colSpan="5" className="py-12 text-center text-on-surface-variant">
                     <span className="material-symbols-outlined animate-spin text-[32px] text-primary">progress_activity</span>
                     <p className="mt-2">Memuat data akun...</p>
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="4" className="py-12 text-center text-error">
+                  <td colSpan="5" className="py-12 text-center text-error">
                     <span className="material-symbols-outlined text-[32px]">error</span>
                     <p className="mt-2">{error}</p>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="py-12 text-center text-on-surface-variant">
+                  <td colSpan="5" className="py-12 text-center text-on-surface-variant">
                     <span className="material-symbols-outlined text-[48px] opacity-50">group_off</span>
                     <p className="mt-3 font-medium">Tidak ada data ditemukan</p>
                     <p className="text-sm mt-1">Coba sesuaikan kata kunci pencarian Anda.</p>
@@ -198,6 +201,13 @@ export default function ManajemenAkunDesa() {
                         </div>
                         <span className="font-medium">{user.nama_lengkap}</span>
                       </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      {user.nip ? (
+                        <span className="font-mono text-sm tracking-widest">{user.nip}</span>
+                      ) : (
+                        <span className="text-on-surface-variant text-sm italic">Belum diatur</span>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <span className="bg-surface-container-high px-3 py-1 rounded-md text-sm font-medium border border-outline-variant">
@@ -263,6 +273,17 @@ export default function ManajemenAkunDesa() {
                     value={formData.nama_lengkap} 
                     onChange={handleChange}
                     placeholder="Contoh: Perangkat Desa Mrebet"
+                    className="w-full px-4 py-3 bg-surface-container-lowest border border-outline rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-on-surface mb-1.5">NIP (Opsional)</label>
+                  <input 
+                    type="text" 
+                    name="nip" 
+                    value={formData.nip} 
+                    onChange={handleChange}
+                    placeholder="Contoh: 19900101 201001 1 001"
                     className="w-full px-4 py-3 bg-surface-container-lowest border border-outline rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-on-surface outline-none" 
                   />
                 </div>
