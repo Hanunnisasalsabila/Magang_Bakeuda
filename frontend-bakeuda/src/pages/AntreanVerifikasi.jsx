@@ -33,7 +33,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
             kecamatan: 'Purbalingga',
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-            status: 'Verifikasi',
+            status: 'Menunggu Verifikasi',
             urgent: false
           };
         });
@@ -77,7 +77,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
           <div className="flex items-center gap-3">
             <span className="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full font-label-sm text-label-sm flex items-center gap-2 shadow-sm">
               <span className="w-2.5 h-2.5 bg-secondary rounded-full animate-pulse"></span>
-              {filteredData.length} Menunggu Validasi
+              {filteredData.length} Menunggu Verifikasi
             </span>
           </div>
         </div>

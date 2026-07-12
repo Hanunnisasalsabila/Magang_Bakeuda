@@ -5,7 +5,7 @@ import api from '../utils/axios';
 export default function DashboardDesa({ onNavigate }) {
   const [stats, setStats] = useState([
     { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Memuat...', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
-    { title: 'Menunggu Validasi', value: '0', icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Memuat...', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Memuat...', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
     { title: 'SPOP Disetujui', value: '0', icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Memuat...', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
     { title: 'SPOP Perlu Perbaikan', value: '0', icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Memuat...', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
   ]);
@@ -22,21 +22,41 @@ export default function DashboardDesa({ onNavigate }) {
         ]);
         
         const dataStats = statsRes.data.data;
-        setStats([
-          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Keseluruhan', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
-          { title: 'Menunggu Validasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu verifikasi', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
-          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
-          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Butuh revisi', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
-        ]);
+        if (dataStats.totalDikirim === 0) {
+          // Dummy data fallback jika database kosong
+          setStats([
+            { title: 'Total SPOP Dikirim', value: '142', icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: '+12 Bulan ini', trendColor: 'text-green-600', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
+            { title: 'Menunggu Verifikasi', value: '18', icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu dicek admin', trendColor: 'text-orange-500', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+            { title: 'SPOP Disetujui', value: '120', icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi BKD', trendColor: 'text-green-600', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
+            { title: 'SPOP Perlu Perbaikan', value: '4', icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Dikembalikan ke Desa', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
+          ]);
+        } else {
+          setStats([
+            { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Keseluruhan', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
+            { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu verifikasi', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+            { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
+            { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Butuh revisi', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
+          ]);
+        }
 
-        const formattedList = listRes.data.data.slice(0, 5).map(item => ({
-          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
-          name: item.nama_pengaju || 'Tanpa Nama',
-          type: item.jenis_transaksi,
-          date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-          status: item.status_ajuan === 'MENUNGGU' ? 'Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
-        }));
-        setRecentSubmissions(formattedList);
+        const rawList = listRes.data.data;
+        if (rawList.length === 0) {
+           setRecentSubmissions([
+             { nop: '33.03.010.001.015.0042.0', name: 'H. Ahmad Dahlan', type: 'Pendaftaran Baru', date: '12 Jul 2026', status: 'Menunggu Verifikasi' },
+             { nop: '33.03.010.001.022.0112.0', name: 'Siti Aminah', type: 'Mutasi Penuh', date: '10 Jul 2026', status: 'Disetujui' },
+             { nop: '33.03.010.002.005.0003.0', name: 'Budi Santoso', type: 'Pembetulan', date: '08 Jul 2026', status: 'Revisi' },
+             { nop: '33.03.010.002.011.0021.0', name: 'KUD Makmur', type: 'Pendaftaran Baru', date: '05 Jul 2026', status: 'Disetujui' },
+           ]);
+        } else {
+          const formattedList = rawList.slice(0, 5).map(item => ({
+            nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+            name: item.nama_pengaju || 'Tanpa Nama',
+            type: item.jenis_transaksi,
+            date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+          }));
+          setRecentSubmissions(formattedList);
+        }
       } catch (error) {
         console.error("Gagal mengambil data dashboard:", error);
       } finally {
@@ -97,73 +117,92 @@ export default function DashboardDesa({ onNavigate }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Submissions Table */}
-        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
-          <div className="p-6 border-b border-outline-variant flex items-center justify-between">
-            <h3 className="font-headline-md text-headline-md text-primary font-bold">
-              Pengajuan SPOP Terbaru
-            </h3>
+        <div className="lg:col-span-2 bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm flex flex-col">
+          <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+            <div>
+              <h3 className="font-headline-md text-headline-md text-primary font-bold">
+                Pengajuan SPOP Terbaru
+              </h3>
+              <p className="text-sm text-on-surface-variant mt-1">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
+            </div>
             <button
-              onClick={() => onNavigate('daftar_objek')}
-              className="text-primary font-label-sm text-label-sm hover:underline"
+              onClick={() => onNavigate('monitoring_pajak')}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-bold transition-colors"
             >
-              Lihat Semua
+              <span>Lihat Semua</span>
+              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </div>
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+            <table className="w-full text-left min-w-max">
+              <thead>
+                <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                  <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
                     NOP / Nama Subjek
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
                     Jenis Transaksi
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                     Tanggal
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                     Status
                   </th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center pl-12">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-4 text-on-surface-variant">Memuat data...</td>
+                    <td colSpan="5" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
+                      <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
+                      <span>Memuat data pengajuan...</span>
+                    </td>
                   </tr>
                 ) : recentSubmissions.length > 0 ? (
                   recentSubmissions.map((sub, i) => (
-                    <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                    <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''}`}>
                       <td className="px-6 py-4">
-                        <p className="font-label-sm text-label-sm text-on-surface">{sub.nop}</p>
-                        <p className="text-[12px] text-on-surface-variant">{sub.name}</p>
+                        <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap">{sub.nop}</p>
+                        <p className="font-label-md text-on-background whitespace-nowrap">{sub.name}</p>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-body-md font-body-md text-on-surface">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-on-surface-variant">
                           {sub.type}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <p className="text-body-md font-body-md text-on-surface">{sub.date}</p>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <p className="text-xs font-semibold text-on-surface-variant">{sub.date}</p>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
                         <StatusBadge status={sub.status} />
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => onNavigate('detail_review')}
-                          className="material-symbols-outlined text-outline hover:text-primary transition-colors"
-                        >
-                          {sub.status === 'Draft' ? 'edit' : 'visibility'}
-                        </button>
+                      <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
+                        <div className="flex items-center justify-end">
+                          <button
+                            onClick={() => onNavigate(sub.status === 'Draft' ? 'formulir_spop' : 'monitoring_pajak')}
+                            className="px-4 py-2 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              {sub.status === 'Draft' ? 'edit' : 'visibility'}
+                            </span>
+                            {sub.status === 'Draft' ? 'Edit' : 'Detail'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center py-4 text-on-surface-variant">Belum ada pengajuan SPOP.</td>
+                    <td colSpan="5" className="text-center py-12 text-on-surface-variant">
+                      <div className="flex flex-col items-center gap-2 opacity-60">
+                        <span className="material-symbols-outlined text-4xl">inbox</span>
+                        <p>Belum ada pengajuan SPOP terbaru.</p>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -184,8 +223,8 @@ export default function DashboardDesa({ onNavigate }) {
           <div className="flex-1 w-full relative bg-[#091a3a] overflow-hidden min-h-[220px]">
             <img
               alt="Peta Digital Wilayah"
-              className="w-full h-full object-cover opacity-40 grayscale contrast-125"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYhrBcuk844x9pdSFw7Zjr98AI1pPp7lk6oIsgBmhiWaQ675HX0qfeaF3k3v-V-6ju4gyEtJffJU6Nl5gLNmseWs9SH3yKgdVJ5I5uAccK_gbS6pxWBGaLk8KJ3K2q2xhm8vid2toBatyzr7F2iWER3RZJSTFS2WCdIaYxvu0JPb_DC53e0UF-jcbPFZ4WLBYMVbPGSy6lIt4mQ7Czax-NNuPxm9Jo37KVSlGamCgC8kWIeHtwWrH6R-sz2630TDADYA6p9wKD2ASi"
+              className="w-full h-full object-cover opacity-60 mix-blend-luminosity"
+              src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent"></div>
             {/* Animated Markers */}
@@ -203,66 +242,6 @@ export default function DashboardDesa({ onNavigate }) {
             </div>
             <p className="text-[12px] opacity-70">Membutuhkan intervensi petugas lapangan segera.</p>
           </div>
-        </div>
-      </div>
-
-      {/* Paper Form Mimic Demo Section */}
-      <div className="mt-section-gap bg-surface-container-lowest border border-outline-variant p-gutter rounded-xl shadow-sm">
-        <div className="flex items-start gap-gutter mb-6 border-b-2 border-primary pb-6">
-          <img
-            alt="Logo Kabupaten Purbalingga"
-            className="w-16 h-16 object-contain"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVheQzbBwjopVwLSxhQICq2qfX1nY3FESRQtNuHtfckd2llQYBokE-s-YxSRYQMmjXibOYJmuAdv_vzfI7c1jHybb1ni0znZ-Xah5xJN68DNDsHnbradNGR_6I17I1OqGAkHK5vw6BEbkcJaJ8EfxvYCsZc-qOtXQW2tS7lJcOocYy0m6jIkZ24q_v71ZwUkFmQr2sslBpHQ8lwYBK-A-9tTLW6AOhtzdT2AidzKQ3tPy5kf9KWLVkVUEMCJ6x83C8JWtYFjgcshmM"
-          />
-          <div className="flex-1">
-            <p className="font-section-header text-section-header tracking-[0.2em] text-on-surface-variant uppercase">
-              PEMERINTAH KABUPATEN PURBALINGGA
-            </p>
-            <h4 className="font-headline-md text-headline-md text-primary font-extrabold uppercase">
-              BADAN KEUANGAN DAERAH
-            </h4>
-            <p className="text-label-sm font-label-sm text-on-surface-variant">
-              Jl. Onje No. 4 Purbalingga Telp. (0281) 891098
-            </p>
-          </div>
-          <div className="border-2 border-primary p-4 text-center min-w-[120px]">
-            <h2 className="font-display-lg text-display-lg text-primary font-black leading-none">
-              SPOP
-            </h2>
-            <p className="text-[9px] font-bold uppercase tracking-tighter mt-1">
-              Surat Pemberitahuan<br />Objek Pajak
-            </p>
-          </div>
-        </div>
-
-        {/* NOP Segmented Display Demo */}
-        <div className="mt-6">
-          <p className="font-section-header text-section-header text-primary mb-3 uppercase">
-            Struktur NOP (Nomor Objek Pajak)
-          </p>
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-            </div>
-            <span className="text-primary font-bold text-xl">.</span>
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-            </div>
-            <span className="text-primary font-bold text-xl">.</span>
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">1</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-            </div>
-            <span className="text-outline font-medium text-sm hidden sm:inline-block ml-4">
-              (Provinsi.Kabupaten.Kecamatan...)
-            </span>
-          </div>
-          <p className="text-[12px] text-on-surface-variant mt-3 italic">
-            * NOP terdiri dari 18 digit kode unik yang mewakili data geospasial objek pajak di daerah.
-          </p>
         </div>
       </div>
     </main>

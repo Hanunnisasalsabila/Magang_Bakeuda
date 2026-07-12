@@ -722,6 +722,57 @@ export default function FormulirSPOP({ onNavigate }) {
                     {errors.jenisTanah && <p className="text-error text-[12px] mt-1">{errors.jenisTanah}</p>}
                   </div>
                 </div>
+
+                <div className="pt-6 border-t border-outline-variant space-y-4">
+                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase mb-4">
+                    LAMPIRAN DOKUMEN PENDUKUNG
+                  </h4>
+                  <div className="space-y-4">
+                    {formData.lampiran.map((doc, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-4 border border-outline-variant rounded bg-surface-container-low">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-primary">description</span>
+                          <div>
+                            <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
+                            <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dummy</a>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev, 
+                            lampiran: prev.lampiran.filter((_, i) => i !== idx)
+                          }))}
+                          className="material-symbols-outlined text-error hover:scale-110 transition-transform"
+                        >
+                          delete
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Upload Button */}
+                    <div className="relative overflow-hidden w-full sm:w-auto inline-block">
+                      <button 
+                        type="button"
+                        disabled={isUploading}
+                        className={`flex items-center gap-2 px-6 py-3 rounded border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <span className="material-symbols-outlined">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
+                        {isUploading ? 'Mengunggah Dokumen...' : '+ Tambah Dokumen Pendukung'}
+                      </button>
+                      <input 
+                        type="file" 
+                        accept="image/*,.pdf" 
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploading}
+                      />
+                    </div>
+                    <p className="text-[12px] text-on-surface-variant italic mt-2">
+                      *Klik tombol di atas untuk menyimulasikan unggahan file (akan menghasilkan dummy URL image).
+                    </p>
+                  </div>
+                </div>
               </section>
             </div>
           )}
@@ -805,7 +856,7 @@ export default function FormulirSPOP({ onNavigate }) {
               <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-on-surface-variant">ID Submisi</span>
-                  <span className="font-bold text-on-surface font-data-mono">SPOP-2026-00382</span>
+                  <span className="font-bold text-on-surface font-data-mono">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-on-surface-variant">Estimasi Verifikasi</span>
@@ -855,27 +906,18 @@ export default function FormulirSPOP({ onNavigate }) {
                 <div className="flex flex-col md:flex-row w-full md:w-auto gap-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      setToast({ show: true, message: 'Draft formulir berhasil disimpan ke akun Anda.', type: 'success' });
-                      setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 4000);
-                    }}
+                    onClick={() => alert('Draft formulir berhasil disimpan ke akun Anda.')}
                     className="w-full md:w-auto px-10 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-bold hover:bg-surface-container transition-colors"
                   >
                     Simpan Draft
                   </button>
                   <button
                     type="button"
-                    disabled={isSubmitting}
                     onClick={step === 4 ? handleSubmit : nextStep}
-                    className="w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
+                    className={`w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
                   >
-                    {isSubmitting ? (
-                      <span className="material-symbols-outlined animate-spin text-[20px]">refresh</span>
-                    ) : step === 4 ? (
-                      'Submit SPOP'
-                    ) : (
-                      `Lanjutkan Ke Tahap ${step + 1}`
-                    )}
+                    {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
                     {!isSubmitting && (
                       <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
                         arrow_forward
@@ -884,6 +926,11 @@ export default function FormulirSPOP({ onNavigate }) {
                   </button>
                 </div>
               </div>
+              {submitError && (
+                <div className="p-4 bg-error-container text-error rounded mt-4">
+                  <strong>Terjadi Kesalahan:</strong> {submitError}
+                </div>
+              )}
             </div>
           )}
         </form>

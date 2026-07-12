@@ -1,4 +1,5 @@
 import React from 'react';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
 export default function Sidebar({ role, activePage, onNavigate, isOpen, onClose }) {
   const isDesa = role === 'desa';
@@ -6,9 +7,9 @@ export default function Sidebar({ role, activePage, onNavigate, isOpen, onClose 
   const menuItems = isDesa
     ? [
         { id: 'dashboard_desa', label: 'Dashboard', icon: 'dashboard' },
+        { id: 'monitoring_pajak', label: 'Monitoring Pajak', icon: 'analytics' },
         { id: 'formulir_spop', label: 'Formulir SPOP', icon: 'description' },
         { id: 'daftar_objek', label: 'Daftar Objek Pajak', icon: 'database' },
-        { id: 'monitoring_pajak', label: 'Monitoring Pajak', icon: 'analytics' },
         { id: 'profil', label: 'Profil Pengguna', icon: 'person' },
       ]
     : [
@@ -46,7 +47,7 @@ export default function Sidebar({ role, activePage, onNavigate, isOpen, onClose 
             <img
               alt="Logo Kabupaten Purbalingga"
               className="w-10 h-10 object-contain"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsrWg-vLXmZc89j8GhpEmWZ7o4RFYPADZMvlMJ2pnwKMgHXo8acI_D-wCxL3rmWgDmkwoFfF_pMdqsz4QhZkaaxRtbXEvSGgxTAp_BhaCwn9NGCLoGwozumFuKAdZQtRZLfmAYegCllRFQO49f-kY6Q0J0FZeK2WnEqzUpD-LmdteEzOfoQ3BGpa68O_fq3tM4yAImi219d3Z1AV3KNL03PP8T-7Zxcgz72BxNJBn8_NULXEnXK5Lc0PvPrWVHaYrbR1SPuAghaeAl"
+              src={logoPurbalingga}
             />
             <div>
               <p className="font-headline-md text-headline-md font-extrabold text-primary tracking-tight leading-none">

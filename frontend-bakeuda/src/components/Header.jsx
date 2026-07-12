@@ -30,23 +30,23 @@ export default function Header({ role, onRoleChange, activePageTitle, onToggleSi
         </h2>
       </div>
 
-      {/* Center items: Search & Role Switcher */}
+
+
+      {/* Right items: Search & User Card */}
       <div className="flex items-center gap-6">
-        {/* Search Box */}
-        <div className="relative hidden lg:flex items-center bg-surface-container-low px-4 py-1.5 rounded-full border border-outline-variant">
-          <span className="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
+        {/* Search Box (Moved to Right) */}
+        <div className="relative hidden md:flex items-center bg-surface-container-lowest px-4 py-2 rounded-full border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm w-64 lg:w-80">
+          <span className="material-symbols-outlined text-outline text-[20px] mr-2 pointer-events-none">search</span>
           <input
-            className="bg-transparent border-none p-0 text-body-md font-body-md w-60 placeholder:text-on-surface-variant focus:ring-0 focus:border-none"
-            placeholder="Cari NOP atau Subjek Pajak..."
+            className="bg-transparent border-none p-0 text-sm w-full placeholder:text-on-surface-variant focus:ring-0 outline-none"
+            placeholder="Cari NOP atau Subjek..."
             type="text"
           />
         </div>
 
-        {/* Removed Role Switcher */}
-      </div>
+        {/* Divider */}
+        <div className="hidden md:block w-[1px] h-8 bg-outline-variant"></div>
 
-      {/* Right items: User Card */}
-      <div className="flex items-center gap-4">
         {/* Profile Card */}
         <div className="flex items-center gap-3 pl-1">
           <div className="text-right hidden xl:block">

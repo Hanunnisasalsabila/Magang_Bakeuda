@@ -1,24 +1,14 @@
-enum JenisDokumen {
-  KTP
-  SHM
-  AJB
-  GIRIK
-  SHGB
-  IMB
-  LAINNYA
-}
-
 model LampiranDokumen {
-  id_dokumen         String       @id @default(uuid())
+  id_dokumen         String   @id @default(uuid())
   id_transaksi       String // FK → transaksi_spop
-  jenis_dokumen      JenisDokumen
-  keterangan_dokumen String?      @db.VarChar(255)
-  url_file           String       @db.VarChar(500)
-  uploaded_at        DateTime     @default(now())
+  jenis_dokumen      String   @db.VarChar(100)
+  keterangan_dokumen String?  @db.VarChar(255)
+  url_file           String   @db.VarChar(500)
+  uploaded_at        DateTime @default(now())
   uploaded_by        String // FK → users.id_user
 
   // ── Relasi ──
-  transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
+  transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade)
   uploader  User          @relation("UploadedByUser", fields: [uploaded_by], references: [id_user])
 
   @@map("lampiran_dokumen")

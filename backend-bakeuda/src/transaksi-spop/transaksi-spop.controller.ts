@@ -1,57 +1,54 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Query, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { TransaksiSpopService } from './transaksi-spop.service.js';
-import { CreateTransaksiDto } from './dto/create-transaksi.dto.js';
-import { VerifikasiTransaksiDto } from './dto/verifikasi-transaksi.dto.js';
+import { CreateSpopDto } from './dto/create-spop.dto.js';
+import { VerifikasiDesaDto } from './dto/verifikasi-desa.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @Controller('transaksi-spop')
 @UseGuards(JwtAuthGuard)
 export class TransaksiSpopController {
   constructor(private readonly transaksiSpopService: TransaksiSpopService) {}
 
+  @Get()
+  async getAll(
+    @Query('status_ajuan') status_ajuan?: string,
+    @Request() req?: any
+  ) {
+    const kode_wilayah = req.user.kode_wilayah;
+    return this.transaksiSpopService.getAllTransaksi(status_ajuan, kode_wilayah);
+  }
+
+  @Get(':id')
+  async getDetail(
+    @Param('id') id_transaksi: string,
+    @Request() req: any
+  ) {
+    const kodeWilayahUser = req.user.kode_wilayah;
+    return this.transaksiSpopService.getDetailTransaksi(id_transaksi, kodeWilayahUser);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles('DESA') // Only Desa can submit
-  async create(@Body() createDto: CreateTransaksiDto, @Request() req: any) {
-    return {
-      success: true,
-      message: 'SPOP berhasil disubmit',
-      data: await this.transaksiSpopService.create(createDto, req.user.id_user),
-    };
+  async createDraft(@Body() dto: CreateSpopDto, @Request() req: any) {
+    return this.transaksiSpopService.createDraft(dto, req.user.id_user);
   }
 
-  @Get('stats')
-  async getStats(@Request() req: any) {
-    return {
-      success: true,
-      data: await this.transaksiSpopService.getStats(req.user.role, req.user.id_user),
-    };
+  @Patch(':id/ajukan-internal')
+  async ajukanInternal(
+    @Param('id') id_transaksi: string,
+    @Request() req: any
+  ) {
+    const userWilayah = req.user.kode_wilayah; 
+    return this.transaksiSpopService.ajukanKeLurah(id_transaksi, userWilayah);
   }
 
-  @Get()
-  async findAll(@Query('status') status: string, @Query('search') search: string, @Request() req: any) {
-    return {
-      success: true,
-      data: await this.transaksiSpopService.findAll({
-        status,
-        search,
-        role: req.user.role,
-        userId: req.user.id_user,
-      }),
-    };
-  }
-
-  @Patch(':id/verifikasi')
-  @UseGuards(RolesGuard)
-  @Roles('BAKEUDA') // Only Bakeuda can verify
-  async verifikasi(@Param('id') id: string, @Body() verifikasiDto: VerifikasiTransaksiDto, @Request() req: any) {
-    return {
-      success: true,
-      message: 'Status verifikasi berhasil diupdate',
-      data: await this.transaksiSpopService.verifikasi(id, verifikasiDto, req.user.id_user),
-    };
+  @Patch(':id/verifikasi-desa')
+  async verifikasiDesa(
+    @Param('id') id_transaksi: string,
+    @Body() dto: VerifikasiDesaDto,
+    @Request() req: any
+  ) {
+    const kodeWilayahUser = req.user.kode_wilayah; 
+    return this.transaksiSpopService.verifikasiOlehDesa(id_transaksi, dto, kodeWilayahUser);
   }
 }

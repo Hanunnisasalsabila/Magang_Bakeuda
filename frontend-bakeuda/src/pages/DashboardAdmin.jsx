@@ -35,7 +35,7 @@ export default function DashboardAdmin({ onNavigate }) {
           nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
           name: item.nama_pengaju || 'Tanpa Nama',
           district: item.pengaju?.nama_lengkap || 'Admin Desa',
-          status: item.status_ajuan === 'MENUNGGU' ? 'Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak',
+          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak',
           time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
         }));
         setActivities(formattedList);
@@ -216,38 +216,42 @@ export default function DashboardAdmin({ onNavigate }) {
       </div>
 
       {/* Activities Table Section */}
-      <div className="mt-gutter bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-        <div className="px-gutter py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
-          <h3 className="font-headline-md text-headline-md text-primary font-bold">
-            Aktivitas Verifikasi Terakhir
-          </h3>
+      <div className="mt-gutter bg-white border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+          <div>
+            <h3 className="font-headline-md text-headline-md text-primary font-bold">
+              Pengajuan SPOP Terbaru
+            </h3>
+            <p className="text-sm text-on-surface-variant mt-1">Daftar antrean SPOP yang masuk ke sistem pusat</p>
+          </div>
           <button
             onClick={() => onNavigate('antrean_verifikasi')}
-            className="text-primary hover:underline text-sm font-bold"
+            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-bold transition-colors"
           >
-            Buka Antrean
+            <span>Buka Antrean</span>
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-max">
             <thead>
-              <tr className="bg-primary text-on-primary">
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
+              <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
                   Nomor Objek Pajak (NOP)
                 </th>
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
                   Nama Wajib Pajak
                 </th>
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
-                  Kecamatan
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
+                  Asal Pengaju
                 </th>
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                   Status
                 </th>
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
-                  Waktu
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center">
+                  Tanggal
                 </th>
-                <th className="px-gutter py-3 font-section-header text-section-header uppercase tracking-wider">
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center pl-12">
                   Aksi
                 </th>
               </tr>
@@ -255,33 +259,50 @@ export default function DashboardAdmin({ onNavigate }) {
             <tbody className="divide-y divide-outline-variant">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-on-surface-variant">Memuat aktivitas...</td>
+                  <td colSpan="6" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
+                    <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
+                    <span>Memuat data pengajuan...</span>
+                  </td>
                 </tr>
               ) : activities.length > 0 ? (
                 activities.map((act, i) => (
-                  <tr key={i} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-gutter py-4 font-data-mono text-data-mono font-bold text-on-surface">
+                  <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''}`}>
+                    <td className="px-6 py-4 font-data-mono text-primary font-bold whitespace-nowrap text-sm">
                       {act.nop}
                     </td>
-                    <td className="px-gutter py-4 text-sm text-on-surface">{act.name}</td>
-                    <td className="px-gutter py-4 text-sm text-on-surface-variant">{act.district}</td>
-                    <td className="px-gutter py-4">
+                    <td className="px-6 py-4 font-label-md font-bold text-on-background whitespace-nowrap">
+                      {act.name}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">
+                      {act.district}
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
                       <StatusBadge status={act.status} />
                     </td>
-                    <td className="px-gutter py-4 text-[10px] text-on-surface-variant">{act.time}</td>
-                    <td className="px-gutter py-4">
-                      <button
-                        onClick={() => onNavigate('detail_review', { id: act.id })}
-                        className="material-symbols-outlined text-primary hover:bg-primary/10 rounded p-1 transition-colors"
-                      >
-                        visibility
-                      </button>
+                    <td className="px-6 py-4 text-xs font-semibold text-on-surface-variant text-center whitespace-nowrap">
+                      {act.time}
+                    </td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={() => onNavigate('detail_review', { id: act.id })}
+                          className="px-4 py-2 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">plagiarism</span>
+                          Review
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-on-surface-variant">Belum ada aktivitas verifikasi.</td>
+                  <td colSpan="6" className="text-center py-12 text-on-surface-variant">
+                    <div className="flex flex-col items-center gap-2 opacity-60">
+                      <span className="material-symbols-outlined text-4xl">inbox</span>
+                      <p>Belum ada pengajuan SPOP terbaru.</p>
+                    </div>
+                  </td>
                 </tr>
               )}
             </tbody>
