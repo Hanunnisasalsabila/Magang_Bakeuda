@@ -12,6 +12,7 @@ import DaftarObjekPajak from './pages/DaftarObjekPajak';
 import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
+import ManajemenWilayah from './pages/ManajemenWilayah';
 import PelacakanDokumen from './pages/PelacakanDokumen';
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
     dashboard_desa: 'Dashboard Perangkat Desa',
     dashboard_admin: 'Dashboard Admin BKD',
     manajemen_akun_desa: 'Manajemen Akun Desa',
+    manajemen_wilayah: 'Manajemen Wilayah',
     formulir_spop: 'Formulir SPOP Digital',
     antrean_verifikasi: 'Antrean Verifikasi SPOP',
     detail_review: 'Review Verifikasi SPOP',
@@ -71,6 +73,8 @@ export default function App() {
         return <DashboardAdmin onNavigate={setActivePage} />;
       case 'manajemen_akun_desa':
         return <ManajemenAkunDesa />;
+      case 'manajemen_wilayah':
+        return <ManajemenWilayah />;
       case 'formulir_spop':
         return <FormulirSPOP onNavigate={setActivePage} />;
       case 'antrean_verifikasi':

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
 import api from '../utils/axios';
+import ToastNotification from '../components/ToastNotification';
 
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -352,7 +353,7 @@ export default function FormulirSPOP({ onNavigate }) {
                 <div className="space-y-8">
                   {/* Jenis Transaksi */}
                   <div className="space-y-4 max-w-3xl">
-                    <label className="font-label-sm text-primary block font-bold">Pilih Jenis Transaksi</label>
+                    <label className="font-label-sm text-primary block font-medium">Pilih Jenis Transaksi</label>
                     <div className="flex flex-col sm:flex-row gap-3">
                       {[
                         { val: 'baru', label: '1. Perekaman Data/Objek Baru' },
@@ -429,7 +430,7 @@ export default function FormulirSPOP({ onNavigate }) {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Input NOP ASAL */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-primary uppercase">NOP Asal</label>
+                    <label className="text-sm font-medium text-primary uppercase">NOP Asal</label>
                     <input
                       type="text"
                       value={nopAsal}
@@ -441,7 +442,7 @@ export default function FormulirSPOP({ onNavigate }) {
 
                   {/* Input NO SPPT LAMA */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-primary uppercase">No. SPPT Lama</label>
+                    <label className="text-sm font-medium text-primary uppercase">No. SPPT Lama</label>
                     <input
                       type="text"
                       value={spptLama}
@@ -966,7 +967,10 @@ export default function FormulirSPOP({ onNavigate }) {
                 <div className="flex flex-col md:flex-row w-full md:w-auto gap-4">
                   <button
                     type="button"
-                    onClick={() => alert('Draft formulir berhasil disimpan ke akun Anda.')}
+                    onClick={() => {
+                      setToast({ show: true, message: 'Draft formulir berhasil disimpan ke akun Anda.', type: 'success' });
+                      setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+                    }}
                     className="w-full md:w-auto px-10 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-bold hover:bg-surface-container transition-colors"
                   >
                     Simpan Draft
@@ -1046,25 +1050,12 @@ export default function FormulirSPOP({ onNavigate }) {
         </p>
       </footer>
 
-      {/* Custom Toast Notification */}
-      <div
-        className={`fixed bottom-8 right-8 ${toast.type === 'error'
-            ? 'bg-error-container text-on-error-container border-error/35'
-            : 'bg-secondary-container text-on-secondary-container border-secondary/35'
-          } border px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
-          }`}
-      >
-        <span className={`material-symbols-outlined ${toast.type === 'error' ? 'text-error' : 'text-secondary'} text-[24px]`}>
-          {toast.type === 'error' ? 'error' : 'check_circle'}
-        </span>
-        <div>
-          <p className="font-bold">{toast.type === 'error' ? 'Peringatan' : 'Berhasil!'}</p>
-          <p className="text-sm opacity-90">{toast.message}</p>
-        </div>
-        <button className="ml-4 opacity-50 hover:opacity-100" onClick={() => setToast({ ...toast, show: false })}>
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
+      <ToastNotification 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ ...toast, show: false })} 
+      />
     </main>
   );
 }

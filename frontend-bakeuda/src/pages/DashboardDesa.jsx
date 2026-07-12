@@ -12,50 +12,37 @@ export default function DashboardDesa({ onNavigate }) {
 
   const [recentSubmissions, setRecentSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, listRes] = await Promise.all([
+        const [statsRes, listRes, userRes] = await Promise.all([
           api.get('/transaksi-spop/stats'),
-          api.get('/transaksi-spop')
+          api.get('/transaksi-spop'),
+          api.get('/auth/me').catch(() => ({ data: { data: null } }))
         ]);
         
         const dataStats = statsRes.data.data;
-        if (dataStats.totalDikirim === 0) {
-          // Dummy data fallback jika database kosong
-          setStats([
-            { title: 'Total SPOP Dikirim', value: '142', icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: '+12 Bulan ini', trendColor: 'text-green-600', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
-            { title: 'Menunggu Verifikasi', value: '18', icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu dicek admin', trendColor: 'text-orange-500', trendIcon: 'info', borderHover: 'hover:border-secondary' },
-            { title: 'SPOP Disetujui', value: '120', icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi BKD', trendColor: 'text-green-600', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
-            { title: 'SPOP Perlu Perbaikan', value: '4', icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Dikembalikan ke Desa', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
-          ]);
-        } else {
-          setStats([
-            { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Keseluruhan', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
-            { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu verifikasi', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
-            { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
-            { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Butuh revisi', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
-          ]);
-        }
+        setStats([
+          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Keseluruhan', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
+          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu verifikasi', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
+          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Butuh revisi', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
+        ]);
 
         const rawList = listRes.data.data;
-        if (rawList.length === 0) {
-           setRecentSubmissions([
-             { nop: '33.03.010.001.015.0042.0', name: 'H. Ahmad Dahlan', type: 'Pendaftaran Baru', date: '12 Jul 2026', status: 'Menunggu Verifikasi' },
-             { nop: '33.03.010.001.022.0112.0', name: 'Siti Aminah', type: 'Mutasi Penuh', date: '10 Jul 2026', status: 'Disetujui' },
-             { nop: '33.03.010.002.005.0003.0', name: 'Budi Santoso', type: 'Pembetulan', date: '08 Jul 2026', status: 'Revisi' },
-             { nop: '33.03.010.002.011.0021.0', name: 'KUD Makmur', type: 'Pendaftaran Baru', date: '05 Jul 2026', status: 'Disetujui' },
-           ]);
-        } else {
-          const formattedList = rawList.slice(0, 5).map(item => ({
-            nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
-            name: item.nama_pengaju || 'Tanpa Nama',
-            type: item.jenis_transaksi,
-            date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-            status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
-          }));
-          setRecentSubmissions(formattedList);
+        const formattedList = rawList.slice(0, 5).map(item => ({
+          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+          name: item.nama_pengaju || 'Tanpa Nama',
+          type: item.jenis_transaksi,
+          date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+        }));
+        setRecentSubmissions(formattedList);
+        
+        if (userRes.data?.data) {
+          setUserInfo(userRes.data.data);
         }
       } catch (error) {
         console.error("Gagal mengambil data dashboard:", error);
@@ -214,10 +201,10 @@ export default function DashboardDesa({ onNavigate }) {
         <div className="bg-primary text-on-primary rounded-xl overflow-hidden flex flex-col shadow-lg relative min-h-[400px]">
           <div className="p-6 relative z-10 bg-gradient-to-b from-primary/90 to-transparent">
             <h3 className="font-headline-md text-headline-md font-bold mb-1">
-              Sebaran Objek Pajak
+              {userInfo?.wilayah?.nama_desa ? `Desa ${userInfo.wilayah.nama_desa}` : 'Wilayah Tugas Anda'}
             </h3>
             <p className="text-on-primary-container text-body-md opacity-80">
-              Kecamatan Purbalingga Kota
+              {userInfo?.wilayah?.kecamatan ? `Kecamatan ${userInfo.wilayah.kecamatan}` : 'Memuat data wilayah...'}
             </p>
           </div>
           <div className="flex-1 w-full relative bg-[#091a3a] overflow-hidden min-h-[220px]">
@@ -234,13 +221,13 @@ export default function DashboardDesa({ onNavigate }) {
           </div>
           <div className="p-6 bg-primary-container/30 backdrop-blur-md border-t border-white/10 relative z-10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-label-sm font-label-sm">Kepatuhan Terendah</span>
-              <span className="text-error font-bold text-label-sm">Kec. Karangreja</span>
+              <span className="text-label-sm font-label-sm">Total Wajib Pajak</span>
+              <span className="text-on-primary-container font-bold text-label-sm">-</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-2 mb-2">
-              <div className="bg-error h-2 rounded-full" style={{ width: '42%' }}></div>
+              <div className="bg-secondary h-2 rounded-full" style={{ width: '0%' }}></div>
             </div>
-            <p className="text-[12px] opacity-70">Membutuhkan intervensi petugas lapangan segera.</p>
+            <p className="text-[12px] opacity-70">Data kepatuhan belum tersedia.</p>
           </div>
         </div>
       </div>

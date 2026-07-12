@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import api from '../utils/axios';
+import ToastNotification from '../components/ToastNotification';
 
 export default function ProfilPengguna({ role }) {
   const isDesa = role === 'desa';
-  const [showToast, setShowToast] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Password change states (admin only)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ old: '', new: '', confirm: '' });
+  const [showOldPwd, setShowOldPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
 
   const [profileData, setProfileData] = useState({
+    id: '',
     name: '',
+    username: '',
     nip: '',
     role: '',
     dept: '',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+    kode_wilayah: '',
   });
+
+  const [editForm, setEditForm] = useState({ name: '', nip: '' });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -25,363 +37,464 @@ export default function ProfilPengguna({ role }) {
         if (response.data.success) {
           const data = response.data.data;
           setProfileData({
+            id: data.id_user,
             name: data.nama_lengkap,
+            username: data.username,
             nip: data.nip || '-',
             role: data.role === 'DESA' ? `Perangkat Desa ${data.wilayah?.nama_desa || ''}` : 'Verifikator BKD',
             dept: data.wilayah ? `Kecamatan ${data.wilayah.kecamatan}` : 'Badan Keuangan Daerah',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+            kode_wilayah: data.kode_wilayah || '',
+          });
+          setEditForm({
+            name: data.nama_lengkap,
+            nip: data.nip || '',
           });
         }
       } catch (err) {
-        setError('Gagal memuat profil');
+        console.error('Profile fetch error:', err);
+        // fallback: try reading from localStorage
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            setProfileData({
+              id: user.id_user || '',
+              name: user.nama_lengkap || user.username || 'Admin BKD',
+              username: user.username || '',
+              nip: user.nip || '-',
+              role: user.role === 'BAKEUDA' ? 'Verifikator BKD' : `Perangkat Desa`,
+              dept: 'Badan Keuangan Daerah',
+              kode_wilayah: user.kode_wilayah || '',
+            });
+            setEditForm({
+              name: user.nama_lengkap || '',
+              nip: user.nip || '',
+            });
+          } else {
+            setError('Gagal memuat profil');
+          }
+        } catch {
+          setError('Gagal memuat profil');
+        }
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchProfile();
   }, []);
 
-  const activities = isDesa
-    ? [
-        {
-          desc: 'Mengajukan Formulir SPOP Baru NOP: 33.03.010.001.001.001',
-          time: '3 jam yang lalu • Menunggu Validasi',
-          icon: 'description',
-          iconBg: 'bg-primary-container text-on-primary-container',
-        },
-        {
-          desc: 'Menyimpan draf pemutakhiran NOP: 33.03.010.005.012.000',
-          time: 'Kemarin • Draft',
-          icon: 'edit_note',
-          iconBg: 'bg-surface-container-highest text-on-surface-variant',
-        },
-      ]
-    : [
-        {
-          desc: 'Memverifikasi SPOP NOP: 33.03.110.001.002-0054.0',
-          time: '2 jam yang lalu • Selesai',
-          icon: 'description',
-          iconBg: 'bg-secondary-container text-on-secondary-container',
-        },
-        {
-          desc: 'Mengirim Catatan Perbaikan Objek Pajak Kelurahan Purbalingga Lor',
-          time: '5 jam yang lalu • Menunggu Persetujuan',
-          icon: 'edit_note',
-          iconBg: 'bg-primary-container text-on-primary-container',
-        },
-      ];
-
-  const fullActivities = [
-    ...activities,
-    {
-      desc: 'Login sistem via Google Chrome (Windows 10)',
-      time: 'Kemarin, 08:30 WIB • IP: 182.253.92.12',
-      icon: 'login',
-      iconBg: 'bg-surface-container-highest text-on-surface-variant',
-    },
-    {
-      desc: 'Mengubah profil pengguna',
-      time: '3 hari yang lalu • Sukses',
-      icon: 'manage_accounts',
-      iconBg: 'bg-surface-container-highest text-on-surface-variant',
-    },
-    {
-      desc: 'Sesi login kedaluwarsa',
-      time: '1 minggu yang lalu • Sistem',
-      icon: 'timer_off',
-      iconBg: 'bg-error-container text-error',
-    },
-    {
-      desc: 'Memperbarui data kontak desa',
-      time: '2 minggu yang lalu • Sukses',
-      icon: 'contact_page',
-      iconBg: 'bg-surface-container-highest text-on-surface-variant',
-    },
-    {
-      desc: 'Login sistem via Safari (Mac OS)',
-      time: '1 bulan yang lalu • IP: 114.120.40.10',
-      icon: 'login',
-      iconBg: 'bg-surface-container-highest text-on-surface-variant',
-    },
-    {
-      desc: 'Pembuatan akun pengguna',
-      time: '2 bulan yang lalu • Oleh Admin',
-      icon: 'person_add',
-      iconBg: 'bg-primary-container text-on-primary-container',
+  const handleSaveProfile = async () => {
+    if (!editForm.name.trim()) {
+      setToast({ show: true, message: 'Nama lengkap tidak boleh kosong', type: 'error' });
+      return;
     }
-  ];
+    setIsSaving(true);
+    try {
+      await api.put(`/users/${profileData.id}`, {
+        nama_lengkap: editForm.name,
+        nip: editForm.nip || null,
+      });
+      setProfileData(prev => ({
+        ...prev,
+        name: editForm.name,
+        nip: editForm.nip || '-'
+      }));
+      setIsEditing(false);
+      setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+    } catch (err) {
+      setToast({ show: true, message: err.response?.data?.message || 'Gagal memperbarui profil', type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  // Menggandakan data riwayat agar terlihat sangat panjang untuk menguji fitur scroll
-  const veryLongActivities = [
-    ...fullActivities,
-    ...fullActivities,
-    ...fullActivities,
-    ...fullActivities,
-  ];
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.new !== passwordForm.confirm) {
+      setToast({ show: true, message: 'Konfirmasi kata sandi tidak cocok', type: 'error' });
+      return;
+    }
+    if (passwordForm.new.length < 6) {
+      setToast({ show: true, message: 'Kata sandi baru minimal 6 karakter', type: 'error' });
+      return;
+    }
+    setIsChangingPwd(true);
+    try {
+      await api.patch('/auth/change-password', {
+        oldPassword: passwordForm.old,
+        newPassword: passwordForm.new,
+      });
+      setShowPasswordModal(false);
+      setPasswordForm({ old: '', new: '', confirm: '' });
+      setToast({ show: true, message: 'Kata sandi berhasil diubah', type: 'success' });
+    } catch (err) {
+      setToast({ show: true, message: err.response?.data?.message || 'Gagal mengubah kata sandi', type: 'error' });
+    } finally {
+      setIsChangingPwd(false);
+    }
+  };
 
-  if (isLoading) return <div className="p-8 text-center mt-20"><span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span><p className="mt-4">Memuat Profil...</p></div>;
-  if (error) return <div className="p-8 text-center text-error mt-20">{error}</div>;
+  if (isLoading) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 mt-10">
+      <div className="relative w-14 h-14">
+        <div className="absolute inset-0 rounded-full border-4 border-primary/15"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      </div>
+      <p className="text-on-surface-variant text-sm tracking-wide">Memuat profil…</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 mt-10 text-center px-6">
+      <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+        <span className="material-symbols-outlined text-3xl text-error">error</span>
+      </div>
+      <p className="text-error font-medium">{error}</p>
+      <p className="text-on-surface-variant text-sm">Coba muat ulang halaman ini.</p>
+    </div>
+  );
 
   return (
-    <main className="p-gutter max-w-screen-2xl mx-auto space-y-8 w-full">
-      {/* Profile Header Card */}
-      <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-        <div className="h-32 bg-primary relative">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
-        </div>
-        <div className="px-6 md:px-8 pb-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-12 text-center md:text-left">
-          <div className="relative group select-none shrink-0">
-            <img
-              alt={`${profileData.name} Profile`}
-              className="w-32 h-32 rounded-xl border-4 border-surface-container-lowest shadow-md object-cover bg-surface"
-              src={profileData.avatar}
-            />
-            {/* Online indicator badge */}
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-secondary rounded-full border-4 border-surface-container-lowest shadow-sm z-10"></div>
-          </div>
-          <div className="flex-1 pb-2">
-            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-1">
-              <h1 className="font-display-md text-3xl font-bold text-on-surface">
-                {profileData.name || 'Pengguna SIPD'}
-              </h1>
-              <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full uppercase tracking-wider self-center md:self-auto border border-primary/20">
-                {profileData.role || 'Perangkat Desa'}
-              </span>
-            </div>
-            <p className="text-on-surface-variant font-medium text-sm flex items-center justify-center md:justify-start gap-2">
-              <span className="material-symbols-outlined text-[18px]">work</span>
-              {profileData.dept || 'Badan Keuangan Daerah'}
-            </p>
-          </div>
-        </div>
+    <main className="w-full pb-16 animate-fadeIn">
+
+      {/* Hero header banner */}
+      <section className="relative overflow-hidden rounded-b-[28px] md:rounded-3xl bg-primary px-6 pt-10 pb-16 md:pb-20 md:mt-6">
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #fff 1.5px, transparent 1.5px)',
+            backgroundSize: '18px 18px',
+          }}
+        />
       </section>
 
-      {/* Main Info Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Personal Information */}
-        <div className="lg:col-span-2 space-y-8">
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">person_outline</span>
-              <h3 className="font-headline-md text-on-background font-bold">Informasi Pribadi</h3>
+      <div className="px-4 md:px-0 -mt-12 md:-mt-14 space-y-5 relative">
+
+        {/* Profile Header - identity card */}
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-md">
+          <div className="flex items-center gap-5">
+            <div className="relative shrink-0">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 text-on-primary flex items-center justify-center text-3xl font-bold shadow-md ring-4 ring-surface-container-lowest">
+                {profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-surface-container-lowest" title="Aktif" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-on-surface truncate">
+                  {profileData.name || 'Pengguna SIPD'}
+                </h1>
+                <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-semibold rounded-full uppercase tracking-wider border border-primary/20 shrink-0">
+                  {isDesa ? 'Perangkat Desa' : 'Admin BKD'}
+                </span>
+              </div>
+              <p className="text-on-surface-variant text-sm mt-1 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px]">work</span>
+                {profileData.dept}
+              </p>
+              {profileData.username && (
+                <p className="text-on-surface-variant/70 text-xs mt-0.5 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[13px]">alternate_email</span>
+                  {profileData.username}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Main grid: Informasi Pribadi (wide) + Keamanan Akun / Wilayah Tugas (narrow) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+
+          {/* Informasi Pribadi */}
+          <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-2 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">person</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Informasi Pribadi</h3>
+              </div>
+              {!isDesa && !isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-primary text-sm font-medium hover:bg-primary/5 active:scale-95 rounded-lg transition-all border border-primary/20"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
               <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Nama Lengkap
-                </label>
-                <input
-                  type="text"
-                  value={profileData.name}
-                  readOnly
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                />
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Nama Lengkap</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                ) : (
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
+                    {profileData.name || '-'}
+                  </div>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  NIP
-                </label>
-                <input
-                  type="text"
-                  value={profileData.nip}
-                  readOnly
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                />
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">NIP</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editForm.nip}
+                    onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })}
+                    placeholder="Masukkan NIP..."
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                ) : (
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
+                    {profileData.nip || '-'}
+                  </div>
+                )}
               </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Departemen / Unit Kerja
-                </label>
-                <input
-                  type="text"
-                  value={profileData.dept}
-                  readOnly
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                />
+              <div className="space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Username</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.username || '-'}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Jabatan / Role</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.role || '-'}
+                </div>
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Unit Kerja / Departemen</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.dept || '-'}
+                </div>
               </div>
             </div>
+
+            {isEditing && (
+              <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-outline-variant/40">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditForm({ name: profileData.name, nip: profileData.nip === '-' ? '' : profileData.nip });
+                  }}
+                  className="px-4 py-2 text-on-surface-variant text-sm font-medium rounded-lg hover:bg-surface-container transition-colors border border-outline-variant"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="px-5 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-95 transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
+                >
+                  {isSaving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
+                  Simpan
+                </button>
+              </div>
+            )}
           </section>
 
-          {/* Recent Activity Section */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-            <div className="px-6 md:px-8 py-6 border-b border-outline-variant flex items-center justify-between bg-surface-container-low/20">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary text-[24px]">history</span>
-                <h3 className="font-headline-md text-on-background font-bold">Aktivitas Terakhir</h3>
+          {/* Keamanan Akun - Admin only, narrow column beside Informasi Pribadi */}
+          {!isDesa && (
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">security</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Keamanan Akun</h3>
               </div>
               <button
-                onClick={() => setShowActivityModal(true)}
-                className="text-primary font-label-sm font-semibold hover:underline"
+                onClick={() => {
+                  setPasswordForm({ old: '', new: '', confirm: '' });
+                  setShowPasswordModal(true);
+                }}
+                className="w-full flex items-center gap-3 bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface p-4 rounded-xl transition-all duration-300 group border border-outline-variant hover:border-primary text-left"
               >
-                Lihat Semua
-              </button>
-            </div>
-            <div className="divide-y divide-outline-variant">
-              {activities.map((act, i) => (
-                <div key={i} className="p-6 flex gap-4 hover:bg-surface-container-low/40 transition-colors">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${act.iconBg}`}>
-                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      {act.icon}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-body-md text-on-surface text-sm sm:text-base leading-normal">
-                      {act.desc}
-                    </p>
-                    <p className="text-on-surface-variant text-[12px] mt-1 font-medium">{act.time}</p>
-                  </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-on-primary/20 flex items-center justify-center text-primary group-hover:text-on-primary transition-colors shrink-0">
+                  <span className="material-symbols-outlined">key</span>
                 </div>
-              ))}
-              <div className="p-6 flex gap-4 hover:bg-surface-container-low/40 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0 text-on-surface-variant shadow-sm">
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    login
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold block text-sm">Ganti Kata Sandi</span>
+                  <span className="text-[11px] opacity-70 group-hover:opacity-90">Direkomendasikan diubah secara berkala</span>
                 </div>
-                <div className="flex-1">
-                  <p className="font-body-md text-on-surface text-sm sm:text-base">
-                    Login sistem via Google Chrome (Windows 10)
-                  </p>
-                  <p className="text-on-surface-variant text-[12px] mt-1 font-medium">
-                    Kemarin, 08:30 WIB • IP: 182.253.92.12
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Right Column: Security & Settings */}
-        <div className="space-y-8">
-          {/* Account Security */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">security</span>
-              <h3 className="font-headline-md text-on-background font-bold">Keamanan Akun</h3>
-            </div>
-            <div className="space-y-4">
-              
-              <button
-                onClick={() => setShowPasswordModal(true)}
-                className="w-full flex items-center justify-between bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface p-4 rounded-xl transition-all duration-300 group border border-outline-variant hover:border-primary shadow-sm"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-on-primary/20 flex items-center justify-center text-primary group-hover:text-on-primary transition-colors">
-                    <span className="material-symbols-outlined">key</span>
-                  </div>
-                  <div className="text-left">
-                    <span className="font-bold block text-sm">Ganti Kata Sandi</span>
-                    <span className="text-[11px] opacity-70 group-hover:opacity-90">Direkomendasikan diubah secara berkala</span>
-                  </div>
-                </div>
-                <span className="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                <span className="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0">
                   arrow_forward
                 </span>
               </button>
 
+              <div className="mt-auto pt-5 flex items-center gap-2 text-[11px] text-on-surface-variant">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Status akun aktif
+              </div>
+            </section>
+          )}
+
+          {/* Wilayah Tugas - Desa only, narrow column, memakai kode_wilayah yang sudah ada di profileData */}
+          {isDesa && (
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Wilayah Tugas</h3>
+              </div>
+              <div className="space-y-3 flex-1">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kecamatan</label>
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] opacity-60">map</span>
+                    {profileData.dept?.replace('Kecamatan ', '') || '-'}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kode Wilayah</label>
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] opacity-60">tag</span>
+                    {profileData.kode_wilayah || '-'}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-auto pt-5 flex items-center gap-2 text-[11px] text-on-surface-variant">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Status akun aktif
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* Aktivitas Terakhir / Riwayat Login - both roles. For Desa, the "dikelola admin" note lives as a compact footer inside this same card so the page doesn't feel like disconnected empty blocks. */}
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-[20px]">history</span>
+              </div>
+              <h3 className="text-base font-semibold text-on-surface">Aktivitas Terakhir</h3>
             </div>
-          </section>
-        </div>
+          </div>
+
+          {/* Placeholder — belum ada endpoint riwayat login/aktivitas, tinggal sambungkan ke API saat tersedia */}
+          <div className="flex flex-col items-center text-center gap-1.5 py-6 border-b border-outline-variant/40">
+            <span className="material-symbols-outlined text-2xl text-on-surface-variant/40">manage_history</span>
+            <p className="text-sm text-on-surface-variant">Belum ada data riwayat aktivitas untuk ditampilkan.</p>
+            <p className="text-xs text-on-surface-variant/60">Riwayat login dan perubahan data akan muncul di sini.</p>
+          </div>
+
+          {isDesa && (
+            <div className="flex items-start gap-3 pt-4">
+              <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                <span className="font-medium text-on-surface">Profil dikelola oleh Admin BKD.</span> Jika terdapat kesalahan data atau perlu perubahan, silakan hubungi Admin BKD Kabupaten Purbalingga.
+              </p>
+            </div>
+          )}
+        </section>
       </div>
 
-      {/* Success Toast Notification */}
-      <div
-        className={`fixed bottom-8 right-8 bg-secondary-container text-on-secondary-container border border-secondary/35 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${
-          showToast ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
-        }`}
-      >
-        <span className="material-symbols-outlined text-secondary text-[24px]">check_circle</span>
-        <div>
-          <p className="font-bold">Berhasil!</p>
-          <p className="text-sm opacity-90">Kata sandi berhasil diubah.</p>
-        </div>
-        <button className="ml-4 opacity-50 hover:opacity-100" onClick={() => setShowToast(false)}>
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
-
-      {/* Password Modal */}
-      {showPasswordModal && createPortal(
+      {/* Password Modal - Admin only */}
+      {showPasswordModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowPasswordModal(false)}></div>
-          <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-2xl w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-200">
+          <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn">
             <button onClick={() => setShowPasswordModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
               <span className="material-symbols-outlined text-on-surface-variant">close</span>
             </button>
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="material-symbols-outlined text-3xl text-primary">lock_reset</span>
               </div>
-              <h2 className="text-2xl font-bold text-on-surface">Ganti Kata Sandi</h2>
-              <p className="text-sm text-on-surface-variant mt-2">Buat kata sandi baru yang kuat untuk keamanan akun Anda.</p>
+              <h2 className="text-xl font-bold text-on-surface">Ganti Kata Sandi</h2>
+              <p className="text-sm text-on-surface-variant mt-1">Buat kata sandi baru yang kuat.</p>
             </div>
-            
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setShowPasswordModal(false);
-              setShowToast(true);
-              setTimeout(() => setShowToast(false), 3000);
-            }} className="space-y-4">
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1 ml-1 uppercase tracking-wider">Kata Sandi Lama</label>
-                <input type="password" required className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="Masukkan kata sandi saat ini" />
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Kata Sandi Lama</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">lock</span>
+                  <input
+                    type={showOldPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.old}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, old: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Masukkan kata sandi saat ini"
+                  />
+                  {passwordForm.old.length > 0 && (
+                    <button type="button" onClick={() => setShowOldPwd(!showOldPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showOldPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1 ml-1 uppercase tracking-wider">Kata Sandi Baru</label>
-                <input type="password" required className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="Minimal 8 karakter" />
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Kata Sandi Baru</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">vpn_key</span>
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Minimal 6 karakter"
+                  />
+                  {passwordForm.new.length > 0 && (
+                    <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showNewPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1 ml-1 uppercase tracking-wider">Konfirmasi Kata Sandi</label>
-                <input type="password" required className="w-full bg-surface-container border border-outline-variant rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary outline-none transition-all" placeholder="Ulangi kata sandi baru" />
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Konfirmasi Kata Sandi</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">check_circle</span>
+                  <input
+                    type={showConfirmPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Ulangi kata sandi baru"
+                  />
+                  {passwordForm.confirm.length > 0 && (
+                    <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showConfirmPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-              
-              <button type="submit" className="w-full py-4 bg-primary text-on-primary font-bold rounded-xl mt-6 hover:brightness-110 active:scale-[0.98] transition-all shadow-md">
+
+              <button
+                type="submit"
+                disabled={isChangingPwd}
+                className="w-full py-3.5 bg-primary text-on-primary font-semibold rounded-xl mt-4 hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {isChangingPwd && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
                 Simpan Kata Sandi
               </button>
             </form>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
-      {/* Activity Modal */}
-      {showActivityModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowActivityModal(false)}></div>
-          <div className="bg-surface-container-lowest p-0 rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in duration-200 flex flex-col max-h-[85vh]">
-            <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/30 rounded-t-2xl shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined">history</span>
-                </div>
-                <h2 className="text-xl font-bold text-on-surface">Riwayat Aktivitas</h2>
-              </div>
-              <button onClick={() => setShowActivityModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors shrink-0">
-                <span className="material-symbols-outlined text-on-surface-variant">close</span>
-              </button>
-            </div>
-            
-            <div className="overflow-y-auto p-2 divide-y divide-outline-variant custom-scrollbar">
-              {veryLongActivities.map((act, i) => (
-                <div key={i} className="p-4 flex gap-4 hover:bg-surface-container-low/50 transition-colors rounded-xl mx-2 my-1">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm ${act.iconBg}`}>
-                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      {act.icon}
-                    </span>
-                  </div>
-                  <div className="flex-1 flex flex-col justify-center">
-                    <p className="font-bold text-on-surface text-sm leading-tight mb-1">
-                      {act.desc}
-                    </p>
-                    <p className="text-on-surface-variant text-xs">{act.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+
+      <ToastNotification
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
     </main>
   );
 }
