@@ -17,6 +17,14 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [role, setRole] = useState('desa'); 
   const [activePage, setActivePage] = useState('dashboard_desa');
+  const [selectedTransaksiId, setSelectedTransaksiId] = useState(null);
+
+  const handleNavigate = (page, params = {}) => {
+    setActivePage(page);
+    if (params.id) {
+      setSelectedTransaksiId(params.id);
+    }
+  };
 
   // Cek sesi saat aplikasi dimuat
   useEffect(() => {
@@ -64,17 +72,17 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard_desa':
-        return <DashboardDesa onNavigate={setActivePage} />;
+        return <DashboardDesa onNavigate={handleNavigate} />;
       case 'dashboard_admin':
-        return <DashboardAdmin onNavigate={setActivePage} />;
+        return <DashboardAdmin onNavigate={handleNavigate} />;
       case 'manajemen_akun_desa':
         return <ManajemenAkunDesa />;
       case 'formulir_spop':
-        return <FormulirSPOP onNavigate={setActivePage} />;
+        return <FormulirSPOP onNavigate={handleNavigate} />;
       case 'antrean_verifikasi':
-        return <AntreanVerifikasi onNavigate={setActivePage} />;
+        return <AntreanVerifikasi onNavigate={handleNavigate} />;
       case 'detail_review':
-        return <DetailReviewSPOP onNavigate={setActivePage} />;
+        return <DetailReviewSPOP onNavigate={handleNavigate} transaksiId={selectedTransaksiId} />;
       case 'daftar_objek':
         return <DaftarObjekPajak />;
       case 'monitoring_pajak':
@@ -132,7 +140,7 @@ export default function App() {
       role={role}
       onRoleChange={setRole}
       activePage={activePage}
-      onNavigate={setActivePage}
+      onNavigate={handleNavigate}
       activePageTitle={activePageTitle}
     >
       {renderPage()}

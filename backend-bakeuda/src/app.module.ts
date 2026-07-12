@@ -9,6 +9,7 @@ import { WilayahModule } from './wilayah/wilayah.module.js';
 import { SubjekPajakModule } from './subjek-pajak/subjek-pajak.module.js';
 import { ObjekPajakModule } from './objek-pajak/objek-pajak.module.js';
 import { SpptModule } from './sppt/sppt.module.js';
+import { TransaksiSpopModule } from './transaksi-spop/transaksi-spop.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SpptModule } from './sppt/sppt.module.js';
     SubjekPajakModule,
     ObjekPajakModule,
     SpptModule,
+    TransaksiSpopModule,
   ],
   controllers: [AppController],
   providers: [AppService],

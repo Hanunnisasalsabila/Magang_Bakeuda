@@ -1,55 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
 
 export default function AntreanVerifikasi({ onNavigate }) {
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [kelurahan, setKelurahan] = useState('Semua Desa');
   const [search, setSearch] = useState('');
 
-  const [queueData, setQueueData] = useState([
-    {
-      id: 1,
-      nop: { prov: '33', kab: '03', kec: '010', kel: '001' },
-      name: 'Ahmad Sudirman',
-      userId: 'ID: 3303010502890001',
-      address: 'Jl. Ahmad Yani No. 45',
-      rtRw: 'RT 02 / RW 04',
-      kelurahan: 'Purbalingga Lor',
-      kecamatan: 'Purbalingga',
-      date: '24 Okt 2023',
-      time: '09:15 WIB',
-      status: 'Verifikasi',
-      urgent: false,
-    },
-    {
-      id: 2,
-      nop: { prov: '33', kab: '03', kec: '010', kel: '012' },
-      name: 'Siti Aminah',
-      userId: 'ID: 3303010504780005',
-      address: 'Jl. Letkol Isdiman 12',
-      rtRw: 'RT 01 / RW 01',
-      kelurahan: 'Kandanggampang',
-      kecamatan: 'Purbalingga',
-      date: '24 Okt 2023',
-      time: '10:30 WIB',
-      status: 'Verifikasi',
-      urgent: false,
-    },
-    {
-      id: 3,
-      nop: { prov: '33', kab: '03', kec: '021', kel: '005' },
-      name: 'PT. Sejahtera Abadi',
-      userId: 'NPWP: 01.234.567.8-001.000',
-      address: 'Kawasan Industri Kalimanah',
-      rtRw: 'RT 05 / RW 02',
-      kelurahan: 'Kalimanah Wetan',
-      kecamatan: 'Kalimanah',
-      date: '23 Okt 2023',
-      time: 'Overdue (24h+)',
-      status: 'Overdue',
-      urgent: true,
-    },
-  ]);
+  const [queueData, setQueueData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQueue = async () => {
+      try {
+        const res = await api.get('/transaksi-spop?status=MENUNGGU');
+        const formatted = res.data.data.map(item => {
+          const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
+          const parts = nopRaw.replace(/\D/g, '');
+          const prov = parts.substring(0,2) || '33';
+          const kab = parts.substring(2,4) || '03';
+          const kec = parts.substring(4,7) || '000';
+          const kel = parts.substring(7,10) || '000';
+
+          return {
+            id: item.id_transaksi,
+            nop: { prov, kab, kec, kel },
+            name: item.nama_pengaju || 'Tanpa Nama',
+            userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
+            address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
+            rtRw: '',
+            kelurahan: 'Purbalingga',
+            kecamatan: 'Purbalingga',
+            date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+            status: 'Verifikasi',
+            urgent: false
+          };
+        });
+        setQueueData(formatted);
+      } catch (error) {
+        console.error("Gagal mengambil antrean:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQueue();
+  }, []);
 
   const handleSearchChange = (e) => setSearch(e.target.value);
 
@@ -184,7 +180,13 @@ export default function AntreanVerifikasi({ onNavigate }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {filteredData.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-8 text-on-surface-variant">
+                    Memuat antrean...
+                  </td>
+                </tr>
+              ) : filteredData.length > 0 ? (
                 filteredData.map((item) => (
                   <tr
                     key={item.id}
@@ -219,7 +221,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => onNavigate('detail_review')}
+                        onClick={() => onNavigate('detail_review', { id: item.id })}
                         className={`px-4 py-2 rounded-lg font-label-sm text-label-sm transition-all flex items-center gap-2 mx-auto ${
                           item.urgent
                             ? 'bg-error text-on-error hover:opacity-95'

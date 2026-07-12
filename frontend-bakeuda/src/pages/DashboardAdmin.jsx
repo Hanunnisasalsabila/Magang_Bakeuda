@@ -1,46 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
 
 export default function DashboardAdmin({ onNavigate }) {
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
+  const [bentoCards, setBentoCards] = useState([
+    { title: 'Pengajuan Masuk', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
+    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
+    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
+    { title: 'Tingkat Kepatuhan', value: '0%', icon: 'verified', progress: 0, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
+  ]);
 
-  const bentoCards = [
-    {
-      title: 'Pengajuan Masuk',
-      value: '1,284',
-      icon: 'inbox',
-      badgeText: '+12% vs bln lalu',
-      badgeColor: 'text-secondary',
-      meta: 'Data SPOP periode berjalan',
-      bgIcon: 'bg-surface-container text-primary',
-    },
-    {
-      title: 'Menunggu Verifikasi',
-      value: '156',
-      icon: 'pending_actions',
-      badgeText: 'Penting',
-      badgeColor: 'text-error font-bold',
-      meta: 'Butuh penanganan segera',
-      bgIcon: 'bg-error-container text-error',
-    },
-    {
-      title: 'Total Objek Pajak',
-      value: '45,920',
-      icon: 'location_city',
-      badgeText: 'Total',
-      badgeColor: 'text-on-surface-variant',
-      meta: 'Terdaftar di database PBB',
-      bgIcon: 'bg-surface-container text-primary',
-    },
-    {
-      title: 'Tingkat Kepatuhan',
-      value: '85.4%',
-      icon: 'verified',
-      progress: 85,
-      meta: 'Verifikasi tepat waktu',
-      bgIcon: 'bg-secondary-container text-on-secondary-container',
-    },
-  ];
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, listRes] = await Promise.all([
+          api.get('/transaksi-spop/stats'),
+          api.get('/transaksi-spop')
+        ]);
+        
+        const dataStats = statsRes.data.data;
+        setBentoCards([
+          { title: 'Pengajuan Masuk', value: dataStats.totalDikirim.toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
+          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
+          { title: 'Total Objek Pajak', value: dataStats.totalObjek.toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
+          { title: 'Tingkat Kepatuhan', value: `${dataStats.kepatuhan}%`, icon: 'verified', progress: dataStats.kepatuhan, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
+        ]);
+
+        const formattedList = listRes.data.data.slice(0, 5).map(item => ({
+          id: item.id_transaksi,
+          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+          name: item.nama_pengaju || 'Tanpa Nama',
+          district: item.pengaju?.nama_lengkap || 'Admin Desa',
+          status: item.status_ajuan === 'MENUNGGU' ? 'Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak',
+          time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+        }));
+        setActivities(formattedList);
+      } catch (error) {
+        console.error("Gagal mengambil data dashboard admin:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+
 
   const barChartData = [
     { label: 'SEN', height: '60%', value: 120, title: 'Senin: 120' },
@@ -67,29 +75,7 @@ export default function DashboardAdmin({ onNavigate }) {
     }
   ];
 
-  const activities = [
-    {
-      nop: '33.03.010.001.002-0125.0',
-      name: 'Slamet Rahardjo',
-      district: 'Purbalingga Kota',
-      status: 'Verifikasi',
-      time: '10 menit yang lalu',
-    },
-    {
-      nop: '33.03.050.021.004-0556.0',
-      name: 'PT. Maju Bersama',
-      district: 'Kalimanah',
-      status: 'Revisi',
-      time: '1 jam yang lalu',
-    },
-    {
-      nop: '33.03.080.012.001-0988.0',
-      name: 'Siti Aminah',
-      district: 'Bukateja',
-      status: 'Menunggu',
-      time: '3 jam yang lalu',
-    },
-  ];
+
 
   return (
     <div className="p-gutter max-w-screen-2xl mx-auto">
@@ -267,27 +253,37 @@ export default function DashboardAdmin({ onNavigate }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {activities.map((act, i) => (
-                <tr key={i} className="hover:bg-surface-container-low transition-colors">
-                  <td className="px-gutter py-4 font-data-mono text-data-mono font-bold text-on-surface">
-                    {act.nop}
-                  </td>
-                  <td className="px-gutter py-4 text-sm text-on-surface">{act.name}</td>
-                  <td className="px-gutter py-4 text-sm text-on-surface-variant">{act.district}</td>
-                  <td className="px-gutter py-4">
-                    <StatusBadge status={act.status} />
-                  </td>
-                  <td className="px-gutter py-4 text-[10px] text-on-surface-variant">{act.time}</td>
-                  <td className="px-gutter py-4">
-                    <button
-                      onClick={() => onNavigate('detail_review')}
-                      className="material-symbols-outlined text-primary hover:bg-primary/10 rounded p-1 transition-colors"
-                    >
-                      visibility
-                    </button>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-on-surface-variant">Memuat aktivitas...</td>
                 </tr>
-              ))}
+              ) : activities.length > 0 ? (
+                activities.map((act, i) => (
+                  <tr key={i} className="hover:bg-surface-container-low transition-colors">
+                    <td className="px-gutter py-4 font-data-mono text-data-mono font-bold text-on-surface">
+                      {act.nop}
+                    </td>
+                    <td className="px-gutter py-4 text-sm text-on-surface">{act.name}</td>
+                    <td className="px-gutter py-4 text-sm text-on-surface-variant">{act.district}</td>
+                    <td className="px-gutter py-4">
+                      <StatusBadge status={act.status} />
+                    </td>
+                    <td className="px-gutter py-4 text-[10px] text-on-surface-variant">{act.time}</td>
+                    <td className="px-gutter py-4">
+                      <button
+                        onClick={() => onNavigate('detail_review', { id: act.id })}
+                        className="material-symbols-outlined text-primary hover:bg-primary/10 rounded p-1 transition-colors"
+                      >
+                        visibility
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-on-surface-variant">Belum ada aktivitas verifikasi.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
