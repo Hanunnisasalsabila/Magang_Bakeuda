@@ -18,11 +18,17 @@ export default function App() {
   const [role, setRole] = useState('desa'); 
   const [activePage, setActivePage] = useState('dashboard_desa');
   const [selectedTransaksiId, setSelectedTransaksiId] = useState(null);
+  const [editData, setEditData] = useState(null);
 
   const handleNavigate = (page, params = {}) => {
     setActivePage(page);
     if (params.id) {
       setSelectedTransaksiId(params.id);
+    }
+    if (params.editData) {
+      setEditData(params.editData);
+    } else if (page === 'formulir_spop' && !params.editData) {
+      setEditData(null);
     }
   };
 
@@ -78,15 +84,15 @@ export default function App() {
       case 'manajemen_akun_desa':
         return <ManajemenAkunDesa />;
       case 'formulir_spop':
-        return <FormulirSPOP onNavigate={handleNavigate} />;
+        return <FormulirSPOP onNavigate={handleNavigate} initialData={editData} />;
       case 'antrean_verifikasi':
         return <AntreanVerifikasi onNavigate={handleNavigate} />;
       case 'detail_review':
         return <DetailReviewSPOP onNavigate={handleNavigate} transaksiId={selectedTransaksiId} />;
       case 'daftar_objek':
-        return <DaftarObjekPajak />;
+        return <DaftarObjekPajak onNavigate={handleNavigate} />;
       case 'monitoring_pajak':
-        return <MonitoringObjekPajak />;
+        return <MonitoringObjekPajak onNavigate={handleNavigate} />;
       case 'profil':
         return <ProfilPengguna role={role} />;
       case 'help':

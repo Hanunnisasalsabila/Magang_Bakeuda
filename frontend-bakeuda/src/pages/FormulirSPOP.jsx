@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
 import api from '../utils/axios';
 
-export default function FormulirSPOP({ onNavigate }) {
+export default function FormulirSPOP({ onNavigate, initialData }) {
   const [step, setStep] = useState(1);
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const [formData, setFormData] = useState({
@@ -46,6 +46,37 @@ export default function FormulirSPOP({ onNavigate }) {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      // Parse NOP string to object if possible
+      // Assuming NOP format 33.03.XXX.XXX.XXX-XXXX.X
+      let parsedNop = { ...formData.nop };
+      if (initialData.nop) {
+        const n = initialData.nop.replace(/\D/g, '');
+        if (n.length === 18) {
+          parsedNop = {
+            prov: n.substring(0, 2),
+            kab: n.substring(2, 4),
+            kec: n.substring(4, 7),
+            kel: n.substring(7, 10),
+            blok: n.substring(10, 13),
+            nourut: n.substring(13, 17),
+            kode: n.substring(17, 18)
+          };
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        transaksi: 'update',
+        nop: parsedNop,
+        nama: initialData.name || '',
+        alamatObjek: initialData.address || '',
+        luasTanah: initialData.land ? initialData.land.toString() : '',
+      }));
+    }
+  }, [initialData]);
 
   const handleNopChange = (nopObj) => {
     setFormData(prev => ({ ...prev, nop: nopObj }));
