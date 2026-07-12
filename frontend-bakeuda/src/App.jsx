@@ -12,25 +12,12 @@ import DaftarObjekPajak from './pages/DaftarObjekPajak';
 import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
+import PelacakanDokumen from './pages/PelacakanDokumen';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [role, setRole] = useState('desa'); 
   const [activePage, setActivePage] = useState('dashboard_desa');
-  const [selectedTransaksiId, setSelectedTransaksiId] = useState(null);
-  const [editData, setEditData] = useState(null);
-
-  const handleNavigate = (page, params = {}) => {
-    setActivePage(page);
-    if (params.id) {
-      setSelectedTransaksiId(params.id);
-    }
-    if (params.editData) {
-      setEditData(params.editData);
-    } else if (page === 'formulir_spop' && !params.editData) {
-      setEditData(null);
-    }
-  };
 
   // Cek sesi saat aplikasi dimuat
   useEffect(() => {
@@ -67,6 +54,7 @@ export default function App() {
     detail_review: 'Review Verifikasi SPOP',
     daftar_objek: 'Daftar Objek Pajak',
     monitoring_pajak: 'Monitoring Objek Pajak',
+    pelacakan_dokumen: 'Pelacakan Dokumen',
     profil: 'Profil Pengguna',
     help: 'Pusat Bantuan',
     logout: 'Log Out'
@@ -78,21 +66,23 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard_desa':
-        return <DashboardDesa onNavigate={handleNavigate} />;
+        return <DashboardDesa onNavigate={setActivePage} />;
       case 'dashboard_admin':
-        return <DashboardAdmin onNavigate={handleNavigate} />;
+        return <DashboardAdmin onNavigate={setActivePage} />;
       case 'manajemen_akun_desa':
         return <ManajemenAkunDesa />;
       case 'formulir_spop':
-        return <FormulirSPOP onNavigate={handleNavigate} initialData={editData} />;
+        return <FormulirSPOP onNavigate={setActivePage} />;
       case 'antrean_verifikasi':
-        return <AntreanVerifikasi onNavigate={handleNavigate} />;
+        return <AntreanVerifikasi onNavigate={setActivePage} />;
       case 'detail_review':
-        return <DetailReviewSPOP onNavigate={handleNavigate} transaksiId={selectedTransaksiId} />;
+        return <DetailReviewSPOP onNavigate={setActivePage} />;
       case 'daftar_objek':
-        return <DaftarObjekPajak onNavigate={handleNavigate} />;
+        return <DaftarObjekPajak />;
       case 'monitoring_pajak':
-        return <MonitoringObjekPajak onNavigate={handleNavigate} />;
+        return <MonitoringObjekPajak />;
+      case 'pelacakan_dokumen':
+        return <PelacakanDokumen onNavigate={setActivePage} />;
       case 'profil':
         return <ProfilPengguna role={role} />;
       case 'help':
@@ -146,7 +136,7 @@ export default function App() {
       role={role}
       onRoleChange={setRole}
       activePage={activePage}
-      onNavigate={handleNavigate}
+      onNavigate={setActivePage}
       activePageTitle={activePageTitle}
     >
       {renderPage()}

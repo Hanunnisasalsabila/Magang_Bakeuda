@@ -37,7 +37,30 @@ async function main() {
     },
   });
 
-  // 1. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
+  // 1. Buat Data Pejabat Desa Dummy
+  await prisma.pejabatDesa.upsert({
+    where: { nip: '198001012010011001' },
+    update: {},
+    create: {
+      nip: '198001012010011001',
+      nama_pejabat: 'Budi Santoso',
+      jabatan: 'Kepala Desa',
+      kode_wilayah: wilayah1.kode_wilayah,
+    },
+  });
+
+  await prisma.pejabatDesa.upsert({
+    where: { nip: '198502022015022002' },
+    update: {},
+    create: {
+      nip: '198502022015022002',
+      nama_pejabat: 'Siti Aminah',
+      jabatan: 'Sekretaris Desa',
+      kode_wilayah: wilayah1.kode_wilayah,
+    },
+  });
+
+  // 2. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
   const adminExists = await prisma.user.findFirst({
     where: { role: Role.BAKEUDA },
   });
