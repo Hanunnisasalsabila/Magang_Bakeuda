@@ -3,6 +3,7 @@ enum StatusWp {
   PENYEWA
   PENGGARAP
   PEMAKAI
+  SENGKETA
 }
 
 enum Pekerjaan {
@@ -13,6 +14,7 @@ enum Pekerjaan {
   PETANI
   NELAYAN
   PENSIUNAN
+  BADAN
   LAINNYA
 }
 

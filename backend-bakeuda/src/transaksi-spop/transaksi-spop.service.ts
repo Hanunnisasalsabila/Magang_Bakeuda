@@ -8,33 +8,26 @@ export class TransaksiSpopService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createDraft(dto: CreateSpopDto, id_user: string) {
-    // Mapping jenis_layanan text (from UI) to Enum JenisTransaksi
-    let jenis_transaksi: 'BARU' | 'MUTASI' | 'PECAH' | 'GABUNG' | 'PERUBAHAN_DATA' = 'BARU';
-    const jL = dto.jenis_layanan.toLowerCase();
-    if (jL.includes('mutasi')) jenis_transaksi = 'MUTASI';
-    else if (jL.includes('pecah')) jenis_transaksi = 'PECAH';
-    else if (jL.includes('gabung')) jenis_transaksi = 'GABUNG';
-    else if (jL.includes('ubah') || jL.includes('perubahan')) jenis_transaksi = 'PERUBAHAN_DATA';
-
-    // Mapping jenis_tanah string to Enum JenisTanah
-    let jenis_tanah_baru: 'TANAH_BANGUNAN' | 'TANAH_PERTANIAN' | 'TANAH_PERKEBUNAN' | 'TANAH_KEHUTANAN' | 'TANAH_LAINNYA' = 'TANAH_BANGUNAN';
-    const jT = dto.objek_pajak_sementara.jenis_tanah.toLowerCase();
-    if (jT.includes('pertanian')) jenis_tanah_baru = 'TANAH_PERTANIAN';
-    else if (jT.includes('perkebunan')) jenis_tanah_baru = 'TANAH_PERKEBUNAN';
-    else if (jT.includes('kehutanan')) jenis_tanah_baru = 'TANAH_KEHUTANAN';
-    else if (jT.includes('lainnya')) jenis_tanah_baru = 'TANAH_LAINNYA';
-
-    let pekerjaan_enum: 'PNS' | 'TNI_POLRI' | 'PEGAWAI_SWASTA' | 'WIRASWASTA' | 'PETANI' | 'NELAYAN' | 'PENSIUNAN' | 'LAINNYA' = 'LAINNYA';
-    const pkj = dto.subjek_pajak.pekerjaan.toLowerCase();
-    if (pkj.includes('pns')) pekerjaan_enum = 'PNS';
-    else if (pkj.includes('tni') || pkj.includes('polri')) pekerjaan_enum = 'TNI_POLRI';
-    else if (pkj.includes('swasta')) pekerjaan_enum = 'PEGAWAI_SWASTA';
-    else if (pkj.includes('wiraswasta')) pekerjaan_enum = 'WIRASWASTA';
-    else if (pkj.includes('petani')) pekerjaan_enum = 'PETANI';
-    else if (pkj.includes('nelayan')) pekerjaan_enum = 'NELAYAN';
-    else if (pkj.includes('pensiunan')) pekerjaan_enum = 'PENSIUNAN';
+    const jenis_transaksi = dto.jenis_layanan;
+    const jenis_tanah_baru = dto.objek_pajak_sementara.jenis_tanah;
+    const pekerjaan_enum = dto.subjek_pajak.pekerjaan;
+    const status_wp = dto.subjek_pajak.status_wp;
 
     const currentYear = new Date().getFullYear();
+    const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU_VERIFIKASI_DESA';
+
+    // Validasi Cerdas
+    if (jenis_transaksi === 'MUTASI' && !dto.nop_utama) {
+      throw new BadRequestException('NOP Utama wajib diisi untuk jenis layanan Pemutakhiran Data (Mutasi)');
+    }
+    if (jenis_transaksi === 'PECAH' && !dto.nop_asal) {
+      throw new BadRequestException('NOP Asal wajib diisi untuk jenis layanan Pecah Tanah');
+    }
+    if (jenis_tanah_baru === 'TANAH_BANGUNAN') {
+      if (!dto.objek_pajak_sementara.luas_bangunan || dto.objek_pajak_sementara.luas_bangunan <= 0) {
+        throw new BadRequestException('Luas bangunan wajib diisi jika jenis tanah adalah TANAH & BANGUNAN');
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Pastikan SubjekPajak ada / Upsert
@@ -43,16 +36,35 @@ export class TransaksiSpopService {
         update: {
           nama_subjek: dto.subjek_pajak.nama,
           pekerjaan: pekerjaan_enum,
+          status_wp: status_wp,
+          npwp: dto.subjek_pajak.npwp,
+          no_hp: dto.subjek_pajak.no_hp,
+          email: dto.subjek_pajak.email,
           alamat_jalan: dto.subjek_pajak.alamat,
+          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
+          rt: dto.subjek_pajak.rt,
+          rw: dto.subjek_pajak.rw,
+          kelurahan: dto.subjek_pajak.kelurahan,
+          kecamatan: dto.subjek_pajak.kecamatan,
+          kabupaten: dto.subjek_pajak.kabupaten,
+          kode_pos: dto.subjek_pajak.kode_pos,
         },
         create: {
           nik: dto.subjek_pajak.nik,
           nama_subjek: dto.subjek_pajak.nama,
           pekerjaan: pekerjaan_enum,
+          status_wp: status_wp,
+          npwp: dto.subjek_pajak.npwp,
+          no_hp: dto.subjek_pajak.no_hp,
+          email: dto.subjek_pajak.email,
           alamat_jalan: dto.subjek_pajak.alamat,
-          status_wp: 'PEMILIK', // Default as owner
-          kelurahan: '-',       // Placeholder unless added to UI
-          kabupaten: '-',       // Placeholder unless added to UI
+          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
+          rt: dto.subjek_pajak.rt,
+          rw: dto.subjek_pajak.rw,
+          kelurahan: dto.subjek_pajak.kelurahan,
+          kecamatan: dto.subjek_pajak.kecamatan,
+          kabupaten: dto.subjek_pajak.kabupaten,
+          kode_pos: dto.subjek_pajak.kode_pos,
           created_by: id_user,
         },
       });
@@ -63,18 +75,34 @@ export class TransaksiSpopService {
           id_user,
           tahun_pajak: currentYear,
           jenis_transaksi,
+          nop_bersama: dto.nop_bersama,
+          no_sppt_lama: dto.no_sppt_lama,
           nama_pengaju: dto.subjek_pajak.nama,
           tanggal_pengajuan: new Date(),
-          status_ajuan: 'DRAFT',
+          status_ajuan: final_status,
+          
+          // Data Detail Asal (Conditionally inserted)
+          detail_asal: dto.nop_utama || dto.nop_asal ? {
+            create: {
+              nop_asal: dto.nop_utama || dto.nop_asal,
+            }
+          } : undefined,
+
           // Data Tujuan
           detail_tujuan: {
             create: {
               nik_calon_subjek: dto.subjek_pajak.nik,
               luas_tanah_baru: dto.objek_pajak_sementara.luas_tanah,
+              luas_bangunan_baru: dto.objek_pajak_sementara.luas_bangunan || 0,
+              jumlah_bangunan_baru: dto.objek_pajak_sementara.jumlah_bangunan || 0,
               jenis_tanah_baru,
               jalan_op_baru: dto.objek_pajak_sementara.jalan_op,
               rt_op_baru: dto.objek_pajak_sementara.rt_op,
               rw_op_baru: dto.objek_pajak_sementara.rw_op,
+              blok_kav_no_baru: dto.objek_pajak_sementara.blok_kav_no,
+              kelurahan_op_baru: dto.objek_pajak_sementara.kelurahan_op,
+              kecamatan_op_baru: dto.objek_pajak_sementara.kecamatan_op,
+              no_persil_baru: dto.objek_pajak_sementara.no_persil,
             },
           },
           // Data Lampiran
@@ -88,13 +116,14 @@ export class TransaksiSpopService {
           // Riwayat Pelacakan
           riwayat: {
             create: {
-              status_riwayat: 'DRAFT',
-              keterangan: 'Pengajuan Berkas Berhasil Dibuat',
+              status_riwayat: final_status,
+              keterangan: dto.is_draft ? 'Draft Formulir SPOP Disimpan' : 'Formulir SPOP Diajukan, Menunggu Verifikasi Desa',
             },
           },
         },
         include: {
           detail_tujuan: true,
+          detail_asal: true,
           lampiran: true,
           riwayat: true,
         },
