@@ -30,60 +30,22 @@ export default function Header({ role, onRoleChange, activePageTitle, onToggleSi
         </h2>
       </div>
 
-      {/* Center items: Search & Role Switcher */}
+
+
+      {/* Right items: Search & User Card */}
       <div className="flex items-center gap-6">
-        {/* Search Box */}
-        <div className="relative hidden lg:flex items-center bg-surface-container-low px-4 py-1.5 rounded-full border border-outline-variant">
-          <span className="material-symbols-outlined text-outline text-[20px] mr-2">search</span>
+        {/* Search Box (Moved to Right) */}
+        <div className="relative hidden md:flex items-center bg-surface-container-lowest px-4 py-2 rounded-full border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm w-64 lg:w-80">
+          <span className="material-symbols-outlined text-outline text-[20px] mr-2 pointer-events-none">search</span>
           <input
-            className="bg-transparent border-none p-0 text-body-md font-body-md w-60 placeholder:text-on-surface-variant focus:ring-0 focus:border-none"
-            placeholder="Cari NOP atau Subjek Pajak..."
+            className="bg-transparent border-none p-0 text-sm w-full placeholder:text-on-surface-variant focus:ring-0 outline-none"
+            placeholder="Cari NOP atau Subjek..."
             type="text"
           />
         </div>
 
-        {/* Dynamic Role Switcher */}
-        <div className="flex bg-surface-container-low p-1 rounded-full border border-outline-variant/80">
-          <button
-            onClick={() => onRoleChange('desa')}
-            className={`px-3 py-1 rounded-full font-label-sm text-[12px] transition-all duration-200 flex items-center gap-1 ${
-              isDesa
-                ? 'bg-primary text-on-primary font-bold shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">home_work</span>
-            <span className="hidden xs:inline">Desa</span>
-          </button>
-          <button
-            onClick={() => onRoleChange('admin')}
-            className={`px-3 py-1 rounded-full font-label-sm text-[12px] transition-all duration-200 flex items-center gap-1 ${
-              !isDesa
-                ? 'bg-primary text-on-primary font-bold shadow-sm'
-                : 'text-on-surface-variant hover:text-on-surface'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
-            <span className="hidden xs:inline">Admin BKD</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Right items: Notification & User Card */}
-      <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <button className="relative hover:bg-surface-container-low p-2 rounded-full transition-colors active:scale-95 text-primary">
-          <span className="material-symbols-outlined">notifications</span>
-          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
-        </button>
-
-        {/* Settings */}
-        <button className="hover:bg-surface-container-low p-2 rounded-full transition-colors active:scale-95 text-primary">
-          <span className="material-symbols-outlined">settings</span>
-        </button>
-
-        {/* Vertical Divider */}
-        <div className="h-8 w-px bg-outline-variant hidden sm:block"></div>
+        {/* Divider */}
+        <div className="hidden md:block w-[1px] h-8 bg-outline-variant"></div>
 
         {/* Profile Card */}
         <div className="flex items-center gap-3 pl-1">

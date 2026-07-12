@@ -11,8 +11,8 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
   const mobileNavs = isDesa
     ? [
         { id: 'dashboard_desa', label: 'Dashboard', icon: 'dashboard' },
+        { id: 'monitoring_pajak', label: 'Monitoring', icon: 'analytics' },
         { id: 'formulir_spop', label: 'Formulir', icon: 'description' },
-        { id: 'daftar_objek', label: 'Daftar Objek', icon: 'database' },
         { id: 'profil', label: 'Profil', icon: 'person' },
       ]
     : [
@@ -35,7 +35,7 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen pb-16 md:pb-0">
+      <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen pb-16 md:pb-0">
         {/* Top App Bar */}
         <Header
           role={role}
