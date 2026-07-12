@@ -1,8 +1,31 @@
 import React, { useState } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
 import api from '../utils/axios';
 import ToastNotification from '../components/ToastNotification';
+
+// Fix leaflet icon issues in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+function LocationPicker({ position, setPosition }) {
+  const map = useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  return position === null ? null : (
+    <Marker position={position}></Marker>
+  );
+}
 
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -58,6 +81,9 @@ export default function FormulirSPOP({ onNavigate }) {
     rt_op: '',
     rw_op: '',
     estimasiNjop: '',
+    jumlahBangunan: '0',
+    titikKoordinat: '',
+    persetujuan: false,
     lampiran: []
   });
   const [errors, setErrors] = useState({});
@@ -70,17 +96,26 @@ export default function FormulirSPOP({ onNavigate }) {
     const file = e.target.files[0];
     if (file) {
       setIsUploading(true);
-      
+
       setTimeout(() => {
         setIsUploading(false);
         const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=${encodeURIComponent(file.name)}`;
-        
+
         setFormData(prev => ({
           ...prev,
           lampiran: [...prev.lampiran, { jenis_dokumen: "Sertifikat/KTP/Lainnya", url_file: dummyUrl }]
         }));
       }, 1500);
     }
+  };
+
+  const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
+  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',')
+    ? formData.titikKoordinat.split(',').map(Number)
+    : defaultPosition;
+
+  const handleMapClick = (pos) => {
+    setFormData(prev => ({ ...prev, titikKoordinat: `${pos[0]}, ${pos[1]}` }));
   };
 
   const handleNopChange = (nopObj) => {
@@ -107,7 +142,7 @@ export default function FormulirSPOP({ onNavigate }) {
     if (raw.startsWith('3303')) {
       raw = raw.substring(4);
     }
-    
+
     raw = '3303' + raw;
     raw = raw.substring(0, 18);
 
@@ -218,7 +253,7 @@ export default function FormulirSPOP({ onNavigate }) {
       if (formData.transaksi === 'hapus') jenis_transaksi = 'MUTASI';
 
       const token = localStorage.getItem('token');
-      
+
       const payload = {
         jenis_transaksi,
         tahun_pajak: new Date().getFullYear(),
@@ -230,13 +265,13 @@ export default function FormulirSPOP({ onNavigate }) {
           nik_calon_subjek: formData.nik,
           luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
           luas_bangunan_baru: 0,
-          jumlah_bangunan_baru: 0,
+          jumlah_bangunan_baru: parseInt(formData.jumlahBangunan) || 0,
           jenis_tanah_baru: formData.jenisTanah,
           nop_generated: nop,
         }],
-        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru' 
-                      : formData.transaksi === 'update' ? 'Pemutakhiran Data' 
-                      : 'Penghapusan Data',
+        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru'
+          : formData.transaksi === 'update' ? 'Pemutakhiran Data'
+            : 'Penghapusan Data',
         subjek_pajak: {
           nik: formData.nik,
           nama: formData.nama,
@@ -307,10 +342,10 @@ export default function FormulirSPOP({ onNavigate }) {
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-transform ${isActive
-                      ? 'bg-primary text-on-primary scale-110 shadow-md'
-                      : isCompleted
-                        ? 'bg-secondary text-on-secondary hover:scale-105'
-                        : 'bg-surface-container-high text-on-surface-variant'
+                    ? 'bg-primary text-on-primary scale-110 shadow-md'
+                    : isCompleted
+                      ? 'bg-secondary text-on-secondary hover:scale-105'
+                      : 'bg-surface-container-high text-on-surface-variant'
                     }`}
                 >
                   {isCompleted ? (
@@ -352,695 +387,841 @@ export default function FormulirSPOP({ onNavigate }) {
                 </div>
                 <div className="space-y-8">
                   {/* Jenis Transaksi */}
+<<<<<<< HEAD
                   <div className="space-y-4 max-w-3xl">
                     <label className="font-label-sm text-primary block font-medium">Pilih Jenis Transaksi</label>
                     <div className="flex flex-col sm:flex-row gap-3">
-                      {[
-                        { val: 'baru', label: '1. Perekaman Data/Objek Baru' },
-                        { val: 'update', label: '2. Pemutakhiran Data/Update Data Lama' },
-                        { val: 'hapus', label: '3. Penghapusan Data' }
-                      ].map((t) => (
-                        <label
-                          key={t.val}
-                          className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-colors flex-1 ${formData.transaksi === t.val
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-outline-variant hover:bg-surface-container-low'
-                            }`}
-                        >
-                          <input
-                            type="radio"
-                            name="transaksi"
-                            value={t.val}
-                            checked={formData.transaksi === t.val}
-                            onChange={(e) => handleTextChange('transaksi', e)}
-                            className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
-                          />
-                          <span className="font-body-md text-on-surface font-semibold">{t.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {errors.transaksi && <p className="text-error text-sm mt-1">{errors.transaksi}</p>}
-                  </div>
-
-                  {/* NOP Section */}
+=======
                   <div className="space-y-4">
-                    <div className="overflow-x-auto pb-4 custom-scrollbar">
-                      <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
-                        <div className="space-y-4">
-                          <SegmentedNOPInput
-                            value={formData.nop}
-                            onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
-                            label="NOP"
-                            showHeaders={true}
-                          />
-                          <SegmentedNOPInput
-                            value={formData.nopBersama}
-                            onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
-                            label="NOP BERSAMA"
-                            showHeaders={false}
-                          />
-                        </div>
-                        {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
-                      <div className="flex gap-2 items-start">
-                        <span className="material-symbols-outlined text-tertiary">info</span>
-                        <div>
-                          <p className="font-label-sm text-tertiary">Peringatan</p>
-                          <p className="text-[12px] text-tertiary leading-tight">
-                            Pastikan NOP sesuai dengan SPPT tahun pajak berjalan untuk mempermudah proses verifikasi otomatis.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+        <label className="font-label-sm text-primary block font-bold">Pilih Jenis Transaksi</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+>>>>>>> 1f344cdd5b5f916009e6727299b58c68f4b01e97
+          {[
+            { val: 'baru', title: 'Perekaman Baru', desc: 'Mendaftarkan objek pajak yang belum terdata', icon: 'add_box' },
+            { val: 'update', title: 'Pemutakhiran Data', desc: 'Memperbarui data objek pajak lama', icon: 'update' },
+            { val: 'hapus', title: 'Penghapusan Data', desc: 'Menghapus data objek dari sistem', icon: 'delete' }
+          ].map((t) => (
+            <label
+              key={t.val}
+              className={`flex flex-col p-5 border rounded-xl cursor-pointer transition-all ${formData.transaksi === t.val
+                ? 'border-primary bg-primary/5 shadow-md ring-1 ring-primary'
+                : 'border-outline-variant hover:border-primary/50 hover:bg-surface-container-low hover:shadow-sm'
+                }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.transaksi === t.val ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                  <span className="material-symbols-outlined">{t.icon}</span>
                 </div>
-              </section>
-
-              <hr className="border-outline-variant opacity-50" />
-
-              <section className="bg-surface-container-low p-6 rounded-lg">
-                <div className="flex items-center gap-3 mb-6">
-                  <h4 className="font-section-header text-section-header font-bold text-on-surface-variant uppercase">
-                    A. INFORMASI TAMBAHAN UNTUK DATA BARU
-                  </h4>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Input NOP ASAL */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-primary uppercase">NOP Asal</label>
-                    <input
-                      type="text"
-                      value={nopAsal}
-                      onChange={handleNopAsalChange}
-                      placeholder="33.03.XXX.XXX.XXX-XXXX.X"
-                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-                    />
-                  </div>
-
-                  {/* Input NO SPPT LAMA */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-primary uppercase">No. SPPT Lama</label>
-                    <input
-                      type="text"
-                      value={spptLama}
-                      onChange={handleSpptLamaChange}
-                      placeholder="XXX.XXX.XXX"
-                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-                    />
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* STEP 2: SUBJEK PAJAK */}
-          {step === 2 && (
-            <div className="space-y-8 animate-fadeIn">
-              <section className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 bg-primary h-8 rounded-full"></div>
-                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-                    B. DATA SUBJEK PAJAK
-                  </h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">NOMOR KTP (NIK)</label>
-                    <input
-                      type="text"
-                      maxLength={16}
-                      value={formData.nik}
-                      onChange={(e) => handleTextChange('nik', e)}
-                      className={`w-full h-12 border ${errors.nik ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm`}
-                      placeholder="Masukkan 16 digit NIK"
-                    />
-                    {errors.nik && <p className="text-error text-[12px]">{errors.nik}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 mt-6">
-                  <div className="space-y-4">
-                    <label className="font-label-sm text-primary block">STATUS WP</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {['Pemilik', 'Penyewa', 'Pengelola', 'Pemakai', 'Sengketa'].map((status) => (
-                        <label
-                          key={status}
-                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.statusWp ? 'border-error' : 'border-outline-variant'}`}
-                        >
-                          <input
-                            type="radio"
-                            name="statusWp"
-                            value={status}
-                            checked={formData.statusWp === status}
-                            onChange={(e) => handleTextChange('statusWp', e)}
-                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
-                          />
-                          <span className="font-label-sm text-on-surface">{status}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {errors.statusWp && <p className="text-error text-[12px] mt-1">{errors.statusWp}</p>}
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="font-label-sm text-primary block">PEKERJAAN</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {['PNS', 'ABRI', 'Pensiunan', 'Badan', 'Lainnya'].map((job) => (
-                        <label
-                          key={job}
-                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.pekerjaan ? 'border-error' : 'border-outline-variant'}`}
-                        >
-                          <input
-                            type="radio"
-                            name="pekerjaan"
-                            value={job}
-                            checked={formData.pekerjaan === job}
-                            onChange={(e) => handleTextChange('pekerjaan', e)}
-                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
-                          />
-                          <span className="font-label-sm text-on-surface">{job}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {errors.pekerjaan && <p className="text-error text-[12px] mt-1">{errors.pekerjaan}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="font-label-sm text-primary block">NAMA SUBJEK PAJAK</label>
-                    <input
-                      type="text"
-                      value={formData.nama}
-                      onChange={(e) => handleTextChange('nama', e)}
-                      className={`w-full h-12 border ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md font-bold uppercase tracking-wide bg-white transition-all shadow-sm`}
-                      placeholder="Sesuai Sertifikat / KTP"
-                    />
-                    {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">NPWP</label>
-                    <input
-                      type="text"
-                      value={formData.npwp}
-                      onChange={(e) => handleTextChange('npwp', e)}
-                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
-                      placeholder="Masukkan NPWP"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">No. TELP/HP.</label>
-                    <input
-                      type="text"
-                      value={formData.noTelp}
-                      onChange={(e) => handleTextChange('noTelp', e)}
-                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
-                      placeholder="Masukkan No. Telp/HP"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4 mt-6">
-                  <h5 className="font-section-header text-section-header text-outline border-b pb-2">
-                    ALAMAT LENGKAP SUBJEK PAJAK
-                  </h5>
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div className="md:col-span-8 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Alamat Subjek Pajak (Jalan)</label>
-                      <input
-                        type="text"
-                        value={formData.alamat}
-                        onChange={(e) => handleTextChange('alamat', e)}
-                        className={`w-full h-11 border ${errors.alamat ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
-                        placeholder="Jl. Raya Utama No. 123"
-                      />
-                      {errors.alamat && <p className="text-error text-[12px]">{errors.alamat}</p>}
-                    </div>
-                    <div className="md:col-span-4 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Blok/Kav/Nomor</label>
-                      <input
-                        type="text"
-                        value={formData.blokKav}
-                        onChange={(e) => handleTextChange('blokKav', e)}
-                        className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="Contoh: Blok A No. 1"
-                      />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">RW</label>
-                      <input
-                        type="text"
-                        maxLength={3}
-                        value={formData.rw}
-                        onChange={(e) => handleTextChange('rw', e)}
-                        className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="002"
-                      />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">RT</label>
-                      <input
-                        type="text"
-                        maxLength={3}
-                        value={formData.rt}
-                        onChange={(e) => handleTextChange('rt', e)}
-                        className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="001"
-                      />
-                    </div>
-                    <div className="md:col-span-8 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Kelurahan / Desa</label>
-                      <input
-                        type="text"
-                        value={formData.kelurahan}
-                        onChange={(e) => handleTextChange('kelurahan', e)}
-                        className={`w-full h-11 border ${errors.kelurahan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
-                        placeholder="Contoh: Purbalingga Lor"
-                      />
-                      {errors.kelurahan && <p className="text-error text-[12px]">{errors.kelurahan}</p>}
-                    </div>
-                    <div className="md:col-span-8 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Kabupaten / Kota</label>
-                      <input
-                        type="text"
-                        value={formData.kabupaten}
-                        onChange={(e) => handleTextChange('kabupaten', e)}
-                        className={`w-full h-11 border ${errors.kabupaten ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
-                      />
-                      {errors.kabupaten && <p className="text-error text-[12px]">{errors.kabupaten}</p>}
-                    </div>
-                    <div className="md:col-span-4 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Kode Pos</label>
-                      <input
-                        type="text"
-                        maxLength={5}
-                        value={formData.kodePos}
-                        onChange={(e) => handleTextChange('kodePos', e)}
-                        className={`w-full h-11 border ${errors.kodePos ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white`}
-                        placeholder="53311"
-                      />
-                      {errors.kodePos && <p className="text-error text-[12px]">{errors.kodePos}</p>}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* STEP 3: OBJEK PAJAK */}
-          {step === 3 && (
-            <div className="space-y-8 animate-fadeIn">
-              {/* BAGIAN C */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 bg-primary h-8 rounded-full"></div>
-                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-                    C. DATA LETAK OBJEK PAJAK
-                  </h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <div className="md:col-span-4 space-y-2">
-                    <label className="font-label-sm text-primary block">No. PERSIL</label>
-                    <input
-                      type="text"
-                      value={formData.noPersil}
-                      onChange={(e) => handleTextChange('noPersil', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-8 space-y-2">
-                    <label className="font-label-sm text-primary block">JALAN (ALAMAT OBJEK PAJAK)</label>
-                    <input
-                      type="text"
-                      value={formData.alamatObjek}
-                      onChange={(e) => handleTextChange('alamatObjek', e)}
-                      className={`w-full h-11 border ${errors.alamatObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Jl. Merdeka No. 45"
-                    />
-                    {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
-                  </div>
-                  <div className="md:col-span-4 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">BLOK/KAV/NOMOR</label>
-                    <input
-                      type="text"
-                      value={formData.blokKavObjek}
-                      onChange={(e) => handleTextChange('blokKavObjek', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">RW</label>
-                    <input
-                      type="text"
-                      maxLength={3}
-                      value={formData.rwObjek}
-                      onChange={(e) => handleTextChange('rwObjek', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                      placeholder="002"
-                    />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">RT</label>
-                    <input
-                      type="text"
-                      maxLength={3}
-                      value={formData.rtObjek}
-                      onChange={(e) => handleTextChange('rtObjek', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
-                      placeholder="001"
-                    />
-                  </div>
-                  <div className="md:col-span-4 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
-                    <input
-                      type="text"
-                      value={formData.kelurahanObjek}
-                      onChange={(e) => handleTextChange('kelurahanObjek', e)}
-                      className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Purbalingga Lor"
-                    />
-                    {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
-                  </div>
-                </div>
-              </section>
-
-              {/* BAGIAN D */}
-              <section className="space-y-6 pt-8 border-t border-outline-variant/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 bg-primary h-8 rounded-full"></div>
-                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-                    D. DATA TANAH
-                  </h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">LUAS TANAH (M²)</label>
-                    <input
-                      type="number"
-                      value={formData.luasTanah}
-                      onChange={(e) => handleTextChange('luasTanah', e)}
-                      className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                      placeholder="Contoh: 150"
-                    />
-                    {errors.luasTanah && <p className="text-error text-[12px]">{errors.luasTanah}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">ZONA NILAI TANAH</label>
-                    <input
-                      type="text"
-                      value={formData.zonaNilaiTanah}
-                      onChange={(e) => handleTextChange('zonaNilaiTanah', e)}
-                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-surface-container-lowest focus:border-primary shadow-sm"
-                      placeholder="Diisi oleh Petugas"
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-2 space-y-4">
-                    <label className="font-label-sm text-primary block">JENIS TANAH</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {['Tanah + Bangunan', 'Kavling Siap Bangun', 'Tanah Kosong', 'Fasilitas Umum'].map((jenis) => (
-                        <label
-                          key={jenis}
-                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.jenisTanah ? 'border-error' : 'border-outline-variant'}`}
-                        >
-                          <input
-                            type="radio"
-                            name="jenisTanah"
-                            value={jenis}
-                            checked={formData.jenisTanah === jenis}
-                            onChange={(e) => handleTextChange('jenisTanah', e)}
-                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant flex-shrink-0"
-                          />
-                          <span className="font-label-sm text-on-surface leading-snug">{jenis}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {errors.jenisTanah && <p className="text-error text-[12px] mt-1">{errors.jenisTanah}</p>}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-outline-variant space-y-4">
-                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase mb-4">
-                    LAMPIRAN DOKUMEN PENDUKUNG
-                  </h4>
-                  <div className="space-y-4">
-                    {formData.lampiran.map((doc, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-4 border border-outline-variant rounded bg-surface-container-low">
-                        <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-primary">description</span>
-                          <div>
-                            <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
-                            <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dummy</a>
-                          </div>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => setFormData(prev => ({
-                            ...prev, 
-                            lampiran: prev.lampiran.filter((_, i) => i !== idx)
-                          }))}
-                          className="material-symbols-outlined text-error hover:scale-110 transition-transform"
-                        >
-                          delete
-                        </button>
-                      </div>
-                    ))}
-
-                    {/* Upload Button */}
-                    <div className="relative overflow-hidden w-full sm:w-auto inline-block">
-                      <button 
-                        type="button"
-                        disabled={isUploading}
-                        className={`flex items-center gap-2 px-6 py-3 rounded border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
-                      >
-                        <span className="material-symbols-outlined">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
-                        {isUploading ? 'Mengunggah Dokumen...' : '+ Tambah Dokumen Pendukung'}
-                      </button>
-                      <input 
-                        type="file" 
-                        accept="image/*,.pdf" 
-                        onChange={handleFileUpload}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        disabled={isUploading}
-                      />
-                    </div>
-                    <p className="text-[12px] text-on-surface-variant italic mt-2">
-                      *Klik tombol di atas untuk menyimulasikan unggahan file (akan menghasilkan dummy URL image).
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* STEP 4: KONFIRMASI */}
-          {step === 4 && (
-            <div className="space-y-8 animate-fadeIn">
-              <section className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 bg-primary h-8 rounded-full"></div>
-                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-                    D. TINJAU KEMBALI DATA ANDA
-                  </h4>
-                </div>
-                <div className="bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-outline uppercase text-[10px] font-bold">Jenis Transaksi</p>
-                      <p className="font-bold text-primary text-base uppercase mt-0.5">
-                        {formData.transaksi === 'baru'
-                          ? 'Perekaman Data Baru'
-                          : formData.transaksi === 'update'
-                            ? 'Pemutakhiran Data'
-                            : 'Penghapusan Data'}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-outline uppercase text-[10px] font-bold">NOP Objek Pajak</p>
-                      <p className="font-data-mono font-bold text-primary text-base mt-0.5">
-                        {`33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}-${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 border-t border-outline-variant pt-4">
-                      <p className="text-outline uppercase text-[10px] font-bold mb-1">Identitas Subjek Pajak</p>
-                      <p className="font-bold text-on-surface text-base">{formData.nama || '-'}</p>
-                      <p className="font-data-mono text-on-surface-variant mt-0.5">KTP NIK: {formData.nik || '-'}</p>
-                      <p className="text-on-surface-variant mt-1">
-                        Pekerjaan: {formData.pekerjaan} | Status: {formData.statusWp}
-                      </p>
-                      <p className="text-on-surface-variant mt-1">
-                        Alamat WP: {formData.alamat || '-'}, RT {formData.rt || '-'}/RW {formData.rw || '-'}, {formData.kelurahan || '-'}, {formData.kabupaten}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 border-t border-outline-variant pt-4">
-                      <p className="text-outline uppercase text-[10px] font-bold mb-1">Spesifikasi Objek Pajak</p>
-                      <p className="text-on-surface-variant">
-                        Luas Tanah: <span className="font-bold text-on-surface">{formData.luasTanah || '-'} M²</span> | Jenis Tanah: <span className="font-bold text-on-surface">{formData.jenisTanah}</span>
-                      </p>
-                      <p className="text-on-surface-variant mt-1">Alamat Objek: {formData.alamatObjek || '-'}</p>
-                      <p className="text-on-surface-variant mt-1">
-                        Estimasi NJOP: <span className="font-bold text-on-surface">Rp. {Number(formData.estimasiNjop).toLocaleString() || '-'} / M²</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-4 bg-secondary-container/20 rounded border border-secondary/20 flex gap-3 items-start">
-                  <span className="material-symbols-outlined text-secondary">verified_user</span>
-                  <div>
-                    <p className="font-label-sm text-secondary">Pernyataan Wajib Pajak</p>
-                    <p className="text-[12px] text-on-surface-variant leading-tight">
-                      Saya menyatakan bahwa data yang saya masukkan adalah benar sesuai dengan dokumen fisik sertifikat tanah dan KTP yang berlaku.
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {/* STEP 5: VERIFIKASI / SELESAI */}
-          {step === 5 && (
-            <div className="space-y-6 text-center py-8 animate-fadeIn">
-              <div className="w-20 h-20 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <span className="material-symbols-outlined text-[48px]">check_circle</span>
+                <input
+                  type="radio"
+                  name="transaksi"
+                  value={t.val}
+                  checked={formData.transaksi === t.val}
+                  onChange={(e) => handleTextChange('transaksi', e)}
+                  className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
+                />
               </div>
-              <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">
-                SPOP Berhasil Dikirim
-              </h3>
-              <p className="text-body-md font-body-md text-on-surface-variant max-w-lg mx-auto">
-                Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop.kec}.${formData.nop.kel}.${formData.nop.blok}-${formData.nop.nourut}.${formData.nop.kode}`}</span> telah masuk ke sistem antrean validasi BKD Kabupaten Purbalingga.
-              </p>
-              <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-on-surface-variant">ID Submisi</span>
-                  <span className="font-bold text-on-surface font-data-mono">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-on-surface-variant">Estimasi Verifikasi</span>
-                  <span className="font-bold text-secondary flex items-center gap-1">
-                    <span className="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
-                    ± 24 Jam Kerja
-                  </span>
-                </div>
+              <div>
+                <span className="font-bold text-on-surface block text-base">{t.title}</span>
+                <span className="text-sm text-on-surface-variant mt-1 block leading-relaxed">{t.desc}</span>
               </div>
-              <div className="pt-8 flex justify-center gap-4">
-                <button
-                  onClick={() => onNavigate('dashboard_desa')}
-                  className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
-                >
-                  Kembali ke Dashboard
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Controls */}
-          {step < 5 && (
-            <div className="space-y-6">
-              <div className="p-4 bg-surface-container-low rounded-lg border-l-4 border-primary flex gap-4 items-center">
-                <span className="material-symbols-outlined text-primary">verified</span>
-                <div>
-                  <p className="font-label-sm text-primary">Catatan Validasi</p>
-                  <p className="text-[13px] text-on-surface-variant">
-                    Data yang Anda kirimkan akan melalui proses validasi oleh Admin BKD (Badan Keuangan Daerah) Kabupaten Purbalingga sebelum diterbitkan SPPT resmi.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-10 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
-                <button
-                  type="button"
-                  onClick={prevStep}
-                  disabled={step === 1}
-                  className={`w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-surface-container transition-all flex items-center justify-center gap-2 group ${step === 1 ? 'opacity-50 cursor-not-allowed border-outline text-outline' : ''
-                    }`}
-                >
-                  <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1">
-                    arrow_back
-                  </span>
-                  {step === 1 ? 'Batal' : 'Kembali'}
-                </button>
-                <div className="flex flex-col md:flex-row w-full md:w-auto gap-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setToast({ show: true, message: 'Draft formulir berhasil disimpan ke akun Anda.', type: 'success' });
-                      setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
-                    }}
-                    className="w-full md:w-auto px-10 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-bold hover:bg-surface-container transition-colors"
-                  >
-                    Simpan Draft
-                  </button>
-                  <button
-                    type="button"
-                    onClick={step === 4 ? handleSubmit : nextStep}
-                    disabled={isSubmitting}
-                    className={`w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
-                  >
-                    {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
-                    {!isSubmitting && (
-                      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-                        arrow_forward
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </div>
-              {submitError && (
-                <div className="p-4 bg-error-container text-error rounded mt-4">
-                  <strong>Terjadi Kesalahan:</strong> {submitError}
-                </div>
-              )}
-            </div>
-          )}
-        </form>
+            </label>
+          ))}
+        </div>
+        {errors.transaksi && <p className="text-error text-sm mt-1">{errors.transaksi}</p>}
       </div>
 
-      {/* Contextual Information (Bento Style) */}
-      {step < 5 && (
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
-            <div className="bg-white/40 p-3 rounded-lg text-secondary">
-              <span className="material-symbols-outlined text-[32px]">verified_user</span>
-            </div>
-            <div>
-              <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
-                Keamanan Data Terjamin
-              </h5>
-              <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
-                Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
-              </p>
-            </div>
-          </div>
-          <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
-            <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
-              Butuh Bantuan?
-            </h6>
+      {/* NOP Section */}
+      <div className="space-y-4">
+        <div className="overflow-x-auto pb-4 custom-scrollbar">
+          <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
             <div className="space-y-4">
-              <a
-                className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                href="tel:0281891098"
-              >
-                <span className="material-symbols-outlined text-primary">call</span>
-                <span className="font-label-sm">Hotline: (0281) 891098</span>
-              </a>
-              <a
-                className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                href="mailto:bakeuda@purbalinggakab.go.id"
-              >
-                <span className="material-symbols-outlined text-primary">mail</span>
-                <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
-              </a>
+              <SegmentedNOPInput
+                value={formData.nop}
+                onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
+                label="NOP"
+                showHeaders={true}
+              />
+              <SegmentedNOPInput
+                value={formData.nopBersama}
+                onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                label="NOP BERSAMA"
+                showHeaders={false}
+              />
+            </div>
+            {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
+          </div>
+        </div>
+
+        <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
+          <div className="flex gap-2 items-start">
+            <span className="material-symbols-outlined text-tertiary">info</span>
+            <div>
+              <p className="font-label-sm text-tertiary">Peringatan</p>
+              <p className="text-[12px] text-tertiary leading-tight">
+                Pastikan NOP sesuai dengan SPPT tahun pajak berjalan untuk mempermudah proses verifikasi otomatis.
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </section>
 
-      {/* Footer Small Print */}
+    <hr className="border-outline-variant opacity-50" />
+
+    <section className="bg-surface-container-low p-6 rounded-lg">
+      <div className="flex items-center gap-3 mb-6">
+        <h4 className="font-section-header text-section-header font-bold text-on-surface-variant uppercase">
+          A. INFORMASI TAMBAHAN UNTUK DATA BARU
+        </h4>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        {/* Input NOP ASAL */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-primary uppercase">NOP Asal</label>
+          <input
+            type="text"
+            value={nopAsal}
+            onChange={handleNopAsalChange}
+            placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+            className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+          />
+        </div>
+
+        {/* Input NO SPPT LAMA */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-primary uppercase">No. SPPT Lama</label>
+          <input
+            type="text"
+            value={spptLama}
+            onChange={handleSpptLamaChange}
+            placeholder="XXX.XXX.XXX"
+            className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+          />
+        </div>
+      </div>
+    </section>
+            </div >
+          )
+}
+
+{/* STEP 2: SUBJEK PAJAK */ }
+{
+  step === 2 && (
+    <div className="space-y-8 animate-fadeIn">
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1 bg-primary h-8 rounded-full"></div>
+          <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+            B. DATA SUBJEK PAJAK
+          </h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block">NOMOR KTP (NIK)</label>
+            <input
+              type="text"
+              maxLength={16}
+              value={formData.nik}
+              onChange={(e) => handleTextChange('nik', e)}
+              className={`w-full h-12 border ${errors.nik ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm`}
+              placeholder="Masukkan 16 digit NIK"
+            />
+            {errors.nik && <p className="text-error text-[12px]">{errors.nik}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 mt-6">
+          <div className="space-y-4">
+            <label className="font-label-sm text-primary block">STATUS WP</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {['Pemilik', 'Penyewa', 'Pengelola', 'Pemakai', 'Sengketa'].map((status) => (
+                <label
+                  key={status}
+                  className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.statusWp ? 'border-error' : 'border-outline-variant'}`}
+                >
+                  <input
+                    type="radio"
+                    name="statusWp"
+                    value={status}
+                    checked={formData.statusWp === status}
+                    onChange={(e) => handleTextChange('statusWp', e)}
+                    className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
+                  />
+                  <span className="font-label-sm text-on-surface">{status}</span>
+                </label>
+              ))}
+            </div>
+            {errors.statusWp && <p className="text-error text-[12px] mt-1">{errors.statusWp}</p>}
+          </div>
+
+          <div className="space-y-4">
+            <label className="font-label-sm text-primary block">PEKERJAAN</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {['PNS', 'ABRI', 'Pensiunan', 'Badan', 'Lainnya'].map((job) => (
+                <label
+                  key={job}
+                  className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.pekerjaan ? 'border-error' : 'border-outline-variant'}`}
+                >
+                  <input
+                    type="radio"
+                    name="pekerjaan"
+                    value={job}
+                    checked={formData.pekerjaan === job}
+                    onChange={(e) => handleTextChange('pekerjaan', e)}
+                    className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
+                  />
+                  <span className="font-label-sm text-on-surface">{job}</span>
+                </label>
+              ))}
+            </div>
+            {errors.pekerjaan && <p className="text-error text-[12px] mt-1">{errors.pekerjaan}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div className="space-y-2 md:col-span-2">
+            <label className="font-label-sm text-primary block">NAMA SUBJEK PAJAK</label>
+            <input
+              type="text"
+              value={formData.nama}
+              onChange={(e) => handleTextChange('nama', e)}
+              className={`w-full h-12 border ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md font-bold uppercase tracking-wide bg-white transition-all shadow-sm`}
+              placeholder="Sesuai Sertifikat / KTP"
+            />
+            {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block">NPWP</label>
+            <input
+              type="text"
+              value={formData.npwp}
+              onChange={(e) => handleTextChange('npwp', e)}
+              className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
+              placeholder="Masukkan NPWP"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block">No. TELP/HP.</label>
+            <input
+              type="text"
+              value={formData.noTelp}
+              onChange={(e) => handleTextChange('noTelp', e)}
+              className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
+              placeholder="Masukkan No. Telp/HP"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4 pt-4 mt-6">
+          <h5 className="font-section-header text-section-header text-outline border-b pb-2">
+            ALAMAT LENGKAP SUBJEK PAJAK
+          </h5>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-8 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">Alamat Subjek Pajak (Jalan)</label>
+              <input
+                type="text"
+                value={formData.alamat}
+                onChange={(e) => handleTextChange('alamat', e)}
+                className={`w-full h-11 border ${errors.alamat ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
+                placeholder="Jl. Raya Utama No. 123"
+              />
+              {errors.alamat && <p className="text-error text-[12px]">{errors.alamat}</p>}
+            </div>
+            <div className="md:col-span-4 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">Blok/Kav/Nomor</label>
+              <input
+                type="text"
+                value={formData.blokKav}
+                onChange={(e) => handleTextChange('blokKav', e)}
+                className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="Contoh: Blok A No. 1"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">RW</label>
+              <input
+                type="text"
+                maxLength={3}
+                value={formData.rw}
+                onChange={(e) => handleTextChange('rw', e)}
+                className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="002"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">RT</label>
+              <input
+                type="text"
+                maxLength={3}
+                value={formData.rt}
+                onChange={(e) => handleTextChange('rt', e)}
+                className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="001"
+              />
+            </div>
+            <div className="md:col-span-8 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">Kelurahan / Desa</label>
+              <input
+                type="text"
+                value={formData.kelurahan}
+                onChange={(e) => handleTextChange('kelurahan', e)}
+                className={`w-full h-11 border ${errors.kelurahan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
+                placeholder="Contoh: Purbalingga Lor"
+              />
+              {errors.kelurahan && <p className="text-error text-[12px]">{errors.kelurahan}</p>}
+            </div>
+            <div className="md:col-span-8 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">Kabupaten / Kota</label>
+              <input
+                type="text"
+                value={formData.kabupaten}
+                onChange={(e) => handleTextChange('kabupaten', e)}
+                className={`w-full h-11 border ${errors.kabupaten ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
+              />
+              {errors.kabupaten && <p className="text-error text-[12px]">{errors.kabupaten}</p>}
+            </div>
+            <div className="md:col-span-4 space-y-2">
+              <label className="font-label-sm text-on-surface-variant block">Kode Pos</label>
+              <input
+                type="text"
+                maxLength={5}
+                value={formData.kodePos}
+                onChange={(e) => handleTextChange('kodePos', e)}
+                className={`w-full h-11 border ${errors.kodePos ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white`}
+                placeholder="53311"
+              />
+              {errors.kodePos && <p className="text-error text-[12px]">{errors.kodePos}</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+{/* STEP 3: OBJEK PAJAK */ }
+{
+  step === 3 && (
+    <div className="space-y-8 animate-fadeIn">
+      {/* BAGIAN C */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1 bg-primary h-8 rounded-full"></div>
+          <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+            C. DATA LETAK OBJEK PAJAK
+          </h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-4 space-y-2">
+            <label className="font-label-sm text-primary block">No. PERSIL</label>
+            <input
+              type="text"
+              value={formData.noPersil}
+              onChange={(e) => handleTextChange('noPersil', e)}
+              className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+            />
+          </div>
+          <div className="md:col-span-8 space-y-2">
+            <label className="font-label-sm text-primary block">JALAN (ALAMAT OBJEK PAJAK)</label>
+            <input
+              type="text"
+              value={formData.alamatObjek}
+              onChange={(e) => handleTextChange('alamatObjek', e)}
+              className={`w-full h-11 border ${errors.alamatObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
+              placeholder="Contoh: Jl. Merdeka No. 45"
+            />
+            {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
+          </div>
+          <div className="md:col-span-4 space-y-2">
+            <label className="font-label-sm text-on-surface-variant block">BLOK/KAV/NOMOR</label>
+            <input
+              type="text"
+              value={formData.blokKavObjek}
+              onChange={(e) => handleTextChange('blokKavObjek', e)}
+              className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+            />
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <label className="font-label-sm text-on-surface-variant block">RW</label>
+            <input
+              type="text"
+              maxLength={3}
+              value={formData.rwObjek}
+              onChange={(e) => handleTextChange('rwObjek', e)}
+              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+              placeholder="002"
+            />
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <label className="font-label-sm text-on-surface-variant block">RT</label>
+            <input
+              type="text"
+              maxLength={3}
+              value={formData.rtObjek}
+              onChange={(e) => handleTextChange('rtObjek', e)}
+              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+              placeholder="001"
+            />
+          </div>
+          <div className="md:col-span-4 space-y-2">
+            <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
+            <input
+              type="text"
+              value={formData.kelurahanObjek}
+              onChange={(e) => handleTextChange('kelurahanObjek', e)}
+              className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
+              placeholder="Contoh: Purbalingga Lor"
+            />
+            {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
+          </div>
+        </div>
+      </section>
+
+      {/* BAGIAN D */}
+      <section className="space-y-6 pt-8 border-t border-outline-variant/30">
+        <div className="flex items-center gap-3">
+          <div className="w-1 bg-primary h-8 rounded-full"></div>
+          <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+            D. DATA TANAH
+          </h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block">LUAS TANAH (M²)</label>
+            <input
+              type="number"
+              value={formData.luasTanah}
+              onChange={(e) => handleTextChange('luasTanah', e)}
+              className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+              placeholder="Contoh: 150"
+            />
+            {errors.luasTanah && <p className="text-error text-[12px]">{errors.luasTanah}</p>}
+          </div>
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block">ZONA NILAI TANAH</label>
+            <input
+              type="text"
+              value={formData.zonaNilaiTanah}
+              onChange={(e) => handleTextChange('zonaNilaiTanah', e)}
+              className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-surface-container-lowest focus:border-primary shadow-sm"
+              placeholder="Diisi oleh Petugas"
+            />
+          </div>
+
+          <div className="md:col-span-2 space-y-4">
+            <label className="font-label-sm text-primary block">JENIS TANAH</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {['Tanah + Bangunan', 'Kavling Siap Bangun', 'Tanah Kosong', 'Fasilitas Umum'].map((jenis) => (
+                <label
+                  key={jenis}
+                  className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.jenisTanah ? 'border-error' : 'border-outline-variant'}`}
+                >
+                  <input
+                    type="radio"
+                    name="jenisTanah"
+                    value={jenis}
+                    checked={formData.jenisTanah === jenis}
+                    onChange={(e) => handleTextChange('jenisTanah', e)}
+                    className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant flex-shrink-0"
+                  />
+                  <span className="font-label-sm text-on-surface leading-snug">{jenis}</span>
+                </label>
+              ))}
+            </div>
+            {errors.jenisTanah && <p className="text-error text-[12px] mt-1">{errors.jenisTanah}</p>}
+          </div>
+        </div>
+
+        {/* BAGIAN E: DATA BANGUNAN */}
+        <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+          <div className="flex items-center gap-3">
+            <div className="w-1 bg-primary h-8 rounded-full"></div>
+            <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+              E. DATA BANGUNAN
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.jumlahBangunan}
+                onChange={(e) => handleTextChange('jumlahBangunan', e)}
+                className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                placeholder="Contoh: 1"
+              />
+              {parseInt(formData.jumlahBangunan) > 0 && (
+                <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2">
+                  <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+                  <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* SKET / DENAH LOKASI OBJEK PAJAK */}
+        <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+          <div className="flex items-center gap-3">
+            <div className="w-1 bg-primary h-8 rounded-full"></div>
+            <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+              SKET / DENAH LOKASI (KOORDINAT MAPS)
+            </h4>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Anda dapat menggeser peta di bawah ini lalu klik pada lokasi yang tepat, atau salin koordinat dari Google Maps.</p>
+
+            <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative">
+              <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <LocationPicker position={currentPosition} setPosition={handleMapClick} />
+              </MapContainer>
+            </div>
+
+            <div className="space-y-2 md:w-1/2">
+              <label className="font-label-sm text-primary block">TITIK KOORDINAT (LATITUDE, LONGITUDE)</label>
+              <input
+                type="text"
+                value={formData.titikKoordinat}
+                onChange={(e) => handleTextChange('titikKoordinat', e)}
+                className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                placeholder="Contoh: -7.3878, 109.3639"
+              />
+            </div>
+
+            {/* Google Street View Placeholder */}
+            <div className="mt-4 p-4 border border-outline-variant border-dashed rounded-lg bg-surface-container-lowest flex flex-col items-center justify-center text-center">
+              <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">streetview</span>
+              <h5 className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</h5>
+              <p className="text-sm text-on-surface-variant mt-1 max-w-md">
+                Fitur Street View Google Maps dapat diintegrasikan di sini untuk melihat kondisi jalan dan bangunan secara real-time. (Memerlukan Google Maps API Key khusus).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-outline-variant space-y-4">
+          <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase mb-4">
+            LAMPIRAN DOKUMEN PENDUKUNG
+          </h4>
+          <div className="space-y-4">
+            {formData.lampiran.map((doc, idx) => (
+              <div key={idx} className="flex justify-between items-center p-4 border border-outline-variant rounded bg-surface-container-low">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-primary">description</span>
+                  <div>
+                    <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
+                    <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dummy</a>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    lampiran: prev.lampiran.filter((_, i) => i !== idx)
+                  }))}
+                  className="material-symbols-outlined text-error hover:scale-110 transition-transform"
+                >
+                  delete
+                </button>
+              </div>
+            ))}
+
+            {/* Upload Button */}
+            <div className="relative overflow-hidden w-full sm:w-auto inline-block">
+              <button
+                type="button"
+                disabled={isUploading}
+                className={`flex items-center gap-2 px-6 py-3 rounded border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
+              >
+                <span className="material-symbols-outlined">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
+                {isUploading ? 'Mengunggah Dokumen...' : '+ Tambah Dokumen Pendukung'}
+              </button>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileUpload}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                disabled={isUploading}
+              />
+            </div>
+            <p className="text-[12px] text-on-surface-variant italic mt-2">
+              *Klik tombol di atas untuk menyimulasikan unggahan file (akan menghasilkan dummy URL image).
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+{/* STEP 4: KONFIRMASI */ }
+{
+  step === 4 && (
+    <div className="space-y-8 animate-fadeIn">
+      <section className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="w-1 bg-primary h-8 rounded-full"></div>
+          <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+            D. TINJAU KEMBALI DATA ANDA
+          </h4>
+        </div>
+        <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-surface-container border-b border-outline-variant px-6 py-4 flex justify-between items-center">
+            <div>
+              <p className="text-outline uppercase text-[10px] font-bold tracking-widest">Jenis Transaksi</p>
+              <p className="font-bold text-primary text-lg uppercase mt-0.5">
+                {formData.transaksi === 'baru' ? 'Perekaman Data Baru' : formData.transaksi === 'update' ? 'Pemutakhiran Data' : 'Penghapusan Data'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-outline uppercase text-[10px] font-bold tracking-widest">NOP Objek Pajak</p>
+              <p className="font-data-mono font-bold text-on-surface text-lg mt-0.5">
+                33.03.{formData.nop.kec || '___'}.{formData.nop.kel || '___'}.{formData.nop.blok || '___'}.{formData.nop.nourut || '____'}.{formData.nop.kode || '_'}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant/50 pb-2">Identitas Subjek Pajak</h6>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant w-1/3">Nama Lengkap</td>
+                    <td className="py-1.5 font-bold text-on-surface">{formData.nama || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">NIK (No. KTP)</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.nik || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Pekerjaan</td>
+                    <td className="py-1.5 text-on-surface">{formData.pekerjaan || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant align-top">Alamat WP</td>
+                    <td className="py-1.5 text-on-surface leading-snug">
+                      {formData.alamat || '-'}, RT {formData.rt || '-'}/RW {formData.rw || '-'}, {formData.kelurahan || '-'}, {formData.kabupaten}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-4">
+              <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant/50 pb-2">Spesifikasi Objek Pajak</h6>
+              <table className="w-full text-sm">
+                <tbody>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant w-1/3">Alamat Objek</td>
+                    <td className="py-1.5 font-bold text-on-surface">{formData.alamatObjek || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Luas Tanah</td>
+                    <td className="py-1.5 font-bold text-on-surface">{formData.luasTanah || '-'} M²</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Jenis Tanah</td>
+                    <td className="py-1.5 text-on-surface">{formData.jenisTanah || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Titik Koordinat</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.titikKoordinat || '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {/* BAGIAN F: PERNYATAAN SUBJEK PAJAK */}
+        <div className="pt-6 border-t border-outline-variant space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 bg-primary h-8 rounded-full"></div>
+            <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+              F. PERNYATAAN SUBJEK PAJAK
+            </h4>
+          </div>
+          <div className="p-5 bg-surface-container-low border border-outline-variant rounded-xl space-y-4">
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              Saya menyatakan bahwa informasi yang telah saya berikan dalam formulir ini termasuk lampirannya adalah <b>benar, jelas, dan lengkap</b> menurut keadaan yang sebenarnya, sesuai dengan Pasal 10 ayat (2) Peraturan Daerah Kabupaten Purbalingga No.15 Tahun 2012.
+            </p>
+
+            <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 border border-outline-variant rounded hover:bg-surface-container transition-colors">
+              <input
+                type="checkbox"
+                className="w-5 h-5 mt-0.5 text-primary focus:ring-primary border-outline-variant rounded"
+                checked={formData.persetujuan}
+                onChange={(e) => setFormData(prev => ({ ...prev, persetujuan: e.target.checked }))}
+              />
+              <span className="font-bold text-on-surface text-sm">
+                Ya, saya menyetujui pernyataan di atas.
+              </span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+{/* STEP 5: VERIFIKASI / SELESAI */ }
+{
+  step === 5 && (
+    <div className="space-y-6 text-center py-8 animate-fadeIn">
+      <div className="w-20 h-20 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+        <span className="material-symbols-outlined text-[48px]">check_circle</span>
+      </div>
+      <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">
+        SPOP Berhasil Dikirim
+      </h3>
+      <p className="text-body-md font-body-md text-on-surface-variant max-w-lg mx-auto">
+        Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop.kec}.${formData.nop.kel}.${formData.nop.blok}.${formData.nop.nourut}.${formData.nop.kode}`}</span> telah masuk ke sistem antrean validasi BKD Kabupaten Purbalingga.
+      </p>
+      <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
+        <div className="flex justify-between text-sm">
+          <span className="text-on-surface-variant">ID Submisi</span>
+          <span className="font-bold text-on-surface font-data-mono">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-on-surface-variant">Estimasi Verifikasi</span>
+          <span className="font-bold text-secondary flex items-center gap-1">
+            <span className="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+            ± 24 Jam Kerja
+          </span>
+        </div>
+      </div>
+      <div className="pt-8 flex justify-center gap-4">
+        <button
+          onClick={() => onNavigate('dashboard_desa')}
+          className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
+        >
+          Kembali ke Dashboard
+        </button>
+      </div>
+    </div>
+  )
+}
+
+{/* Navigation Controls */ }
+{
+  step < 5 && (
+    <div className="space-y-6">
+      <div className="p-4 bg-surface-container-low rounded-lg border-l-4 border-primary flex gap-4 items-center">
+        <span className="material-symbols-outlined text-primary">verified</span>
+        <div>
+          <p className="font-label-sm text-primary">Catatan Validasi</p>
+          <p className="text-[13px] text-on-surface-variant">
+            Data yang Anda kirimkan akan melalui proses validasi oleh Admin BKD (Badan Keuangan Daerah) Kabupaten Purbalingga sebelum diterbitkan SPPT resmi.
+          </p>
+        </div>
+      </div>
+
+      <div className="pt-10 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
+        <button
+          type="button"
+          onClick={prevStep}
+          disabled={step === 1}
+          className={`w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-surface-container transition-all flex items-center justify-center gap-2 group ${step === 1 ? 'opacity-50 cursor-not-allowed border-outline text-outline' : ''
+            }`}
+        >
+          <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1">
+            arrow_back
+          </span>
+          {step === 1 ? 'Batal' : 'Kembali'}
+        </button>
+        <div className="flex flex-col md:flex-row w-full md:w-auto gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              setToast({ show: true, message: 'Draft formulir berhasil disimpan ke akun Anda.', type: 'success' });
+              setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+            }}
+            className="w-full md:w-auto px-10 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-bold hover:bg-surface-container transition-colors"
+          >
+            Simpan Draft
+          </button>
+          <button
+            type="button"
+            onClick={step === 4 ? handleSubmit : nextStep}
+            disabled={isSubmitting || (step === 4 && !formData.persetujuan)}
+            className={`w-full md:w-auto px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting || (step === 4 && !formData.persetujuan)
+                ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
+                : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
+              }`}
+          >
+            {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
+            {!isSubmitting && (
+              <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                arrow_forward
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+      {submitError && (
+        <div className="p-4 bg-error-container text-error rounded mt-4">
+          <strong>Terjadi Kesalahan:</strong> {submitError}
+        </div>
+      )}
+    </div>
+  )
+}
+        </form >
+      </div >
+
+  {/* Contextual Information (Bento Style) */ }
+{
+  step < 5 && (
+    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
+        <div className="bg-white/40 p-3 rounded-lg text-secondary">
+          <span className="material-symbols-outlined text-[32px]">verified_user</span>
+        </div>
+        <div>
+          <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
+            Keamanan Data Terjamin
+          </h5>
+          <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
+            Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
+          </p>
+        </div>
+      </div>
+      <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
+        <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
+          Butuh Bantuan?
+        </h6>
+        <div className="space-y-4">
+          <a
+            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
+            href="tel:0281891098"
+          >
+            <span className="material-symbols-outlined text-primary">call</span>
+            <span className="font-label-sm">Hotline: (0281) 891098</span>
+          </a>
+          <a
+            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
+            href="mailto:bakeuda@purbalinggakab.go.id"
+          >
+            <span className="material-symbols-outlined text-primary">mail</span>
+            <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+{/* Footer Small Print */ }
       <footer className="mt-12 pb-12 text-center border-t border-outline-variant pt-8">
         <p className="text-[12px] text-outline">
           *) Khusus untuk PNS/ABRI/Pensiunan yang penghasilannya semata-mata berasal dari gaji atau uang pensiunan.
@@ -1056,6 +1237,6 @@ export default function FormulirSPOP({ onNavigate }) {
         type={toast.type} 
         onClose={() => setToast({ ...toast, show: false })} 
       />
-    </main>
+    </main >
   );
 }
