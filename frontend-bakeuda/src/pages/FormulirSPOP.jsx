@@ -6,6 +6,9 @@ import api from '../utils/axios';
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
+  const [nopAsal, setNopAsal] = useState('33.03.');
+  const [spptLama, setSpptLama] = useState('');
+
   const [formData, setFormData] = useState({
     transaksi: '',
     nop: {
@@ -30,19 +33,26 @@ export default function FormulirSPOP({ onNavigate }) {
     noSpptLama: '',
     nik: '',
     nama: '',
-    statusWp: 'Pemilik',
-    pekerjaan: 'PNS',
+    npwp: '',
+    noTelp: '',
+    statusWp: '',
+    pekerjaan: '',
     alamat: '',
+    blokKav: '',
     rt: '',
     rw: '',
     kelurahan: '',
     kabupaten: 'Purbalingga',
     kodePos: '',
-    // Step 3 Objek Pajak
     luasTanah: '',
-    jenisTanah: 'Darat',
+    jenisTanah: '',
     alamatObjek: '',
-    estimasiNjop: ''
+    noPersil: '',
+    blokKavObjek: '',
+    rwObjek: '',
+    rtObjek: '',
+    kelurahanObjek: '',
+    zonaNilaiTanah: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,13 +65,56 @@ export default function FormulirSPOP({ onNavigate }) {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
   };
 
+  const handleNopAsalChange = (e) => {
+    let val = e.target.value;
+
+    // Cegah penghapusan prefix 33.03.
+    if (!val.startsWith('33.03.')) {
+      if (val.length < 6) {
+        setNopAsal('33.03.');
+        return;
+      }
+    }
+
+    let raw = val.replace(/\D/g, '');
+
+    if (raw.startsWith('3303')) {
+      raw = raw.substring(4);
+    }
+    
+    raw = '3303' + raw;
+    raw = raw.substring(0, 18);
+
+    let formatted = '';
+    if (raw.length > 0) formatted += raw.substring(0, 2); // 33
+    if (raw.length > 2) formatted += '.' + raw.substring(2, 4); // 03
+    if (raw.length > 4) formatted += '.' + raw.substring(4, 7); // Kec
+    if (raw.length > 7) formatted += '.' + raw.substring(7, 10); // Kel
+    if (raw.length > 10) formatted += '.' + raw.substring(10, 13); // Blok
+    if (raw.length > 13) formatted += '.' + raw.substring(13, 17); // No Urut (Ubah strip jadi titik di sini)
+    if (raw.length > 17) formatted += '.' + raw.substring(17, 18); // Kode
+
+    setNopAsal(formatted);
+  };
+
+  const handleSpptLamaChange = (e) => {
+    // Ambil angka saja, batasi maksimal 9 digit
+    let raw = e.target.value.replace(/\D/g, '').substring(0, 9);
+
+    // Rakit kembali format XXX.XXX.XXX
+    let formatted = '';
+    if (raw.length > 0) formatted += raw.substring(0, 3);
+    if (raw.length > 3) formatted += '.' + raw.substring(3, 6);
+    if (raw.length > 6) formatted += '.' + raw.substring(6, 9);
+
+    setSpptLama(formatted);
+  };
+
   const formatNOPString = (val) => {
     const digits = val.replace(/\D/g, '').substring(0, 18);
     let res = '';
     for (let i = 0; i < digits.length; i++) {
-      if (i === 2 || i === 4 || i === 7 || i === 10) res += '.';
-      else if (i === 13) res += '-';
-      else if (i === 17) res += '.';
+      if (i === 2 || i === 4 || i === 7 || i === 10 || i === 13 || i === 17) res += '.';
       res += digits[i];
     }
     return res;
@@ -87,16 +140,19 @@ export default function FormulirSPOP({ onNavigate }) {
     } else if (currentStep === 2) {
       if (!formData.nik || formData.nik.length !== 16 || !/^\d+$/.test(formData.nik)) newErrors.nik = 'NIK wajib 16 digit angka';
       if (!formData.nama.trim()) newErrors.nama = 'Nama Wajib Pajak wajib diisi';
+      if (!formData.statusWp) newErrors.statusWp = 'Pilih Status WP';
+      if (!formData.pekerjaan) newErrors.pekerjaan = 'Pilih Pekerjaan';
       if (!formData.alamat.trim()) newErrors.alamat = 'Alamat wajib diisi';
       if (!formData.kelurahan.trim()) newErrors.kelurahan = 'Kelurahan wajib diisi';
       if (!formData.kabupaten.trim()) newErrors.kabupaten = 'Kabupaten wajib diisi';
       if (!formData.kodePos || formData.kodePos.length !== 5 || !/^\d+$/.test(formData.kodePos)) newErrors.kodePos = 'Kode Pos wajib 5 digit angka';
     } else if (currentStep === 3) {
+      if (!formData.alamatObjek.trim()) newErrors.alamatObjek = 'Jalan (Alamat Objek Pajak) wajib diisi';
+      if (!formData.kelurahanObjek.trim()) newErrors.kelurahanObjek = 'Kelurahan / Desa wajib diisi';
       if (!formData.luasTanah || parseFloat(formData.luasTanah) <= 0) newErrors.luasTanah = 'Luas Tanah wajib diisi dengan angka > 0';
-      if (!formData.alamatObjek.trim()) newErrors.alamatObjek = 'Alamat lengkap objek pajak wajib diisi';
-      if (!formData.estimasiNjop || parseFloat(formData.estimasiNjop) <= 0) newErrors.estimasiNjop = 'Estimasi NJOP wajib diisi dengan angka > 0';
+      if (!formData.jenisTanah) newErrors.jenisTanah = 'Pilih Jenis Tanah';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -118,9 +174,9 @@ export default function FormulirSPOP({ onNavigate }) {
 
   const handleSubmit = async () => {
     if (!validateStep(step)) {
-       setToast({ show: true, message: 'Pastikan semua data sudah benar sebelum disubmit.', type: 'error' });
-       setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
-       return;
+      setToast({ show: true, message: 'Pastikan semua data sudah benar sebelum disubmit.', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
+      return;
     }
     setIsSubmitting(true);
     try {
@@ -137,9 +193,9 @@ export default function FormulirSPOP({ onNavigate }) {
         jenis_transaksi,
         tahun_pajak: new Date().getFullYear(),
         nop_bersama: nopBersama,
-        no_sppt_lama: formData.noSpptLama,
+        no_sppt_lama: spptLama,
         nama_pengaju: formData.nama,
-        detail_asal: formData.nopAsal ? [{ nop_asal: formData.nopAsal }] : [],
+        detail_asal: nopAsal ? [{ nop_asal: nopAsal }] : [],
         detail_tujuan: [{
           nik_calon_subjek: formData.nik,
           luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
@@ -185,18 +241,16 @@ export default function FormulirSPOP({ onNavigate }) {
               <button
                 onClick={() => isCompleted && setStep(s.num)}
                 disabled={step === 5}
-                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${
-                  isActive ? 'opacity-100' : isCompleted ? 'opacity-90' : 'opacity-40'
-                }`}
+                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${isActive ? 'opacity-100' : isCompleted ? 'opacity-90' : 'opacity-40'
+                  }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-transform ${
-                    isActive
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-transform ${isActive
                       ? 'bg-primary text-on-primary scale-110 shadow-md'
                       : isCompleted
-                      ? 'bg-secondary text-on-secondary hover:scale-105'
-                      : 'bg-surface-container-high text-on-surface-variant'
-                  }`}
+                        ? 'bg-secondary text-on-secondary hover:scale-105'
+                        : 'bg-surface-container-high text-on-surface-variant'
+                    }`}
                 >
                   {isCompleted ? (
                     <span className="material-symbols-outlined text-[20px]">check</span>
@@ -205,18 +259,16 @@ export default function FormulirSPOP({ onNavigate }) {
                   )}
                 </div>
                 <span
-                  className={`font-label-sm text-xs sm:text-sm ${
-                    isActive ? 'text-primary font-bold' : isCompleted ? 'text-secondary font-semibold' : 'text-on-surface-variant'
-                  }`}
+                  className={`font-label-sm text-xs sm:text-sm ${isActive ? 'text-primary font-bold' : isCompleted ? 'text-secondary font-semibold' : 'text-on-surface-variant'
+                    }`}
                 >
                   {s.name}
                 </span>
               </button>
               {index < steps.length - 1 && (
                 <div
-                  className={`h-px flex-1 mb-6 mx-2 transition-colors duration-300 ${
-                    step > s.num ? 'bg-secondary' : 'bg-outline-variant'
-                  }`}
+                  className={`h-px flex-1 mb-6 mx-2 transition-colors duration-300 ${step > s.num ? 'bg-secondary' : 'bg-outline-variant'
+                    }`}
                 />
               )}
             </React.Fragment>
@@ -249,11 +301,10 @@ export default function FormulirSPOP({ onNavigate }) {
                       ].map((t) => (
                         <label
                           key={t.val}
-                          className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-colors flex-1 ${
-                            formData.transaksi === t.val 
-                              ? 'border-primary bg-primary/5 shadow-sm' 
+                          className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-colors flex-1 ${formData.transaksi === t.val
+                              ? 'border-primary bg-primary/5 shadow-sm'
                               : 'border-outline-variant hover:bg-surface-container-low'
-                          }`}
+                            }`}
                         >
                           <input
                             type="radio"
@@ -275,14 +326,14 @@ export default function FormulirSPOP({ onNavigate }) {
                     <div className="overflow-x-auto pb-4 custom-scrollbar">
                       <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
                         <div className="space-y-4">
-                          <SegmentedNOPInput 
-                            value={formData.nop} 
+                          <SegmentedNOPInput
+                            value={formData.nop}
                             onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
                             label="NOP"
                             showHeaders={true}
                           />
-                          <SegmentedNOPInput 
-                            value={formData.nopBersama} 
+                          <SegmentedNOPInput
+                            value={formData.nopBersama}
                             onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
                             label="NOP BERSAMA"
                             showHeaders={false}
@@ -291,7 +342,7 @@ export default function FormulirSPOP({ onNavigate }) {
                         {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
                       </div>
                     </div>
-                    
+
                     <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
                       <div className="flex gap-2 items-start">
                         <span className="material-symbols-outlined text-tertiary">info</span>
@@ -315,25 +366,28 @@ export default function FormulirSPOP({ onNavigate }) {
                     A. INFORMASI TAMBAHAN UNTUK DATA BARU
                   </h4>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-on-surface block font-bold">NOP ASAL</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Input NOP ASAL */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-primary uppercase">NOP Asal</label>
                     <input
                       type="text"
-                      value={formData.nopAsal}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nopAsal: formatNOPString(e.target.value) }))}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary tracking-widest"
+                      value={nopAsal}
+                      onChange={handleNopAsalChange}
                       placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-on-surface block font-bold">NO. SPPT LAMA</label>
+
+                  {/* Input NO SPPT LAMA */}
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-bold text-primary uppercase">No. SPPT Lama</label>
                     <input
                       type="text"
-                      value={formData.noSpptLama}
-                      onChange={(e) => setFormData(prev => ({ ...prev, noSpptLama: formatSPPTString(e.target.value) }))}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary tracking-widest"
+                      value={spptLama}
+                      onChange={handleSpptLamaChange}
                       placeholder="XXX.XXX.XXX"
+                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
                   </div>
                 </div>
@@ -364,7 +418,58 @@ export default function FormulirSPOP({ onNavigate }) {
                     />
                     {errors.nik && <p className="text-error text-[12px]">{errors.nik}</p>}
                   </div>
-                  <div className="space-y-2">
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 mt-6">
+                  <div className="space-y-4">
+                    <label className="font-label-sm text-primary block">STATUS WP</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {['Pemilik', 'Penyewa', 'Pengelola', 'Pemakai', 'Sengketa'].map((status) => (
+                        <label
+                          key={status}
+                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.statusWp ? 'border-error' : 'border-outline-variant'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="statusWp"
+                            value={status}
+                            checked={formData.statusWp === status}
+                            onChange={(e) => handleTextChange('statusWp', e)}
+                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
+                          />
+                          <span className="font-label-sm text-on-surface">{status}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.statusWp && <p className="text-error text-[12px] mt-1">{errors.statusWp}</p>}
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="font-label-sm text-primary block">PEKERJAAN</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {['PNS', 'ABRI', 'Pensiunan', 'Badan', 'Lainnya'].map((job) => (
+                        <label
+                          key={job}
+                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.pekerjaan ? 'border-error' : 'border-outline-variant'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="pekerjaan"
+                            value={job}
+                            checked={formData.pekerjaan === job}
+                            onChange={(e) => handleTextChange('pekerjaan', e)}
+                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
+                          />
+                          <span className="font-label-sm text-on-surface">{job}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.pekerjaan && <p className="text-error text-[12px] mt-1">{errors.pekerjaan}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div className="space-y-2 md:col-span-2">
                     <label className="font-label-sm text-primary block">NAMA SUBJEK PAJAK</label>
                     <input
                       type="text"
@@ -375,61 +480,37 @@ export default function FormulirSPOP({ onNavigate }) {
                     />
                     {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <label className="font-label-sm text-primary block">STATUS WP (WAJIB PAJAK)</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {['Pemilik', 'Penyewa', 'Pengelola', 'Pemakai'].map((status, idx) => (
-                        <label
-                          key={status}
-                          className="flex items-center gap-2 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="statusWp"
-                            value={status}
-                            checked={formData.statusWp === status}
-                            onChange={(e) => handleTextChange('statusWp', e)}
-                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
-                          />
-                          <span className="font-label-sm text-on-surface">{idx + 1}. {status}</span>
-                        </label>
-                      ))}
-                    </div>
+                  <div className="space-y-2">
+                    <label className="font-label-sm text-primary block">NPWP</label>
+                    <input
+                      type="text"
+                      value={formData.npwp}
+                      onChange={(e) => handleTextChange('npwp', e)}
+                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
+                      placeholder="Masukkan NPWP"
+                    />
                   </div>
 
-                  <div className="space-y-4">
-                    <label className="font-label-sm text-primary block">PEKERJAAN</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {['PNS', 'ABRI', 'Pensiunan', 'Badan / Swasta'].map((job, idx) => (
-                        <label
-                          key={job}
-                          className="flex items-center gap-2 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors cursor-pointer"
-                        >
-                          <input
-                            type="radio"
-                            name="pekerjaan"
-                            value={job}
-                            checked={formData.pekerjaan === job}
-                            onChange={(e) => handleTextChange('pekerjaan', e)}
-                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
-                          />
-                          <span className="font-label-sm text-on-surface">{idx + 1}. {job}</span>
-                        </label>
-                      ))}
-                    </div>
+                  <div className="space-y-2">
+                    <label className="font-label-sm text-primary block">No. TELP/HP.</label>
+                    <input
+                      type="text"
+                      value={formData.noTelp}
+                      onChange={(e) => handleTextChange('noTelp', e)}
+                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm focus:border-primary"
+                      placeholder="Masukkan No. Telp/HP"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-4 mt-6">
                   <h5 className="font-section-header text-section-header text-outline border-b pb-2">
                     ALAMAT LENGKAP SUBJEK PAJAK
                   </h5>
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                     <div className="md:col-span-8 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">Jalan / Dusun / Nama Jalan</label>
+                      <label className="font-label-sm text-on-surface-variant block">Alamat Subjek Pajak (Jalan)</label>
                       <input
                         type="text"
                         value={formData.alamat}
@@ -439,15 +520,14 @@ export default function FormulirSPOP({ onNavigate }) {
                       />
                       {errors.alamat && <p className="text-error text-[12px]">{errors.alamat}</p>}
                     </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <label className="font-label-sm text-on-surface-variant block">RT</label>
+                    <div className="md:col-span-4 space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">Blok/Kav/Nomor</label>
                       <input
                         type="text"
-                        maxLength={3}
-                        value={formData.rt}
-                        onChange={(e) => handleTextChange('rt', e)}
-                        className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="001"
+                        value={formData.blokKav}
+                        onChange={(e) => handleTextChange('blokKav', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                        placeholder="Contoh: Blok A No. 1"
                       />
                     </div>
                     <div className="md:col-span-2 space-y-2">
@@ -461,7 +541,18 @@ export default function FormulirSPOP({ onNavigate }) {
                         placeholder="002"
                       />
                     </div>
-                    <div className="md:col-span-4 space-y-2">
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">RT</label>
+                      <input
+                        type="text"
+                        maxLength={3}
+                        value={formData.rt}
+                        onChange={(e) => handleTextChange('rt', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
+                        placeholder="001"
+                      />
+                    </div>
+                    <div className="md:col-span-8 space-y-2">
                       <label className="font-label-sm text-on-surface-variant block">Kelurahan / Desa</label>
                       <input
                         type="text"
@@ -472,7 +563,7 @@ export default function FormulirSPOP({ onNavigate }) {
                       />
                       {errors.kelurahan && <p className="text-error text-[12px]">{errors.kelurahan}</p>}
                     </div>
-                    <div className="md:col-span-4 space-y-2">
+                    <div className="md:col-span-8 space-y-2">
                       <label className="font-label-sm text-on-surface-variant block">Kabupaten / Kota</label>
                       <input
                         type="text"
@@ -503,11 +594,86 @@ export default function FormulirSPOP({ onNavigate }) {
           {/* STEP 3: OBJEK PAJAK */}
           {step === 3 && (
             <div className="space-y-8 animate-fadeIn">
+              {/* BAGIAN C */}
               <section className="space-y-6">
                 <div className="flex items-center gap-3">
                   <div className="w-1 bg-primary h-8 rounded-full"></div>
                   <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-                    C. DATA OBJEK PAJAK
+                    C. DATA LETAK OBJEK PAJAK
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="font-label-sm text-primary block">No. PERSIL</label>
+                    <input
+                      type="text"
+                      value={formData.noPersil}
+                      onChange={(e) => handleTextChange('noPersil', e)}
+                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                    />
+                  </div>
+                  <div className="md:col-span-8 space-y-2">
+                    <label className="font-label-sm text-primary block">JALAN (ALAMAT OBJEK PAJAK)</label>
+                    <input
+                      type="text"
+                      value={formData.alamatObjek}
+                      onChange={(e) => handleTextChange('alamatObjek', e)}
+                      className={`w-full h-11 border ${errors.alamatObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
+                      placeholder="Contoh: Jl. Merdeka No. 45"
+                    />
+                    {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
+                  </div>
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">BLOK/KAV/NOMOR</label>
+                    <input
+                      type="text"
+                      value={formData.blokKavObjek}
+                      onChange={(e) => handleTextChange('blokKavObjek', e)}
+                      className="w-full h-11 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">RW</label>
+                    <input
+                      type="text"
+                      maxLength={3}
+                      value={formData.rwObjek}
+                      onChange={(e) => handleTextChange('rwObjek', e)}
+                      className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      placeholder="002"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">RT</label>
+                    <input
+                      type="text"
+                      maxLength={3}
+                      value={formData.rtObjek}
+                      onChange={(e) => handleTextChange('rtObjek', e)}
+                      className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm"
+                      placeholder="001"
+                    />
+                  </div>
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
+                    <input
+                      type="text"
+                      value={formData.kelurahanObjek}
+                      onChange={(e) => handleTextChange('kelurahanObjek', e)}
+                      className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
+                      placeholder="Contoh: Purbalingga Lor"
+                    />
+                    {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
+                  </div>
+                </div>
+              </section>
+
+              {/* BAGIAN D */}
+              <section className="space-y-6 pt-8 border-t border-outline-variant/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 bg-primary h-8 rounded-full"></div>
+                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                    D. DATA TANAH
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -523,39 +689,37 @@ export default function FormulirSPOP({ onNavigate }) {
                     {errors.luasTanah && <p className="text-error text-[12px]">{errors.luasTanah}</p>}
                   </div>
                   <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">JENIS TANAH</label>
-                    <select
-                      value={formData.jenisTanah}
-                      onChange={(e) => handleTextChange('jenisTanah', e)}
-                      className="w-full h-12 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary shadow-sm"
-                    >
-                      <option>Darat</option>
-                      <option>Sawah</option>
-                      <option>Rawa</option>
-                      <option>Tambak/Kolam</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="font-label-sm text-primary block">ALAMAT LENGKAP OBJEK PAJAK</label>
-                    <textarea
-                      rows={3}
-                      value={formData.alamatObjek}
-                      onChange={(e) => handleTextChange('alamatObjek', e)}
-                      className={`w-full border ${errors.alamatObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded p-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Masukkan alamat fisik detail objek pajak tanah/bangunan..."
-                    />
-                    {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">ESTIMASI NJOP RP. (PER M²)</label>
+                    <label className="font-label-sm text-primary block">ZONA NILAI TANAH</label>
                     <input
-                      type="number"
-                      value={formData.estimasiNjop}
-                      onChange={(e) => handleTextChange('estimasiNjop', e)}
-                      className={`w-full h-12 border ${errors.estimasiNjop ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                      placeholder="Contoh: 500000"
+                      type="text"
+                      value={formData.zonaNilaiTanah}
+                      onChange={(e) => handleTextChange('zonaNilaiTanah', e)}
+                      className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-surface-container-lowest focus:border-primary shadow-sm"
+                      placeholder="Diisi oleh Petugas"
                     />
-                    {errors.estimasiNjop && <p className="text-error text-[12px]">{errors.estimasiNjop}</p>}
+                  </div>
+                  
+                  <div className="md:col-span-2 space-y-4">
+                    <label className="font-label-sm text-primary block">JENIS TANAH</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {['Tanah + Bangunan', 'Kavling Siap Bangun', 'Tanah Kosong', 'Fasilitas Umum'].map((jenis) => (
+                        <label
+                          key={jenis}
+                          className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.jenisTanah ? 'border-error' : 'border-outline-variant'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="jenisTanah"
+                            value={jenis}
+                            checked={formData.jenisTanah === jenis}
+                            onChange={(e) => handleTextChange('jenisTanah', e)}
+                            className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant flex-shrink-0"
+                          />
+                          <span className="font-label-sm text-on-surface leading-snug">{jenis}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.jenisTanah && <p className="text-error text-[12px] mt-1">{errors.jenisTanah}</p>}
                   </div>
                 </div>
               </section>
@@ -580,8 +744,8 @@ export default function FormulirSPOP({ onNavigate }) {
                         {formData.transaksi === 'baru'
                           ? 'Perekaman Data Baru'
                           : formData.transaksi === 'update'
-                          ? 'Pemutakhiran Data'
-                          : 'Penghapusan Data'}
+                            ? 'Pemutakhiran Data'
+                            : 'Penghapusan Data'}
                       </p>
                     </div>
                     <div>
@@ -680,9 +844,8 @@ export default function FormulirSPOP({ onNavigate }) {
                   type="button"
                   onClick={prevStep}
                   disabled={step === 1}
-                  className={`w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-surface-container transition-all flex items-center justify-center gap-2 group ${
-                    step === 1 ? 'opacity-50 cursor-not-allowed border-outline text-outline' : ''
-                  }`}
+                  className={`w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-surface-container transition-all flex items-center justify-center gap-2 group ${step === 1 ? 'opacity-50 cursor-not-allowed border-outline text-outline' : ''
+                    }`}
                 >
                   <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1">
                     arrow_back
@@ -778,13 +941,11 @@ export default function FormulirSPOP({ onNavigate }) {
 
       {/* Custom Toast Notification */}
       <div
-        className={`fixed bottom-8 right-8 ${
-          toast.type === 'error' 
-            ? 'bg-error-container text-on-error-container border-error/35' 
+        className={`fixed bottom-8 right-8 ${toast.type === 'error'
+            ? 'bg-error-container text-on-error-container border-error/35'
             : 'bg-secondary-container text-on-secondary-container border-secondary/35'
-        } border px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${
-          toast.show ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
-        }`}
+          } border px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
+          }`}
       >
         <span className={`material-symbols-outlined ${toast.type === 'error' ? 'text-error' : 'text-secondary'} text-[24px]`}>
           {toast.type === 'error' ? 'error' : 'check_circle'}
