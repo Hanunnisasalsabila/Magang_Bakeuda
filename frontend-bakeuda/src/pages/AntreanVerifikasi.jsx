@@ -221,7 +221,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => onNavigate('detail_review')}
+                        onClick={() => onNavigate('detail_review', { id: item.id })}
                         className={`px-4 py-2 rounded-lg font-label-sm text-label-sm transition-all flex items-center gap-2 mx-auto ${
                           item.urgent
                             ? 'bg-error text-on-error hover:opacity-95'

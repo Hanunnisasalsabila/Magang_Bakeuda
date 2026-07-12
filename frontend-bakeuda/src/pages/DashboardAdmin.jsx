@@ -31,6 +31,7 @@ export default function DashboardAdmin({ onNavigate }) {
         ]);
 
         const formattedList = listRes.data.data.slice(0, 5).map(item => ({
+          id: item.id_transaksi,
           nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
           name: item.nama_pengaju || 'Tanpa Nama',
           district: item.pengaju?.nama_lengkap || 'Admin Desa',
@@ -270,7 +271,7 @@ export default function DashboardAdmin({ onNavigate }) {
                     <td className="px-gutter py-4 text-[10px] text-on-surface-variant">{act.time}</td>
                     <td className="px-gutter py-4">
                       <button
-                        onClick={() => onNavigate('detail_review')}
+                        onClick={() => onNavigate('detail_review', { id: act.id })}
                         className="material-symbols-outlined text-primary hover:bg-primary/10 rounded p-1 transition-colors"
                       >
                         visibility

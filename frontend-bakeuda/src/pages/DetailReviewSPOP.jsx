@@ -1,40 +1,78 @@
 import React, { useState, useEffect } from 'react';
+import api from '../utils/axios';
 
-export default function DetailReviewSPOP({ onNavigate }) {
+export default function DetailReviewSPOP({ onNavigate, transaksiId }) {
   const [decisionNotes, setDecisionNotes] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Show an initial auto-save toast to mimic static page behavior
-    const timer1 = setTimeout(() => {
-      setToastMessage('Draft verifikasi disimpan otomatis');
+    const fetchDetail = async () => {
+      try {
+        if (!transaksiId) {
+          setLoading(false);
+          return;
+        }
+        const res = await api.get('/transaksi-spop');
+        const found = res.data.data.find(item => item.id_transaksi === transaksiId);
+        if (found) {
+          setData(found);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil detail:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDetail();
+  }, [transaksiId]);
+
+  const handleDecision = async (approved) => {
+    if (!data) return;
+    try {
+      await api.patch(`/transaksi-spop/${data.id_transaksi}/verifikasi`, {
+        status_ajuan: approved ? 'DISETUJUI' : 'REVISI',
+        catatan_bakeuda: decisionNotes || (approved ? 'Sesuai' : 'Perlu perbaikan')
+      });
+      setToastMessage(
+        approved
+          ? 'Pengajuan SPOP berhasil disetujui!'
+          : 'Pengajuan SPOP ditolak dan dikembalikan untuk revisi.'
+      );
       setShowToast(true);
-      const timer2 = setTimeout(() => {
+      setTimeout(() => {
         setShowToast(false);
-      }, 3000);
-      return () => clearTimeout(timer2);
-    }, 1500);
-
-    return () => clearTimeout(timer1);
-  }, []);
-
-  const handleDecision = (approved) => {
-    setToastMessage(
-      approved
-        ? 'Pengajuan SPOP berhasil disetujui! SPPT sedang diterbitkan.'
-        : 'Pengajuan SPOP ditolak dan dikembalikan untuk revisi.'
-    );
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-      onNavigate('antrean_verifikasi');
-    }, 2000);
+        onNavigate('antrean_verifikasi');
+      }, 2000);
+    } catch (error) {
+      console.error("Gagal verifikasi:", error);
+      alert('Gagal memproses verifikasi');
+    }
   };
 
   const buildings = [
-    { no: '01', type: 'Rumah Tinggal', year: '1998', area: 120, status: 'TIDAK BERUBAH' },
-    { no: '02', type: 'Garasi / Gudang', year: '2022', area: 45, status: 'BARU' },
+    { no: '01', type: 'Rumah Tinggal', year: '1998', area: data?.detail_tujuan?.[0]?.luas_bangunan_baru || 0, status: 'BARU' }
+  ];
+
+  if (loading) {
+    return <div className="p-8 text-center text-on-surface-variant">Memuat data review...</div>;
+  }
+
+  if (!data) {
+    return <div className="p-8 text-center text-error">Data transaksi tidak ditemukan. Silakan kembali ke antrean.</div>;
+  }
+
+  const nopRaw = data.detail_tujuan[0]?.nop_generated || data.detail_tujuan[0]?.no_persil_baru || '..................';
+  const nopParts = [
+    nopRaw.substring(0, 2) || '33',
+    nopRaw.substring(2, 4) || '03',
+    nopRaw.substring(4, 7) || '000',
+    nopRaw.substring(7, 10) || '000',
+    nopRaw.substring(10, 13) || '000',
+    nopRaw.substring(13, 17) || '0000',
+    nopRaw.substring(17, 18) || '0'
   ];
 
   return (
@@ -56,8 +94,8 @@ export default function DetailReviewSPOP({ onNavigate }) {
             <h2 className="font-display-lg text-display-lg text-on-surface leading-tight font-bold">
               Review Verifikasi SPOP
             </h2>
-            <p className="text-on-surface-variant mt-1 text-sm">
-              Formulir SPOP-A01-2024 • ID: #TRX-9821-PBG
+            <p className="text-on-surface-variant mt-1 text-sm uppercase">
+              Jenis: {data.jenis_transaksi} • TRX: {data.id_transaksi.split('-')[0]}
             </p>
           </div>
         </div>
@@ -70,7 +108,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
               Tgl Pengajuan
             </span>
             <span className="font-data-mono text-data-mono font-medium text-sm text-primary">
-              14 Oct 2023, 10:45 WIB
+              {new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
           </div>
         </div>
@@ -86,7 +124,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
               NOMOR OBJEK PAJAK (NOP)
             </h3>
             <div className="flex flex-wrap gap-2">
-              {['33', '03', '050', '012', '005', '0340', '0'].map((seg, i) => (
+              {nopParts.map((seg, i) => (
                 <span
                   key={i}
                   className="border border-outline-variant px-3 py-1.5 rounded font-data-mono font-bold text-primary bg-surface-container-low shadow-sm"
@@ -112,7 +150,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
                   <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
                     Nama Subjek Pajak
                   </label>
-                  <div className="font-bold text-on-surface text-lg">BUDI SANTOSO, S.T.</div>
+                  <div className="font-bold text-on-surface text-lg">{data.nama_pengaju || 'TIDAK DIKETAHUI'}</div>
                 </div>
                 <div>
                   <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
@@ -122,10 +160,10 @@ export default function DetailReviewSPOP({ onNavigate }) {
                 </div>
                 <div>
                   <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
-                    NPWP
+                    NPWP/NIK
                   </label>
                   <div className="font-data-mono text-data-mono font-medium text-sm">
-                    09.234.567.8-522.000
+                    {data.detail_tujuan[0]?.nik_calon_subjek || '................'}
                   </div>
                 </div>
               </div>
@@ -170,16 +208,12 @@ export default function DetailReviewSPOP({ onNavigate }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">
+                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">
                   Luas Tanah (m²)
                 </label>
                 <div className="flex items-center gap-3">
-                  <div className="text-decoration-line-through text-error font-medium text-sm">
-                    450 m²
-                  </div>
-                  <span className="material-symbols-outlined text-on-surface-variant">arrow_forward</span>
                   <div className="bg-secondary-container text-on-secondary-container border-l-4 border-secondary px-3 py-1 font-bold text-lg rounded shadow-sm">
-                    525 m²
+                    {data.detail_tujuan[0]?.luas_tanah_baru || 0} m²
                   </div>
                 </div>
               </div>
@@ -187,7 +221,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
                 <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">
                   Jenis Tanah
                 </label>
-                <div className="font-bold text-on-surface text-lg">Tanah Darat</div>
+                <div className="font-bold text-on-surface text-lg uppercase">{data.detail_tujuan[0]?.jenis_tanah_baru || 'Tanah Darat'}</div>
               </div>
             </div>
           </section>

@@ -12,8 +12,6 @@ export default function ProfilPengguna({ role }) {
     name: '',
     nip: '',
     role: '',
-    email: '',
-    phone: '',
     dept: '',
     avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
   });
@@ -28,9 +26,7 @@ export default function ProfilPengguna({ role }) {
             name: data.nama_lengkap,
             nip: data.nip || '-',
             role: data.role === 'DESA' ? `Perangkat Desa ${data.wilayah?.nama_desa || ''}` : 'Verifikator BKD',
-            email: '-', // Placeholder as it's not in schema yet
-            phone: '-', // Placeholder
-            dept: data.wilayah ? `Kec. ${data.wilayah.kecamatan}` : '-',
+            dept: data.wilayah ? `Kecamatan ${data.wilayah.kecamatan}` : 'Badan Keuangan Daerah',
             avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
           });
         }
@@ -91,32 +87,6 @@ export default function ProfilPengguna({ role }) {
               className="w-32 h-32 rounded-xl border-4 border-surface-container-lowest shadow-md object-cover bg-surface"
               src={profileData.avatar}
             />
-            <button className="absolute bottom-2 right-2 bg-primary text-white p-1.5 rounded-lg shadow-lg hover:bg-primary-container transition-colors focus:outline-none">
-              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-            </button>
-          </div>
-          <div className="flex-1 mb-2">
-            <h2 className="font-display-lg text-primary font-bold text-2xl md:text-3xl">
-              {profileData.name}
-            </h2>
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1 mt-1">
-              <div className="flex items-center gap-2 text-on-surface-variant text-sm">
-                <span className="material-symbols-outlined text-[20px] text-primary">badge</span>
-                <span>NIP: {profileData.nip}</span>
-              </div>
-              <div className="flex items-center gap-2 text-on-surface-variant text-sm">
-                <span className="material-symbols-outlined text-[20px] text-primary">work</span>
-                <span>{profileData.role}</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3 mb-2 w-full md:w-auto">
-            <button
-              onClick={() => alert('Fitur edit foto dalam pengembangan.')}
-              className="flex-1 md:flex-none px-6 py-2 border border-outline text-primary font-bold text-sm rounded-lg hover:bg-surface-container-low transition-colors active:scale-95 focus:outline-none"
-            >
-              Ubah Foto
-            </button>
           </div>
         </div>
       </section>
@@ -152,33 +122,6 @@ export default function ProfilPengguna({ role }) {
                   readOnly
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
                 />
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Alamat Email
-                </label>
-                <input
-                  type="email"
-                  value={profileData.email}
-                  readOnly
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Nomor Telepon
-                </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-outline-variant bg-surface-container text-on-surface-variant font-label-sm">
-                    +62
-                  </span>
-                  <input
-                    type="text"
-                    value={profileData.phone}
-                    readOnly
-                    className="w-full bg-surface-container border border-outline-variant rounded-r-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                  />
-                </div>
               </div>
               <div className="md:col-span-2 space-y-1">
                 <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
@@ -270,96 +213,10 @@ export default function ProfilPengguna({ role }) {
                 </p>
               </div>
 
-              <div className="p-4 bg-surface/50 rounded-xl border border-outline-variant">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-outline">verified_user</span>
-                    <span className="font-label-sm font-semibold">Autentikasi 2-Faktor</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={tfaEnabled}
-                      onChange={() => setTfaEnabled(!tfaEnabled)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
-                  </label>
-                </div>
-                <p className="text-[12px] text-on-surface-variant leading-tight font-medium">
-                  Menambah lapisan keamanan ekstra pada akun Anda menggunakan email / authentikator.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-outline-variant">
-                <h4 className="font-label-sm text-on-surface-variant text-xs mb-4 font-bold uppercase tracking-wider">
-                  Sesi Aktif
-                </h4>
-                <div className="flex items-center gap-4 text-on-surface">
-                  <span className="material-symbols-outlined text-secondary text-[24px]">computer</span>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-bold">Windows Laptop</p>
-                    <p className="text-[12px] text-on-surface-variant font-medium">Chrome • Sedang Aktif</p>
-                  </div>
-                  <button
-                    onClick={() => alert('Sesi aktif berhasil dikeluarkan.')}
-                    className="text-error font-label-sm font-bold text-xs hover:underline focus:outline-none"
-                  >
-                    Keluar Sesi
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Language & Regional */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">language</span>
-              <h3 className="font-headline-md text-on-background font-bold">Bahasa &amp; Regional</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs block font-semibold ml-1">
-                  Bahasa Utama
-                </label>
-                <select className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
-                  <option>Bahasa Indonesia</option>
-                  <option>English</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs block font-semibold ml-1">
-                  Zona Waktu
-                </label>
-                <select className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
-                  <option>(GMT+07:00) Jakarta</option>
-                </select>
-              </div>
             </div>
           </section>
         </div>
       </div>
-
-      {/* Danger Zone */}
-      <section className="bg-error-container border border-error rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-        <div>
-          <h3 className="font-headline-md text-on-error-container font-bold text-lg">Zona Bahaya</h3>
-          <p className="text-on-error-container opacity-85 font-body-md text-sm mt-1">
-            Penghapusan akun akan menghilangkan semua akses ke sistem perpajakan. Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            if (confirm('Apakah Anda yakin ingin menonaktifkan akun Anda secara permanen?')) {
-              alert('Permohonan penonaktifan akun dikirim.');
-            }
-          }}
-          className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg hover:shadow-lg transition-all active:scale-95 shrink-0 focus:outline-none"
-        >
-          Nonaktifkan Akun
-        </button>
-      </section>
 
       {/* Success Toast Notification */}
       <div
