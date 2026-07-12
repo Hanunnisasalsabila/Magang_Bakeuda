@@ -5,7 +5,18 @@ export default function DetailReviewSPOP({ onNavigate }) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Tahap 5: State untuk Verifikasi Desa
+  const [nipPejabat, setNipPejabat] = useState('');
+  const [urlDokumenFisik, setUrlDokumenFisik] = useState('');
+  const [pejabatDesa, setPejabatDesa] = useState([]);
+  const [isUploadingDokumen, setIsUploadingDokumen] = useState(false);
+
   useEffect(() => {
+    // Simulasi Fetch Pejabat Desa
+    setPejabatDesa([
+      { nip: '198001012010011001', nama_pejabat: 'Bapak Kades Purbalingga' },
+      { nip: '198502022015021002', nama_pejabat: 'Bapak Sekdes Purbalingga' }
+    ]);
     // Show an initial auto-save toast to mimic static page behavior
     const timer1 = setTimeout(() => {
       setToastMessage('Draft verifikasi disimpan otomatis');
@@ -20,16 +31,35 @@ export default function DetailReviewSPOP({ onNavigate }) {
   }, []);
 
   const handleDecision = (approved) => {
+    if (approved && (!nipPejabat || !urlDokumenFisik)) {
+      setToastMessage('Gagal: Pilih NIP Pejabat dan Unggah Dokumen Fisik terlebih dahulu!');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
     setToastMessage(
       approved
-        ? 'Pengajuan SPOP berhasil disetujui! SPPT sedang diterbitkan.'
+        ? 'Verifikasi Desa Berhasil! Dokumen diteruskan ke Antrean Bakeuda.'
         : 'Pengajuan SPOP ditolak dan dikembalikan untuk revisi.'
     );
     setShowToast(true);
     setTimeout(() => {
       setShowToast(false);
-      onNavigate('antrean_verifikasi');
+      onNavigate('dashboard_desa');
     }, 2000);
+  };
+
+  const handleUploadDokumenFisik = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploadingDokumen(true);
+      setTimeout(() => {
+        setIsUploadingDokumen(false);
+        const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=SPOP_Fisik_${encodeURIComponent(file.name)}`;
+        setUrlDokumenFisik(dummyUrl);
+      }, 1500);
+    }
   };
 
   const buildings = [
@@ -351,17 +381,59 @@ export default function DetailReviewSPOP({ onNavigate }) {
               Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung memperbarui database Master Data PBB.
             </p>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-8 space-y-1">
-                <label className="block font-label-sm text-label-sm text-primary mb-2">
-                  Catatan / Alasan Verifikasi
-                </label>
-                <textarea
-                  value={decisionNotes}
-                  onChange={(e) => setDecisionNotes(e.target.value)}
-                  className="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary text-sm p-4 bg-white"
-                  placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat nomor sert: 09283/2023..."
-                  rows={4}
-                />
+              <div className="lg:col-span-8 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block font-label-sm text-label-sm text-primary mb-1">
+                      Pilih Pejabat Berwenang (Kades/Sekdes)
+                    </label>
+                    <select
+                      value={nipPejabat}
+                      onChange={(e) => setNipPejabat(e.target.value)}
+                      className="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary text-sm p-4 bg-white"
+                    >
+                      <option value="">-- Pilih Pejabat --</option>
+                      {pejabatDesa.map(p => (
+                        <option key={p.nip} value={p.nip}>{p.nama_pejabat} (NIP: {p.nip})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block font-label-sm text-label-sm text-primary mb-1">
+                      Unggah Dokumen Fisik SPOP (TTD Basah)
+                    </label>
+                    <div className="relative overflow-hidden w-full">
+                      <button 
+                        type="button"
+                        disabled={isUploadingDokumen}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-lg border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploadingDokumen ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <span className="material-symbols-outlined">{isUploadingDokumen ? 'hourglass_empty' : (urlDokumenFisik ? 'check_circle' : 'upload_file')}</span>
+                        {isUploadingDokumen ? 'Mengunggah...' : (urlDokumenFisik ? 'Dokumen Terlampir' : 'Upload PDF/JPG')}
+                      </button>
+                      <input 
+                        type="file" 
+                        accept="image/*,.pdf" 
+                        onChange={handleUploadDokumenFisik}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploadingDokumen}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-label-sm text-label-sm text-primary mb-2">
+                    Catatan / Alasan Verifikasi
+                  </label>
+                  <textarea
+                    value={decisionNotes}
+                    onChange={(e) => setDecisionNotes(e.target.value)}
+                    className="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary text-sm p-4 bg-white"
+                    placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat nomor sert: 09283/2023..."
+                    rows={4}
+                  />
+                </div>
               </div>
               <div className="lg:col-span-4 space-y-4">
                 <button

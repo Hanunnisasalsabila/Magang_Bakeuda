@@ -12,6 +12,7 @@ import DaftarObjekPajak from './pages/DaftarObjekPajak';
 import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
+import PelacakanDokumen from './pages/PelacakanDokumen';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -53,6 +54,7 @@ export default function App() {
     detail_review: 'Review Verifikasi SPOP',
     daftar_objek: 'Daftar Objek Pajak',
     monitoring_pajak: 'Monitoring Objek Pajak',
+    pelacakan_dokumen: 'Pelacakan Dokumen',
     profil: 'Profil Pengguna',
     help: 'Pusat Bantuan',
     logout: 'Log Out'
@@ -79,6 +81,8 @@ export default function App() {
         return <DaftarObjekPajak />;
       case 'monitoring_pajak':
         return <MonitoringObjekPajak />;
+      case 'pelacakan_dokumen':
+        return <PelacakanDokumen onNavigate={setActivePage} />;
       case 'profil':
         return <ProfilPengguna role={role} />;
       case 'help':

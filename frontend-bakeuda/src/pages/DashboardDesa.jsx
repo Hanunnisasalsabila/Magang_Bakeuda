@@ -172,10 +172,18 @@ export default function DashboardDesa({ onNavigate }) {
                     <td className="px-6 py-4">
                       <StatusBadge status={sub.status} />
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right flex justify-end gap-3">
+                      <button
+                        onClick={() => onNavigate('pelacakan_dokumen')}
+                        className="material-symbols-outlined text-outline hover:text-secondary transition-colors"
+                        title="Lacak Dokumen"
+                      >
+                        route
+                      </button>
                       <button
                         onClick={() => onNavigate('detail_review')}
                         className="material-symbols-outlined text-outline hover:text-primary transition-colors"
+                        title={sub.status === 'Draft' ? 'Edit/Verifikasi' : 'Lihat Detail'}
                       >
                         {sub.status === 'Draft' ? 'edit' : 'visibility'}
                       </button>

@@ -39,16 +39,103 @@ export default function FormulirSPOP({ onNavigate }) {
     // Step 3 Objek Pajak
     luasTanah: '',
     jenisTanah: 'Darat',
-    alamatObjek: '',
-    estimasiNjop: ''
+    jalan_op: '',
+    rt_op: '',
+    rw_op: '',
+    estimasiNjop: '',
+    lampiran: []
   });
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploading(true);
+      
+      // Simulasi jeda waktu upload (1.5 detik)
+      setTimeout(() => {
+        setIsUploading(false);
+        // Inject URL dummy
+        const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=${encodeURIComponent(file.name)}`;
+        
+        // Simpan ke state array lampiran
+        setFormData(prev => ({
+          ...prev,
+          lampiran: [...prev.lampiran, { jenis_dokumen: "Sertifikat/KTP/Lainnya", url_file: dummyUrl }]
+        }));
+      }, 1500);
+    }
+  };
 
   const handleNopChange = (nopObj) => {
     setFormData(prev => ({ ...prev, nop: nopObj }));
   };
 
   const handleTextChange = (field, e) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    const value = e.target.value;
+    
+    // Filter angka saja untuk RT_OP dan RW_OP
+    if ((field === 'rt_op' || field === 'rw_op') && !/^\d*$/.test(value)) {
+      return; 
+    }
+
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      const payload = {
+        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru' 
+                      : formData.transaksi === 'update' ? 'Pemutakhiran Data' 
+                      : 'Penghapusan Data',
+        subjek_pajak: {
+          nik: formData.nik,
+          nama: formData.nama,
+          pekerjaan: formData.pekerjaan,
+          alamat: `${formData.alamat}, RT ${formData.rt} RW ${formData.rw}, ${formData.kelurahan}, ${formData.kabupaten}`
+        },
+        objek_pajak_sementara: {
+          jalan_op: formData.jalan_op,
+          rt_op: formData.rt_op || '000',
+          rw_op: formData.rw_op || '000',
+          luas_tanah: Number(formData.luasTanah),
+          jenis_tanah: formData.jenisTanah
+        },
+        lampiran: formData.lampiran
+      };
+
+      const response = await fetch('http://localhost:3000/api/transaksi-spop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Gagal mengirim SPOP');
+      }
+
+      const result = await response.json();
+      setSubmitResult(result);
+      setStep(5); // Pindah ke halaman sukses
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitError(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const nextStep = () => {
@@ -421,15 +508,42 @@ export default function FormulirSPOP({ onNavigate }) {
                       <option>Tambak/Kolam</option>
                     </select>
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="font-label-sm text-primary block">ALAMAT LENGKAP OBJEK PAJAK</label>
-                    <textarea
-                      rows={3}
-                      value={formData.alamatObjek}
-                      onChange={(e) => handleTextChange('alamatObjek', e)}
-                      className="w-full border border-outline-variant rounded p-4 font-body-md bg-white focus:border-primary shadow-sm"
-                      placeholder="Masukkan alamat fisik detail objek pajak tanah/bangunan..."
-                    />
+                  <div className="md:col-span-2 space-y-4 border-t border-outline-variant pt-4 mt-2">
+                    <h5 className="font-label-sm text-primary font-bold">ALAMAT LENGKAP OBJEK PAJAK</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      <div className="md:col-span-8 space-y-2">
+                        <label className="font-label-sm text-on-surface-variant block">Jalan / Nama Perumahan / Blok <span className="text-error">*</span></label>
+                        <input
+                          type="text"
+                          value={formData.jalan_op}
+                          onChange={(e) => handleTextChange('jalan_op', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 font-body-md bg-white focus:border-primary shadow-sm"
+                          placeholder="Contoh: Jl. Mawar Indah Blok B2 No 5"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="font-label-sm text-on-surface-variant block">RT <span className="text-error">*</span></label>
+                        <input
+                          type="text"
+                          maxLength={3}
+                          value={formData.rt_op}
+                          onChange={(e) => handleTextChange('rt_op', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary shadow-sm"
+                          placeholder="001"
+                        />
+                      </div>
+                      <div className="md:col-span-2 space-y-2">
+                        <label className="font-label-sm text-on-surface-variant block">RW <span className="text-error">*</span></label>
+                        <input
+                          type="text"
+                          maxLength={3}
+                          value={formData.rw_op}
+                          onChange={(e) => handleTextChange('rw_op', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary shadow-sm"
+                          placeholder="002"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="font-label-sm text-primary block">ESTIMASI NJOP RP. (PER M²)</label>
@@ -440,6 +554,57 @@ export default function FormulirSPOP({ onNavigate }) {
                       className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary shadow-sm"
                       placeholder="Contoh: 500000"
                     />
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-outline-variant space-y-4">
+                  <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase mb-4">
+                    LAMPIRAN DOKUMEN PENDUKUNG
+                  </h4>
+                  <div className="space-y-4">
+                    {formData.lampiran.map((doc, idx) => (
+                      <div key={idx} className="flex justify-between items-center p-4 border border-outline-variant rounded bg-surface-container-low">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-primary">description</span>
+                          <div>
+                            <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
+                            <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dummy</a>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setFormData(prev => ({
+                            ...prev, 
+                            lampiran: prev.lampiran.filter((_, i) => i !== idx)
+                          }))}
+                          className="material-symbols-outlined text-error hover:scale-110 transition-transform"
+                        >
+                          delete
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Upload Button */}
+                    <div className="relative overflow-hidden w-full sm:w-auto inline-block">
+                      <button 
+                        type="button"
+                        disabled={isUploading}
+                        className={`flex items-center gap-2 px-6 py-3 rounded border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <span className="material-symbols-outlined">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
+                        {isUploading ? 'Mengunggah Dokumen...' : '+ Tambah Dokumen Pendukung'}
+                      </button>
+                      <input 
+                        type="file" 
+                        accept="image/*,.pdf" 
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploading}
+                      />
+                    </div>
+                    <p className="text-[12px] text-on-surface-variant italic mt-2">
+                      *Klik tombol di atas untuk menyimulasikan unggahan file (akan menghasilkan dummy URL image).
+                    </p>
                   </div>
                 </div>
               </section>
@@ -490,7 +655,7 @@ export default function FormulirSPOP({ onNavigate }) {
                       <p className="text-on-surface-variant">
                         Luas Tanah: <span className="font-bold text-on-surface">{formData.luasTanah || '-'} M²</span> | Jenis Tanah: <span className="font-bold text-on-surface">{formData.jenisTanah}</span>
                       </p>
-                      <p className="text-on-surface-variant mt-1">Alamat Objek: {formData.alamatObjek || '-'}</p>
+                      <p className="text-on-surface-variant mt-1">Alamat Objek: {formData.jalan_op || '-'}, RT {formData.rt_op || '-'} / RW {formData.rw_op || '-'}</p>
                       <p className="text-on-surface-variant mt-1">
                         Estimasi NJOP: <span className="font-bold text-on-surface">Rp. {Number(formData.estimasiNjop).toLocaleString() || '-'} / M²</span>
                       </p>
@@ -525,7 +690,7 @@ export default function FormulirSPOP({ onNavigate }) {
               <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-on-surface-variant">ID Submisi</span>
-                  <span className="font-bold text-on-surface font-data-mono">SPOP-2026-00382</span>
+                  <span className="font-bold text-on-surface font-data-mono">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-on-surface-variant">Estimasi Verifikasi</span>
@@ -583,16 +748,24 @@ export default function FormulirSPOP({ onNavigate }) {
                   </button>
                   <button
                     type="button"
-                    onClick={nextStep}
-                    className="w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+                    onClick={step === 4 ? handleSubmit : nextStep}
+                    disabled={isSubmitting}
+                    className={`w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
                   >
-                    {step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
-                    <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-                      arrow_forward
-                    </span>
+                    {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
+                    {!isSubmitting && (
+                      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                        arrow_forward
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
+              {submitError && (
+                <div className="p-4 bg-error-container text-error rounded mt-4">
+                  <strong>Terjadi Kesalahan:</strong> {submitError}
+                </div>
+              )}
             </div>
           )}
         </form>
