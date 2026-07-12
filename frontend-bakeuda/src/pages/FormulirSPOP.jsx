@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
+import api from '../utils/axios';
 
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -79,6 +80,42 @@ export default function FormulirSPOP({ onNavigate }) {
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const nopObj = formData.nop;
+      const nopBersamaObj = formData.nopBersama;
+      const nop = `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
+      const nopBersama = `${nopBersamaObj.prov}.${nopBersamaObj.kab}.${nopBersamaObj.kec || '000'}.${nopBersamaObj.kel || '000'}.${nopBersamaObj.blok || '000'}-${nopBersamaObj.nourut || '0000'}.${nopBersamaObj.kode || '0'}`;
+
+      let jenis_transaksi = 'BARU';
+      if (formData.transaksi === 'update') jenis_transaksi = 'PERUBAHAN_DATA';
+      if (formData.transaksi === 'hapus') jenis_transaksi = 'MUTASI'; // fallback since hapus is not in enum, or we can use MUTASI
+
+      const payload = {
+        jenis_transaksi,
+        tahun_pajak: new Date().getFullYear(),
+        nop_bersama: nopBersama,
+        no_sppt_lama: formData.noSpptLama,
+        nama_pengaju: formData.nama,
+        detail_asal: formData.nopAsal ? [{ nop_asal: formData.nopAsal }] : [],
+        detail_tujuan: [{
+          nik_calon_subjek: formData.nik,
+          luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
+          luas_bangunan_baru: 0,
+          jumlah_bangunan_baru: 0,
+          jenis_tanah_baru: formData.jenisTanah,
+          nop_generated: nop,
+        }]
+      };
+
+      await api.post('/transaksi-spop', payload);
+      setStep(5);
+    } catch (error) {
+      console.error('Gagal mengirim form:', error);
+      alert('Gagal mengirim formulir. Pastikan semua data wajib telah diisi.');
+    }
   };
 
   const steps = [
@@ -607,7 +644,7 @@ export default function FormulirSPOP({ onNavigate }) {
                   </button>
                   <button
                     type="button"
-                    onClick={nextStep}
+                    onClick={step === 4 ? handleSubmit : nextStep}
                     className="w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group"
                   >
                     {step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}

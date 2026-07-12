@@ -1,77 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
 
 export default function DashboardDesa({ onNavigate }) {
-  const stats = [
-    {
-      title: 'Total SPOP Dikirim',
-      value: '156',
-      icon: 'description',
-      iconBg: 'bg-primary-fixed',
-      iconColor: 'text-primary',
-      trend: '+12% Bulan Ini',
-      trendColor: 'text-secondary',
-      trendIcon: 'trending_up',
-      borderHover: 'hover:border-primary',
-    },
-    {
-      title: 'Menunggu Validasi',
-      value: '12',
-      icon: 'pending_actions',
-      iconBg: 'bg-secondary-container',
-      iconColor: 'text-secondary',
-      trend: 'Butuh Peninjauan Segera',
-      trendColor: 'text-primary',
-      trendIcon: 'info',
-      borderHover: 'hover:border-secondary',
-    },
-    {
-      title: 'SPOP Disetujui',
-      value: '142',
-      icon: 'domain',
-      iconBg: 'bg-tertiary-fixed',
-      iconColor: 'text-tertiary',
-      trend: 'Terdaftar di Sistem',
-      trendColor: 'text-outline',
-      trendIcon: 'check_circle',
-      borderHover: 'hover:border-tertiary',
-    },
-    {
-      title: 'SPOP Perlu Perbaikan',
-      value: '2',
-      icon: 'report',
-      iconBg: 'bg-error-container',
-      iconColor: 'text-error',
-      trend: 'Perlu Revisi Ulang',
-      trendColor: 'text-error',
-      trendIcon: 'warning',
-      borderHover: 'hover:border-error',
-    },
-  ];
+  const [stats, setStats] = useState([
+    { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Memuat...', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
+    { title: 'Menunggu Validasi', value: '0', icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Memuat...', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+    { title: 'SPOP Disetujui', value: '0', icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Memuat...', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
+    { title: 'SPOP Perlu Perbaikan', value: '0', icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Memuat...', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
+  ]);
 
-  const recentSubmissions = [
-    {
-      nop: '33.03.010.001.001.001',
-      name: 'Budi Santoso',
-      type: 'Perekaman Data Baru',
-      date: '24 Okt 2023',
-      status: 'Verifikasi',
-    },
-    {
-      nop: '33.03.010.005.012.000',
-      name: 'Siti Aminah',
-      type: 'Mutakhirkan Data',
-      date: '23 Okt 2023',
-      status: 'Draft',
-    },
-    {
-      nop: '33.03.040.002.009.004',
-      name: 'PT. Maju Bersama',
-      type: 'Penghapusan Data',
-      date: '22 Okt 2023',
-      status: 'Ditolak',
-    },
-  ];
+  const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, listRes] = await Promise.all([
+          api.get('/transaksi-spop/stats'),
+          api.get('/transaksi-spop')
+        ]);
+        
+        const dataStats = statsRes.data.data;
+        setStats([
+          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-primary-fixed', iconColor: 'text-primary', trend: 'Keseluruhan', trendColor: 'text-secondary', trendIcon: 'trending_up', borderHover: 'hover:border-primary' },
+          { title: 'Menunggu Validasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-secondary-container', iconColor: 'text-secondary', trend: 'Perlu verifikasi', trendColor: 'text-primary', trendIcon: 'info', borderHover: 'hover:border-secondary' },
+          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-tertiary-fixed', iconColor: 'text-tertiary', trend: 'Tervalidasi', trendColor: 'text-outline', trendIcon: 'check_circle', borderHover: 'hover:border-tertiary' },
+          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-error-container', iconColor: 'text-error', trend: 'Butuh revisi', trendColor: 'text-error', trendIcon: 'warning', borderHover: 'hover:border-error' },
+        ]);
+
+        const formattedList = listRes.data.data.slice(0, 5).map(item => ({
+          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+          name: item.nama_pengaju || 'Tanpa Nama',
+          type: item.jenis_transaksi,
+          date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          status: item.status_ajuan === 'MENUNGGU' ? 'Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+        }));
+        setRecentSubmissions(formattedList);
+      } catch (error) {
+        console.error("Gagal mengambil data dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
 
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto">
@@ -155,33 +129,43 @@ export default function DashboardDesa({ onNavigate }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {recentSubmissions.map((sub, i) => (
-                  <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-label-sm text-label-sm text-on-surface">{sub.nop}</p>
-                      <p className="text-[12px] text-on-surface-variant">{sub.name}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-body-md font-body-md text-on-surface">
-                        {sub.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-body-md font-body-md text-on-surface">{sub.date}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={sub.status} />
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => onNavigate('detail_review')}
-                        className="material-symbols-outlined text-outline hover:text-primary transition-colors"
-                      >
-                        {sub.status === 'Draft' ? 'edit' : 'visibility'}
-                      </button>
-                    </td>
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-4 text-on-surface-variant">Memuat data...</td>
                   </tr>
-                ))}
+                ) : recentSubmissions.length > 0 ? (
+                  recentSubmissions.map((sub, i) => (
+                    <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="font-label-sm text-label-sm text-on-surface">{sub.nop}</p>
+                        <p className="text-[12px] text-on-surface-variant">{sub.name}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-body-md font-body-md text-on-surface">
+                          {sub.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-body-md font-body-md text-on-surface">{sub.date}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={sub.status} />
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => onNavigate('detail_review')}
+                          className="material-symbols-outlined text-outline hover:text-primary transition-colors"
+                        >
+                          {sub.status === 'Draft' ? 'edit' : 'visibility'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-4 text-on-surface-variant">Belum ada pengajuan SPOP.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
