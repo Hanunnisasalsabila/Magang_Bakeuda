@@ -52,10 +52,35 @@ export default function FormulirSPOP({ onNavigate }) {
     rwObjek: '',
     rtObjek: '',
     kelurahanObjek: '',
-    zonaNilaiTanah: ''
+    zonaNilaiTanah: '',
+    jalan_op: '',
+    rt_op: '',
+    rw_op: '',
+    estimasiNjop: '',
+    lampiran: []
   });
   const [errors, setErrors] = useState({});
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploading(true);
+      
+      setTimeout(() => {
+        setIsUploading(false);
+        const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=${encodeURIComponent(file.name)}`;
+        
+        setFormData(prev => ({
+          ...prev,
+          lampiran: [...prev.lampiran, { jenis_dokumen: "Sertifikat/KTP/Lainnya", url_file: dummyUrl }]
+        }));
+      }, 1500);
+    }
+  };
 
   const handleNopChange = (nopObj) => {
     setFormData(prev => ({ ...prev, nop: nopObj }));
@@ -179,6 +204,8 @@ export default function FormulirSPOP({ onNavigate }) {
       return;
     }
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
       const nopObj = formData.nop;
       const nopBersamaObj = formData.nopBersama;
@@ -189,6 +216,8 @@ export default function FormulirSPOP({ onNavigate }) {
       if (formData.transaksi === 'update') jenis_transaksi = 'PERUBAHAN_DATA';
       if (formData.transaksi === 'hapus') jenis_transaksi = 'MUTASI';
 
+      const token = localStorage.getItem('token');
+      
       const payload = {
         jenis_transaksi,
         tahun_pajak: new Date().getFullYear(),
@@ -203,16 +232,47 @@ export default function FormulirSPOP({ onNavigate }) {
           jumlah_bangunan_baru: 0,
           jenis_tanah_baru: formData.jenisTanah,
           nop_generated: nop,
-        }]
+        }],
+        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru' 
+                      : formData.transaksi === 'update' ? 'Pemutakhiran Data' 
+                      : 'Penghapusan Data',
+        subjek_pajak: {
+          nik: formData.nik,
+          nama: formData.nama,
+          pekerjaan: formData.pekerjaan,
+          alamat: `${formData.alamat}, RT ${formData.rt} RW ${formData.rw}, ${formData.kelurahan}, ${formData.kabupaten}`
+        },
+        objek_pajak_sementara: {
+          jalan_op: formData.jalan_op || formData.alamatObjek,
+          rt_op: formData.rt_op || formData.rtObjek || '000',
+          rw_op: formData.rw_op || formData.rwObjek || '000',
+          luas_tanah: Number(formData.luasTanah),
+          jenis_tanah: formData.jenisTanah
+        },
+        lampiran: formData.lampiran
       };
 
-      await api.post('/transaksi-spop', payload);
+      const response = await fetch('http://localhost:3000/api/transaksi-spop', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Gagal mengirim SPOP');
+      }
+
+      const result = await response.json();
+      setSubmitResult(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setStep(5);
     } catch (error) {
-      console.error('Gagal mengirim form:', error);
-      setToast({ show: true, message: error.response?.data?.message || 'Gagal mengirim formulir. Pastikan koneksi dan data Anda valid.', type: 'error' });
-      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
+      console.error('Error submitting form:', error);
+      setSubmitError(error.message);
     } finally {
       setIsSubmitting(false);
     }
