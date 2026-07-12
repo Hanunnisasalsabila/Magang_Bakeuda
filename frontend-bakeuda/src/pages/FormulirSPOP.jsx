@@ -1,7 +1,30 @@
 import React, { useState } from 'react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
 import api from '../utils/axios';
+
+// Fix leaflet icon issues in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+function LocationPicker({ position, setPosition }) {
+  const map = useMapEvents({
+    click(e) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  return position === null ? null : (
+    <Marker position={position}></Marker>
+  );
+}
 
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
@@ -57,6 +80,9 @@ export default function FormulirSPOP({ onNavigate }) {
     rt_op: '',
     rw_op: '',
     estimasiNjop: '',
+    jumlahBangunan: '0',
+    titikKoordinat: '',
+    persetujuan: false,
     lampiran: []
   });
   const [errors, setErrors] = useState({});
@@ -80,6 +106,15 @@ export default function FormulirSPOP({ onNavigate }) {
         }));
       }, 1500);
     }
+  };
+
+  const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
+  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',') 
+    ? formData.titikKoordinat.split(',').map(Number)
+    : defaultPosition;
+
+  const handleMapClick = (pos) => {
+    setFormData(prev => ({ ...prev, titikKoordinat: `${pos[0]}, ${pos[1]}` }));
   };
 
   const handleNopChange = (nopObj) => {
@@ -229,7 +264,7 @@ export default function FormulirSPOP({ onNavigate }) {
           nik_calon_subjek: formData.nik,
           luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
           luas_bangunan_baru: 0,
-          jumlah_bangunan_baru: 0,
+          jumlah_bangunan_baru: parseInt(formData.jumlahBangunan) || 0,
           jenis_tanah_baru: formData.jenisTanah,
           nop_generated: nop,
         }],
@@ -351,30 +386,38 @@ export default function FormulirSPOP({ onNavigate }) {
                 </div>
                 <div className="space-y-8">
                   {/* Jenis Transaksi */}
-                  <div className="space-y-4 max-w-3xl">
+                  <div className="space-y-4">
                     <label className="font-label-sm text-primary block font-bold">Pilih Jenis Transaksi</label>
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {[
-                        { val: 'baru', label: '1. Perekaman Data/Objek Baru' },
-                        { val: 'update', label: '2. Pemutakhiran Data/Update Data Lama' },
-                        { val: 'hapus', label: '3. Penghapusan Data' }
+                        { val: 'baru', title: 'Perekaman Baru', desc: 'Mendaftarkan objek pajak yang belum terdata', icon: 'add_box' },
+                        { val: 'update', title: 'Pemutakhiran Data', desc: 'Memperbarui data objek pajak lama', icon: 'update' },
+                        { val: 'hapus', title: 'Penghapusan Data', desc: 'Menghapus data objek dari sistem', icon: 'delete' }
                       ].map((t) => (
                         <label
                           key={t.val}
-                          className={`flex items-center gap-3 p-4 border rounded cursor-pointer transition-colors flex-1 ${formData.transaksi === t.val
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-outline-variant hover:bg-surface-container-low'
+                          className={`flex flex-col p-5 border rounded-xl cursor-pointer transition-all ${formData.transaksi === t.val
+                              ? 'border-primary bg-primary/5 shadow-md ring-1 ring-primary'
+                              : 'border-outline-variant hover:border-primary/50 hover:bg-surface-container-low hover:shadow-sm'
                             }`}
                         >
-                          <input
-                            type="radio"
-                            name="transaksi"
-                            value={t.val}
-                            checked={formData.transaksi === t.val}
-                            onChange={(e) => handleTextChange('transaksi', e)}
-                            className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
-                          />
-                          <span className="font-body-md text-on-surface font-semibold">{t.label}</span>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.transaksi === t.val ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                              <span className="material-symbols-outlined">{t.icon}</span>
+                            </div>
+                            <input
+                              type="radio"
+                              name="transaksi"
+                              value={t.val}
+                              checked={formData.transaksi === t.val}
+                              onChange={(e) => handleTextChange('transaksi', e)}
+                              className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
+                            />
+                          </div>
+                          <div>
+                            <span className="font-bold text-on-surface block text-base">{t.title}</span>
+                            <span className="text-sm text-on-surface-variant mt-1 block leading-relaxed">{t.desc}</span>
+                          </div>
                         </label>
                       ))}
                     </div>
@@ -783,6 +826,78 @@ export default function FormulirSPOP({ onNavigate }) {
                   </div>
                 </div>
 
+                {/* BAGIAN E: DATA BANGUNAN */}
+                <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 bg-primary h-8 rounded-full"></div>
+                    <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                      E. DATA BANGUNAN
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.jumlahBangunan}
+                        onChange={(e) => handleTextChange('jumlahBangunan', e)}
+                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                        placeholder="Contoh: 1"
+                      />
+                      {parseInt(formData.jumlahBangunan) > 0 && (
+                        <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2">
+                          <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+                          <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* SKET / DENAH LOKASI OBJEK PAJAK */}
+                <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 bg-primary h-8 rounded-full"></div>
+                    <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                      SKET / DENAH LOKASI (KOORDINAT MAPS)
+                    </h4>
+                  </div>
+                  <div className="space-y-4">
+                    <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Anda dapat menggeser peta di bawah ini lalu klik pada lokasi yang tepat, atau salin koordinat dari Google Maps.</p>
+                    
+                    <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative">
+                      <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <LocationPicker position={currentPosition} setPosition={handleMapClick} />
+                      </MapContainer>
+                    </div>
+
+                    <div className="space-y-2 md:w-1/2">
+                      <label className="font-label-sm text-primary block">TITIK KOORDINAT (LATITUDE, LONGITUDE)</label>
+                      <input
+                        type="text"
+                        value={formData.titikKoordinat}
+                        onChange={(e) => handleTextChange('titikKoordinat', e)}
+                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                        placeholder="Contoh: -7.3878, 109.3639"
+                      />
+                    </div>
+
+                    {/* Google Street View Placeholder */}
+                    <div className="mt-4 p-4 border border-outline-variant border-dashed rounded-lg bg-surface-container-lowest flex flex-col items-center justify-center text-center">
+                      <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">streetview</span>
+                      <h5 className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</h5>
+                      <p className="text-sm text-on-surface-variant mt-1 max-w-md">
+                        Fitur Street View Google Maps dapat diintegrasikan di sini untuk melihat kondisi jalan dan bangunan secara real-time. (Memerlukan Google Maps API Key khusus).
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-6 border-t border-outline-variant space-y-4">
                   <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase mb-4">
                     LAMPIRAN DOKUMEN PENDUKUNG
@@ -847,54 +962,98 @@ export default function FormulirSPOP({ onNavigate }) {
                     D. TINJAU KEMBALI DATA ANDA
                   </h4>
                 </div>
-                <div className="bg-surface-container-low border border-outline-variant rounded-xl p-6 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+                  <div className="bg-surface-container border-b border-outline-variant px-6 py-4 flex justify-between items-center">
                     <div>
-                      <p className="text-outline uppercase text-[10px] font-bold">Jenis Transaksi</p>
-                      <p className="font-bold text-primary text-base uppercase mt-0.5">
-                        {formData.transaksi === 'baru'
-                          ? 'Perekaman Data Baru'
-                          : formData.transaksi === 'update'
-                            ? 'Pemutakhiran Data'
-                            : 'Penghapusan Data'}
+                      <p className="text-outline uppercase text-[10px] font-bold tracking-widest">Jenis Transaksi</p>
+                      <p className="font-bold text-primary text-lg uppercase mt-0.5">
+                        {formData.transaksi === 'baru' ? 'Perekaman Data Baru' : formData.transaksi === 'update' ? 'Pemutakhiran Data' : 'Penghapusan Data'}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-outline uppercase text-[10px] font-bold">NOP Objek Pajak</p>
-                      <p className="font-data-mono font-bold text-primary text-base mt-0.5">
-                        {`33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}-${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 border-t border-outline-variant pt-4">
-                      <p className="text-outline uppercase text-[10px] font-bold mb-1">Identitas Subjek Pajak</p>
-                      <p className="font-bold text-on-surface text-base">{formData.nama || '-'}</p>
-                      <p className="font-data-mono text-on-surface-variant mt-0.5">KTP NIK: {formData.nik || '-'}</p>
-                      <p className="text-on-surface-variant mt-1">
-                        Pekerjaan: {formData.pekerjaan} | Status: {formData.statusWp}
-                      </p>
-                      <p className="text-on-surface-variant mt-1">
-                        Alamat WP: {formData.alamat || '-'}, RT {formData.rt || '-'}/RW {formData.rw || '-'}, {formData.kelurahan || '-'}, {formData.kabupaten}
-                      </p>
-                    </div>
-                    <div className="md:col-span-2 border-t border-outline-variant pt-4">
-                      <p className="text-outline uppercase text-[10px] font-bold mb-1">Spesifikasi Objek Pajak</p>
-                      <p className="text-on-surface-variant">
-                        Luas Tanah: <span className="font-bold text-on-surface">{formData.luasTanah || '-'} M²</span> | Jenis Tanah: <span className="font-bold text-on-surface">{formData.jenisTanah}</span>
-                      </p>
-                      <p className="text-on-surface-variant mt-1">Alamat Objek: {formData.alamatObjek || '-'}</p>
-                      <p className="text-on-surface-variant mt-1">
-                        Estimasi NJOP: <span className="font-bold text-on-surface">Rp. {Number(formData.estimasiNjop).toLocaleString() || '-'} / M²</span>
+                    <div className="text-right">
+                      <p className="text-outline uppercase text-[10px] font-bold tracking-widest">NOP Objek Pajak</p>
+                      <p className="font-data-mono font-bold text-on-surface text-lg mt-0.5">
+                        33.03.{formData.nop.kec || '___'}.{formData.nop.kel || '___'}.{formData.nop.blok || '___'}.{formData.nop.nourut || '____'}.{formData.nop.kode || '_'}
                       </p>
                     </div>
                   </div>
+                  
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant/50 pb-2">Identitas Subjek Pajak</h6>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant w-1/3">Nama Lengkap</td>
+                            <td className="py-1.5 font-bold text-on-surface">{formData.nama || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant">NIK (No. KTP)</td>
+                            <td className="py-1.5 font-data-mono text-on-surface">{formData.nik || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant">Pekerjaan</td>
+                            <td className="py-1.5 text-on-surface">{formData.pekerjaan || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant align-top">Alamat WP</td>
+                            <td className="py-1.5 text-on-surface leading-snug">
+                              {formData.alamat || '-'}, RT {formData.rt || '-'}/RW {formData.rw || '-'}, {formData.kelurahan || '-'}, {formData.kabupaten}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant/50 pb-2">Spesifikasi Objek Pajak</h6>
+                      <table className="w-full text-sm">
+                        <tbody>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant w-1/3">Alamat Objek</td>
+                            <td className="py-1.5 font-bold text-on-surface">{formData.alamatObjek || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant">Luas Tanah</td>
+                            <td className="py-1.5 font-bold text-on-surface">{formData.luasTanah || '-'} M²</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant">Jenis Tanah</td>
+                            <td className="py-1.5 text-on-surface">{formData.jenisTanah || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="py-1.5 text-on-surface-variant">Titik Koordinat</td>
+                            <td className="py-1.5 font-data-mono text-on-surface">{formData.titikKoordinat || '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 bg-secondary-container/20 rounded border border-secondary/20 flex gap-3 items-start">
-                  <span className="material-symbols-outlined text-secondary">verified_user</span>
-                  <div>
-                    <p className="font-label-sm text-secondary">Pernyataan Wajib Pajak</p>
-                    <p className="text-[12px] text-on-surface-variant leading-tight">
-                      Saya menyatakan bahwa data yang saya masukkan adalah benar sesuai dengan dokumen fisik sertifikat tanah dan KTP yang berlaku.
+                {/* BAGIAN F: PERNYATAAN SUBJEK PAJAK */}
+                <div className="pt-6 border-t border-outline-variant space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 bg-primary h-8 rounded-full"></div>
+                    <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                      F. PERNYATAAN SUBJEK PAJAK
+                    </h4>
+                  </div>
+                  <div className="p-5 bg-surface-container-low border border-outline-variant rounded-xl space-y-4">
+                    <p className="text-sm text-on-surface-variant leading-relaxed">
+                      Saya menyatakan bahwa informasi yang telah saya berikan dalam formulir ini termasuk lampirannya adalah <b>benar, jelas, dan lengkap</b> menurut keadaan yang sebenarnya, sesuai dengan Pasal 10 ayat (2) Peraturan Daerah Kabupaten Purbalingga No.15 Tahun 2012.
                     </p>
+                    
+                    <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 border border-outline-variant rounded hover:bg-surface-container transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 mt-0.5 text-primary focus:ring-primary border-outline-variant rounded"
+                        checked={formData.persetujuan}
+                        onChange={(e) => setFormData(prev => ({ ...prev, persetujuan: e.target.checked }))}
+                      />
+                      <span className="font-bold text-on-surface text-sm">
+                        Ya, saya menyetujui pernyataan di atas.
+                      </span>
+                    </label>
                   </div>
                 </div>
               </section>
@@ -911,7 +1070,7 @@ export default function FormulirSPOP({ onNavigate }) {
                 SPOP Berhasil Dikirim
               </h3>
               <p className="text-body-md font-body-md text-on-surface-variant max-w-lg mx-auto">
-                Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop.kec}.${formData.nop.kel}.${formData.nop.blok}-${formData.nop.nourut}.${formData.nop.kode}`}</span> telah masuk ke sistem antrean validasi BKD Kabupaten Purbalingga.
+                Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop.kec}.${formData.nop.kel}.${formData.nop.blok}.${formData.nop.nourut}.${formData.nop.kode}`}</span> telah masuk ke sistem antrean validasi BKD Kabupaten Purbalingga.
               </p>
               <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
                 <div className="flex justify-between text-sm">
@@ -974,8 +1133,12 @@ export default function FormulirSPOP({ onNavigate }) {
                   <button
                     type="button"
                     onClick={step === 4 ? handleSubmit : nextStep}
-                    disabled={isSubmitting}
-                    className={`w-full md:w-auto px-12 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
+                    disabled={isSubmitting || (step === 4 && !formData.persetujuan)}
+                    className={`w-full md:w-auto px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${
+                      isSubmitting || (step === 4 && !formData.persetujuan)
+                        ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
+                        : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
+                    }`}
                   >
                     {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
                     {!isSubmitting && (
