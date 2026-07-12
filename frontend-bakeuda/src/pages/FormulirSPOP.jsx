@@ -211,6 +211,9 @@ export default function FormulirSPOP({ onNavigate }) {
       if (!formData.kelurahanObjek.trim()) newErrors.kelurahanObjek = 'Kelurahan / Desa wajib diisi';
       if (!formData.luasTanah || parseFloat(formData.luasTanah) <= 0) newErrors.luasTanah = 'Luas Tanah wajib diisi dengan angka > 0';
       if (!formData.jenisTanah) newErrors.jenisTanah = 'Pilih Jenis Tanah';
+      if (formData.jenisTanah === 'TANAH_BANGUNAN' && (!formData.luasBangunan || parseFloat(formData.luasBangunan) <= 0)) {
+        newErrors.luasBangunan = 'Luas Bangunan wajib diisi jika Jenis Tanah adalah Tanah + Bangunan';
+      }
     }
 
     setErrors(newErrors);
@@ -247,44 +250,42 @@ export default function FormulirSPOP({ onNavigate }) {
       const nop = `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
       const nopBersama = `${nopBersamaObj.prov}.${nopBersamaObj.kab}.${nopBersamaObj.kec || '000'}.${nopBersamaObj.kel || '000'}.${nopBersamaObj.blok || '000'}-${nopBersamaObj.nourut || '0000'}.${nopBersamaObj.kode || '0'}`;
 
-      let jenis_transaksi = 'BARU';
-      if (formData.transaksi === 'update') jenis_transaksi = 'PERUBAHAN_DATA';
-      if (formData.transaksi === 'hapus') jenis_transaksi = 'MUTASI';
+      let jenis_layanan = 'BARU';
+      if (formData.transaksi === 'update') jenis_layanan = 'PERUBAHAN_DATA';
+      if (formData.transaksi === 'hapus') jenis_layanan = 'MUTASI';
 
       const token = localStorage.getItem('token');
       
       const payload = {
-        jenis_transaksi,
-        tahun_pajak: new Date().getFullYear(),
-        nop_bersama: nopBersama,
-        no_sppt_lama: spptLama,
-        nama_pengaju: formData.nama,
-        detail_asal: nopAsal ? [{ nop_asal: nopAsal }] : [],
-        detail_tujuan: [{
-          nik_calon_subjek: formData.nik,
-          luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
-          luas_bangunan_baru: 0,
-          jumlah_bangunan_baru: parseInt(formData.jumlahBangunan) || 0,
-          jenis_tanah_baru: formData.jenisTanah,
-          nop_generated: nop,
-        }],
-        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru' 
-                      : formData.transaksi === 'update' ? 'Pemutakhiran Data' 
-                      : 'Penghapusan Data',
+        jenis_layanan,
+        nop_utama: nop,
+        nop_bersama: nopBersama || undefined,
+        nop_asal: nopAsal || undefined,
+        no_sppt_lama: spptLama || undefined,
         subjek_pajak: {
           nik: formData.nik,
           nama: formData.nama,
+          status_wp: formData.statusWp,
           pekerjaan: formData.pekerjaan,
-          alamat: `${formData.alamat}, RT ${formData.rt} RW ${formData.rw}, ${formData.kelurahan}, ${formData.kabupaten}`
+          alamat: formData.alamat,
+          rt: formData.rt || '000',
+          rw: formData.rw || '000',
+          kelurahan: formData.kelurahan,
+          kabupaten: formData.kabupaten,
+          kode_pos: formData.kodePos || undefined,
         },
         objek_pajak_sementara: {
-          jalan_op: formData.jalan_op || formData.alamatObjek,
-          rt_op: formData.rt_op || formData.rtObjek || '000',
-          rw_op: formData.rw_op || formData.rwObjek || '000',
+          jenis_tanah: formData.jenisTanah,
           luas_tanah: Number(formData.luasTanah),
-          jenis_tanah: formData.jenisTanah
+          luas_bangunan: parseFloat(formData.luasBangunan) || undefined,
+          jumlah_bangunan: parseInt(formData.jumlahBangunan) || 0,
+          jalan_op: formData.alamatObjek,
+          rt_op: formData.rtObjek || '000',
+          rw_op: formData.rwObjek || '000',
+          kelurahan_op: formData.kelurahanObjek || formData.kelurahan,
+          kecamatan_op: formData.kecamatanObjek || 'Purbalingga',
         },
-        lampiran: formData.lampiran
+        lampiran: formData.lampiran.length > 0 ? formData.lampiran : undefined,
       };
 
       const response = await fetch('http://localhost:3000/api/transaksi-spop', {
@@ -303,6 +304,12 @@ export default function FormulirSPOP({ onNavigate }) {
 
       const result = await response.json();
       setSubmitResult(result);
+
+      // Simpan data ke localStorage agar FormulirLSPOP bisa mengaksesnya
+      const finalNop = `33.03.${formData.nop.kec || '000'}.${formData.nop.kel || '000'}.${formData.nop.blok || '000'}.${formData.nop.nourut || '0000'}.${formData.nop.kode || '0'}`;
+      localStorage.setItem('lspop_nop', finalNop);
+      localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setStep(5);
     } catch (error) {
@@ -527,20 +534,26 @@ export default function FormulirSPOP({ onNavigate }) {
                   <div className="space-y-4">
                     <label className="font-label-sm text-primary block">STATUS WP</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {['Pemilik', 'Penyewa', 'Pengelola', 'Pemakai', 'Sengketa'].map((status) => (
+                      {[
+                        { label: 'Pemilik', val: 'PEMILIK' },
+                        { label: 'Penyewa', val: 'PENYEWA' },
+                        { label: 'Penggarap', val: 'PENGGARAP' },
+                        { label: 'Pemakai', val: 'PEMAKAI' },
+                        { label: 'Sengketa', val: 'SENGKETA' },
+                      ].map(({ label, val }) => (
                         <label
-                          key={status}
+                          key={val}
                           className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.statusWp ? 'border-error' : 'border-outline-variant'}`}
                         >
                           <input
                             type="radio"
                             name="statusWp"
-                            value={status}
-                            checked={formData.statusWp === status}
+                            value={val}
+                            checked={formData.statusWp === val}
                             onChange={(e) => handleTextChange('statusWp', e)}
                             className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
                           />
-                          <span className="font-label-sm text-on-surface">{status}</span>
+                          <span className="font-label-sm text-on-surface">{label}</span>
                         </label>
                       ))}
                     </div>
@@ -550,20 +563,30 @@ export default function FormulirSPOP({ onNavigate }) {
                   <div className="space-y-4">
                     <label className="font-label-sm text-primary block">PEKERJAAN</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {['PNS', 'ABRI', 'Pensiunan', 'Badan', 'Lainnya'].map((job) => (
+                      {[
+                        { label: 'PNS', val: 'PNS' },
+                        { label: 'TNI/POLRI', val: 'TNI_POLRI' },
+                        { label: 'Pegawai Swasta', val: 'PEGAWAI_SWASTA' },
+                        { label: 'Wiraswasta', val: 'WIRASWASTA' },
+                        { label: 'Petani', val: 'PETANI' },
+                        { label: 'Nelayan', val: 'NELAYAN' },
+                        { label: 'Pensiunan', val: 'PENSIUNAN' },
+                        { label: 'Badan', val: 'BADAN' },
+                        { label: 'Lainnya', val: 'LAINNYA' },
+                      ].map(({ label, val }) => (
                         <label
-                          key={job}
+                          key={val}
                           className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.pekerjaan ? 'border-error' : 'border-outline-variant'}`}
                         >
                           <input
                             type="radio"
                             name="pekerjaan"
-                            value={job}
-                            checked={formData.pekerjaan === job}
+                            value={val}
+                            checked={formData.pekerjaan === val}
                             onChange={(e) => handleTextChange('pekerjaan', e)}
                             className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant"
                           />
-                          <span className="font-label-sm text-on-surface">{job}</span>
+                          <span className="font-label-sm text-on-surface">{label}</span>
                         </label>
                       ))}
                     </div>
@@ -805,20 +828,26 @@ export default function FormulirSPOP({ onNavigate }) {
                   <div className="md:col-span-2 space-y-4">
                     <label className="font-label-sm text-primary block">JENIS TANAH</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {['Tanah + Bangunan', 'Kavling Siap Bangun', 'Tanah Kosong', 'Fasilitas Umum'].map((jenis) => (
+                      {[
+                        { label: 'Tanah + Bangunan', val: 'TANAH_BANGUNAN' },
+                        { label: 'Tanah Pertanian', val: 'TANAH_PERTANIAN' },
+                        { label: 'Tanah Perkebunan', val: 'TANAH_PERKEBUNAN' },
+                        { label: 'Tanah Kehutanan', val: 'TANAH_KEHUTANAN' },
+                        { label: 'Lainnya', val: 'TANAH_LAINNYA' },
+                      ].map(({ label, val }) => (
                         <label
-                          key={jenis}
+                          key={val}
                           className={`flex items-center gap-2 p-3 border rounded hover:bg-surface-container-low transition-colors cursor-pointer ${errors.jenisTanah ? 'border-error' : 'border-outline-variant'}`}
                         >
                           <input
                             type="radio"
                             name="jenisTanah"
-                            value={jenis}
-                            checked={formData.jenisTanah === jenis}
+                            value={val}
+                            checked={formData.jenisTanah === val}
                             onChange={(e) => handleTextChange('jenisTanah', e)}
                             className="w-4 h-4 text-secondary focus:ring-secondary border-outline-variant flex-shrink-0"
                           />
-                          <span className="font-label-sm text-on-surface leading-snug">{jenis}</span>
+                          <span className="font-label-sm text-on-surface leading-snug">{label}</span>
                         </label>
                       ))}
                     </div>
@@ -845,13 +874,30 @@ export default function FormulirSPOP({ onNavigate }) {
                         className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
                         placeholder="Contoh: 1"
                       />
-                      {parseInt(formData.jumlahBangunan) > 0 && (
-                        <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2">
-                          <span className="material-symbols-outlined text-sm mt-0.5">info</span>
-                          <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
-                        </div>
-                      )}
                     </div>
+
+                    {(formData.jenisTanah === 'TANAH_BANGUNAN' || parseInt(formData.jumlahBangunan) > 0) && (
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LUAS BANGUNAN (M²)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.luasBangunan}
+                          onChange={(e) => handleTextChange('luasBangunan', e)}
+                          className={`w-full h-12 border ${errors.luasBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                          placeholder="Contoh: 45"
+                        />
+                        {errors.luasBangunan && <p className="text-error text-[12px] mt-1">{errors.luasBangunan}</p>}
+                        <p className="text-xs text-on-surface-variant">Total luas seluruh lantai bangunan di atas tanah ini.</p>
+                      </div>
+                    )}
+
+                    {parseInt(formData.jumlahBangunan) > 0 && (
+                      <div className="md:col-span-2 mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2">
+                        <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+                        <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1085,7 +1131,16 @@ export default function FormulirSPOP({ onNavigate }) {
                   </span>
                 </div>
               </div>
-              <div className="pt-8 flex justify-center gap-4">
+              <div className="pt-8 flex justify-center gap-4 flex-col sm:flex-row">
+                {parseInt(formData.jumlahBangunan) > 0 && (
+                  <button
+                    onClick={() => onNavigate('formulir_lspop')}
+                    className="px-8 py-4 rounded-full bg-secondary text-on-secondary font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 animate-pulse-slow"
+                  >
+                    <span className="material-symbols-outlined">apartment</span>
+                    Lanjut Isi LSPOP ({formData.jumlahBangunan} Bangunan)
+                  </button>
+                )}
                 <button
                   onClick={() => onNavigate('dashboard_desa')}
                   className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
