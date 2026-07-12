@@ -5,7 +5,7 @@ import SegmentedNOPInput from '../components/SegmentedNOPInput';
 export default function FormulirSPOP({ onNavigate }) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    transaksi: 'update',
+    transaksi: '',
     nop: {
       prov: '33',
       kab: '03',
@@ -49,6 +49,28 @@ export default function FormulirSPOP({ onNavigate }) {
 
   const handleTextChange = (field, e) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const formatNOPString = (val) => {
+    const digits = val.replace(/\D/g, '').substring(0, 18);
+    let res = '';
+    for (let i = 0; i < digits.length; i++) {
+      if (i === 2 || i === 4 || i === 7 || i === 10) res += '.';
+      else if (i === 13) res += '-';
+      else if (i === 17) res += '.';
+      res += digits[i];
+    }
+    return res;
+  };
+
+  const formatSPPTString = (val) => {
+    const digits = val.replace(/\D/g, '').substring(0, 9);
+    let res = '';
+    for (let i = 0; i < digits.length; i++) {
+      if (i === 3 || i === 6) res += '.';
+      res += digits[i];
+    }
+    return res;
   };
 
   const nextStep = () => {
@@ -167,21 +189,23 @@ export default function FormulirSPOP({ onNavigate }) {
                   </div>
 
                   {/* NOP Section */}
-                  <div className="space-y-4 overflow-x-auto pb-4 custom-scrollbar">
-                    <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
-                      <div className="space-y-4">
-                        <SegmentedNOPInput 
-                          value={formData.nop} 
-                          onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
-                          label="2. NOP"
-                          showHeaders={true}
-                        />
-                        <SegmentedNOPInput 
-                          value={formData.nopBersama} 
-                          onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
-                          label="3. NOP BERSAMA"
-                          showHeaders={false}
-                        />
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto pb-4 custom-scrollbar">
+                      <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                        <div className="space-y-4">
+                          <SegmentedNOPInput 
+                            value={formData.nop} 
+                            onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
+                            label="NOP"
+                            showHeaders={true}
+                          />
+                          <SegmentedNOPInput 
+                            value={formData.nopBersama} 
+                            onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                            label="NOP BERSAMA"
+                            showHeaders={false}
+                          />
+                        </div>
                       </div>
                     </div>
                     
@@ -214,9 +238,9 @@ export default function FormulirSPOP({ onNavigate }) {
                     <input
                       type="text"
                       value={formData.nopAsal}
-                      onChange={(e) => handleTextChange('nopAsal', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                      placeholder="Masukkan NOP Asal jika ada pecah sertifikat"
+                      onChange={(e) => setFormData(prev => ({ ...prev, nopAsal: formatNOPString(e.target.value) }))}
+                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary tracking-widest"
+                      placeholder="33.03.XXX.XXX.XXX-XXXX.X"
                     />
                   </div>
                   <div className="space-y-2">
@@ -224,9 +248,9 @@ export default function FormulirSPOP({ onNavigate }) {
                     <input
                       type="text"
                       value={formData.noSpptLama}
-                      onChange={(e) => handleTextChange('noSpptLama', e)}
-                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
-                      placeholder="Contoh: 001.002.003"
+                      onChange={(e) => setFormData(prev => ({ ...prev, noSpptLama: formatSPPTString(e.target.value) }))}
+                      className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary tracking-widest"
+                      placeholder="XXX.XXX.XXX"
                     />
                   </div>
                 </div>

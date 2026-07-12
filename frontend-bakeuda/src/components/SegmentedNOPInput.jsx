@@ -30,7 +30,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
   const handleChange = (e, index) => {
     const val = e.target.value.replace(/\D/g, '');
     const char = val.slice(-1);
-    
+
     if (char) {
       updateChar(index, char);
       if (index < 17) {
@@ -61,7 +61,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
     if (index < 4) return; // prov and kab are read-only
     const newChars = [...chars];
     newChars[index] = char;
-    
+
     // Reconstruct value object
     let cIdx = 0;
     const newValue = {};
@@ -73,7 +73,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
       }
       newValue[seg] = segStr;
     });
-    
+
     if (onChange) {
       onChange(newValue);
     }
@@ -95,7 +95,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full">
       {label && (
-        <div className="w-40 font-bold text-on-surface whitespace-nowrap md:text-right md:pr-2">
+        <div className="w-32 font-bold text-on-surface whitespace-nowrap md:text-left flex-shrink-0">
           {label}
         </div>
       )}
@@ -116,11 +116,10 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
                     ref={el => refs.current[currentIndex] = el}
                     type="text"
                     inputMode="numeric"
-                    className={`w-7 h-9 sm:w-9 sm:h-11 border rounded-md text-center font-data-mono font-bold text-base sm:text-lg focus:outline-none transition-all ${
-                      isReadOnly 
-                        ? 'bg-surface-container-high text-on-surface border-outline cursor-not-allowed select-none' 
+                    className={`w-7 h-9 sm:w-9 sm:h-11 border rounded-md text-center font-data-mono font-bold text-base sm:text-lg focus:outline-none transition-all ${isReadOnly
+                        ? 'bg-surface-container-high text-on-surface border-outline cursor-not-allowed select-none'
                         : 'bg-white text-on-surface border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary shadow-sm'
-                    }`}
+                      }`}
                     value={chars[currentIndex]}
                     onChange={(e) => handleChange(e, currentIndex)}
                     onKeyDown={(e) => handleKeyDown(e, currentIndex)}
