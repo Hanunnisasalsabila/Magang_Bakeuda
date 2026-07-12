@@ -44,7 +44,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
       address: 'Jl. Letjen Parman No. 2, Bancar',
       land: 200,
       building: 180,
-      status: 'Menunggu Validasi',
+      status: 'Menunggu Verifikasi',
       kecamatan: 'Purbalingga',
     },
     {
@@ -57,13 +57,13 @@ export default function MonitoringObjekPajak({ onNavigate }) {
       kecamatan: 'Purbalingga',
     },
     // Menambahkan data ekstra agar pagination bisa terlihat
-    { nop: '33.03.010.001.015.0051.0', name: 'Budi Santoso', address: 'Jl. Ahmad Yani No. 10, Kandanggampang', land: 150, building: 80, status: 'Menunggu Validasi', kecamatan: 'Purbalingga' },
+    { nop: '33.03.010.001.015.0051.0', name: 'Budi Santoso', address: 'Jl. Ahmad Yani No. 10, Kandanggampang', land: 150, building: 80, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
     { nop: '33.03.010.001.015.0052.0', name: 'Sutarjo', address: 'Perum Griya Abdi Karya Blok A-1, Purbalingga', land: 105, building: 45, status: 'Draft', kecamatan: 'Purbalingga' },
     { nop: '33.03.020.005.001.0090.0', name: 'CV. Bintang Terang', address: 'Kawasan Industri Kalimanah No. 12', land: 1200, building: 800, status: 'Perlu Revisi', kecamatan: 'Kalimanah' },
     { nop: '33.03.020.005.001.0091.0', name: 'Indah Pertiwi', address: 'Jl. Mayjen Sungkono No. 44, Kalimanah', land: 300, building: 150, status: 'Disetujui', kecamatan: 'Kalimanah' },
-    { nop: '33.03.010.001.015.0053.0', name: 'Agus Setiawan', address: 'Jl. Letjen Parman No. 8, Bancar', land: 250, building: 100, status: 'Menunggu Validasi', kecamatan: 'Purbalingga' },
+    { nop: '33.03.010.001.015.0053.0', name: 'Agus Setiawan', address: 'Jl. Letjen Parman No. 8, Bancar', land: 250, building: 100, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
     { nop: '33.03.010.001.015.0054.0', name: 'Rina Herawati', address: 'Perumahan Bojong Residance Blok B-2', land: 90, building: 36, status: 'Disetujui', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0055.0', name: 'PT. Maju Bersama', address: 'Jl. S. Parman No. 99, Kedungmenjangan', land: 5000, building: 3500, status: 'Menunggu Validasi', kecamatan: 'Purbalingga' },
+    { nop: '33.03.010.001.015.0055.0', name: 'PT. Maju Bersama', address: 'Jl. S. Parman No. 99, Kedungmenjangan', land: 5000, building: 3500, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
   ]);
 
   const filteredSubmissions = submissions.filter((obj) => {
@@ -71,7 +71,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
     const matchesStatus =
       statusVerif === 'Semua Status' ||
       obj.status.toLowerCase().includes(statusVerif.toLowerCase()) ||
-      (statusVerif === 'Menunggu Validasi' && obj.status === 'Menunggu Validasi');
+      (statusVerif === 'Menunggu Verifikasi' && obj.status === 'Menunggu Verifikasi');
     const matchesSearch =
       obj.name.toLowerCase().includes(search.toLowerCase()) ||
       obj.nop.includes(search) ||
@@ -194,7 +194,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
               className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
             >
               <option>Semua Status</option>
-              <option>Menunggu Validasi</option>
+              <option>Menunggu Verifikasi</option>
               <option>Disetujui</option>
               <option>Perlu Revisi</option>
               <option>Draft</option>
@@ -226,8 +226,8 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-right whitespace-nowrap">Aksi</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant text-on-surface">
@@ -252,11 +252,11 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                     <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
                       {obj.building.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
                       <StatusBadge status={obj.status} />
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="px-4 pl-6 py-3 text-left whitespace-nowrap">
+                      <div className="flex items-center justify-start gap-2">
                         <button
                           onClick={() => setSelectedSubmission(obj)}
                           className="px-3 py-1.5 bg-surface text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"

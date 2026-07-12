@@ -298,10 +298,10 @@ export default function DaftarObjekPajak({ onNavigate }) {
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">Tanah (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">Bgn (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-right">Aksi</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant text-on-surface">
@@ -326,17 +326,19 @@ export default function DaftarObjekPajak({ onNavigate }) {
                     <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
                       {obj.building.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
                       <StatusBadge status={obj.status} />
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setSelectedObject(obj)}
-                        className="px-3 py-1.5 bg-primary/10 text-primary-dark border border-primary/20 hover:border-primary hover:bg-primary/20 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 ml-auto"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">visibility</span>
-                        Detail
-                      </button>
+                    <td className="px-4 pl-6 py-3 text-left whitespace-nowrap">
+                      <div className="flex items-center justify-start gap-2">
+                        <button
+                          onClick={() => setSelectedObject(obj)}
+                          className="px-3 py-1.5 bg-primary/10 text-primary-dark border border-primary/20 hover:border-primary hover:bg-primary/20 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center justify-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">visibility</span>
+                          Detail
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
