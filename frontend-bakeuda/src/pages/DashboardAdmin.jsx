@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
 
-export default function DashboardAdmin({ onNavigate }) {
+export default function DashboardAdmin() {
+  const navigate = useNavigate();
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
   const [bentoCards, setBentoCards] = useState([
     { title: 'Pengajuan Masuk', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
@@ -27,10 +29,10 @@ export default function DashboardAdmin({ onNavigate }) {
         
         const dataStats = statsRes.data.data;
         setBentoCards([
-          { title: 'Pengajuan Masuk', value: dataStats.totalDikirim.toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
-          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
-          { title: 'Total Objek Pajak', value: dataStats.totalObjek.toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
-          { title: 'Tingkat Kepatuhan', value: `${dataStats.kepatuhan}%`, icon: 'verified', progress: dataStats.kepatuhan, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
+          { title: 'Pengajuan Masuk', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
+          { title: 'Menunggu Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
+          { title: 'Total Objek Pajak', value: (dataStats.totalObjek || 0).toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
+          { title: 'Tingkat Kepatuhan', value: `${dataStats.kepatuhan || 0}%`, icon: 'verified', progress: dataStats.kepatuhan || 0, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
         ]);
 
         if (usersRes.data && usersRes.data.success) {
@@ -205,7 +207,7 @@ export default function DashboardAdmin({ onNavigate }) {
           </div>
           <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
             <button 
-              onClick={() => onNavigate('manajemen_akun_desa')}
+              onClick={() => navigate('/manajemen-akun-desa')}
               className="w-full py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-sm"
             >
               Lihat Semua
@@ -224,7 +226,7 @@ export default function DashboardAdmin({ onNavigate }) {
             <p className="text-sm text-on-surface-variant mt-1">Daftar antrean SPOP yang masuk ke sistem pusat</p>
           </div>
           <button
-            onClick={() => onNavigate('antrean_verifikasi')}
+            onClick={() => navigate('/antrean-verifikasi')}
             className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-bold transition-colors"
           >
             <span>Buka Antrean</span>
@@ -284,7 +286,7 @@ export default function DashboardAdmin({ onNavigate }) {
                     <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                       <div className="flex items-center justify-end">
                         <button
-                          onClick={() => onNavigate('detail_review', { id: act.id })}
+                          onClick={() => navigate('/detail-review/' + act.id )}
                           className="px-4 py-2 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                         >
                           <span className="material-symbols-outlined text-[16px]">plagiarism</span>
@@ -311,7 +313,7 @@ export default function DashboardAdmin({ onNavigate }) {
 
       {/* Floating Action Button */}
       <button
-        onClick={() => onNavigate('antrean_verifikasi')}
+        onClick={() => navigate('/antrean-verifikasi')}
         className="fixed bottom-8 right-8 bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40"
       >
         <span className="material-symbols-outlined">fact_check</span>

@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
 
-export default function DetailReviewSPOP({ onNavigate }) {
+export default function DetailReviewSPOP() {
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [decisionNotes, setDecisionNotes] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -18,20 +26,26 @@ export default function DetailReviewSPOP({ onNavigate }) {
       { nip: '198001012010011001', nama_pejabat: 'Bapak Kades Purbalingga' },
       { nip: '198502022015021002', nama_pejabat: 'Bapak Sekdes Purbalingga' }
     ]);
-    // Show an initial auto-save toast to mimic static page behavior
-    const timer1 = setTimeout(() => {
-      setToastMessage('Draft verifikasi disimpan otomatis');
-      setShowToast(true);
-      const timer2 = setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
-      return () => clearTimeout(timer2);
-    }, 1500);
 
-    return () => clearTimeout(timer1);
-  }, []);
+    const fetchDetail = async () => {
+      try {
+        const res = await api.get(`/transaksi-spop/${id}`);
+        setData(res.data.data);
+      } catch (error) {
+        console.error('Gagal mengambil detail SPOP:', error);
+        setToastMessage('Gagal mengambil data SPOP');
+        setShowToast(true);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleDecision = (approved) => {
+    if (id) {
+      fetchDetail();
+    }
+  }, [id]);
+
+  const handleDecision = async (approved) => {
     if (approved && (!nipPejabat || !urlDokumenFisik)) {
       setToastMessage('Gagal: Pilih NIP Pejabat dan Unggah Dokumen Fisik terlebih dahulu!');
       setShowToast(true);
@@ -39,16 +53,28 @@ export default function DetailReviewSPOP({ onNavigate }) {
       return;
     }
 
-    setToastMessage(
-      approved
-        ? 'Verifikasi Desa Berhasil! Dokumen diteruskan ke Antrean Bakeuda.'
-        : 'Pengajuan SPOP ditolak dan dikembalikan untuk revisi.'
-    );
-    setShowToast(true);
-    setTimeout(() => {
-      setShowToast(false);
-      onNavigate('dashboard_desa');
-    }, 2000);
+    try {
+      if (approved) {
+        await api.patch(`/transaksi-spop/${id}/verifikasi-desa`, {
+          nipPemeriksaDesa: nipPejabat,
+          urlDokumenFisik: urlDokumenFisik
+        });
+        setToastMessage('Verifikasi Desa Berhasil! Dokumen diteruskan ke Antrean Bakeuda.');
+      } else {
+        // Backend hasn't implemented full reject feature yet for this level
+        setToastMessage('Pengajuan SPOP ditolak (Akan dikembalikan jika fitur tersedia).');
+      }
+
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+        navigate('/dashboard-desa');
+      }, 2000);
+    } catch (error) {
+      setToastMessage(error.response?.data?.message || 'Terjadi kesalahan saat memproses data');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   const handleUploadDokumenFisik = (e) => {
@@ -63,10 +89,31 @@ export default function DetailReviewSPOP({ onNavigate }) {
     }
   };
 
-  const buildings = [
-    { no: '01', type: 'Rumah Tinggal', year: '1998', area: 120, status: 'TIDAK BERUBAH' },
-    { no: '02', type: 'Garasi / Gudang', year: '2022', area: 45, status: 'BARU' },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500 font-medium text-lg">Memuat Detail SPOP...</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="text-red-500 font-medium text-lg">Data SPOP Tidak Ditemukan</p>
+        <button onClick={() => navigate(-1)} className="text-blue-600 underline">Kembali</button>
+      </div>
+    );
+  }
+
+  const detailTujuan = data.detail_tujuan?.[0] || {};
+  const nopDisplay = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
+  
+  // Format Tanggal
+  const tglPengajuan = new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
 
   return (
     <main className="p-6 max-w-screen-2xl mx-auto w-full relative">
@@ -88,20 +135,20 @@ export default function DetailReviewSPOP({ onNavigate }) {
               Verifikasi Berkas SPOP PBB-P2
             </h2>
             <p className="text-gray-500 mt-1 text-sm">
-              Formulir SPOP-A01-2024 • ID: #TRX-9821-PBG
+              Formulir {data.no_formulir || 'SPOP-A01-2024'} • ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-start md:items-end">
           <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-xs mb-2 font-bold border border-blue-200">
-            Mutakhirkan Data (Update)
+            {data.jenis_transaksi}
           </div>
           <div className="text-left md:text-right">
             <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
               Tgl Pengajuan
             </span>
             <span className="font-mono font-medium text-sm text-gray-800">
-              14 Oct 2023, 10:45 WIB
+              {tglPengajuan} WIB
             </span>
           </div>
         </div>
@@ -117,7 +164,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
               Nomor Objek Pajak (NOP)
             </h3>
             <div className="font-mono text-lg font-bold text-gray-900 tracking-wider">
-              33.03.050.012.005.0340.0
+              {nopDisplay}
             </div>
             <p className="text-[11px] text-gray-400 mt-2 italic">
               *Prov - Kab - Kec - Kel - Blok - No.Urut - Kode
@@ -136,38 +183,32 @@ export default function DetailReviewSPOP({ onNavigate }) {
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Nama Subjek Pajak
                   </label>
-                  <div className="font-semibold text-gray-900 text-base">BUDI SANTOSO, S.T.</div>
+                  <div className="font-semibold text-gray-900 text-base">{data.nama_pengaju || 'Tidak Diketahui'}</div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Status Subjek Pajak
                   </label>
-                  <div className="font-semibold text-blue-700">Milik Sendiri</div>
+                  <div className="font-semibold text-blue-700">Tergantung Berkas</div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                    NPWP
+                    NIK / NPWP
                   </label>
                   <div className="font-mono font-medium text-sm text-gray-800">
-                    09.234.567.8-522.000
+                    {detailTujuan.nik_calon_subjek || '-'}
                   </div>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                    Alamat Subjek Pajak
+                    Alamat Objek Pajak
                   </label>
-                  <div className="font-semibold text-gray-900">JL. MERDEKA NO. 45, RT 003 / RW 001</div>
+                  <div className="font-semibold text-gray-900">{detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'} / RW {detailTujuan.rw_op_baru || '-'}</div>
                   <div className="text-gray-500 text-sm font-medium mt-0.5">
-                    DESA PENAMBONGAN, KEC. PURBALINGGA
+                    DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                    Pekerjaan
-                  </label>
-                  <div className="font-semibold text-gray-900">Pegawai Negeri Sipil</div>
                 </div>
               </div>
             </div>
@@ -179,29 +220,16 @@ export default function DetailReviewSPOP({ onNavigate }) {
               <span className="material-symbols-outlined text-[20px]">landscape</span>
               DATA TANAH (DATA BARU)
             </h3>
-            {/* Alert / Highlight */}
-            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6 flex items-start gap-3">
-              <span className="material-symbols-outlined text-blue-500 mt-0.5">info</span>
-              <div>
-                <h4 className="font-semibold text-blue-900 text-sm">Terjadi Perubahan Luas Tanah</h4>
-                <p className="text-sm text-blue-800 mt-1">
-                  User melakukan pemutakhiran data berdasarkan Sertifikat Tanah terbaru (2023).
-                </p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Luas Tanah (m²)</label>
                 <div className="flex items-center gap-3 font-semibold text-lg">
-                  <span className="text-red-600 line-through">450 m²</span>
-                  <span className="material-symbols-outlined text-gray-400">arrow_forward</span>
-                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">525 m²</span>
+                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">{detailTujuan.luas_tanah_baru || 0} m²</span>
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Jenis Tanah</label>
-                <div className="font-semibold text-gray-900 text-lg">Tanah Darat</div>
+                <div className="font-semibold text-gray-900 text-lg">{detailTujuan.jenis_tanah_baru || '-'}</div>
               </div>
             </div>
           </section>
@@ -212,52 +240,17 @@ export default function DetailReviewSPOP({ onNavigate }) {
               <span className="material-symbols-outlined text-[20px]">apartment</span>
               DATA BANGUNAN
             </h3>
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead className="bg-gray-100 text-gray-700 text-xs uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="p-3">No. Bng</th>
-                    <th className="p-3">Jenis Bng</th>
-                    <th className="p-3">Thn Selesai</th>
-                    <th className="p-3 text-right">Luas (m²)</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm text-on-surface">
-                  {buildings.map((bng, index) => (
-                    <tr
-                      key={index}
-                      className={`border-b border-outline-variant hover:bg-surface-container-low transition-colors ${
-                        index % 2 === 1 ? 'bg-surface-container-low/40' : ''
-                      }`}
-                    >
-                      <td className="p-3 font-data-mono font-bold">{bng.no}</td>
-                      <td className="p-3 font-medium">{bng.type}</td>
-                      <td className="p-3 font-medium">{bng.year}</td>
-                      <td className="p-3 text-right font-data-mono font-bold">
-                        {bng.status === 'BARU' ? (
-                          <span className="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded border border-secondary/20">
-                            {bng.area}
-                          </span>
-                        ) : (
-                          bng.area
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 text-[10px] rounded font-bold border ${
-                            bng.status === 'BARU'
-                              ? 'bg-primary-fixed text-on-primary-fixed-variant border-primary-fixed-dim'
-                              : 'bg-surface-container-high text-on-surface-variant border-outline-variant'
-                          }`}
-                        >
-                          {bng.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Jumlah Bangunan</label>
+                <div className="flex items-center gap-3 font-semibold text-lg">
+                  <span>{detailTujuan.jumlah_bangunan_baru || 0}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Luas Bangunan (m²)</label>
+                <div className="font-semibold text-gray-900 text-lg">{detailTujuan.luas_bangunan_baru || 0} m²</div>
+              </div>
             </div>
           </section>
         </div>
@@ -270,81 +263,33 @@ export default function DetailReviewSPOP({ onNavigate }) {
               LAMPIRAN DOKUMEN
             </h3>
             <div className="space-y-6">
-              {/* KTP */}
-              <div className="group border border-outline-variant p-4 rounded-lg hover:border-primary transition-all cursor-pointer">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-[24px]">id_card</span>
-                    <div>
-                      <p className="font-bold text-sm text-on-surface">Kartu Tanda Penduduk (KTP)</p>
-                      <p className="text-xs text-on-surface-variant">ktp_budi_santoso.jpg (1.2 MB)</p>
+              {data.lampiran && data.lampiran.length > 0 ? (
+                data.lampiran.map((lamp, idx) => (
+                  <div key={lamp.id_lampiran || idx} className="group border border-outline-variant p-4 rounded-lg hover:border-primary transition-all cursor-pointer">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary text-[24px]">description</span>
+                        <div>
+                          <p className="font-bold text-sm text-on-surface">{lamp.jenis_dokumen}</p>
+                        </div>
+                      </div>
+                      <a href={lamp.url_dokumen} target="_blank" rel="noopener noreferrer" className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">
+                        open_in_new
+                      </a>
+                    </div>
+                    <div className="aspect-video bg-surface-variant rounded-lg overflow-hidden relative border border-outline-variant/60 shadow-inner">
+                       <img
+                          alt="Document Preview"
+                          className="w-full h-full object-cover"
+                          src={lamp.url_dokumen}
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/400x200?text=Dokumen+PDF/File'; }}
+                        />
                     </div>
                   </div>
-                  <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">
-                    open_in_new
-                  </span>
-                </div>
-                <div className="aspect-video bg-surface-variant rounded-lg overflow-hidden relative border border-outline-variant/60 shadow-inner">
-                  <img
-                    alt="Document Preview KTP"
-                    className="w-full h-full object-cover"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4SDVhh2gwi7GnkeMcWqwCZxBcGiQFpUPobbVROpIPYoXoD1W6LxKRp8O3SULrwIeHgBzCiFiQj7K2XoofWoHgivXb7REaNXt7P43xPb4nEZj0EmFv7ua-HCQCjAgzjVP8dXvhgwW6AteaUMN6HTvmOYHV2l9prEiYzyh8DyyUZ-jKFuAjWAvm3r5P8tXKH4E1ZZor2Z-6bZE9XT8j3JyrAeyZHQUNFLgmTtQ29bAXz4Hb4UZzAC6Hu6Ey2gLQ9MjQUQx3pdX6jlmJ"
-                  />
-                  <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <span className="bg-white text-primary px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                      Klik untuk perbesar
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sertifikat Tanah */}
-              <div className="group border border-outline-variant p-4 rounded-lg hover:border-primary transition-all cursor-pointer">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-[24px]">description</span>
-                    <div>
-                      <p className="font-bold text-sm text-on-surface">Sertifikat Tanah / Hak Milik</p>
-                      <p className="text-xs text-on-surface-variant">sertifikat_nop_005.pdf (4.5 MB)</p>
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">
-                    visibility
-                  </span>
-                </div>
-                <div className="aspect-[4/3] bg-surface-container-low rounded-lg flex flex-col items-center justify-center border-2 border-dashed border-outline-variant/80 p-4">
-                  <span className="material-symbols-outlined text-4xl text-outline mb-2">picture_as_pdf</span>
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest text-center">
-                    Preview Not Available
-                  </p>
-                  <button className="mt-3 text-xs bg-primary text-on-primary px-4 py-2 rounded-full font-bold shadow hover:opacity-90 active:scale-95 transition-all">
-                    Unduh Dokumen
-                  </button>
-                </div>
-              </div>
-
-              {/* Foto Lokasi */}
-              <div className="group border border-outline-variant p-4 rounded-lg hover:border-primary transition-all cursor-pointer">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-primary text-[24px]">photo_camera</span>
-                    <div>
-                      <p className="font-bold text-sm text-on-surface">Foto Lokasi Objek Pajak</p>
-                      <p className="text-xs text-on-surface-variant">tampak_depan_2023.png (2.8 MB)</p>
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">
-                    open_in_new
-                  </span>
-                </div>
-                <div className="aspect-video bg-surface-variant rounded-lg overflow-hidden relative border border-outline-variant/60 shadow-inner">
-                  <img
-                    alt="Location Photo Preview"
-                    className="w-full h-full object-cover"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUEV5ZNcahjZmfMOeLac-nZeWFTrjt2EORocXGNFuyP2NXz3noq44STqP8yvLV4xzqUYUtRRll1X9YbI5Qy5Fdk8ThL4CSsFAbtzH2us-EfR1P-rEPNiZgL2CrLRuL7fYeslVHQK68BLABcjHtxYHagbxHs2W6VkuHBBI4qnQJZZu0Zpap7heS8T8227hAYBDKslb5PylEXNfC1H1Wicvdw8wax8gin3wOQR31O_y-_ga9VQXFd1-H2LkkGcQTtF40RWoItM-bYa5b"
-                  />
-                </div>
-              </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500 italic">Tidak ada lampiran dokumen.</p>
+              )}
             </div>
           </section>
         </div>
@@ -359,7 +304,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
               Keputusan Verifikasi
             </h3>
             <p className="text-gray-500 text-sm mt-1">
-              Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung memperbarui database Master Data PBB.
+              Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung diteruskan ke tingkat Kabupaten.
             </p>
           </div>
           
@@ -413,7 +358,7 @@ export default function DetailReviewSPOP({ onNavigate }) {
                   value={decisionNotes}
                   onChange={(e) => setDecisionNotes(e.target.value)}
                   className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
-                  placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat nomor sert: 09283/2023..."
+                  placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat..."
                   rows={3}
                 />
               </div>

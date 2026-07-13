@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function PelacakanDokumen({ onNavigate }) {
+export default function PelacakanDokumen() {
+  const navigate = useNavigate();
   const [dataTransaksi, setDataTransaksi] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,7 +66,7 @@ export default function PelacakanDokumen({ onNavigate }) {
     <main className="p-gutter max-w-screen-md mx-auto w-full relative">
       <div className="mb-8 flex items-center gap-4">
         <button 
-          onClick={() => onNavigate('dashboard_desa')}
+          onClick={() => navigate('/dashboard-desa')}
           className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors"
         >
           <span className="material-symbols-outlined">arrow_back</span>

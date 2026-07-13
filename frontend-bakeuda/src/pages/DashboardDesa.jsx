@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
 
-export default function DashboardDesa({ onNavigate }) {
+export default function DashboardDesa() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState([
     { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Memuat...', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500' },
     { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Memuat...', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500' },
@@ -34,11 +36,12 @@ export default function DashboardDesa({ onNavigate }) {
 
         const rawList = listRes.data.data;
         const formattedList = rawList.slice(0, 5).map(item => ({
+          id: item.id_transaksi,
           nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
           name: item.nama_pengaju || 'Tanpa Nama',
           type: item.jenis_transaksi,
           date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+          status: item.status_ajuan === 'MENUNGGU_VERIFIKASI_DESA' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'PERBAIKAN' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
         }));
         setRecentSubmissions(formattedList);
         
@@ -86,7 +89,7 @@ export default function DashboardDesa({ onNavigate }) {
         </div>
         
         <button
-          onClick={() => onNavigate('formulir_spop')}
+          onClick={() => navigate('/formulir-spop')}
           className="bg-blue-900 text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold text-sm hover:bg-blue-950 active:scale-95 transition-all shadow-sm"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
@@ -129,7 +132,7 @@ export default function DashboardDesa({ onNavigate }) {
               <p className="text-xs text-gray-500 mt-1 font-medium">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
             </div>
             <button
-              onClick={() => onNavigate('monitoring_pajak')}
+              onClick={() => navigate('/monitoring-pajak')}
               className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-xs font-bold transition-colors"
             >
               <span>Lihat Semua</span>
@@ -186,7 +189,7 @@ export default function DashboardDesa({ onNavigate }) {
                       <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                         <div className="flex items-center justify-end">
                           <button
-                            onClick={() => onNavigate(sub.status === 'Draft' ? 'formulir_spop' : 'monitoring_pajak')}
+                            onClick={() => navigate(sub.status === 'Draft' ? '/formulir-spop' : `/detail-review/${sub.id}`)}
                             className="px-4 py-2 bg-white text-blue-600 border border-gray-200 hover:border-blue-600 hover:bg-blue-50 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                           >
                             <span className="material-symbols-outlined text-[16px]">

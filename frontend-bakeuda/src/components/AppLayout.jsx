@@ -1,27 +1,32 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-export default function AppLayout({ role, onRoleChange, activePage, onNavigate, activePageTitle, children }) {
+export default function AppLayout({ role, onRoleChange, handleLogout, activePageTitle, children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   const isDesa = role === 'desa';
 
   // Mobile Bottom Navigation config
   const mobileNavs = isDesa
     ? [
-        { id: 'dashboard_desa', label: 'Dashboard', icon: 'dashboard' },
-        { id: 'monitoring_pajak', label: 'Monitoring', icon: 'analytics' },
-        { id: 'formulir_spop', label: 'Formulir', icon: 'description' },
-        { id: 'profil', label: 'Profil', icon: 'person' },
+        { path: '/dashboard-desa', label: 'Dashboard', icon: 'dashboard' },
+        { path: '/monitoring-pajak', label: 'Monitoring', icon: 'analytics' },
+        { path: '/formulir-spop', label: 'Formulir', icon: 'description' },
+        { path: '/profil', label: 'Profil', icon: 'person' },
       ]
     : [
-        { id: 'dashboard_admin', label: 'Dashboard', icon: 'dashboard' },
-        { id: 'manajemen_akun_desa', label: 'Akun Desa', icon: 'manage_accounts' },
-        { id: 'antrean_verifikasi', label: 'Antrean', icon: 'fact_check' },
-        { id: 'detail_review', label: 'Review', icon: 'rate_review' },
-        { id: 'profil', label: 'Profil', icon: 'person' },
+        { path: '/dashboard-admin', label: 'Dashboard', icon: 'dashboard' },
+        { path: '/manajemen-akun-desa', label: 'Akun Desa', icon: 'manage_accounts' },
+        { path: '/antrean-verifikasi', label: 'Antrean', icon: 'fact_check' },
+        { path: '/detail-review', label: 'Review', icon: 'rate_review' },
+        { path: '/profil', label: 'Profil', icon: 'person' },
       ];
 
   return (
@@ -29,8 +34,8 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
       {/* Sidebar Navigation */}
       <Sidebar
         role={role}
-        activePage={activePage}
-        onNavigate={onNavigate}
+        activePath={currentPath}
+        handleLogout={handleLogout}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         isDesktopOpen={isDesktopSidebarOpen}
@@ -41,15 +46,7 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
         {/* Top App Bar */}
         <Header
           role={role}
-          onRoleChange={(newRole) => {
-            onRoleChange(newRole);
-            // Navigate to default page for that role
-            if (newRole === 'desa') {
-              onNavigate('dashboard_desa');
-            } else {
-              onNavigate('dashboard_admin');
-            }
-          }}
+          onRoleChange={onRoleChange}
           activePageTitle={activePageTitle}
           onToggleSidebar={() => {
             if (window.innerWidth >= 768) {
@@ -69,11 +66,11 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
       {/* Mobile Bottom Navigation Bar (Mobile Only) */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant flex justify-around py-3 px-2 z-40 shadow-lg">
         {mobileNavs.map((nav) => {
-          const isActive = activePage === nav.id;
+          const isActive = currentPath.startsWith(nav.path);
           return (
             <button
-              key={nav.id}
-              onClick={() => onNavigate(nav.id)}
+              key={nav.path}
+              onClick={() => navigate(nav.path)}
               className={`flex flex-col items-center gap-1 transition-colors ${
                 isActive ? 'text-primary' : 'text-on-surface-variant'
               }`}

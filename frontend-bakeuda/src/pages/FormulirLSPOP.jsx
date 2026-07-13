@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PaperHeader from '../components/PaperHeader';
 
-export default function FormulirLSPOP({ onNavigate }) {
+export default function FormulirLSPOP() {
+  const navigate = useNavigate();
   const [nop, setNop] = useState('');
   const [nomorBangunan, setNomorBangunan] = useState(1);
   const [totalBangunan, setTotalBangunan] = useState(1);
@@ -158,7 +160,7 @@ export default function FormulirLSPOP({ onNavigate }) {
           </p>
           <div className="pt-8">
             <button
-              onClick={() => onNavigate('dashboard_desa')}
+              onClick={() => navigate('/dashboard-desa')}
               className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
             >
               Kembali ke Dashboard

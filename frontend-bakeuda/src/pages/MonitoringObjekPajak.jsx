@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
 import wilayahData from '../utils/wilayahData.json';
 
-export default function MonitoringObjekPajak({ onNavigate }) {
+export default function MonitoringObjekPajak() {
+  const navigate = useNavigate();
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
@@ -279,7 +281,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                         
                         {(obj.status === 'Draft' || obj.status === 'Perlu Revisi') && (
                           <button
-                            onClick={() => onNavigate && onNavigate('formulir_spop', { editData: obj })}
+                            onClick={() => navigate('/formulir-spop', { state: { editData: obj  } })}
                             className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:border-yellow-500 hover:bg-yellow-100 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
