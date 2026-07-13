@@ -347,7 +347,7 @@ export default function FormulirSPOP({ onNavigate }) {
   ];
 
   return (
-    <main className="p-gutter max-w-5xl mx-auto w-full">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full">
       {/* Paper Header Mockup */}
       <PaperHeader />
 
@@ -848,10 +848,9 @@ export default function FormulirSPOP({ onNavigate }) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: 'Tanah + Bangunan', val: 'TANAH_BANGUNAN' },
-                        { label: 'Tanah Pertanian', val: 'TANAH_PERTANIAN' },
-                        { label: 'Tanah Perkebunan', val: 'TANAH_PERKEBUNAN' },
-                        { label: 'Tanah Kehutanan', val: 'TANAH_KEHUTANAN' },
-                        { label: 'Lainnya', val: 'TANAH_LAINNYA' },
+                        { label: 'Kavling Siap Bangun', val: 'KAVLING_SIAP_BANGUN' },
+                        { label: 'Tanah Kosong', val: 'TANAH_KOSONG' },
+                        { label: 'Fasilitas Umum', val: 'FASILITAS_UMUM' },
                       ].map(({ label, val }) => (
                         <label
                           key={val}
@@ -1186,34 +1185,34 @@ export default function FormulirSPOP({ onNavigate }) {
           {/* Navigation Controls */}
           {step < 5 && (
             <div className="space-y-6">
-              <div className="p-4 bg-surface-container-low rounded-lg border-l-4 border-primary flex gap-4 items-center">
-                <span className="material-symbols-outlined text-primary">verified</span>
+              <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-600 flex gap-4 items-start sm:items-center">
+                <span className="material-symbols-outlined text-blue-600">verified</span>
                 <div>
-                  <p className="font-label-sm text-primary">Catatan Validasi</p>
-                  <p className="text-[13px] text-on-surface-variant">
+                  <p className="font-bold text-sm text-blue-900 mb-0.5">Catatan Validasi</p>
+                  <p className="text-[13px] text-gray-700">
                     Data yang Anda kirimkan akan melalui proses validasi oleh Admin BKD (Badan Keuangan Daerah) Kabupaten Purbalingga sebelum diterbitkan SPPT resmi.
                   </p>
                 </div>
               </div>
 
-              <div className="pt-10 border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
                 <button
                   type="button"
                   onClick={prevStep}
                   disabled={step === 1}
-                  className={`w-full md:w-auto px-8 py-3 rounded-full border border-primary text-primary font-bold hover:bg-surface-container transition-all flex items-center justify-center gap-2 group ${step === 1 ? 'opacity-50 cursor-not-allowed border-outline text-outline' : ''
+                  className={`w-full md:w-auto px-6 py-2.5 rounded-md border text-sm font-semibold transition-all flex items-center justify-center gap-2 group ${step === 1 ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50' : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 shadow-sm'
                     }`}
                 >
-                  <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1">
+                  <span className="material-symbols-outlined transition-transform group-hover:-translate-x-1 text-[18px]">
                     arrow_back
                   </span>
                   {step === 1 ? 'Batal' : 'Kembali'}
                 </button>
-                <div className="flex flex-col md:flex-row w-full md:w-auto gap-4">
+                <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
                   <button
                     type="button"
                     onClick={() => alert('Draft formulir berhasil disimpan ke akun Anda.')}
-                    className="w-full md:w-auto px-10 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-bold hover:bg-surface-container transition-colors"
+                    className="w-full md:w-auto px-6 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 shadow-sm transition-colors"
                   >
                     Simpan Draft
                   </button>
@@ -1221,15 +1220,15 @@ export default function FormulirSPOP({ onNavigate }) {
                     type="button"
                     onClick={step === 4 ? handleSubmit : nextStep}
                     disabled={isSubmitting || (step === 4 && !formData.persetujuan)}
-                    className={`w-full md:w-auto px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${
+                    className={`w-full md:w-auto px-8 py-2.5 rounded-md text-sm font-semibold transition-all flex items-center justify-center gap-2 group shadow-sm ${
                       isSubmitting || (step === 4 && !formData.persetujuan)
-                        ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
-                        : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-900 text-white hover:bg-blue-800 hover:shadow active:scale-[0.98]'
                     }`}
                   >
                     {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
                     {!isSubmitting && (
-                      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
+                      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1 text-[18px]">
                         arrow_forward
                       </span>
                     )}
@@ -1246,57 +1245,7 @@ export default function FormulirSPOP({ onNavigate }) {
         </form>
       </div>
 
-  {/* Contextual Information (Bento Style) */ }
-{
-  step < 5 && (
-    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
-        <div className="bg-white/40 p-3 rounded-lg text-secondary">
-          <span className="material-symbols-outlined text-[32px]">verified_user</span>
-        </div>
-        <div>
-          <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
-            Keamanan Data Terjamin
-          </h5>
-          <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
-            Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
-          </p>
-        </div>
-      </div>
-      <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
-        <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
-          Butuh Bantuan?
-        </h6>
-        <div className="space-y-4">
-          <a
-            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-            href="tel:0281891098"
-          >
-            <span className="material-symbols-outlined text-primary">call</span>
-            <span className="font-label-sm">Hotline: (0281) 891098</span>
-          </a>
-          <a
-            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-            href="mailto:bakeuda@purbalinggakab.go.id"
-          >
-            <span className="material-symbols-outlined text-primary">mail</span>
-            <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
 
-{/* Footer Small Print */ }
-      <footer className="mt-12 pb-12 text-center border-t border-outline-variant pt-8">
-        <p className="text-[12px] text-outline">
-          *) Khusus untuk PNS/ABRI/Pensiunan yang penghasilannya semata-mata berasal dari gaji atau uang pensiunan.
-        </p>
-        <p className="mt-4 font-label-sm text-outline">
-          SIPD Purbalingga © 2026 - Digitalisasi Layanan Perpajakan Daerah
-        </p>
-      </footer>
 
       <ToastNotification 
         show={toast.show} 

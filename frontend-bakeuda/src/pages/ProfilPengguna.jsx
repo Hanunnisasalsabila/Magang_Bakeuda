@@ -162,7 +162,7 @@ export default function ProfilPengguna({ role }) {
   );
 
   return (
-    <main className="w-full pb-16 animate-fadeIn">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full pb-16 animate-fadeIn">
 
       {/* Hero header banner */}
       <section className="relative overflow-hidden rounded-b-[28px] md:rounded-3xl bg-primary px-6 pt-10 pb-16 md:pb-20 md:mt-6">

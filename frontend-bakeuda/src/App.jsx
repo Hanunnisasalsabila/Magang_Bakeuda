@@ -86,7 +86,7 @@ export default function App() {
       case 'detail_review':
         return <DetailReviewSPOP onNavigate={setActivePage} />;
       case 'daftar_objek':
-        return <DaftarObjekPajak />;
+        return <DaftarObjekPajak onNavigate={setActivePage} />;
       case 'monitoring_pajak':
         return <MonitoringObjekPajak />;
       case 'pelacakan_dokumen':

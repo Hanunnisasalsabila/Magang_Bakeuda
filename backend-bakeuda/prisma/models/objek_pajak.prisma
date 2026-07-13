@@ -1,9 +1,8 @@
 enum JenisTanah {
   TANAH_BANGUNAN
-  TANAH_PERTANIAN
-  TANAH_PERKEBUNAN
-  TANAH_KEHUTANAN
-  TANAH_LAINNYA
+  KAVLING_SIAP_BANGUN
+  TANAH_KOSONG
+  FASILITAS_UMUM
 }
 
 // ─────────────────────────────────────────
