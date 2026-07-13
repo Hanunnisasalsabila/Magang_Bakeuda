@@ -248,26 +248,52 @@ export default function FormulirSPOP({ onNavigate }) {
     try {
       const nopObj = formData.nop;
       const nopBersamaObj = formData.nopBersama;
-      const nop = `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
-      const nopBersama = `${nopBersamaObj.prov}.${nopBersamaObj.kab}.${nopBersamaObj.kec || '000'}.${nopBersamaObj.kel || '000'}.${nopBersamaObj.blok || '000'}-${nopBersamaObj.nourut || '0000'}.${nopBersamaObj.kode || '0'}`;
+      
+      const rawNop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`.replace(/\D/g, '');
+      const rawNopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`.replace(/\D/g, '');
+      const rawNopAsal = nopAsal.replace(/\D/g, '');
 
       let jenis_layanan = 'BARU';
       if (formData.transaksi === 'update') jenis_layanan = 'PERUBAHAN_DATA';
       if (formData.transaksi === 'hapus') jenis_layanan = 'MUTASI';
 
+      // Map Enum
+      const statusWpEnum = {
+        'Pemilik': 'PEMILIK',
+        'Penyewa': 'PENYEWA',
+        'Pengelola': 'PENGGARAP',
+        'Pemakai': 'PEMAKAI',
+        'Sengketa': 'SENGKETA'
+      }[formData.statusWp] || 'PEMILIK';
+
+      const pekerjaanEnum = {
+        'PNS': 'PNS',
+        'ABRI': 'TNI_POLRI',
+        'Pensiunan': 'PENSIUNAN',
+        'Badan': 'BADAN',
+        'Lainnya': 'LAINNYA'
+      }[formData.pekerjaan] || 'LAINNYA';
+
+      const jenisTanahEnum = {
+        'Tanah + Bangunan': 'TANAH_BANGUNAN',
+        'Kavling Siap Bangun': 'TANAH_LAINNYA',
+        'Tanah Kosong': 'TANAH_LAINNYA',
+        'Fasilitas Umum': 'TANAH_LAINNYA'
+      }[formData.jenisTanah] || 'TANAH_LAINNYA';
+
       const token = localStorage.getItem('token');
 
       const payload = {
         jenis_layanan,
-        nop_utama: nop,
-        nop_bersama: nopBersama || undefined,
-        nop_asal: nopAsal || undefined,
+        nop_utama: rawNop,
+        nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
+        nop_asal: rawNopAsal.length >= 18 ? rawNopAsal : undefined,
         no_sppt_lama: spptLama || undefined,
         subjek_pajak: {
           nik: formData.nik,
           nama: formData.nama,
-          status_wp: formData.statusWp,
-          pekerjaan: formData.pekerjaan,
+          status_wp: statusWpEnum,
+          pekerjaan: pekerjaanEnum,
           alamat: formData.alamat,
           rt: formData.rt || '000',
           rw: formData.rw || '000',
@@ -276,7 +302,7 @@ export default function FormulirSPOP({ onNavigate }) {
           kode_pos: formData.kodePos || undefined,
         },
         objek_pajak_sementara: {
-          jenis_tanah: formData.jenisTanah,
+          jenis_tanah: jenisTanahEnum,
           luas_tanah: Number(formData.luasTanah),
           luas_bangunan: parseFloat(formData.luasBangunan) || undefined,
           jumlah_bangunan: parseInt(formData.jumlahBangunan) || 0,
@@ -289,21 +315,9 @@ export default function FormulirSPOP({ onNavigate }) {
         lampiran: formData.lampiran.length > 0 ? formData.lampiran : undefined,
       };
 
-      const response = await fetch('http://localhost:3000/api/transaksi-spop', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await api.post('/transaksi-spop', payload);
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || 'Gagal mengirim SPOP');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setSubmitResult(result);
 
       // Simpan data ke localStorage agar FormulirLSPOP bisa mengaksesnya
@@ -315,7 +329,10 @@ export default function FormulirSPOP({ onNavigate }) {
       setStep(5);
     } catch (error) {
       console.error('Error submitting form:', error);
-      setSubmitError(error.message);
+      const errorMsg = error.response?.data?.message || error.message || 'Gagal mengirim SPOP';
+      setSubmitError(errorMsg);
+      setToast({ show: true, message: typeof errorMsg === 'string' ? errorMsg : 'Gagal mengirim SPOP', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
     } finally {
       setIsSubmitting(false);
     }
@@ -1109,45 +1126,59 @@ export default function FormulirSPOP({ onNavigate }) {
 
           {/* STEP 5: VERIFIKASI / SELESAI */}
           {step === 5 && (
-            <div className="space-y-6 text-center py-8 animate-fadeIn">
-              <div className="w-20 h-20 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                <span className="material-symbols-outlined text-[48px]">check_circle</span>
+            <div className="space-y-8 text-center py-10 animate-fadeIn bg-surface-container-lowest rounded-2xl">
+              <div className="w-24 h-24 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ring-4 ring-secondary/20">
+                <span className="material-symbols-outlined text-[56px]">check_circle</span>
               </div>
-              <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">
+              <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold tracking-tight">
                 SPOP Berhasil Dikirim
               </h3>
-              <p className="text-body-md font-body-md text-on-surface-variant max-w-lg mx-auto">
+              <p className="text-body-lg font-body-lg text-on-surface-variant max-w-lg mx-auto">
                 Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop.kec}.${formData.nop.kel}.${formData.nop.blok}.${formData.nop.nourut}.${formData.nop.kode}`}</span> telah masuk ke sistem antrean validasi BKD Kabupaten Purbalingga.
               </p>
-              <div className="bg-surface-container-low border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-2 mt-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-on-surface-variant">ID Submisi</span>
-                  <span className="font-bold text-on-surface font-data-mono">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
+
+              <div className="bg-surface border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-3 mt-6 shadow-sm">
+                <div className="flex justify-between items-center text-sm border-b border-outline-variant/50 pb-3">
+                  <span className="text-on-surface-variant font-medium">ID Submisi</span>
+                  <span className="font-bold text-on-surface font-data-mono bg-surface-container px-2 py-1 rounded">{submitResult?.id_transaksi || 'SPOP-2026-00382'}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-on-surface-variant">Estimasi Verifikasi</span>
-                  <span className="font-bold text-secondary flex items-center gap-1">
+                <div className="flex justify-between items-center text-sm pt-1">
+                  <span className="text-on-surface-variant font-medium">Estimasi Verifikasi</span>
+                  <span className="font-bold text-secondary flex items-center gap-2 bg-secondary/10 px-3 py-1 rounded-full">
                     <span className="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
                     ± 24 Jam Kerja
                   </span>
                 </div>
               </div>
-              <div className="pt-8 flex justify-center gap-4 flex-col sm:flex-row">
-                {parseInt(formData.jumlahBangunan) > 0 && (
-                  <button
-                    onClick={() => onNavigate('formulir_lspop')}
-                    className="px-8 py-4 rounded-full bg-secondary text-on-secondary font-bold hover:shadow-lg transition-all flex items-center justify-center gap-2 animate-pulse-slow"
-                  >
-                    <span className="material-symbols-outlined">apartment</span>
-                    Lanjut Isi LSPOP ({formData.jumlahBangunan} Bangunan)
-                  </button>
-                )}
+
+              {parseInt(formData.jumlahBangunan) > 0 && (
+                <div className="max-w-lg mx-auto mt-8 p-5 bg-tertiary-container/30 border border-tertiary/20 rounded-xl text-left flex gap-4 items-start shadow-sm">
+                  <span className="material-symbols-outlined text-tertiary text-3xl mt-1">info</span>
+                  <div>
+                    <h4 className="font-bold text-tertiary-dark text-lg mb-1">Tindakan Lanjutan Diperlukan</h4>
+                    <p className="text-on-surface-variant text-sm leading-relaxed">
+                      Karena objek pajak ini memiliki <strong>{formData.jumlahBangunan} bangunan</strong>, Anda <strong>wajib</strong> mengisi Formulir Lampiran SPOP (LSPOP) untuk mendata spesifikasi bangunan tersebut. Klik tombol di bawah ini untuk melanjutkan.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-10 flex justify-center gap-4 flex-col sm:flex-row">
                 <button
                   onClick={() => onNavigate('dashboard_desa')}
-                  className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
+                  className="px-8 py-3 rounded-full border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container hover:text-on-surface hover:border-outline transition-all"
                 >
                   Kembali ke Dashboard
                 </button>
+                {parseInt(formData.jumlahBangunan) > 0 && (
+                  <button
+                    onClick={() => onNavigate('formulir_lspop')}
+                    className="px-10 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:bg-primary-dark transition-all flex items-center justify-center gap-2 animate-bounce hover:animate-none"
+                  >
+                    <span className="material-symbols-outlined">assignment_add</span>
+                    Lanjut Isi LSPOP Sekarang
+                  </button>
+                )}
               </div>
             </div>
           )}

@@ -18,6 +18,12 @@ export class TransaksiSpopController {
     return this.transaksiSpopService.getAllTransaksi(status_ajuan, kode_wilayah);
   }
 
+  @Get('stats')
+  async getStats(@Request() req: any) {
+    const kode_wilayah = req.user.kode_wilayah;
+    return this.transaksiSpopService.getStats(kode_wilayah);
+  }
+
   @Get(':id')
   async getDetail(
     @Param('id') id_transaksi: string,

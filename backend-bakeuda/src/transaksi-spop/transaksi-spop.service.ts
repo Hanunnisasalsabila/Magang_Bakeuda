@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { StatusAjuan } from '@prisma/client';
 import { CreateSpopDto } from './dto/create-spop.dto.js';
 import { VerifikasiDesaDto } from './dto/verifikasi-desa.dto.js';
 
@@ -33,6 +34,20 @@ export class TransaksiSpopService {
       if (!hasSuratKuasa) {
         throw new BadRequestException('Surat Kuasa wajib dilampirkan jika pendaftar bertindak selaku kuasa');
       }
+    }
+
+    // Validasi Eksistensi NOP
+    if (dto.nop_bersama) {
+      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_bersama } });
+      if (!exists) throw new BadRequestException(`NOP Bersama (${dto.nop_bersama}) tidak terdaftar di database. Silakan gunakan NOP yang valid.`);
+    }
+    if (dto.nop_utama) {
+      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_utama } });
+      if (!exists) throw new BadRequestException(`NOP Utama (${dto.nop_utama}) tidak terdaftar di database.`);
+    }
+    if (dto.nop_asal) {
+      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_asal } });
+      if (!exists) throw new BadRequestException(`NOP Asal (${dto.nop_asal}) tidak terdaftar di database.`);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -81,8 +96,8 @@ export class TransaksiSpopService {
           id_user,
           tahun_pajak: currentYear,
           jenis_transaksi,
-          nop_bersama: dto.nop_bersama,
-          no_sppt_lama: dto.no_sppt_lama,
+          nop_bersama: dto.nop_bersama || null,
+          no_sppt_lama: dto.no_sppt_lama || null,
           nama_pengaju: dto.subjek_pajak.nama,
           tanggal_pengajuan: new Date(),
           status_ajuan: final_status,
@@ -91,7 +106,7 @@ export class TransaksiSpopService {
           // Data Detail Asal (Conditionally inserted)
           detail_asal: (jenis_transaksi !== 'BARU' && (dto.nop_utama || dto.nop_asal)) ? {
             create: {
-              nop_asal: dto.nop_utama || dto.nop_asal,
+              nop_asal: (dto.nop_utama || dto.nop_asal) || null,
             }
           } : undefined,
 
@@ -307,15 +322,54 @@ export class TransaksiSpopService {
     // Optional Security: Block if different wilayah and not a Bakeuda admin
     // We can just rely on the UI hiding the id, or enforce it strictly here.
     // For now, let's enforce it.
-    if (transaksi.pengaju.kode_wilayah !== kodeWilayahUser) {
-      // Assuming Bakeuda has empty or '000000' kode_wilayah, you might want to skip this check for them
-      // but since the instruction says "Otorisasi Opsional" we'll leave it as commented or simple check
+    if (kodeWilayahUser && transaksi.pengaju.kode_wilayah !== kodeWilayahUser) {
       // throw new ForbiddenException('Akses ditolak.'); 
     }
 
     return {
-      message: 'Detail transaksi berhasil diambil.',
+      success: true,
       data: transaksi,
+    };
+  }
+
+  async getStats(kode_wilayah?: string) {
+    const baseWhere = kode_wilayah ? { pengaju: { kode_wilayah } } : {};
+
+    const [totalDikirim, menunggu, disetujui, perluPerbaikan] = await Promise.all([
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: { not: StatusAjuan.DRAFT }
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: { in: [StatusAjuan.MENUNGGU_VERIFIKASI_DESA, StatusAjuan.MENUNGGU] }
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: StatusAjuan.DISETUJUI
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: { in: [StatusAjuan.PERBAIKAN, StatusAjuan.REVISI] }
+        }
+      })
+    ]);
+
+    return {
+      success: true,
+      data: {
+        totalDikirim,
+        menunggu,
+        disetujui,
+        perluPerbaikan
+      }
     };
   }
 }

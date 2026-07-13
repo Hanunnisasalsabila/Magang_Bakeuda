@@ -18,6 +18,12 @@ export default function FormulirLSPOP({ onNavigate }) {
   }, []);
 
   const [formData, setFormData] = useState({
+    // INDUK
+    noFormulir: '',
+    jenisTransaksi: 'Perekaman Data',
+    jumlahBng: '1',
+    bangunanM2: '',
+
     // A. RINCIAN DATA BANGUNAN
     jenisPenggunaan: '',
     luasBangunan: '',
@@ -35,7 +41,7 @@ export default function FormulirLSPOP({ onNavigate }) {
     // B. FASILITAS
     acSplit: '',
     acWindow: '',
-    acSentral: 'Tidak Ada',
+    acSentral: '',
     kolamRenangLuas: '',
     kolamRenangFinishing: '',
     halamanRingan: '',
@@ -55,9 +61,9 @@ export default function FormulirLSPOP({ onNavigate }) {
     tanggaBerjalanBesar: '', // Lbr > 0,80
     panjangPagar: '',
     bahanPagar: '',
-    pemadamHydrant: 'Tidak Ada',
-    pemadamSprinkler: 'Tidak Ada',
-    pemadamFireAl: 'Tidak Ada',
+    pemadamHydrant: '',
+    pemadamSprinkler: '',
+    pemadamFireAl: '',
     saluranPabx: '',
     sumurArtesis: ''
   });
@@ -177,14 +183,36 @@ export default function FormulirLSPOP({ onNavigate }) {
         </div>
       </div>
 
-      <div className="bg-surface-container border border-outline-variant px-6 py-4 rounded-t-xl flex justify-between items-center shadow-sm">
-        <div>
-          <p className="text-outline uppercase text-[10px] font-bold tracking-widest">Informasi Induk (SPOP)</p>
-          <p className="font-bold text-on-surface text-base mt-0.5">Pendataan Bangunan Tambahan</p>
-        </div>
-        <div className="text-right">
-          <p className="text-outline uppercase text-[10px] font-bold tracking-widest">NOP Terkait</p>
-          <p className="font-data-mono font-bold text-primary text-lg mt-0.5">{nop || 'Belum ada NOP'}</p>
+      <div className="bg-surface-container border border-outline-variant p-6 rounded-t-xl shadow-sm">
+        <h4 className="font-bold text-on-surface text-lg border-b border-outline-variant/50 pb-3 mb-4">Informasi Induk (SPOP)</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">No. Formulir</label>
+            <input type="text" value={formData.noFormulir} onChange={(e) => handleTextChange('noFormulir', e)} className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono" placeholder="No. Formulir" />
+          </div>
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">Jenis Transaksi</label>
+            <select value={formData.jenisTransaksi} onChange={(e) => handleTextChange('jenisTransaksi', e)} className="w-full h-10 border border-outline-variant rounded px-3 text-sm">
+              <option value="Perekaman Data">1. Perekaman Data</option>
+              <option value="Pemutakhiran Data">2. Pemutakhiran Data</option>
+              <option value="Penghapusan Data">3. Penghapusan Data</option>
+              <option value="Penilaian Individual">4. Penilaian Individual</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">NOP</label>
+            <input type="text" value={nop} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold" />
+          </div>
+          <div className="flex gap-4">
+            <div className="space-y-2 flex-1">
+              <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Jml Bng</label>
+              <input type="number" value={totalBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" />
+            </div>
+            <div className="space-y-2 flex-1">
+              <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Bng M²</label>
+              <input type="number" value={formData.bangunanM2} onChange={(e) => handleTextChange('bangunanM2', e)} className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono text-center" placeholder="M²" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -203,7 +231,7 @@ export default function FormulirLSPOP({ onNavigate }) {
                 <RadioGroup 
                   label="1. Jenis Penggunaan Bangunan" 
                   field="jenisPenggunaan" 
-                  columns={4}
+                  columns={3}
                   options={[
                     'Perumahan', 'Perkantoran Swasta', 'Pabrik', 'Toko/Apotik/Pasar/Ruko',
                     'Rumah Sakit/Klinik', 'Olah Raga/Rekreasi', 'Hotel/Wisma', 'Bengkel/Gudang/Pertanian',
@@ -243,7 +271,7 @@ export default function FormulirLSPOP({ onNavigate }) {
               <div className="md:col-span-2 grid grid-cols-1 gap-6">
                 <RadioGroup label="7. Kondisi Pada Umumnya" field="kondisi" columns={4} options={['Sangat Baik', 'Baik', 'Sedang', 'Jelek']} />
                 <RadioGroup label="8. Konstruksi" field="konstruksi" columns={4} options={['Baja', 'Beton', 'Batu Bata', 'Kayu']} />
-                <RadioGroup label="9. Atap" field="atap" columns={5} options={['Decrabon/Beton/Gtg Glazur', 'Gtg Beton/Aluminium', 'Gtg Biasa/Sirap', 'Asbes', 'Seng']} />
+                <RadioGroup label="9. Atap" field="atap" columns={3} options={['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng']} />
                 <RadioGroup label="10. Dinding" field="dinding" columns={3} options={['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding']} />
                 <RadioGroup label="11. Lantai" field="lantai" columns={5} options={['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen']} />
                 <RadioGroup label="12. Langit-Langit" field="langitLangit" columns={3} options={['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']} />
@@ -286,14 +314,17 @@ export default function FormulirLSPOP({ onNavigate }) {
               {/* Kolam Renang */}
               <div className="space-y-4 p-4 border border-outline-variant rounded-xl bg-surface-container-lowest">
                 <h6 className="font-bold text-sm">Kolam Renang</h6>
-                <div className="flex gap-4">
-                  <div className="flex-1 space-y-1">
-                    <label className="text-xs text-on-surface-variant">Luas Diplester (M²)</label>
-                    <input type="number" value={formData.kolamRenangDiplester} onChange={e => handleTextChange('kolamRenangDiplester', e)} className="w-full p-2 border rounded" />
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-on-surface-variant block">Luas Kolam Renang (M²)</label>
+                    <input type="number" value={formData.kolamRenangLuas} onChange={e => handleTextChange('kolamRenangLuas', e)} className="w-full p-2 border rounded" />
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <label className="text-xs text-on-surface-variant">Luas Dgn Pelapis (M²)</label>
-                    <input type="number" value={formData.kolamRenangPelapis} onChange={e => handleTextChange('kolamRenangPelapis', e)} className="w-full p-2 border rounded" />
+                  <div className="space-y-1">
+                    <label className="text-xs text-on-surface-variant block">Finishing</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> 1. Diplester</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> 2. Dengan Pelapis</label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -305,7 +336,7 @@ export default function FormulirLSPOP({ onNavigate }) {
                   <div className="space-y-1"><label className="text-xs text-on-surface-variant">Ringan</label><input type="number" value={formData.halamanRingan} onChange={e=>handleTextChange('halamanRingan',e)} className="w-full p-2 border rounded" /></div>
                   <div className="space-y-1"><label className="text-xs text-on-surface-variant">Sedang</label><input type="number" value={formData.halamanSedang} onChange={e=>handleTextChange('halamanSedang',e)} className="w-full p-2 border rounded" /></div>
                   <div className="space-y-1"><label className="text-xs text-on-surface-variant">Berat</label><input type="number" value={formData.halamanBerat} onChange={e=>handleTextChange('halamanBerat',e)} className="w-full p-2 border rounded" /></div>
-                  <div className="space-y-1"><label className="text-xs text-on-surface-variant">Dgn Penutup Lantai</label><input type="number" value={formData.halamanPenutupLantai} onChange={e=>handleTextChange('halamanPenutupLantai',e)} className="w-full p-2 border rounded" /></div>
+                  <div className="space-y-1"><label className="text-xs text-on-surface-variant">Dengan Penutup Lantai</label><input type="number" value={formData.halamanPenutupLantai} onChange={e=>handleTextChange('halamanPenutupLantai',e)} className="w-full p-2 border rounded" /></div>
                 </div>
               </div>
 
@@ -343,9 +374,9 @@ export default function FormulirLSPOP({ onNavigate }) {
                     <div className="flex justify-between items-center"><label className="text-xs">Barang</label><input type="number" className="w-16 p-1 border rounded" /></div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Jumlah Eskalator</p>
-                    <div className="flex justify-between items-center"><label className="text-xs">Lbr &lt; 0.80M</label><input type="number" className="w-16 p-1 border rounded" /></div>
-                    <div className="flex justify-between items-center"><label className="text-xs">Lbr &gt; 0.80M</label><input type="number" className="w-16 p-1 border rounded" /></div>
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Jumlah Tangga Berjalan (Eskalator)</p>
+                    <div className="flex justify-between items-center"><label className="text-xs">Lebar &lt; 0.80M</label><input type="number" className="w-16 p-1 border rounded" /></div>
+                    <div className="flex justify-between items-center"><label className="text-xs">Lebar &gt; 0.80M</label><input type="number" className="w-16 p-1 border rounded" /></div>
                   </div>
                 </div>
               </div>
@@ -356,7 +387,7 @@ export default function FormulirLSPOP({ onNavigate }) {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <label className="text-xs w-1/2">Pagar (Panjang M)</label>
-                    <input type="number" className="w-full p-1.5 border rounded" placeholder="Pjg" />
+                    <input type="number" className="w-full p-1.5 border rounded" placeholder="Panjang (M)" />
                   </div>
                   <div className="flex justify-between items-center">
                     <label className="text-xs w-1/2">Bahan Pagar</label>
@@ -376,11 +407,11 @@ export default function FormulirLSPOP({ onNavigate }) {
                     </select>
                   </div>
                   <div className="flex justify-between items-center">
-                    <label className="text-xs w-1/2">Jml Saluran PABX</label>
+                    <label className="text-xs w-1/2">Jumlah Saluran PABX</label>
                     <input type="number" className="w-full p-1.5 border rounded" />
                   </div>
                   <div className="flex justify-between items-center">
-                    <label className="text-xs w-1/2">Kdlm Sumur Artesis (M)</label>
+                    <label className="text-xs w-1/2">Kedalaman Sumur Artesis (M)</label>
                     <input type="number" className="w-full p-1.5 border rounded" />
                   </div>
                 </div>
