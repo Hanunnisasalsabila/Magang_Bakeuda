@@ -198,21 +198,6 @@ export class TransaksiSpopService {
     }
   }
 
-  async getStats(kode_wilayah?: string) {
-    const where: any = {};
-    if (kode_wilayah) {
-      where.pengaju = { kode_wilayah };
-    }
-
-    const [totalDikirim, menunggu, disetujui, perluPerbaikan] = await Promise.all([
-      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: { not: 'DRAFT' } } }),
-      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: 'MENUNGGU_VERIFIKASI_DESA' } }),
-      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: 'DISETUJUI' } }),
-      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: { in: ['PERBAIKAN', 'DITOLAK'] } } }),
-    ]);
-
-    return { totalDikirim, menunggu, disetujui, perluPerbaikan };
-  }
 
 
   async ajukanKeLurah(id_transaksi: string, kode_wilayah_user: string) {
