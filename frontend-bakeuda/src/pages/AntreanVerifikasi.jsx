@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
+import wilayahData from '../utils/wilayahData.json';
 
 export default function AntreanVerifikasi({ onNavigate }) {
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
@@ -9,8 +10,31 @@ export default function AntreanVerifikasi({ onNavigate }) {
 
   const [queueData, setQueueData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [kecamatanList, setKecamatanList] = useState([]);
+  const [kelurahanList, setKelurahanList] = useState([]);
 
   useEffect(() => {
+    if (kecamatan === 'Semua Kecamatan') {
+      const uniqueKel = [...new Set(wilayahData.map(w => w.nama_desa))].filter(Boolean).sort();
+      setKelurahanList(uniqueKel);
+    } else {
+      const filteredKel = wilayahData
+        .filter(w => w.kecamatan === kecamatan)
+        .map(w => w.nama_desa)
+        .filter(Boolean)
+        .sort();
+      setKelurahanList(filteredKel);
+    }
+    setKelurahan('Semua Desa');
+  }, [kecamatan]);
+
+  useEffect(() => {
+    const fetchKecamatan = async () => {
+      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+      setKecamatanList(uniqueKec);
+    };
+    fetchKecamatan();
+
     const fetchQueue = async () => {
       try {
         const res = await api.get('/transaksi-spop?status=MENUNGGU');
@@ -109,11 +133,10 @@ export default function AntreanVerifikasi({ onNavigate }) {
               onChange={(e) => setKecamatan(e.target.value)}
               className="w-full p-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-primary focus:border-primary"
             >
-              <option>Semua Kecamatan</option>
-              <option>Purbalingga</option>
-              <option>Kalimanah</option>
-              <option>Kutasari</option>
-              <option>Mrebet</option>
+              <option value="Semua Kecamatan">Semua Kecamatan</option>
+              {kecamatanList.map(kec => (
+                <option key={kec} value={kec}>{kec}</option>
+              ))}
             </select>
           </div>
           <div className="lg:col-span-3">
@@ -125,11 +148,10 @@ export default function AntreanVerifikasi({ onNavigate }) {
               onChange={(e) => setKelurahan(e.target.value)}
               className="w-full p-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-primary focus:border-primary"
             >
-              <option>Semua Desa</option>
-              <option>Purbalingga Lor</option>
-              <option>Purbalingga Kidul</option>
-              <option>Kandanggampang</option>
-              <option>Kalimanah Wetan</option>
+              <option value="Semua Desa">Semua Desa</option>
+              {kelurahanList.map(kel => (
+                <option key={kel} value={kel}>{kel}</option>
+              ))}
             </select>
           </div>
           <div className="lg:col-span-4">

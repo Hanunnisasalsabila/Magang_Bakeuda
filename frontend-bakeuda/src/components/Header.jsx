@@ -25,27 +25,12 @@ export default function Header({ role, onRoleChange, activePageTitle, onToggleSi
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
-        <h2 className="font-headline-md text-headline-md font-bold text-primary hidden sm:block">
-          {activePageTitle}
-        </h2>
       </div>
 
 
 
-      {/* Right items: Search & User Card */}
-      <div className="flex items-center gap-6">
-        {/* Search Box (Moved to Right) */}
-        <div className="relative hidden md:flex items-center bg-surface-container-lowest px-4 py-2 rounded-full border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-sm w-64 lg:w-80">
-          <span className="material-symbols-outlined text-outline text-[20px] mr-2 pointer-events-none">search</span>
-          <input
-            className="bg-transparent border-none p-0 text-sm w-full placeholder:text-on-surface-variant focus:ring-0 outline-none"
-            placeholder="Cari NOP atau Subjek..."
-            type="text"
-          />
-        </div>
-
-        {/* Divider */}
-        <div className="hidden md:block w-[1px] h-8 bg-outline-variant"></div>
+      {/* Right items: User Card */}
+      <div className="flex items-center justify-end w-full">
 
         {/* Profile Card */}
         <div className="flex items-center gap-3 pl-1">

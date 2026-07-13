@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
+import wilayahData from '../utils/wilayahData.json';
 
 export default function MonitoringObjekPajak({ onNavigate }) {
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
@@ -9,6 +11,15 @@ export default function MonitoringObjekPajak({ onNavigate }) {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [kecamatanList, setKecamatanList] = useState([]);
+
+  React.useEffect(() => {
+    const fetchKecamatan = async () => {
+      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+      setKecamatanList(uniqueKec);
+    };
+    fetchKecamatan();
+  }, []);
 
   const [submissions, setSubmissions] = useState([
     {
@@ -179,9 +190,10 @@ export default function MonitoringObjekPajak({ onNavigate }) {
               onChange={(e) => setKecamatan(e.target.value)}
               className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
             >
-              <option>Semua Kecamatan</option>
-              <option>Purbalingga</option>
-              <option>Kalimanah</option>
+              <option value="Semua Kecamatan">Semua Kecamatan</option>
+              {kecamatanList.map(kec => (
+                <option key={kec} value={kec}>{kec}</option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">

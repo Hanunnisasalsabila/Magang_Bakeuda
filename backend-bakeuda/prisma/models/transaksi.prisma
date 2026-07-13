@@ -83,6 +83,12 @@ model DetailTransaksiTujuan {
   kecamatan_op_baru    String?    @db.VarChar(100)
   no_persil_baru       String?    @db.VarChar(20)
   nop_generated        String?    @db.VarChar(18)
+  latitude             String?    @db.VarChar(50)
+  longitude            String?    @db.VarChar(50)
+  batas_utara          String?    @db.VarChar(50)
+  batas_selatan        String?    @db.VarChar(50)
+  batas_timur          String?    @db.VarChar(50)
+  batas_barat          String?    @db.VarChar(50)
 
   // ── Relasi ──
   transaksi    TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])

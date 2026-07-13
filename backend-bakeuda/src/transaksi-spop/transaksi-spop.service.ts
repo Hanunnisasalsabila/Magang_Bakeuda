@@ -28,6 +28,12 @@ export class TransaksiSpopService {
         throw new BadRequestException('Luas bangunan wajib diisi jika jenis tanah adalah TANAH & BANGUNAN');
       }
     }
+    if (dto.is_kuasa) {
+      const hasSuratKuasa = dto.lampiran?.some(l => l.jenis_dokumen === 'SURAT_KUASA');
+      if (!hasSuratKuasa) {
+        throw new BadRequestException('Surat Kuasa wajib dilampirkan jika pendaftar bertindak selaku kuasa');
+      }
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Pastikan SubjekPajak ada / Upsert
@@ -80,6 +86,7 @@ export class TransaksiSpopService {
           nama_pengaju: dto.subjek_pajak.nama,
           tanggal_pengajuan: new Date(),
           status_ajuan: final_status,
+          menggunakan_kuasa: dto.is_kuasa || false,
           
           // Data Detail Asal (Conditionally inserted)
           detail_asal: dto.nop_utama || dto.nop_asal ? {
@@ -103,6 +110,12 @@ export class TransaksiSpopService {
               kelurahan_op_baru: dto.objek_pajak_sementara.kelurahan_op,
               kecamatan_op_baru: dto.objek_pajak_sementara.kecamatan_op,
               no_persil_baru: dto.objek_pajak_sementara.no_persil,
+              latitude: dto.objek_pajak_sementara.latitude,
+              longitude: dto.objek_pajak_sementara.longitude,
+              batas_utara: dto.objek_pajak_sementara.batas_utara,
+              batas_selatan: dto.objek_pajak_sementara.batas_selatan,
+              batas_timur: dto.objek_pajak_sementara.batas_timur,
+              batas_barat: dto.objek_pajak_sementara.batas_barat,
             },
           },
           // Data Lampiran

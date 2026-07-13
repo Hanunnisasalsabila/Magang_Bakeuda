@@ -5,6 +5,7 @@ import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
 import api from '../utils/axios';
+import ToastNotification from '../components/ToastNotification';
 
 // Fix leaflet icon issues in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -95,11 +96,11 @@ export default function FormulirSPOP({ onNavigate }) {
     const file = e.target.files[0];
     if (file) {
       setIsUploading(true);
-      
+
       setTimeout(() => {
         setIsUploading(false);
         const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=${encodeURIComponent(file.name)}`;
-        
+
         setFormData(prev => ({
           ...prev,
           lampiran: [...prev.lampiran, { jenis_dokumen: "Sertifikat/KTP/Lainnya", url_file: dummyUrl }]
@@ -109,7 +110,7 @@ export default function FormulirSPOP({ onNavigate }) {
   };
 
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',') 
+  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',')
     ? formData.titikKoordinat.split(',').map(Number)
     : defaultPosition;
 
@@ -141,7 +142,7 @@ export default function FormulirSPOP({ onNavigate }) {
     if (raw.startsWith('3303')) {
       raw = raw.substring(4);
     }
-    
+
     raw = '3303' + raw;
     raw = raw.substring(0, 18);
 
@@ -255,7 +256,7 @@ export default function FormulirSPOP({ onNavigate }) {
       if (formData.transaksi === 'hapus') jenis_layanan = 'MUTASI';
 
       const token = localStorage.getItem('token');
-      
+
       const payload = {
         jenis_layanan,
         nop_utama: nop,
@@ -348,10 +349,10 @@ export default function FormulirSPOP({ onNavigate }) {
               >
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-transform ${isActive
-                      ? 'bg-primary text-on-primary scale-110 shadow-md'
-                      : isCompleted
-                        ? 'bg-secondary text-on-secondary hover:scale-105'
-                        : 'bg-surface-container-high text-on-surface-variant'
+                    ? 'bg-primary text-on-primary scale-110 shadow-md'
+                    : isCompleted
+                      ? 'bg-secondary text-on-secondary hover:scale-105'
+                      : 'bg-surface-container-high text-on-surface-variant'
                     }`}
                 >
                   {isCompleted ? (
@@ -1214,47 +1215,49 @@ export default function FormulirSPOP({ onNavigate }) {
         </form>
       </div>
 
-      {/* Contextual Information (Bento Style) */}
-      {step < 5 && (
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
-            <div className="bg-white/40 p-3 rounded-lg text-secondary">
-              <span className="material-symbols-outlined text-[32px]">verified_user</span>
-            </div>
-            <div>
-              <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
-                Keamanan Data Terjamin
-              </h5>
-              <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
-                Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
-              </p>
-            </div>
-          </div>
-          <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
-            <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
-              Butuh Bantuan?
-            </h6>
-            <div className="space-y-4">
-              <a
-                className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                href="tel:0281891098"
-              >
-                <span className="material-symbols-outlined text-primary">call</span>
-                <span className="font-label-sm">Hotline: (0281) 891098</span>
-              </a>
-              <a
-                className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                href="mailto:bakeuda@purbalinggakab.go.id"
-              >
-                <span className="material-symbols-outlined text-primary">mail</span>
-                <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
-              </a>
-            </div>
-          </div>
+  {/* Contextual Information (Bento Style) */ }
+{
+  step < 5 && (
+    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
+        <div className="bg-white/40 p-3 rounded-lg text-secondary">
+          <span className="material-symbols-outlined text-[32px]">verified_user</span>
         </div>
-      )}
+        <div>
+          <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
+            Keamanan Data Terjamin
+          </h5>
+          <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
+            Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
+          </p>
+        </div>
+      </div>
+      <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
+        <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
+          Butuh Bantuan?
+        </h6>
+        <div className="space-y-4">
+          <a
+            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
+            href="tel:0281891098"
+          >
+            <span className="material-symbols-outlined text-primary">call</span>
+            <span className="font-label-sm">Hotline: (0281) 891098</span>
+          </a>
+          <a
+            className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
+            href="mailto:bakeuda@purbalinggakab.go.id"
+          >
+            <span className="material-symbols-outlined text-primary">mail</span>
+            <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-      {/* Footer Small Print */}
+{/* Footer Small Print */ }
       <footer className="mt-12 pb-12 text-center border-t border-outline-variant pt-8">
         <p className="text-[12px] text-outline">
           *) Khusus untuk PNS/ABRI/Pensiunan yang penghasilannya semata-mata berasal dari gaji atau uang pensiunan.
@@ -1264,25 +1267,12 @@ export default function FormulirSPOP({ onNavigate }) {
         </p>
       </footer>
 
-      {/* Custom Toast Notification */}
-      <div
-        className={`fixed bottom-8 right-8 ${toast.type === 'error'
-            ? 'bg-error-container text-on-error-container border-error/35'
-            : 'bg-secondary-container text-on-secondary-container border-secondary/35'
-          } border px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${toast.show ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
-          }`}
-      >
-        <span className={`material-symbols-outlined ${toast.type === 'error' ? 'text-error' : 'text-secondary'} text-[24px]`}>
-          {toast.type === 'error' ? 'error' : 'check_circle'}
-        </span>
-        <div>
-          <p className="font-bold">{toast.type === 'error' ? 'Peringatan' : 'Berhasil!'}</p>
-          <p className="text-sm opacity-90">{toast.message}</p>
-        </div>
-        <button className="ml-4 opacity-50 hover:opacity-100" onClick={() => setToast({ ...toast, show: false })}>
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
-    </main>
+      <ToastNotification 
+        show={toast.show} 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ ...toast, show: false })} 
+      />
+    </main >
   );
 }

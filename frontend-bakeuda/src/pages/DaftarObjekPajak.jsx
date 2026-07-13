@@ -4,6 +4,8 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
+import wilayahData from '../utils/wilayahData.json';
 
 export default function DaftarObjekPajak({ onNavigate }) {
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
@@ -22,6 +24,16 @@ export default function DaftarObjekPajak({ onNavigate }) {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
+
+  const [kecamatanList, setKecamatanList] = useState([]);
+
+  useEffect(() => {
+    const fetchKecamatan = async () => {
+      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+      setKecamatanList(uniqueKec);
+    };
+    fetchKecamatan();
+  }, []);
 
   const [objects, setObjects] = useState([
     { nop: '33.03.010.001.015.0042.0', name: 'H. Ahmad Dahlan', address: 'Jl. Jend. Sudirman No. 45, Purbalingga Kidul', land: 450, building: 120, status: 'Aktif', kecamatan: 'Purbalingga' },
@@ -255,9 +267,10 @@ export default function DaftarObjekPajak({ onNavigate }) {
               onChange={(e) => setKecamatan(e.target.value)}
               className="w-full bg-background border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
             >
-              <option>Semua Kecamatan</option>
-              <option>Purbalingga</option>
-              <option>Kalimanah</option>
+              <option value="Semua Kecamatan">Semua Kecamatan</option>
+              {kecamatanList.map(kec => (
+                <option key={kec} value={kec}>{kec}</option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">

@@ -15,6 +15,7 @@ export default function Sidebar({ role, activePage, onNavigate, isOpen, onClose 
     : [
         { id: 'dashboard_admin', label: 'Dashboard Admin', icon: 'dashboard' },
         { id: 'manajemen_akun_desa', label: 'Manajemen Akun', icon: 'manage_accounts' },
+        { id: 'manajemen_wilayah', label: 'Manajemen Wilayah', icon: 'map' },
         { id: 'antrean_verifikasi', label: 'Verification Queue', icon: 'fact_check' },
         { id: 'detail_review', label: 'Review SPOP', icon: 'rate_review' },
         { id: 'profil', label: 'Profil Pengguna', icon: 'person' },
