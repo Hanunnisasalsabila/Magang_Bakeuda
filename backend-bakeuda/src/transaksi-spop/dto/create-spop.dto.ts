@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString, IsNumber, ValidateNested, IsArray, IsOptional, IsBoolean, IsEnum, MaxLength, IsEmail } from 'class-validator';
+import { IsString, IsNumber, ValidateNested, IsArray, IsOptional, IsBoolean, IsEnum, MaxLength, IsEmail, IsNotEmpty } from 'class-validator';
 import { JenisTransaksi, JenisTanah, StatusWp, Pekerjaan } from '@prisma/client';
 
 export class SubjekPajakTempDto {
@@ -23,8 +23,8 @@ export class SubjekPajakTempDto {
   
   @IsOptional() @IsString() blok_kav_no?: string;
 
-  @IsString() @MaxLength(5) rt: string;
-  @IsString() @MaxLength(5) rw: string;
+  @IsNotEmpty() @IsString() @MaxLength(5) rt: string;
+  @IsNotEmpty() @IsString() @MaxLength(5) rw: string;
 
   @IsString() kelurahan: string;
   @IsOptional() @IsString() kecamatan?: string;
@@ -73,7 +73,7 @@ export class CreateSpopDto {
   jenis_layanan: JenisTransaksi;
 
   @IsOptional() @IsString() nop_utama?: string;
-  @IsOptional() @IsString() nop_asal?: string;
+  @IsOptional() @IsArray() nop_asal?: string[];
   @IsOptional() @IsString() nop_bersama?: string;
   @IsOptional() @IsString() no_sppt_lama?: string;
 

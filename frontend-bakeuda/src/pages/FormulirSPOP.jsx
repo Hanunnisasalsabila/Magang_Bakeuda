@@ -60,11 +60,13 @@ export default function FormulirSPOP({ onNavigate }) {
     noTelp: '',
     statusWp: '',
     pekerjaan: '',
+    isKuasa: false,
     alamat: '',
     blokKav: '',
     rt: '',
     rw: '',
     kelurahan: '',
+    kecamatan: '',
     kabupaten: 'Purbalingga',
     kodePos: '',
     luasTanah: '',
@@ -80,8 +82,14 @@ export default function FormulirSPOP({ onNavigate }) {
     rt_op: '',
     rw_op: '',
     estimasiNjop: '',
+    luasBangunan: '',
     jumlahBangunan: '0',
-    titikKoordinat: '',
+    latitude: '',
+    longitude: '',
+    batasUtara: '',
+    batasSelatan: '',
+    batasTimur: '',
+    batasBarat: '',
     persetujuan: false,
     lampiran: []
   });
@@ -109,12 +117,12 @@ export default function FormulirSPOP({ onNavigate }) {
   };
 
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',') 
-    ? formData.titikKoordinat.split(',').map(Number)
+  const currentPosition = formData.latitude && formData.longitude 
+    ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
     : defaultPosition;
 
   const handleMapClick = (pos) => {
-    setFormData(prev => ({ ...prev, titikKoordinat: `${pos[0]}, ${pos[1]}` }));
+    setFormData(prev => ({ ...prev, latitude: pos[0].toString(), longitude: pos[1].toString() }));
   };
 
   const handleNopChange = (nopObj) => {
@@ -247,46 +255,60 @@ export default function FormulirSPOP({ onNavigate }) {
       const nop = `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
       const nopBersama = `${nopBersamaObj.prov}.${nopBersamaObj.kab}.${nopBersamaObj.kec || '000'}.${nopBersamaObj.kel || '000'}.${nopBersamaObj.blok || '000'}-${nopBersamaObj.nourut || '0000'}.${nopBersamaObj.kode || '0'}`;
 
-      let jenis_transaksi = 'BARU';
-      if (formData.transaksi === 'update') jenis_transaksi = 'PERUBAHAN_DATA';
-      if (formData.transaksi === 'hapus') jenis_transaksi = 'MUTASI';
+      let jenis_layanan = 'BARU';
+      if (formData.transaksi === 'update') jenis_layanan = 'MUTASI';
+      if (formData.transaksi === 'hapus') jenis_layanan = 'MUTASI';
 
-      const token = localStorage.getItem('token');
-      
+      const mapStatusWp = { 'Pemilik': 'PEMILIK', 'Penyewa': 'PENYEWA', 'Pengelola': 'PENGELOLA', 'Pemakai': 'PEMAKAI', 'Sengketa': 'SENGKETA' };
+      const mapPekerjaan = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'Pensiunan': 'PENSIUNAN', 'Badan': 'BADAN', 'Lainnya': 'LAINNYA' };
+      const mapJenisTanah = { 'Tanah + Bangunan': 'TANAH_BANGUNAN', 'Kavling Siap Bangun': 'KAVLING_SIAP_BANGUN', 'Tanah Kosong': 'TANAH_KOSONG', 'Fasilitas Umum': 'FASILITAS_UMUM' };
+
       const payload = {
-        jenis_transaksi,
-        tahun_pajak: new Date().getFullYear(),
+        jenis_layanan,
+        nop_utama: nop,
         nop_bersama: nopBersama,
-        no_sppt_lama: spptLama,
-        nama_pengaju: formData.nama,
-        detail_asal: nopAsal ? [{ nop_asal: nopAsal }] : [],
-        detail_tujuan: [{
-          nik_calon_subjek: formData.nik,
-          luas_tanah_baru: parseFloat(formData.luasTanah) || 0,
-          luas_bangunan_baru: 0,
-          jumlah_bangunan_baru: parseInt(formData.jumlahBangunan) || 0,
-          jenis_tanah_baru: formData.jenisTanah,
-          nop_generated: nop,
-        }],
-        jenis_layanan: formData.transaksi === 'baru' ? 'Perekaman Data Baru' 
-                      : formData.transaksi === 'update' ? 'Pemutakhiran Data' 
-                      : 'Penghapusan Data',
+        nop_asal: nopAsal || undefined,
+        no_sppt_lama: spptLama || undefined,
+        is_draft: false,
+        is_kuasa: formData.isKuasa,
         subjek_pajak: {
           nik: formData.nik,
           nama: formData.nama,
-          pekerjaan: formData.pekerjaan,
-          alamat: `${formData.alamat}, RT ${formData.rt} RW ${formData.rw}, ${formData.kelurahan}, ${formData.kabupaten}`
+          npwp: formData.npwp || undefined,
+          no_hp: formData.noTelp || undefined,
+          status_wp: mapStatusWp[formData.statusWp],
+          pekerjaan: mapPekerjaan[formData.pekerjaan],
+          alamat: formData.alamat,
+          blok_kav_no: formData.blokKav || undefined,
+          rt: formData.rt || undefined,
+          rw: formData.rw || undefined,
+          kode_pos: formData.kodePos || undefined,
+          kelurahan: formData.kelurahan,
+          kecamatan: formData.kecamatan,
+          kabupaten: formData.kabupaten
         },
         objek_pajak_sementara: {
-          jalan_op: formData.jalan_op || formData.alamatObjek,
-          rt_op: formData.rt_op || formData.rtObjek || '000',
-          rw_op: formData.rw_op || formData.rwObjek || '000',
+          jalan_op: formData.alamatObjek,
+          blok_kav_no_op: formData.blokKavObjek || undefined,
+          rt_op: formData.rtObjek || '000',
+          rw_op: formData.rwObjek || '000',
+          kelurahan_op: formData.kelurahanObjek,
+          kecamatan_op: formData.kecamatan, // Assuming same for now, or add UI later. I'll use formData.kecamatan as fallback
           luas_tanah: Number(formData.luasTanah),
-          jenis_tanah: formData.jenisTanah
+          luas_bangunan: formData.jenisTanah === 'Tanah + Bangunan' ? Number(formData.luasBangunan) : 0,
+          jumlah_bangunan: Number(formData.jumlahBangunan),
+          jenis_tanah: mapJenisTanah[formData.jenisTanah],
+          latitude: formData.latitude || undefined,
+          longitude: formData.longitude || undefined,
+          batas_utara_nop: formData.batasUtara || undefined,
+          batas_selatan_nop: formData.batasSelatan || undefined,
+          batas_timur_nop: formData.batasTimur || undefined,
+          batas_barat_nop: formData.batasBarat || undefined
         },
         lampiran: formData.lampiran
       };
 
+      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:3000/api/transaksi-spop', {
         method: 'POST',
         headers: {
@@ -298,16 +320,22 @@ export default function FormulirSPOP({ onNavigate }) {
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.message || 'Gagal mengirim SPOP');
+        let errMsg = errData.message || 'Gagal mengirim SPOP';
+        if (Array.isArray(errMsg)) {
+          errMsg = errMsg.join(' | ');
+        }
+        throw new Error(errMsg);
       }
 
       const result = await response.json();
       setSubmitResult(result);
+      setToast({ show: true, message: 'Formulir berhasil disubmit!', type: 'success' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setStep(5);
     } catch (error) {
       console.error('Error submitting form:', error);
       setSubmitError(error.message);
+      setToast({ show: true, message: `Gagal: ${error.message}`, type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -582,6 +610,15 @@ export default function FormulirSPOP({ onNavigate }) {
                       placeholder="Sesuai Sertifikat / KTP"
                     />
                     {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
+                    <label className="flex items-center gap-3 cursor-pointer mt-3 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 text-primary focus:ring-primary border-outline-variant rounded"
+                        checked={formData.isKuasa}
+                        onChange={(e) => setFormData(prev => ({ ...prev, isKuasa: e.target.checked }))}
+                      />
+                      <span className="font-label-sm text-on-surface">Bertindak Selaku Kuasa (Bukan Pemilik Langsung)</span>
+                    </label>
                   </div>
 
                   <div className="space-y-2">
@@ -665,6 +702,17 @@ export default function FormulirSPOP({ onNavigate }) {
                         placeholder="Contoh: Purbalingga Lor"
                       />
                       {errors.kelurahan && <p className="text-error text-[12px]">{errors.kelurahan}</p>}
+                    </div>
+                    <div className="md:col-span-8 space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">Kecamatan</label>
+                      <input
+                        type="text"
+                        value={formData.kecamatan}
+                        onChange={(e) => handleTextChange('kecamatan', e)}
+                        className={`w-full h-11 border ${errors.kecamatan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
+                        placeholder="Contoh: Purbalingga"
+                      />
+                      {errors.kecamatan && <p className="text-error text-[12px]">{errors.kecamatan}</p>}
                     </div>
                     <div className="md:col-span-8 space-y-2">
                       <label className="font-label-sm text-on-surface-variant block">Kabupaten / Kota</label>
@@ -835,6 +883,20 @@ export default function FormulirSPOP({ onNavigate }) {
                     </h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {formData.jenisTanah === 'Tanah + Bangunan' && (
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LUAS BANGUNAN (M²)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.luasBangunan}
+                          onChange={(e) => handleTextChange('luasBangunan', e)}
+                          className={`w-full h-12 border ${errors.luasBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                          placeholder="Contoh: 100"
+                        />
+                        {errors.luasBangunan && <p className="text-error text-[12px]">{errors.luasBangunan}</p>}
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
                       <input
@@ -842,15 +904,67 @@ export default function FormulirSPOP({ onNavigate }) {
                         min="0"
                         value={formData.jumlahBangunan}
                         onChange={(e) => handleTextChange('jumlahBangunan', e)}
-                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                        className={`w-full h-12 border ${errors.jumlahBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
                         placeholder="Contoh: 1"
                       />
-                      {parseInt(formData.jumlahBangunan) > 0 && (
-                        <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2">
-                          <span className="material-symbols-outlined text-sm mt-0.5">info</span>
-                          <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
-                        </div>
-                      )}
+                    </div>
+                  </div>
+                  {parseInt(formData.jumlahBangunan) > 0 && (
+                    <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2 max-w-2xl">
+                      <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+                      <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* BATAS-BATAS NOP */}
+                <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 bg-primary h-8 rounded-full"></div>
+                    <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                      BATAS-BATAS OBJEK PAJAK (NOP TETANGGA)
+                    </h4>
+                  </div>
+                  <div className="p-4 bg-surface-container-lowest border border-outline-variant rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS UTARA (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasUtara}
+                        onChange={(e) => handleTextChange('batasUtara', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS SELATAN (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasSelatan}
+                        onChange={(e) => handleTextChange('batasSelatan', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS TIMUR (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasTimur}
+                        onChange={(e) => handleTextChange('batasTimur', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS BARAT (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasBarat}
+                        onChange={(e) => handleTextChange('batasBarat', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
                     </div>
                   </div>
                 </div>
@@ -876,15 +990,27 @@ export default function FormulirSPOP({ onNavigate }) {
                       </MapContainer>
                     </div>
 
-                    <div className="space-y-2 md:w-1/2">
-                      <label className="font-label-sm text-primary block">TITIK KOORDINAT (LATITUDE, LONGITUDE)</label>
-                      <input
-                        type="text"
-                        value={formData.titikKoordinat}
-                        onChange={(e) => handleTextChange('titikKoordinat', e)}
-                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
-                        placeholder="Contoh: -7.3878, 109.3639"
-                      />
+                    <div className="grid grid-cols-2 gap-4 md:w-1/2">
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LATITUDE</label>
+                        <input
+                          type="text"
+                          value={formData.latitude}
+                          onChange={(e) => handleTextChange('latitude', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                          placeholder="-7.3878"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LONGITUDE</label>
+                        <input
+                          type="text"
+                          value={formData.longitude}
+                          onChange={(e) => handleTextChange('longitude', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                          placeholder="109.3639"
+                        />
+                      </div>
                     </div>
 
                     {/* Google Street View Placeholder */}

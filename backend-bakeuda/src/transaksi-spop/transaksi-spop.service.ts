@@ -16,14 +16,20 @@ export class TransaksiSpopService {
     const currentYear = new Date().getFullYear();
     const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU_VERIFIKASI_DESA';
 
-    // Validasi Cerdas
-    if (jenis_transaksi === 'MUTASI' && !dto.nop_utama) {
-      throw new BadRequestException('NOP Utama wajib diisi untuk jenis layanan Pemutakhiran Data (Mutasi)');
+    // Validasi Cerdas NOP
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi) && !dto.nop_utama) {
+      throw new BadRequestException(`NOP Utama wajib diisi untuk jenis layanan ${jenis_transaksi}`);
     }
-    if (jenis_transaksi === 'PECAH' && !dto.nop_asal) {
-      throw new BadRequestException('NOP Asal wajib diisi untuk jenis layanan Pecah Tanah');
+    if (['PECAH', 'GABUNG'].includes(jenis_transaksi)) {
+      if (!dto.nop_asal || dto.nop_asal.length === 0) {
+        throw new BadRequestException(`NOP Asal wajib diisi minimal 1 untuk jenis layanan ${jenis_transaksi}`);
+      }
     }
-    if (jenis_tanah_baru === 'TANAH_BANGUNAN') {
+    // Validasi Cerdas Bangunan
+    if (jenis_tanah_baru !== 'TANAH_BANGUNAN') {
+      dto.objek_pajak_sementara.luas_bangunan = 0;
+      dto.objek_pajak_sementara.jumlah_bangunan = 0;
+    } else {
       if (!dto.objek_pajak_sementara.luas_bangunan || dto.objek_pajak_sementara.luas_bangunan <= 0) {
         throw new BadRequestException('Luas bangunan wajib diisi jika jenis tanah adalah TANAH & BANGUNAN');
       }
@@ -89,10 +95,11 @@ export class TransaksiSpopService {
           menggunakan_kuasa: dto.is_kuasa || false,
           
           // Data Detail Asal (Conditionally inserted)
-          detail_asal: dto.nop_utama || dto.nop_asal ? {
-            create: {
-              nop_asal: dto.nop_utama || dto.nop_asal,
-            }
+          detail_asal: dto.nop_utama || (dto.nop_asal && dto.nop_asal.length > 0) ? {
+            create: [
+              ...(dto.nop_utama ? [{ nop_asal: dto.nop_utama }] : []),
+              ...(dto.nop_asal ? dto.nop_asal.map(n => ({ nop_asal: n })) : []),
+            ]
           } : undefined,
 
           // Data Tujuan
