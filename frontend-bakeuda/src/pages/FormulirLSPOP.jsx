@@ -193,10 +193,10 @@ export default function FormulirLSPOP({ onNavigate }) {
           <div className="space-y-2">
             <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">Jenis Transaksi</label>
             <select value={formData.jenisTransaksi} onChange={(e) => handleTextChange('jenisTransaksi', e)} className="w-full h-10 border border-outline-variant rounded px-3 text-sm">
-              <option value="Perekaman Data">1. Perekaman Data</option>
-              <option value="Pemutakhiran Data">2. Pemutakhiran Data</option>
-              <option value="Penghapusan Data">3. Penghapusan Data</option>
-              <option value="Penilaian Individual">4. Penilaian Individual</option>
+              <option value="Perekaman Data">Perekaman Data</option>
+              <option value="Pemutakhiran Data">Pemutakhiran Data</option>
+              <option value="Penghapusan Data">Penghapusan Data</option>
+              <option value="Penilaian Individual">Penilaian Individual</option>
             </select>
           </div>
           <div className="space-y-2">
@@ -322,8 +322,8 @@ export default function FormulirLSPOP({ onNavigate }) {
                   <div className="space-y-1">
                     <label className="text-xs text-on-surface-variant block">Finishing</label>
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> 1. Diplester</label>
-                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> 2. Dengan Pelapis</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> Diplester</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> Dengan Pelapis</label>
                     </div>
                   </div>
                 </div>
