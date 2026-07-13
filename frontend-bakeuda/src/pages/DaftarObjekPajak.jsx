@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -147,16 +147,16 @@ export default function DaftarObjekPajak({ onNavigate }) {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display-lg text-primary font-bold text-3xl">Daftar Objek Pajak</h2>
+          <h2 className="font-display-lg text-blue-900 font-bold text-3xl">Daftar Objek Pajak</h2>
           <p className="text-on-surface-variant max-w-2xl mt-1 text-sm md:text-base">
-            Kelola dan monitor seluruh data objek pajak di wilayah Kabupaten Purbalingga secara real-time dan terintegrasi.
+            Daftar keseluruhan informasi Objek Pajak Bumi dan Bangunan (PBB) yang terdaftar di wilayah Kabupaten Purbalingga.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-outline rounded-lg text-primary font-label-sm hover:bg-surface-container-low transition-colors shadow-sm focus:outline-none"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm focus:outline-none"
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
               Export Data
@@ -164,18 +164,18 @@ export default function DaftarObjekPajak({ onNavigate }) {
             
             {/* Export Dropdown Menu */}
             {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xl z-50 overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
                 <button 
                   onClick={handleExportExcel}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center gap-3 text-sm font-bold text-on-surface transition-colors"
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
                 >
                   <span className="material-symbols-outlined text-green-600 text-[18px]">table_chart</span>
                   Export Excel (.xlsx)
                 </button>
-                <div className="w-full h-px bg-outline-variant/50"></div>
+                <div className="w-full h-px bg-gray-100 my-1"></div>
                 <button 
                   onClick={handleExportPDF}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-container-low flex items-center gap-3 text-sm font-bold text-on-surface transition-colors"
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
                 >
                   <span className="material-symbols-outlined text-red-500 text-[18px]">picture_as_pdf</span>
                   Export PDF (.pdf)
@@ -186,7 +186,7 @@ export default function DaftarObjekPajak({ onNavigate }) {
           
           <button
             onClick={() => onNavigate && onNavigate('formulir_spop')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-lg font-label-sm hover:shadow-lg transition-all active:scale-95 focus:outline-none"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             Tambah Objek Pajak
@@ -367,8 +367,8 @@ export default function DaftarObjekPajak({ onNavigate }) {
         </div>
 
         {/* Pagination Footer */}
-        <div className="px-6 py-4 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-container-low/20">
-          <div className="flex items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
+        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50">
+          <div className="flex items-center gap-4 text-sm text-gray-500 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Tampilkan</span>
               <select 
@@ -377,7 +377,7 @@ export default function DaftarObjekPajak({ onNavigate }) {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-background border border-outline-variant rounded-md py-1 pl-3 pr-8 text-sm focus:ring-primary focus:border-primary font-bold text-on-surface cursor-pointer appearance-none"
+                className="bg-white border border-gray-300 rounded-md py-1 pl-3 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-gray-900 cursor-pointer appearance-none"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                   backgroundPosition: 'right 0.5rem center',
@@ -389,33 +389,55 @@ export default function DaftarObjekPajak({ onNavigate }) {
                 <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
+                <option value={100}>100</option>
               </select>
               <span className="hidden sm:inline">data per halaman</span>
             </div>
-            <div className="h-4 w-px bg-outline-variant hidden sm:block"></div>
+            <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
             <div>
-              Menampilkan <span className="font-bold text-on-surface">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
-              <span className="font-bold text-on-surface">{totalItems}</span> data
+              Menampilkan <span className="font-bold text-gray-900">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
+              <span className="font-bold text-gray-900">{totalItems}</span> data
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1 || totalItems === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-outline hover:bg-surface hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <span className="material-symbols-outlined">chevron_left</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-            <div className="px-4 font-bold text-sm text-on-surface">
-              Halaman {currentPage} / {totalPages > 0 ? totalPages : 1}
-            </div>
+            
+            {Array.from({ length: Math.min(5, totalPages > 0 ? totalPages : 1) }, (_, i) => {
+              let pageNum = currentPage;
+              const safeTotalPages = totalPages > 0 ? totalPages : 1;
+              if (safeTotalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
+                    currentPage === pageNum 
+                      ? 'bg-blue-900 text-white shadow-sm' 
+                      : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
             <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages || totalItems === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-outline hover:bg-surface hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <span className="material-symbols-outlined">chevron_right</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
           </div>
         </div>

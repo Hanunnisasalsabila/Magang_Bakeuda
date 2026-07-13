@@ -104,8 +104,8 @@ export default function Login({ onLoginSuccess }) {
               !isFormValid 
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                 : loading 
-                  ? 'bg-blue-400 text-white cursor-not-allowed' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow active:scale-[0.98]'
+                  ? 'bg-blue-700 text-white cursor-not-allowed' 
+                  : 'bg-blue-900 text-white hover:bg-blue-800 hover:shadow active:scale-[0.98]'
             }`}
           >
             {loading ? (

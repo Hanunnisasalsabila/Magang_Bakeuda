@@ -152,28 +152,53 @@ export class TransaksiSpopService {
       where.status_ajuan = status_ajuan;
     }
     if (kode_wilayah) {
-      // Filter by pengaju's kode_wilayah
       where.pengaju = {
-        kode_wilayah,
+        kode_wilayah: kode_wilayah,
       };
     }
 
-    return this.prisma.transaksiSpop.findMany({
-      where,
-      include: {
-        detail_tujuan: true,
-        pengaju: {
-          select: {
-            nama_lengkap: true,
-            kode_wilayah: true,
+    try {
+      const result = await this.prisma.transaksiSpop.findMany({
+        where,
+        include: {
+          detail_tujuan: true,
+          pengaju: {
+            select: {
+              nama_lengkap: true,
+              kode_wilayah: true,
+            }
           }
-        }
-      },
-      orderBy: {
-        updated_at: 'desc',
-      },
-    });
+        },
+        orderBy: {
+          updated_at: 'desc',
+        },
+      });
+      return {
+        success: true,
+        data: result
+      };
+    } catch (e) {
+      console.error(e);
+      throw new BadRequestException('Gagal mengambil data transaksi');
+    }
   }
+
+  async getStats(kode_wilayah?: string) {
+    const where: any = {};
+    if (kode_wilayah) {
+      where.pengaju = { kode_wilayah };
+    }
+
+    const [totalDikirim, menunggu, disetujui, perluPerbaikan] = await Promise.all([
+      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: { not: 'DRAFT' } } }),
+      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: 'MENUNGGU_VERIFIKASI_DESA' } }),
+      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: 'DISETUJUI' } }),
+      this.prisma.transaksiSpop.count({ where: { ...where, status_ajuan: { in: ['PERBAIKAN', 'DITOLAK'] } } }),
+    ]);
+
+    return { totalDikirim, menunggu, disetujui, perluPerbaikan };
+  }
+
 
   async ajukanKeLurah(id_transaksi: string, kode_wilayah_user: string) {
     // 1. Pengecekan Keberadaan Dokumen & Keamanan Cross-Reference Wilayah
