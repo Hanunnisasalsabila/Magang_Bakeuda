@@ -831,10 +831,9 @@ export default function FormulirSPOP({ onNavigate }) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: 'Tanah + Bangunan', val: 'TANAH_BANGUNAN' },
-                        { label: 'Tanah Pertanian', val: 'TANAH_PERTANIAN' },
-                        { label: 'Tanah Perkebunan', val: 'TANAH_PERKEBUNAN' },
-                        { label: 'Tanah Kehutanan', val: 'TANAH_KEHUTANAN' },
-                        { label: 'Lainnya', val: 'TANAH_LAINNYA' },
+                        { label: 'Kavling Siap Bangun', val: 'KAVLING_SIAP_BANGUN' },
+                        { label: 'Tanah Kosong', val: 'TANAH_KOSONG' },
+                        { label: 'Fasilitas Umum', val: 'FASILITAS_UMUM' },
                       ].map(({ label, val }) => (
                         <label
                           key={val}
