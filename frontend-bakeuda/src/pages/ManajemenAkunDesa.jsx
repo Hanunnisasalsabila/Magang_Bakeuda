@@ -274,7 +274,7 @@ export default function ManajemenAkunDesa() {
                   onClick={() => handleSort('kode_wilayah')}
                 >
                   <div className="flex items-center gap-2">
-                    Kode Wilayah
+                    Wilayah Tugas
                     {sortConfig.key === 'kode_wilayah' && (
                       <span className="material-symbols-outlined text-[14px]">
                         {sortConfig.direction === 'asc' ? 'arrow_upward' : 'arrow_downward'}
@@ -340,9 +340,21 @@ export default function ManajemenAkunDesa() {
                     </td>
                     <td className="py-3 px-4 text-left">
                       {user.kode_wilayah ? (
-                        <span className="font-data-mono text-[13px] text-secondary bg-secondary/10 px-2.5 py-1 rounded-lg border border-secondary/20 inline-block">
-                          {user.kode_wilayah}
-                        </span>
+                        (() => {
+                          const w = wilayahList.find(item => item.kode_wilayah === user.kode_wilayah);
+                          return (
+                            <div className="flex flex-col gap-1">
+                              {w && (
+                                <span className="font-medium text-[13px] text-on-surface">
+                                  {w.nama_desa}, {w.kecamatan}
+                                </span>
+                              )}
+                              <span className="font-data-mono text-[11px] text-secondary bg-secondary/10 px-2 py-0.5 rounded border border-secondary/20 self-start">
+                                {user.kode_wilayah}
+                              </span>
+                            </div>
+                          );
+                        })()
                       ) : (
                         <span className="text-outline italic text-xs">Tidak ada wilayah</span>
                       )}
