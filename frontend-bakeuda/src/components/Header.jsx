@@ -44,7 +44,7 @@ export default function Header({ role, onRoleChange, activePageTitle, onToggleSi
       {/* Left items: Toggle and Title */}
       <div className="flex items-center gap-4">
         <button
-          className="md:hidden p-2 hover:bg-surface-container-low rounded-full text-primary transition-colors"
+          className="p-2 hover:bg-surface-container-low rounded-full text-primary transition-colors"
           onClick={onToggleSidebar}
         >
           <span className="material-symbols-outlined">menu</span>

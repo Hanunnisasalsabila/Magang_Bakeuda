@@ -4,6 +4,7 @@ import Header from './Header';
 
 export default function AppLayout({ role, onRoleChange, activePage, onNavigate, activePageTitle, children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
   const isDesa = role === 'desa';
 
@@ -32,10 +33,11 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
         onNavigate={onNavigate}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        isDesktopOpen={isDesktopSidebarOpen}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 md:ml-64 flex flex-col min-h-screen pb-16 md:pb-0">
+      <div className={`flex-1 min-w-0 transition-all duration-300 flex flex-col min-h-screen pb-16 md:pb-0 ${isDesktopSidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
         {/* Top App Bar */}
         <Header
           role={role}
@@ -49,7 +51,13 @@ export default function AppLayout({ role, onRoleChange, activePage, onNavigate, 
             }
           }}
           activePageTitle={activePageTitle}
-          onToggleSidebar={() => setIsSidebarOpen(true)}
+          onToggleSidebar={() => {
+            if (window.innerWidth >= 768) {
+              setIsDesktopSidebarOpen(!isDesktopSidebarOpen);
+            } else {
+              setIsSidebarOpen(true);
+            }
+          }}
         />
 
         {/* Content Wrapper */}
