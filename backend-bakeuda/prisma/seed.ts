@@ -71,7 +71,7 @@ async function main() {
   }
 
   // 2. Gunakan password dari ENV, atau generate password random sementara
-  const rawPassword = process.env.ADMIN_PASSWORD || Math.random().toString(36).slice(-8) + 'A1@';
+  const rawPassword = 'Bakeuda2026!';
   const hashedPassword = await bcrypt.hash(rawPassword, 12);
 
   // 3. Buat Admin BAKEUDA default

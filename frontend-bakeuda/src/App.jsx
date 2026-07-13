@@ -12,7 +12,9 @@ import DaftarObjekPajak from './pages/DaftarObjekPajak';
 import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
+import ManajemenWilayah from './pages/ManajemenWilayah';
 import PelacakanDokumen from './pages/PelacakanDokumen';
+import FormulirLSPOP from './pages/FormulirLSPOP';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -49,7 +51,9 @@ export default function App() {
     dashboard_desa: 'Dashboard Perangkat Desa',
     dashboard_admin: 'Dashboard Admin BKD',
     manajemen_akun_desa: 'Manajemen Akun Desa',
+    manajemen_wilayah: 'Manajemen Wilayah',
     formulir_spop: 'Formulir SPOP Digital',
+    formulir_lspop: 'Formulir LSPOP - Data Bangunan',
     antrean_verifikasi: 'Antrean Verifikasi SPOP',
     detail_review: 'Review Verifikasi SPOP',
     daftar_objek: 'Daftar Objek Pajak',
@@ -71,14 +75,18 @@ export default function App() {
         return <DashboardAdmin onNavigate={setActivePage} />;
       case 'manajemen_akun_desa':
         return <ManajemenAkunDesa />;
+      case 'manajemen_wilayah':
+        return <ManajemenWilayah />;
       case 'formulir_spop':
         return <FormulirSPOP onNavigate={setActivePage} />;
+      case 'formulir_lspop':
+        return <FormulirLSPOP onNavigate={setActivePage} />;
       case 'antrean_verifikasi':
         return <AntreanVerifikasi onNavigate={setActivePage} />;
       case 'detail_review':
         return <DetailReviewSPOP onNavigate={setActivePage} />;
       case 'daftar_objek':
-        return <DaftarObjekPajak />;
+        return <DaftarObjekPajak onNavigate={setActivePage} />;
       case 'monitoring_pajak':
         return <MonitoringObjekPajak />;
       case 'pelacakan_dokumen':

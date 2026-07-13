@@ -1,0 +1,2153 @@
+[
+  {
+    "kode_wilayah": "3303012001",
+    "nama_desa": "Kedungbenda",
+    "kode_kel": "2001",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012002",
+    "nama_desa": "Bokol",
+    "kode_kel": "2002",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012003",
+    "nama_desa": "Pelumutan",
+    "kode_kel": "2003",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012004",
+    "nama_desa": "Majatengah",
+    "kode_kel": "2004",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012005",
+    "nama_desa": "Kedunglegok",
+    "kode_kel": "2005",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012006",
+    "nama_desa": "Kemangkon",
+    "kode_kel": "2006",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012007",
+    "nama_desa": "Panican",
+    "kode_kel": "2007",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012008",
+    "nama_desa": "Bakulan",
+    "kode_kel": "2008",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012009",
+    "nama_desa": "Karangkemiri",
+    "kode_kel": "2009",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012010",
+    "nama_desa": "Pegandekan",
+    "kode_kel": "2010",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012011",
+    "nama_desa": "Senon",
+    "kode_kel": "2011",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012012",
+    "nama_desa": "Sumilir",
+    "kode_kel": "2012",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012013",
+    "nama_desa": "Kalialang",
+    "kode_kel": "2013",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012014",
+    "nama_desa": "Karangtengah",
+    "kode_kel": "2014",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012015",
+    "nama_desa": "Muntang",
+    "kode_kel": "2015",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012016",
+    "nama_desa": "Gambarsari",
+    "kode_kel": "2016",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012017",
+    "nama_desa": "Toyareka",
+    "kode_kel": "2017",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012018",
+    "nama_desa": "Jetis",
+    "kode_kel": "2018",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303012019",
+    "nama_desa": "Majasem",
+    "kode_kel": "2019",
+    "kode_kec": "01",
+    "kecamatan": "Kemangkon",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022001",
+    "nama_desa": "Tidu",
+    "kode_kel": "2001",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022002",
+    "nama_desa": "Wirasaba",
+    "kode_kel": "2002",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022003",
+    "nama_desa": "Kembangan",
+    "kode_kel": "2003",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022004",
+    "nama_desa": "Cipawon",
+    "kode_kel": "2004",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022005",
+    "nama_desa": "Karangcengis",
+    "kode_kel": "2005",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022006",
+    "nama_desa": "Karanggedang",
+    "kode_kel": "2006",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022007",
+    "nama_desa": "Karangnangka",
+    "kode_kel": "2007",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022008",
+    "nama_desa": "Kutawis",
+    "kode_kel": "2008",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022009",
+    "nama_desa": "Kebutuh",
+    "kode_kel": "2009",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022010",
+    "nama_desa": "Penaruban",
+    "kode_kel": "2010",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022011",
+    "nama_desa": "Kedungjati",
+    "kode_kel": "2011",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022012",
+    "nama_desa": "Bukateja",
+    "kode_kel": "2012",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022013",
+    "nama_desa": "Majasari",
+    "kode_kel": "2013",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303022014",
+    "nama_desa": "Bajong",
+    "kode_kel": "2014",
+    "kode_kec": "02",
+    "kecamatan": "Bukateja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032001",
+    "nama_desa": "Bandingan",
+    "kode_kel": "2001",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032002",
+    "nama_desa": "Lamuk",
+    "kode_kel": "2002",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032003",
+    "nama_desa": "Sokanegara",
+    "kode_kel": "2003",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032004",
+    "nama_desa": "Gumiwang",
+    "kode_kel": "2004",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032005",
+    "nama_desa": "Krenceng",
+    "kode_kel": "2005",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032006",
+    "nama_desa": "Nangkasawit",
+    "kode_kel": "2006",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032007",
+    "nama_desa": "Pandansari",
+    "kode_kel": "2007",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032008",
+    "nama_desa": "Kejobong",
+    "kode_kel": "2008",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032009",
+    "nama_desa": "Langgar",
+    "kode_kel": "2009",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032010",
+    "nama_desa": "Timbang",
+    "kode_kel": "2010",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032011",
+    "nama_desa": "Nangkod",
+    "kode_kel": "2011",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032012",
+    "nama_desa": "Kedarpan",
+    "kode_kel": "2012",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303032013",
+    "nama_desa": "Pangempon",
+    "kode_kel": "2013",
+    "kode_kec": "03",
+    "kecamatan": "Kejobong",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042001",
+    "nama_desa": "Lamongan",
+    "kode_kel": "2001",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042002",
+    "nama_desa": "Tejasari",
+    "kode_kel": "2002",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042003",
+    "nama_desa": "Cilapar",
+    "kode_kel": "2003",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042004",
+    "nama_desa": "Penolih",
+    "kode_kel": "2004",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042005",
+    "nama_desa": "Sinduraja",
+    "kode_kel": "2005",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042006",
+    "nama_desa": "Selakambang",
+    "kode_kel": "2006",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042007",
+    "nama_desa": "Selanegara",
+    "kode_kel": "2007",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042008",
+    "nama_desa": "Kaligondang",
+    "kode_kel": "2008",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042009",
+    "nama_desa": "Brecek",
+    "kode_kel": "2009",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042010",
+    "nama_desa": "Sempor Lor",
+    "kode_kel": "2010",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042011",
+    "nama_desa": "Penaruban",
+    "kode_kel": "2011",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042012",
+    "nama_desa": "Kalikajar",
+    "kode_kel": "2012",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042013",
+    "nama_desa": "Kembaran Wetan",
+    "kode_kel": "2013",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042014",
+    "nama_desa": "Slinga",
+    "kode_kel": "2014",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042015",
+    "nama_desa": "Arenan",
+    "kode_kel": "2015",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042016",
+    "nama_desa": "Sidanegara",
+    "kode_kel": "2016",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042017",
+    "nama_desa": "Pagerandong",
+    "kode_kel": "2017",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303042018",
+    "nama_desa": "Sidareja",
+    "kode_kel": "2018",
+    "kode_kec": "04",
+    "kecamatan": "Kaligondang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051001",
+    "nama_desa": "Bojong",
+    "kode_kel": "1001",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051003",
+    "nama_desa": "Kedungmenjangan",
+    "kode_kel": "1003",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051005",
+    "nama_desa": "Bancar",
+    "kode_kel": "1005",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051006",
+    "nama_desa": "Purbalingga Wetan",
+    "kode_kel": "1006",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051007",
+    "nama_desa": "Penambongan",
+    "kode_kel": "1007",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051008",
+    "nama_desa": "Purbalingga Kidul",
+    "kode_kel": "1008",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051009",
+    "nama_desa": "Kandanggampang",
+    "kode_kel": "1009",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051010",
+    "nama_desa": "Purbalingga Kulon",
+    "kode_kel": "1010",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051011",
+    "nama_desa": "Purbalingga Lor",
+    "kode_kel": "1011",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051012",
+    "nama_desa": "Kembaran Kulon",
+    "kode_kel": "1012",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303051013",
+    "nama_desa": "Wirasana",
+    "kode_kel": "1013",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303052002",
+    "nama_desa": "Toyareja",
+    "kode_kel": "2002",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303052004",
+    "nama_desa": "Jatisaba",
+    "kode_kel": "2004",
+    "kode_kec": "05",
+    "kecamatan": "Purbalingga",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303061011",
+    "nama_desa": "Mewek",
+    "kode_kel": "1011",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303061012",
+    "nama_desa": "Karangmanyar",
+    "kode_kel": "1012",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303061013",
+    "nama_desa": "Kalikabong",
+    "kode_kel": "1013",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062001",
+    "nama_desa": "Jompo",
+    "kode_kel": "2001",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062002",
+    "nama_desa": "Rabak",
+    "kode_kel": "2002",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062003",
+    "nama_desa": "Blater",
+    "kode_kel": "2003",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062004",
+    "nama_desa": "Manduraga",
+    "kode_kel": "2004",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062005",
+    "nama_desa": "Karangsari",
+    "kode_kel": "2005",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062006",
+    "nama_desa": "Kalimanah Kulon",
+    "kode_kel": "2006",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062007",
+    "nama_desa": "Sidakangen",
+    "kode_kel": "2007",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062008",
+    "nama_desa": "Karangpetir",
+    "kode_kel": "2008",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062009",
+    "nama_desa": "Kalimanah Wetan",
+    "kode_kel": "2009",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062010",
+    "nama_desa": "Grecol",
+    "kode_kel": "2010",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062014",
+    "nama_desa": "Selabaya",
+    "kode_kel": "2014",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062015",
+    "nama_desa": "Klapasawit",
+    "kode_kel": "2015",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062016",
+    "nama_desa": "Kedungwuluh",
+    "kode_kel": "2016",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303062017",
+    "nama_desa": "Babakan",
+    "kode_kel": "2017",
+    "kode_kec": "06",
+    "kecamatan": "Kalimanah",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072001",
+    "nama_desa": "Karanglewas",
+    "kode_kel": "2001",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072002",
+    "nama_desa": "Munjul",
+    "kode_kel": "2002",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072003",
+    "nama_desa": "Sumingkir",
+    "kode_kel": "2003",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072004",
+    "nama_desa": "Meri",
+    "kode_kel": "2004",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072005",
+    "nama_desa": "Kutasari",
+    "kode_kel": "2005",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072006",
+    "nama_desa": "Karangklesem",
+    "kode_kel": "2006",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072007",
+    "nama_desa": "Karangreja",
+    "kode_kel": "2007",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072008",
+    "nama_desa": "Karangaren",
+    "kode_kel": "2008",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072009",
+    "nama_desa": "Limbangan",
+    "kode_kel": "2009",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072010",
+    "nama_desa": "Cendana",
+    "kode_kel": "2010",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072011",
+    "nama_desa": "Candiwulan",
+    "kode_kel": "2011",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072012",
+    "nama_desa": "Karangcegak",
+    "kode_kel": "2012",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072013",
+    "nama_desa": "Candinata",
+    "kode_kel": "2013",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303072014",
+    "nama_desa": "Karangjengkol",
+    "kode_kel": "2014",
+    "kode_kec": "07",
+    "kecamatan": "Kutasari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082001",
+    "nama_desa": "Karangturi",
+    "kode_kel": "2001",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082002",
+    "nama_desa": "Onje",
+    "kode_kel": "2002",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082003",
+    "nama_desa": "Sindang",
+    "kode_kel": "2003",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082004",
+    "nama_desa": "Tangkisan",
+    "kode_kel": "2004",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082005",
+    "nama_desa": "Kradenan",
+    "kode_kel": "2005",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082006",
+    "nama_desa": "Lambur",
+    "kode_kel": "2006",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082007",
+    "nama_desa": "Selaganggeng",
+    "kode_kel": "2007",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082008",
+    "nama_desa": "Mangunegara",
+    "kode_kel": "2008",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082009",
+    "nama_desa": "Karangnangka",
+    "kode_kel": "2009",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082010",
+    "nama_desa": "Mrebet",
+    "kode_kel": "2010",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082011",
+    "nama_desa": "Bojong",
+    "kode_kel": "2011",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082012",
+    "nama_desa": "Serayu Karanganyar",
+    "kode_kel": "2012",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082013",
+    "nama_desa": "Serayu Larangan",
+    "kode_kel": "2013",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082014",
+    "nama_desa": "Campakoah",
+    "kode_kel": "2014",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082015",
+    "nama_desa": "Pagerandong",
+    "kode_kel": "2015",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082016",
+    "nama_desa": "Cipaku",
+    "kode_kel": "2016",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082017",
+    "nama_desa": "Binangun",
+    "kode_kel": "2017",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082018",
+    "nama_desa": "Pengalusan",
+    "kode_kel": "2018",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303082019",
+    "nama_desa": "Sangkanayu",
+    "kode_kel": "2019",
+    "kode_kec": "08",
+    "kecamatan": "Mrebet",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092001",
+    "nama_desa": "Gandasuli",
+    "kode_kel": "2001",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092002",
+    "nama_desa": "Kalapacung",
+    "kode_kel": "2002",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092003",
+    "nama_desa": "Karangmalang",
+    "kode_kel": "2003",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092004",
+    "nama_desa": "Banjarsari",
+    "kode_kel": "2004",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092005",
+    "nama_desa": "Majapura",
+    "kode_kel": "2005",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092006",
+    "nama_desa": "Bobotsari",
+    "kode_kel": "2006",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092007",
+    "nama_desa": "Karangduren",
+    "kode_kel": "2007",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092008",
+    "nama_desa": "Pakuncen",
+    "kode_kel": "2008",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092009",
+    "nama_desa": "Karangtalun",
+    "kode_kel": "2009",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092010",
+    "nama_desa": "Gunungkarang",
+    "kode_kel": "2010",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092011",
+    "nama_desa": "Talagening",
+    "kode_kel": "2011",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092012",
+    "nama_desa": "Tlagayasa",
+    "kode_kel": "2012",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092013",
+    "nama_desa": "Dagan",
+    "kode_kel": "2013",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092014",
+    "nama_desa": "Palumbungan",
+    "kode_kel": "2014",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092015",
+    "nama_desa": "Limbasari",
+    "kode_kel": "2015",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303092016",
+    "nama_desa": "Palumbungan Wetan",
+    "kode_kel": "2016",
+    "kode_kec": "09",
+    "kecamatan": "Bobotsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102001",
+    "nama_desa": "Serang",
+    "kode_kel": "2001",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102002",
+    "nama_desa": "Kutabawa",
+    "kode_kel": "2002",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102003",
+    "nama_desa": "Siwarak",
+    "kode_kel": "2003",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102004",
+    "nama_desa": "Tlahab Lor",
+    "kode_kel": "2004",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102005",
+    "nama_desa": "Tlahab Kidul",
+    "kode_kel": "2005",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102006",
+    "nama_desa": "Karangreja",
+    "kode_kel": "2006",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303102007",
+    "nama_desa": "Gondang",
+    "kode_kel": "2007",
+    "kode_kec": "10",
+    "kecamatan": "Karangreja",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112001",
+    "nama_desa": "Ponjen",
+    "kode_kel": "2001",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112002",
+    "nama_desa": "Buara",
+    "kode_kel": "2002",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112003",
+    "nama_desa": "Brakas",
+    "kode_kel": "2003",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112004",
+    "nama_desa": "Bungkanel",
+    "kode_kel": "2004",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112005",
+    "nama_desa": "Lumpang",
+    "kode_kel": "2005",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112006",
+    "nama_desa": "Karanggedang",
+    "kode_kel": "2006",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112007",
+    "nama_desa": "Kabunderan",
+    "kode_kel": "2007",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112008",
+    "nama_desa": "Jambudesa",
+    "kode_kel": "2008",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112009",
+    "nama_desa": "Maribaya",
+    "kode_kel": "2009",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112010",
+    "nama_desa": "Karanganyar",
+    "kode_kel": "2010",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112012",
+    "nama_desa": "Banjarkerta",
+    "kode_kel": "2012",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112013",
+    "nama_desa": "Kalijaran",
+    "kode_kel": "2013",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303112014",
+    "nama_desa": "Kaliori",
+    "kode_kel": "2014",
+    "kode_kec": "11",
+    "kecamatan": "Karanganyar",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122001",
+    "nama_desa": "Karangsari",
+    "kode_kel": "2001",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122002",
+    "nama_desa": "Pepedan",
+    "kode_kel": "2002",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122003",
+    "nama_desa": "Pekiringan",
+    "kode_kel": "2003",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122004",
+    "nama_desa": "Grantung",
+    "kode_kel": "2004",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122005",
+    "nama_desa": "Rajawana",
+    "kode_kel": "2005",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122006",
+    "nama_desa": "Tajug",
+    "kode_kel": "2006",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122007",
+    "nama_desa": "Tamansari",
+    "kode_kel": "2007",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122008",
+    "nama_desa": "Baleraksa",
+    "kode_kel": "2008",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122009",
+    "nama_desa": "Tunjungmuli",
+    "kode_kel": "2009",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122010",
+    "nama_desa": "Kramat",
+    "kode_kel": "2010",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303122011",
+    "nama_desa": "Sirau",
+    "kode_kel": "2011",
+    "kode_kec": "12",
+    "kecamatan": "Karangmoncol",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132001",
+    "nama_desa": "Wlahar",
+    "kode_kel": "2001",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132002",
+    "nama_desa": "Bantarbarang",
+    "kode_kel": "2002",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132003",
+    "nama_desa": "Karangbawang",
+    "kode_kel": "2003",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132004",
+    "nama_desa": "Gunungwuled",
+    "kode_kel": "2004",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132005",
+    "nama_desa": "Losari",
+    "kode_kel": "2005",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132006",
+    "nama_desa": "Bodaskarangjati",
+    "kode_kel": "2006",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132007",
+    "nama_desa": "Wanogara Wetan",
+    "kode_kel": "2007",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132008",
+    "nama_desa": "Wanogara Kulon",
+    "kode_kel": "2008",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132009",
+    "nama_desa": "Makam",
+    "kode_kel": "2009",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132010",
+    "nama_desa": "Sumampir",
+    "kode_kel": "2010",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132011",
+    "nama_desa": "Tanalum",
+    "kode_kel": "2011",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303132012",
+    "nama_desa": "Panusupan",
+    "kode_kel": "2012",
+    "kode_kec": "13",
+    "kecamatan": "Rembang",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142001",
+    "nama_desa": "Brobot",
+    "kode_kel": "2001",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142002",
+    "nama_desa": "Gembong",
+    "kode_kel": "2002",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142003",
+    "nama_desa": "Galuh",
+    "kode_kel": "2003",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142004",
+    "nama_desa": "Banjaran",
+    "kode_kel": "2004",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142005",
+    "nama_desa": "Patemon",
+    "kode_kel": "2005",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142006",
+    "nama_desa": "Bojongsari",
+    "kode_kel": "2006",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142007",
+    "nama_desa": "Kajongan",
+    "kode_kel": "2007",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142008",
+    "nama_desa": "Karangbanjar",
+    "kode_kel": "2008",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142009",
+    "nama_desa": "Beji",
+    "kode_kel": "2009",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142010",
+    "nama_desa": "Pagedangan",
+    "kode_kel": "2010",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142011",
+    "nama_desa": "Pekalongan",
+    "kode_kel": "2011",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142012",
+    "nama_desa": "Metenggeng",
+    "kode_kel": "2012",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303142013",
+    "nama_desa": "Bumisari",
+    "kode_kel": "2013",
+    "kode_kec": "14",
+    "kecamatan": "Bojongsari",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303151004",
+    "nama_desa": "Karangsentul",
+    "kode_kel": "1004",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152001",
+    "nama_desa": "Karangpule",
+    "kode_kel": "2001",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152002",
+    "nama_desa": "Sokawera",
+    "kode_kel": "2002",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152003",
+    "nama_desa": "Karangjambe",
+    "kode_kel": "2003",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152005",
+    "nama_desa": "Bojanegara",
+    "kode_kel": "2005",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152006",
+    "nama_desa": "Gemuruh",
+    "kode_kel": "2006",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152007",
+    "nama_desa": "Dawuhan",
+    "kode_kel": "2007",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152008",
+    "nama_desa": "Prigi",
+    "kode_kel": "2008",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152009",
+    "nama_desa": "Padamara",
+    "kode_kel": "2009",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152010",
+    "nama_desa": "Purbayasa",
+    "kode_kel": "2010",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152011",
+    "nama_desa": "Kalitinggar",
+    "kode_kel": "2011",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152012",
+    "nama_desa": "Mipiran",
+    "kode_kel": "2012",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152013",
+    "nama_desa": "Karanggambas",
+    "kode_kel": "2013",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303152014",
+    "nama_desa": "Kalitinggar Kidul",
+    "kode_kel": "2014",
+    "kode_kec": "15",
+    "kecamatan": "Padamara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162001",
+    "nama_desa": "Panunggalan",
+    "kode_kel": "2001",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162002",
+    "nama_desa": "Larangan",
+    "kode_kel": "2002",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162003",
+    "nama_desa": "Pasunggingan",
+    "kode_kel": "2003",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162004",
+    "nama_desa": "Pengadegan",
+    "kode_kel": "2004",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162005",
+    "nama_desa": "Karangjoho",
+    "kode_kel": "2005",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162006",
+    "nama_desa": "Bedagas",
+    "kode_kel": "2006",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162007",
+    "nama_desa": "Tumanggal",
+    "kode_kel": "2007",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162008",
+    "nama_desa": "Tegalpingen",
+    "kode_kel": "2008",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303162009",
+    "nama_desa": "Tetel",
+    "kode_kel": "2009",
+    "kode_kec": "16",
+    "kecamatan": "Pengadegan",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172001",
+    "nama_desa": "Purbasari",
+    "kode_kel": "2001",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172002",
+    "nama_desa": "Sirandu",
+    "kode_kel": "2002",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172003",
+    "nama_desa": "Karangjambu",
+    "kode_kel": "2003",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172004",
+    "nama_desa": "Sanguwatang",
+    "kode_kel": "2004",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172005",
+    "nama_desa": "Jingkang",
+    "kode_kel": "2005",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303172006",
+    "nama_desa": "Danasari",
+    "kode_kel": "2006",
+    "kode_kec": "17",
+    "kecamatan": "Karangjambu",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182001",
+    "nama_desa": "Krangean",
+    "kode_kel": "2001",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182002",
+    "nama_desa": "Darma",
+    "kode_kel": "2002",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182003",
+    "nama_desa": "Langkap",
+    "kode_kel": "2003",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182004",
+    "nama_desa": "Adiarsa",
+    "kode_kel": "2004",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182005",
+    "nama_desa": "Karangasem",
+    "kode_kel": "2005",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182006",
+    "nama_desa": "Karangpucung",
+    "kode_kel": "2006",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182007",
+    "nama_desa": "Condong",
+    "kode_kel": "2007",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182008",
+    "nama_desa": "Kasih",
+    "kode_kel": "2008",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182009",
+    "nama_desa": "Karangtengah",
+    "kode_kel": "2009",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182010",
+    "nama_desa": "Kertanegara",
+    "kode_kel": "2010",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  },
+  {
+    "kode_wilayah": "3303182011",
+    "nama_desa": "Mergasana",
+    "kode_kel": "2011",
+    "kode_kec": "18",
+    "kecamatan": "Kertanegara",
+    "kabupaten": "Purbalingga",
+    "kode_kab": "3303"
+  }
+]

@@ -10,8 +10,10 @@ enum JenisTransaksi {
 enum StatusAjuan {
   DRAFT
   MENUNGGU_VERIFIKASI_DESA
+  MENUNGGU
   PROSES
   PERBAIKAN
+  REVISI
   DITOLAK
   DISETUJUI
 }

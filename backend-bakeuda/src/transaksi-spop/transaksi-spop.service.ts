@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { StatusAjuan } from '@prisma/client';
 import { CreateSpopDto } from './dto/create-spop.dto.js';
 import { VerifikasiDesaDto } from './dto/verifikasi-desa.dto.js';
 
@@ -38,6 +39,22 @@ export class TransaksiSpopService {
       const hasSuratKuasa = dto.lampiran?.some(l => l.jenis_dokumen === 'SURAT_KUASA');
       if (!hasSuratKuasa) {
         throw new BadRequestException('Surat Kuasa wajib dilampirkan jika pendaftar bertindak selaku kuasa');
+      }
+    }
+
+    // Validasi Eksistensi NOP
+    if (dto.nop_bersama) {
+      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_bersama } });
+      if (!exists) throw new BadRequestException(`NOP Bersama (${dto.nop_bersama}) tidak terdaftar di database. Silakan gunakan NOP yang valid.`);
+    }
+    if (dto.nop_utama) {
+      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_utama } });
+      if (!exists) throw new BadRequestException(`NOP Utama (${dto.nop_utama}) tidak terdaftar di database.`);
+    }
+    if (dto.nop_asal && dto.nop_asal.length > 0) {
+      for (const nopAsal of dto.nop_asal) {
+        const exists = await this.prisma.objekPajak.findUnique({ where: { nop: nopAsal } });
+        if (!exists) throw new BadRequestException(`NOP Asal (${nopAsal}) tidak terdaftar di database.`);
       }
     }
 
@@ -87,8 +104,8 @@ export class TransaksiSpopService {
           id_user,
           tahun_pajak: currentYear,
           jenis_transaksi,
-          nop_bersama: dto.nop_bersama,
-          no_sppt_lama: dto.no_sppt_lama,
+          nop_bersama: dto.nop_bersama || null,
+          no_sppt_lama: dto.no_sppt_lama || null,
           nama_pengaju: dto.subjek_pajak.nama,
           tanggal_pengajuan: new Date(),
           status_ajuan: final_status,
@@ -159,28 +176,38 @@ export class TransaksiSpopService {
       where.status_ajuan = status_ajuan;
     }
     if (kode_wilayah) {
-      // Filter by pengaju's kode_wilayah
       where.pengaju = {
-        kode_wilayah,
+        kode_wilayah: kode_wilayah,
       };
     }
 
-    return this.prisma.transaksiSpop.findMany({
-      where,
-      include: {
-        detail_tujuan: true,
-        pengaju: {
-          select: {
-            nama_lengkap: true,
-            kode_wilayah: true,
+    try {
+      const result = await this.prisma.transaksiSpop.findMany({
+        where,
+        include: {
+          detail_tujuan: true,
+          pengaju: {
+            select: {
+              nama_lengkap: true,
+              kode_wilayah: true,
+            }
           }
-        }
-      },
-      orderBy: {
-        updated_at: 'desc',
-      },
-    });
+        },
+        orderBy: {
+          updated_at: 'desc',
+        },
+      });
+      return {
+        success: true,
+        data: result
+      };
+    } catch (e) {
+      console.error(e);
+      throw new BadRequestException('Gagal mengambil data transaksi');
+    }
   }
+
+
 
   async ajukanKeLurah(id_transaksi: string, kode_wilayah_user: string) {
     // 1. Pengecekan Keberadaan Dokumen & Keamanan Cross-Reference Wilayah
@@ -314,15 +341,54 @@ export class TransaksiSpopService {
     // Optional Security: Block if different wilayah and not a Bakeuda admin
     // We can just rely on the UI hiding the id, or enforce it strictly here.
     // For now, let's enforce it.
-    if (transaksi.pengaju.kode_wilayah !== kodeWilayahUser) {
-      // Assuming Bakeuda has empty or '000000' kode_wilayah, you might want to skip this check for them
-      // but since the instruction says "Otorisasi Opsional" we'll leave it as commented or simple check
+    if (kodeWilayahUser && transaksi.pengaju.kode_wilayah !== kodeWilayahUser) {
       // throw new ForbiddenException('Akses ditolak.'); 
     }
 
     return {
-      message: 'Detail transaksi berhasil diambil.',
+      success: true,
       data: transaksi,
+    };
+  }
+
+  async getStats(kode_wilayah?: string) {
+    const baseWhere = kode_wilayah ? { pengaju: { kode_wilayah } } : {};
+
+    const [totalDikirim, menunggu, disetujui, perluPerbaikan] = await Promise.all([
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: { not: StatusAjuan.DRAFT }
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: StatusAjuan.MENUNGGU_VERIFIKASI_DESA
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: StatusAjuan.DISETUJUI
+        }
+      }),
+      this.prisma.transaksiSpop.count({
+        where: {
+          ...baseWhere,
+          status_ajuan: StatusAjuan.PERBAIKAN
+        }
+      })
+    ]);
+
+    return {
+      success: true,
+      data: {
+        totalDikirim,
+        menunggu,
+        disetujui,
+        perluPerbaikan
+      }
     };
   }
 }

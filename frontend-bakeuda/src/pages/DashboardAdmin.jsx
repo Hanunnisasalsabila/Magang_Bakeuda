@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
 export default function DashboardAdmin({ onNavigate }) {
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
@@ -11,15 +12,17 @@ export default function DashboardAdmin({ onNavigate }) {
     { title: 'Tingkat Kepatuhan', value: '0%', icon: 'verified', progress: 0, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
   ]);
 
+  const [verifiers, setVerifiers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, listRes] = await Promise.all([
+        const [statsRes, listRes, usersRes] = await Promise.all([
           api.get('/transaksi-spop/stats'),
-          api.get('/transaksi-spop')
+          api.get('/transaksi-spop'),
+          api.get('/users')
         ]);
         
         const dataStats = statsRes.data.data;
@@ -29,6 +32,15 @@ export default function DashboardAdmin({ onNavigate }) {
           { title: 'Total Objek Pajak', value: dataStats.totalObjek.toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
           { title: 'Tingkat Kepatuhan', value: `${dataStats.kepatuhan}%`, icon: 'verified', progress: dataStats.kepatuhan, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
         ]);
+
+        if (usersRes.data && usersRes.data.success) {
+          const bakeudaUsers = usersRes.data.data.filter(u => u.role === 'BAKEUDA').slice(0, 5);
+          setVerifiers(bakeudaUsers.map(u => ({
+            name: u.nama_lengkap || u.username,
+            role: 'Verifikator BKD',
+            status: 'active'
+          })));
+        }
 
         const formattedList = listRes.data.data.slice(0, 5).map(item => ({
           id: item.id_transaksi,
@@ -60,81 +72,67 @@ export default function DashboardAdmin({ onNavigate }) {
     { label: 'MIN', height: '10%', value: 12, title: 'Minggu: 12' },
   ];
 
-  const verifiers = [
-    {
-      name: 'Budi Santoso',
-      role: 'Seksi Pendaftaran - Online',
-      status: 'active',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBePy93RsyxL3_uTBWrygIsQ2PxZHqQ4_7js_tq_lqhXUDRSYYwvwV6705XJim2kw0NzD1udJRX0PEYKMZ-OJQvddr-oF11CiKDCSBFUc4c-QX18tDAPfoBPNBBCExAwCuZ-sjjOJM7MhG2PLLPFg-Exz121SH04HTNJMLXS0SDZ89gLEtMLRqqYdnESFNGzMgc3wkvUQtc9xuzNU6FY1aBAVhod3hFfCDMB3p1O-xd8uwY19LmXEkQtRcK7tbtfPxQiN0dSx40xpnU'
-    },
-    {
-      name: 'Dewi Lestari',
-      role: 'Seksi Pendataan - Offline',
-      status: 'offline',
-      avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYqOqbitNGL-Hkt5VKPxQwwHJG3SFiwxAKC8iifdXV9Ic_3TB4fEd-15kmqQzSsvYOoOra7kaZuolbJJLItsBPkLJJvpb_XiwIbDL_mlE28U6z76PdXbZukA4jYPV8o8-fcuay5dkJ0fGhQwhtl1_r_BFP2IqAib0_EquI6VlebEK_YcnA97OnSA5ki5Af600iuVg88hU6iHTHS_h1gVw49aTbG0Y6HuwuMyAfgEX2ebFa-_2UjIl-OgA2Znz8Znfa4IGf0kFRlwzh'
-    }
-  ];
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  };
+
 
 
 
   return (
-    <div className="p-gutter max-w-screen-2xl mx-auto">
+    <div className="p-6 max-w-screen-2xl mx-auto space-y-6">
       {/* Paper Header banner */}
-      <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-8 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10">
-          <span className="material-symbols-outlined text-[120px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
-            description
-          </span>
-        </div>
-        <div className="flex items-center gap-6 relative z-10">
+      <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
+        <div className="flex items-center gap-6">
           <img
             alt="Kabupaten Purbalingga Logo"
-            className="h-20 w-auto object-contain"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4_biZ2Ifww0K0TImbFErSFiGKpzUwOmSFkyVTYntBZIMBAUfkSs80ZjWckjFE0ZMO64empxKuKosDHpWaQA8uT4qWXmwOmx9Eq1V7DPkKwpDrfy_nQA4wsdntyO9hhYDqg2GEIUReL3Ejdcq2DLj8BHAMZpkVZVMS33UegDg0178FP0JbVyH60ZGGxcQ_Er9gOMa3lZJasxgOjRChR3k43AbmAVnSCFqMB4Zdx3hjR-Xzx1x0k-i31VIz5eZ4Qd8Sx9jva6eQH4aj"
+            className="h-16 w-16 object-contain"
+            src={logoPurbalingga}
           />
           <div>
-            <h1 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">
+            <h1 className="text-2xl text-gray-900 uppercase font-extrabold tracking-wide">
               Badan Keuangan Daerah
             </h1>
-            <p className="font-headline-md text-headline-md text-on-surface-variant -mt-1 font-semibold">
+            <p className="text-gray-500 font-medium">
               Pemerintah Kabupaten Purbalingga
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-primary text-on-primary text-[10px] font-bold tracking-widest rounded">
-                SISTEM INFORMASI PAJAK DAERAH
-              </span>
-              <span className="px-3 py-1 border border-primary text-primary text-[10px] font-bold tracking-widest rounded">
-                SPOP DIGITAL V.2.0
-              </span>
-            </div>
           </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
+            SISTEM INFORMASI PAJAK DAERAH
+          </span>
+          <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
+            SPOP DIGITAL V.2.0
+          </span>
         </div>
       </div>
 
       {/* Bento Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-section-gap">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {bentoCards.map((card, i) => (
-          <div key={i} className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl hover:shadow-md transition-shadow">
+          <div key={i} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-lg ${card.bgIcon}`}>
+              <div className={`p-3 rounded-lg ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-blue-50 text-blue-600').replace('bg-error-container text-error', 'bg-red-50 text-red-600').replace('bg-secondary-container text-on-secondary-container', 'bg-green-50 text-green-600')}`}>
                 <span className="material-symbols-outlined">{card.icon}</span>
               </div>
               {card.badgeText && (
-                <span className={`text-xs font-bold ${card.badgeColor}`}>
+                <span className={`text-xs font-bold ${card.badgeColor.replace('text-secondary', 'text-blue-600').replace('text-error font-bold', 'text-red-600').replace('text-on-surface-variant', 'text-gray-500')}`}>
                   {card.badgeText}
                 </span>
               )}
               {card.progress !== undefined && (
-                <div className="h-2 w-16 bg-surface-container rounded-full overflow-hidden self-center">
-                  <div className="h-full bg-secondary" style={{ width: `${card.progress}%` }}></div>
+                <div className="h-2 w-16 bg-gray-100 rounded-full overflow-hidden self-center">
+                  <div className="h-full bg-green-500" style={{ width: `${card.progress}%` }}></div>
                 </div>
               )}
             </div>
-            <p className="text-on-surface-variant font-label-sm text-label-sm mb-1 uppercase tracking-wider">
+            <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
               {card.title}
             </p>
-            <h2 className="text-display-lg font-display-lg text-primary">{card.value}</h2>
-            <p className="text-[10px] text-on-surface-variant mt-2 italic">{card.meta}</p>
+            <h2 className="text-3xl font-bold text-gray-900">{card.value}</h2>
+            <p className="text-[10px] text-gray-400 mt-2 italic">{card.meta}</p>
           </div>
         ))}
       </div>
@@ -142,74 +140,75 @@ export default function DashboardAdmin({ onNavigate }) {
       {/* Main Layout: Chart and Table */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
         {/* Trend Chart Section */}
-        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-gutter flex flex-col">
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6 flex flex-col shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="font-headline-md text-headline-md text-primary font-bold">
+              <h3 className="text-lg text-gray-900 font-bold">
                 Tren Pengajuan SPOP
               </h3>
-              <p className="text-on-surface-variant text-sm">Statistik 7 hari terakhir</p>
+              <p className="text-gray-500 text-sm">Statistik 7 hari terakhir</p>
             </div>
             <select
               value={activeSelect}
               onChange={(e) => setActiveSelect(e.target.value)}
-              className="bg-surface text-sm border-outline-variant rounded px-3 py-1.5 focus:ring-primary focus:border-primary"
+              className="bg-white text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 pr-8 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
             >
               <option>Minggu Ini</option>
               <option>Bulan Ini</option>
             </select>
           </div>
-          <div className="h-64 flex items-end justify-between gap-3 px-2 relative border-b border-outline-variant pb-2">
-            {/* Chart Gridlines (Visual Mock) */}
+          <div className="h-64 flex items-end justify-between gap-3 px-2 relative border-b border-gray-200 pb-2">
+            {/* Chart Gridlines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
-              <div className="border-t border-outline-variant border-dashed w-full h-0"></div>
-              <div className="border-t border-outline-variant border-dashed w-full h-0"></div>
-              <div className="border-t border-outline-variant border-dashed w-full h-0"></div>
-              <div className="border-t border-outline-variant border-dashed w-full h-0"></div>
+              <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
+              <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
+              <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
+              <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
             </div>
             {/* Bars */}
             {barChartData.map((bar, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative z-10">
+              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group relative z-10">
                 <div
-                  className="w-full bg-primary/20 hover:bg-primary rounded-t transition-all duration-200 cursor-pointer origin-bottom"
+                  className="w-full bg-blue-100 hover:bg-blue-500 rounded-t transition-colors duration-200 cursor-pointer"
                   style={{ height: bar.height }}
                   title={bar.title}
                 />
-                <span className="text-[10px] text-on-surface-variant font-bold">{bar.label}</span>
+                <span className="text-[10px] text-gray-500 font-bold">{bar.label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Verifiers active state list */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl flex flex-col justify-between shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-xl flex flex-col justify-between shadow-sm">
           <div>
-            <div className="p-gutter border-b border-outline-variant">
-              <h3 className="font-headline-md text-headline-md text-primary font-bold">
+            <div className="p-6 border-b border-gray-200">
+              <h3 className="text-lg text-gray-900 font-bold">
                 Petugas Verifikator
               </h3>
-              <p className="text-on-surface-variant text-sm">Status aktif saat ini</p>
+              <p className="text-gray-500 text-sm">Status aktif saat ini</p>
             </div>
             <div className="p-6 space-y-4">
               {verifiers.map((verifier, i) => (
                 <div key={i} className={`flex items-center gap-3 ${verifier.status === 'offline' ? 'opacity-60' : ''}`}>
-                  <img
-                    alt={verifier.name}
-                    className="w-10 h-10 rounded-full object-cover border border-outline-variant shadow-sm"
-                    src={verifier.avatar}
-                  />
-                  <div className="flex-grow">
-                    <p className="text-sm font-bold text-primary">{verifier.name}</p>
-                    <p className="text-[10px] text-on-surface-variant">{verifier.role}</p>
+                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center border border-blue-200 shadow-sm flex-shrink-0 text-sm">
+                    {getInitials(verifier.name)}
                   </div>
-                  <div className={`w-2.5 h-2.5 rounded-full ${verifier.status === 'active' ? 'bg-secondary' : 'bg-outline'}`} />
+                  <div className="flex-grow min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{verifier.name}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{verifier.role}</p>
+                  </div>
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${verifier.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
                 </div>
               ))}
             </div>
           </div>
-          <div className="p-4 border-t border-outline-variant bg-surface-container-low rounded-b-xl">
-            <button className="w-full py-2.5 bg-primary text-on-primary rounded font-bold text-xs uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all">
-              Lihat Seluruh Petugas
+          <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+            <button 
+              onClick={() => onNavigate('manajemen_akun_desa')}
+              className="w-full py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-sm"
+            >
+              Lihat Semua
             </button>
           </div>
         </div>

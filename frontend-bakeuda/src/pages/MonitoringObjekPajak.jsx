@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
+import wilayahData from '../utils/wilayahData.json';
 
 export default function MonitoringObjekPajak({ onNavigate }) {
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
@@ -9,6 +11,15 @@ export default function MonitoringObjekPajak({ onNavigate }) {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [kecamatanList, setKecamatanList] = useState([]);
+
+  React.useEffect(() => {
+    const fetchKecamatan = async () => {
+      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+      setKecamatanList(uniqueKec);
+    };
+    fetchKecamatan();
+  }, []);
 
   const [submissions, setSubmissions] = useState([
     {
@@ -98,57 +109,57 @@ export default function MonitoringObjekPajak({ onNavigate }) {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display-lg text-primary font-bold text-3xl">Monitoring Objek Pajak Desa</h2>
-          <p className="text-on-surface-variant max-w-2xl mt-1 text-sm md:text-base">
-            Pantau status pengajuan dan validasi data objek pajak (SPOP/LSPOP) untuk wilayah desa Anda.
+          <h2 className="text-blue-900 font-bold text-3xl">Pemantauan PBB-P2</h2>
+          <p className="text-gray-500 max-w-2xl mt-1 text-sm md:text-base">
+            Rekapitulasi dan pelacakan status pengajuan Pajak Bumi dan Bangunan Perdesaan dan Perkotaan (PBB-P2).
           </p>
         </div>
       </div>
 
       {/* Stats Overview (Clean Professional Design) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Total Pengajuan</p>
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Total Pengajuan</p>
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
               <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 description
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">45,920</p>
-          <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
+          <p className="text-3xl text-gray-900 font-black">45,920</p>
+          <p className="text-xs text-blue-600 font-medium mt-2 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">trending_up</span>
             +12% dari bulan lalu
           </p>
         </div>
         
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Disetujui</p>
-            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Disetujui</p>
+            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
               <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 check_circle
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">42,105</p>
-          <p className="text-xs text-on-surface-variant mt-2">
+          <p className="text-3xl text-gray-900 font-black">42,105</p>
+          <p className="text-xs text-gray-500 mt-2">
             Telah diverifikasi BKD
           </p>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Perlu Revisi</p>
-            <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error">
+            <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Perlu Revisi</p>
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600">
               <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                 warning
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">3,815</p>
-          <p className="text-xs text-error font-medium mt-2 flex items-center gap-1">
+          <p className="text-3xl text-gray-900 font-black">3,815</p>
+          <p className="text-xs text-red-600 font-medium mt-2 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">error</span>
             Membutuhkan perbaikan
           </p>
@@ -156,42 +167,43 @@ export default function MonitoringObjekPajak({ onNavigate }) {
       </div>
 
       {/* Filters & Search Controls */}
-      <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+      <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+            <label className="text-gray-500 text-xs font-bold block ml-1">
               Cari Nama/NOP/Alamat
             </label>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              className="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Masukkan kata kunci..."
             />
           </div>
           <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+            <label className="text-gray-500 text-xs font-bold block ml-1">
               Kecamatan
             </label>
             <select
               value={kecamatan}
               onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              className="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option>Semua Kecamatan</option>
-              <option>Purbalingga</option>
-              <option>Kalimanah</option>
+              <option value="Semua Kecamatan">Semua Kecamatan</option>
+              {kecamatanList.map(kec => (
+                <option key={kec} value={kec}>{kec}</option>
+              ))}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+            <label className="text-gray-500 text-xs font-bold block ml-1">
               Status Verifikasi
             </label>
             <select
               value={statusVerif}
               onChange={(e) => setStatusVerif(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              className="w-full bg-white border border-gray-300 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option>Semua Status</option>
               <option>Menunggu Verifikasi</option>
@@ -207,7 +219,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                 setKecamatan('Semua Kecamatan');
                 setStatusVerif('Semua Status');
               }}
-              className="w-full bg-surface-container-high border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-highest transition-colors font-semibold focus:outline-none"
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 text-blue-600 hover:bg-gray-100 transition-colors font-semibold focus:outline-none"
             >
               Reset Filter
             </button>
@@ -216,40 +228,40 @@ export default function MonitoringObjekPajak({ onNavigate }) {
       </div>
 
       {/* Data Table Container */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col w-full overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col w-full overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar w-full">
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
-              <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
+              <tr className="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="px-4 py-3 border-b border-gray-200 whitespace-nowrap">NOP</th>
+                <th className="px-4 py-3 border-b border-gray-200 whitespace-nowrap">Subjek Pajak</th>
+                <th className="px-4 py-3 border-b border-gray-200 whitespace-nowrap">Alamat Objek</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center whitespace-nowrap">Tanah (m²)</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center whitespace-nowrap">Bgn (m²)</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 border-b border-gray-200 text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant text-on-surface">
+            <tbody className="divide-y divide-gray-100 text-gray-900">
               {paginatedSubmissions.length > 0 ? (
                 paginatedSubmissions.map((obj, i) => (
                   <tr
                     key={i}
-                    className={`hover:bg-surface-container-low transition-colors ${
-                      i % 2 === 1 ? 'bg-surface-container-low/20' : ''
+                    className={`hover:bg-gray-50 transition-colors ${
+                      i % 2 === 1 ? 'bg-gray-50/50' : ''
                     }`}
                   >
-                    <td className="px-4 py-3 font-data-mono text-primary font-bold whitespace-nowrap text-sm">
+                    <td className="px-4 py-3 font-mono text-blue-700 font-bold whitespace-nowrap text-sm">
                       {obj.nop}
                     </td>
-                    <td className="px-4 py-3 font-label-md font-bold text-on-background whitespace-nowrap">{obj.name}</td>
-                    <td className="px-4 py-3 text-sm text-on-surface-variant leading-relaxed whitespace-nowrap">
+                    <td className="px-4 py-3 font-bold text-gray-900 whitespace-nowrap">{obj.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 leading-relaxed whitespace-nowrap">
                       {obj.address}
                     </td>
-                    <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
+                    <td className="px-4 py-3 text-center font-mono font-medium text-sm">
                       {obj.land.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
+                    <td className="px-4 py-3 text-center font-mono font-medium text-sm">
                       {obj.building.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
@@ -259,7 +271,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                       <div className="flex items-center justify-start gap-2">
                         <button
                           onClick={() => setSelectedSubmission(obj)}
-                          className="px-3 py-1.5 bg-surface text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                          className="px-3 py-1.5 bg-white text-blue-600 border border-gray-200 hover:border-blue-600 hover:bg-blue-50 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                         >
                           <span className="material-symbols-outlined text-[16px]">visibility</span>
                           Detail
@@ -268,7 +280,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                         {(obj.status === 'Draft' || obj.status === 'Perlu Revisi') && (
                           <button
                             onClick={() => onNavigate && onNavigate('formulir_spop', { editData: obj })}
-                            className="px-3 py-1.5 bg-warning/10 text-warning-dark border border-warning/20 hover:border-warning hover:bg-warning/20 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:border-yellow-500 hover:bg-yellow-100 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>
                             Edit
@@ -280,7 +292,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center p-8 text-on-surface-variant">
+                  <td colSpan={7} className="text-center p-8 text-gray-500">
                     Tidak ada data pengajuan yang cocok.
                   </td>
                 </tr>
@@ -290,8 +302,8 @@ export default function MonitoringObjekPajak({ onNavigate }) {
         </div>
 
         {/* Pagination Footer */}
-        <div className="px-6 py-4 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4 bg-surface-container-low/20">
-          <div className="flex items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
+        <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50">
+          <div className="flex items-center gap-4 text-sm text-gray-500 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Tampilkan</span>
               <select 
@@ -300,7 +312,7 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-background border border-outline-variant rounded-md py-1 pl-3 pr-8 text-sm focus:ring-primary focus:border-primary font-bold text-on-surface cursor-pointer appearance-none"
+                className="bg-white border border-gray-300 rounded-md py-1 pl-3 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-gray-900 cursor-pointer appearance-none"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                   backgroundPosition: 'right 0.5rem center',
@@ -312,33 +324,55 @@ export default function MonitoringObjekPajak({ onNavigate }) {
                 <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
+                <option value={100}>100</option>
               </select>
               <span className="hidden sm:inline">data per halaman</span>
             </div>
-            <div className="h-4 w-px bg-outline-variant hidden sm:block"></div>
+            <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
             <div>
-              Menampilkan <span className="font-bold text-on-surface">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
-              <span className="font-bold text-on-surface">{totalItems}</span> data
+              Menampilkan <span className="font-bold text-gray-900">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
+              <span className="font-bold text-gray-900">{totalItems}</span> data
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1 || totalItems === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-outline hover:bg-surface hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <span className="material-symbols-outlined">chevron_left</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-            <div className="px-4 font-bold text-sm text-on-surface">
-              Halaman {currentPage} / {totalPages > 0 ? totalPages : 1}
-            </div>
+            
+            {Array.from({ length: Math.min(5, totalPages > 0 ? totalPages : 1) }, (_, i) => {
+              let pageNum = currentPage;
+              const safeTotalPages = totalPages > 0 ? totalPages : 1;
+              if (safeTotalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
+                    currentPage === pageNum 
+                      ? 'bg-blue-900 text-white shadow-sm' 
+                      : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
             <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages || totalItems === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border border-outline-variant text-outline hover:bg-surface hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <span className="material-symbols-outlined">chevron_right</span>
+              <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
           </div>
         </div>
