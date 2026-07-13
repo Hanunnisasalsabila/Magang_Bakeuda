@@ -150,67 +150,72 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
       <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-2xl w-full max-w-4xl relative z-10 flex flex-col max-h-[90vh]">
         
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-start mb-6 border-b border-outline-variant pb-4">
           <div>
-            <h2 className="text-2xl font-bold text-on-surface">Cetak Kredensial</h2>
-            <p className="text-on-surface-variant text-sm mt-1">Pilih kecamatan untuk mencetak rekap username & sandi bawaan.</p>
+            <h2 className="text-xl font-semibold text-on-surface">Cetak Kredensial</h2>
+            <p className="text-on-surface-variant text-sm mt-1">Lengkapi data penanda tangan dan pilih kecamatan untuk mencetak rekap.</p>
           </div>
-          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-error transition-colors p-1 rounded-lg hover:bg-error/10">
+            <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-surface-container-low p-4 rounded-xl border border-outline-variant">
-          <div className="space-y-3">
-            <p className="font-bold text-sm text-primary uppercase tracking-wider mb-2">Penanda Tangan BKD</p>
-            <div>
-              <label className="text-xs text-on-surface-variant font-bold mb-1 block">Nama Kepala BKD</label>
-              <input 
-                type="text" 
-                value={namaBkd} 
-                onChange={(e) => setNamaBkd(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary" 
-              />
-            </div>
-            <div>
-              <label className="text-xs text-on-surface-variant font-bold mb-1 block">NIP Kepala BKD</label>
-              <input 
-                type="text" 
-                value={nipBkd} 
-                onChange={(e) => setNipBkd(formatNIP(e.target.value))}
-                placeholder="Format: 18 Digit Angka"
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary font-mono tracking-wide" 
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+          <div className="space-y-4">
+            <h3 className="font-semibold text-base text-on-surface border-b border-outline-variant/50 pb-2">Penanda Tangan BKD</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">Nama Kepala BKD</label>
+                <input 
+                  type="text" 
+                  value={namaBkd} 
+                  onChange={(e) => setNamaBkd(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                />
+              </div>
+              <div>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">NIP Kepala BKD</label>
+                <input 
+                  type="text" 
+                  value={nipBkd} 
+                  onChange={(e) => setNipBkd(formatNIP(e.target.value))}
+                  placeholder="Format: 18 Digit Angka"
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono tracking-wide" 
+                />
+              </div>
             </div>
           </div>
-          <div className="space-y-3">
-            <p className="font-bold text-sm text-primary uppercase tracking-wider mb-2">Penanda Tangan Kecamatan</p>
-            <div>
-              <label className="text-xs text-on-surface-variant font-bold mb-1 block">Nama Camat</label>
-              <input 
-                type="text" 
-                placeholder="Nama Camat..."
-                value={namaCamat} 
-                onChange={(e) => setNamaCamat(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary" 
-              />
-            </div>
-            <div>
-              <label className="text-xs text-on-surface-variant font-bold mb-1 block">NIP Camat</label>
-              <input 
-                type="text" 
-                placeholder="Format: 18 Digit Angka"
-                value={nipCamat} 
-                onChange={(e) => setNipCamat(formatNIP(e.target.value))}
-                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary font-mono tracking-wide" 
-              />
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-base text-on-surface border-b border-outline-variant/50 pb-2">Penanda Tangan Kecamatan</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">Nama Camat</label>
+                <input 
+                  type="text" 
+                  placeholder="Nama Camat..."
+                  value={namaCamat} 
+                  onChange={(e) => setNamaCamat(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" 
+                />
+              </div>
+              <div>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">NIP Camat</label>
+                <input 
+                  type="text" 
+                  placeholder="Format: 18 Digit Angka"
+                  value={nipCamat} 
+                  onChange={(e) => setNipCamat(formatNIP(e.target.value))}
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono tracking-wide" 
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-center gap-3 mb-6 bg-surface-container-lowest p-4 border border-outline-variant rounded-lg shadow-sm">
           <select 
-            className="px-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl focus:outline-none focus:ring-2 focus:ring-primary flex-1 w-full font-medium"
+            className="px-4 py-2.5 bg-white border border-outline-variant rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary flex-1 w-full text-sm font-medium"
             value={selectedKecamatan}
             onChange={(e) => setSelectedKecamatan(e.target.value)}
           >
@@ -223,18 +228,18 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
           <button 
             onClick={handlePrint}
             disabled={!selectedKecamatan || filteredUsers.length === 0}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
           >
-            <span className="material-symbols-outlined text-[20px]">print</span>
+            <span className="material-symbols-outlined text-[18px]">print</span>
             Cetak PDF
           </button>
 
           <button 
             onClick={handleShareWA}
             disabled={!selectedKecamatan || filteredUsers.length === 0}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-5 py-2.5 bg-[#25D366] text-white rounded-xl font-bold hover:bg-[#1ebd5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-green-500/20"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm text-sm"
           >
-            <span className="material-symbols-outlined text-[20px]">send</span>
+            <span className="material-symbols-outlined text-[18px]">send</span>
             Share WA
           </button>
         </div>
