@@ -89,7 +89,7 @@ export class TransaksiSpopService {
           menggunakan_kuasa: dto.is_kuasa || false,
           
           // Data Detail Asal (Conditionally inserted)
-          detail_asal: dto.nop_utama || dto.nop_asal ? {
+          detail_asal: (jenis_transaksi !== 'BARU' && (dto.nop_utama || dto.nop_asal)) ? {
             create: {
               nop_asal: dto.nop_utama || dto.nop_asal,
             }
