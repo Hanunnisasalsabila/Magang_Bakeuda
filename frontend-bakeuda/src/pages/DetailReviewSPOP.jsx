@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
 export default function DetailReviewSPOP({ onNavigate }) {
   const [decisionNotes, setDecisionNotes] = useState('');
@@ -68,38 +69,38 @@ export default function DetailReviewSPOP({ onNavigate }) {
   ];
 
   return (
-    <main className="p-gutter max-w-screen-2xl mx-auto w-full relative">
+    <main className="p-6 max-w-screen-2xl mx-auto w-full relative">
       {/* Page Header with "Paper" Header Feel */}
-      <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 mb-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 rounded-xl">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 grayscale opacity-80 select-none">
+      <div className="bg-white border border-gray-200 p-6 mb-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6 rounded-lg">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 flex-shrink-0">
             <img
               alt="Purbalingga Logo"
-              className="h-full object-contain"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDH55CWmxhrh5KBjJTVdqkT_9mD0vLNP8YDM2Fw_wOH8qk10BjyQ-qWIwqdE1nnhgxdGMx4iUoLzJ7Ap9WWlxZNWRth2820zWEroeiZFqrQdSXXKtNnRydVeKAfWNogqc_J-qahguSDm9zXGSAm2qyMFhO7ToSjYtFfh2jeS8QSES0_0JIHalw04O0wkA_KS6PmBkKQy-jIbnTVhBYh8I3ofTfuZHMUjQeG3kFsj9K3RZNQL12FmrrLdux4pLGNHiziYrw0HKdMWHO7"
+              className="h-full w-full object-contain"
+              src={logoPurbalingga}
             />
           </div>
           <div>
-            <p className="font-section-header text-section-header text-primary uppercase tracking-[0.2em] mb-1">
-              Dinas Pendapatan Daerah
+            <p className="text-gray-500 uppercase tracking-wider text-xs font-semibold mb-1">
+              Badan Keuangan Daerah (Bakeuda)
             </p>
-            <h2 className="font-display-lg text-display-lg text-on-surface leading-tight font-bold">
-              Review Verifikasi SPOP
+            <h2 className="text-2xl text-gray-900 leading-tight font-bold">
+              Verifikasi Berkas SPOP PBB-P2
             </h2>
-            <p className="text-on-surface-variant mt-1 text-sm">
+            <p className="text-gray-500 mt-1 text-sm">
               Formulir SPOP-A01-2024 • ID: #TRX-9821-PBG
             </p>
           </div>
         </div>
         <div className="flex flex-col items-start md:items-end">
-          <div className="bg-secondary-container px-4 py-1.5 rounded-full text-on-secondary-container font-label-sm text-[12px] mb-2 font-bold shadow-sm">
+          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-xs mb-2 font-bold border border-blue-200">
             Mutakhirkan Data (Update)
           </div>
           <div className="text-left md:text-right">
-            <span className="text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-gray-400 block uppercase tracking-wider">
               Tgl Pengajuan
             </span>
-            <span className="font-data-mono text-data-mono font-medium text-sm text-primary">
+            <span className="font-mono font-medium text-sm text-gray-800">
               14 Oct 2023, 10:45 WIB
             </span>
           </div>
@@ -108,129 +109,112 @@ export default function DetailReviewSPOP({ onNavigate }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Digital Form Data */}
-        <div className="lg:col-span-7 space-y-8">
+        <div className="lg:col-span-7 space-y-6">
           {/* NOP */}
-          <section className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
-            <h3 className="font-section-header text-section-header border-b border-outline-variant pb-3 mb-6 flex items-center gap-2 text-primary font-bold">
-              <span className="material-symbols-outlined text-[20px]">pin</span>
-              NOMOR OBJEK PAJAK (NOP)
+          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
+              <span className="material-symbols-outlined text-[18px] text-gray-500">pin</span>
+              Nomor Objek Pajak (NOP)
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {['33', '03', '050', '012', '005', '0340', '0'].map((seg, i) => (
-                <span
-                  key={i}
-                  className="border border-outline-variant px-3 py-1.5 rounded font-data-mono font-bold text-primary bg-surface-container-low shadow-sm"
-                >
-                  {seg}
-                </span>
-              ))}
+            <div className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+              33.03.050.012.005.0340.0
             </div>
-            <p className="text-xs text-on-surface-variant mt-3 italic">
+            <p className="text-[11px] text-gray-400 mt-2 italic">
               *Prov - Kab - Kec - Kel - Blok - No.Urut - Kode
             </p>
           </section>
 
           {/* Subjek Pajak */}
-          <section className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
-            <h3 className="font-section-header text-section-header border-b border-outline-variant pb-3 mb-6 flex items-center gap-2 text-primary font-bold">
+          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
               <span className="material-symbols-outlined text-[20px]">person</span>
               DATA SUBJEK PAJAK
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Nama Subjek Pajak
                   </label>
-                  <div className="font-bold text-on-surface text-lg">BUDI SANTOSO, S.T.</div>
+                  <div className="font-semibold text-gray-900 text-base">BUDI SANTOSO, S.T.</div>
                 </div>
                 <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Status Subjek Pajak
                   </label>
-                  <div className="font-bold text-primary">Milik Sendiri</div>
+                  <div className="font-semibold text-blue-700">Milik Sendiri</div>
                 </div>
                 <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     NPWP
                   </label>
-                  <div className="font-data-mono text-data-mono font-medium text-sm">
+                  <div className="font-mono font-medium text-sm text-gray-800">
                     09.234.567.8-522.000
                   </div>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Alamat Subjek Pajak
                   </label>
-                  <div className="font-bold text-on-surface">JL. MERDEKA NO. 45, RT 003 / RW 001</div>
-                  <div className="text-on-surface-variant text-sm font-medium mt-0.5">
+                  <div className="font-semibold text-gray-900">JL. MERDEKA NO. 45, RT 003 / RW 001</div>
+                  <div className="text-gray-500 text-sm font-medium mt-0.5">
                     DESA PENAMBONGAN, KEC. PURBALINGGA
                   </div>
                 </div>
                 <div>
-                  <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Pekerjaan
                   </label>
-                  <div className="font-bold text-on-surface">Pegawai Negeri Sipil</div>
+                  <div className="font-semibold text-gray-900">Pegawai Negeri Sipil</div>
                 </div>
               </div>
             </div>
           </section>
 
           {/* Data Tanah (Data Baru Comparison) */}
-          <section className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
-            <h3 className="font-section-header text-section-header border-b border-outline-variant pb-3 mb-6 flex items-center gap-2 text-primary font-bold">
+          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
               <span className="material-symbols-outlined text-[20px]">landscape</span>
               DATA TANAH (DATA BARU)
             </h3>
-            <div className="bg-surface-container-low p-4 rounded-lg mb-6 border border-outline-variant/50">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-primary text-on-primary rounded-lg flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]">info</span>
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-primary">Terjadi Perubahan Luas Tanah</p>
-                  <p className="text-sm text-on-surface-variant mt-0.5">
-                    User melakukan pemutakhiran data berdasarkan Sertifikat Tanah terbaru (2023).
-                  </p>
-                </div>
+            {/* Alert / Highlight */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6 flex items-start gap-3">
+              <span className="material-symbols-outlined text-blue-500 mt-0.5">info</span>
+              <div>
+                <h4 className="font-semibold text-blue-900 text-sm">Terjadi Perubahan Luas Tanah</h4>
+                <p className="text-sm text-blue-800 mt-1">
+                  User melakukan pemutakhiran data berdasarkan Sertifikat Tanah terbaru (2023).
+                </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">
-                  Luas Tanah (m²)
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="text-decoration-line-through text-error font-medium text-sm">
-                    450 m²
-                  </div>
-                  <span className="material-symbols-outlined text-on-surface-variant">arrow_forward</span>
-                  <div className="bg-secondary-container text-on-secondary-container border-l-4 border-secondary px-3 py-1 font-bold text-lg rounded shadow-sm">
-                    525 m²
-                  </div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Luas Tanah (m²)</label>
+                <div className="flex items-center gap-3 font-semibold text-lg">
+                  <span className="text-red-600 line-through">450 m²</span>
+                  <span className="material-symbols-outlined text-gray-400">arrow_forward</span>
+                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">525 m²</span>
                 </div>
               </div>
               <div>
-                <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2 font-semibold">
-                  Jenis Tanah
-                </label>
-                <div className="font-bold text-on-surface text-lg">Tanah Darat</div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Jenis Tanah</label>
+                <div className="font-semibold text-gray-900 text-lg">Tanah Darat</div>
               </div>
             </div>
           </section>
 
           {/* Data Bangunan Table */}
-          <section className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm">
-            <h3 className="font-section-header text-section-header border-b border-outline-variant pb-3 mb-6 flex items-center gap-2 text-primary font-bold">
+          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
               <span className="material-symbols-outlined text-[20px]">apartment</span>
               DATA BANGUNAN
             </h3>
-            <div className="overflow-x-auto rounded-lg border border-outline-variant">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-primary text-on-primary text-xs uppercase tracking-wider font-section-header">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="w-full text-left border-collapse text-sm">
+                <thead className="bg-gray-100 text-gray-700 text-xs uppercase tracking-wider font-semibold">
                   <tr>
                     <th className="p-3">No. Bng</th>
                     <th className="p-3">Jenis Bng</th>
@@ -280,8 +264,8 @@ export default function DetailReviewSPOP({ onNavigate }) {
 
         {/* Right Column: Attachments & Documents */}
         <div className="lg:col-span-5 space-y-8">
-          <section className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm lg:sticky lg:top-20">
-            <h3 className="font-section-header text-section-header border-b border-outline-variant pb-3 mb-6 flex items-center gap-2 text-primary font-bold">
+          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm lg:sticky lg:top-20">
+            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
               <span className="material-symbols-outlined text-[20px]">attachment</span>
               LAMPIRAN DOKUMEN
             </h3>
@@ -367,93 +351,92 @@ export default function DetailReviewSPOP({ onNavigate }) {
       </div>
 
       {/* Verification Action Card */}
-      <div className="mt-section-gap mb-12">
-        <div className="bg-surface-container border-2 border-primary/20 p-6 md:p-8 rounded-xl shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none select-none">
-            <span className="material-symbols-outlined text-[120px]">fact_check</span>
-          </div>
-          <div className="relative z-10">
-            <h3 className="font-headline-md text-headline-md text-primary mb-2 flex items-center gap-2 font-bold">
-              <span className="material-symbols-outlined text-[24px]">assignment_turned_in</span>
+      <div className="mt-8 mb-12">
+        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
+          <div className="mb-6 border-b border-gray-200 pb-4">
+            <h3 className="text-lg text-gray-900 flex items-center gap-2 font-bold">
+              <span className="material-symbols-outlined text-blue-600">assignment_turned_in</span>
               Keputusan Verifikasi
             </h3>
-            <p className="text-on-surface-variant mb-6 max-w-2xl text-sm md:text-base">
+            <p className="text-gray-500 text-sm mt-1">
               Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung memperbarui database Master Data PBB.
             </p>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block font-label-sm text-label-sm text-primary mb-1">
-                      Pilih Pejabat Berwenang (Kades/Sekdes)
-                    </label>
-                    <select
-                      value={nipPejabat}
-                      onChange={(e) => setNipPejabat(e.target.value)}
-                      className="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary text-sm p-4 bg-white"
-                    >
-                      <option value="">-- Pilih Pejabat --</option>
-                      {pejabatDesa.map(p => (
-                        <option key={p.nip} value={p.nip}>{p.nama_pejabat} (NIP: {p.nip})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block font-label-sm text-label-sm text-primary mb-1">
-                      Unggah Dokumen Fisik SPOP (TTD Basah)
-                    </label>
-                    <div className="relative overflow-hidden w-full">
-                      <button 
-                        type="button"
-                        disabled={isUploadingDokumen}
-                        className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-lg border border-dashed border-primary text-primary font-bold hover:bg-primary/10 transition-colors ${isUploadingDokumen ? 'opacity-50 cursor-wait' : ''}`}
-                      >
-                        <span className="material-symbols-outlined">{isUploadingDokumen ? 'hourglass_empty' : (urlDokumenFisik ? 'check_circle' : 'upload_file')}</span>
-                        {isUploadingDokumen ? 'Mengunggah...' : (urlDokumenFisik ? 'Dokumen Terlampir' : 'Upload PDF/JPG')}
-                      </button>
-                      <input 
-                        type="file" 
-                        accept="image/*,.pdf" 
-                        onChange={handleUploadDokumenFisik}
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        disabled={isUploadingDokumen}
-                      />
-                    </div>
-                  </div>
-                </div>
-
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block font-label-sm text-label-sm text-primary mb-2">
-                    Catatan / Alasan Verifikasi
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    Pejabat Berwenang (Kades/Sekdes)
                   </label>
-                  <textarea
-                    value={decisionNotes}
-                    onChange={(e) => setDecisionNotes(e.target.value)}
-                    className="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary text-sm p-4 bg-white"
-                    placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat nomor sert: 09283/2023..."
-                    rows={4}
-                  />
+                  <select
+                    value={nipPejabat}
+                    onChange={(e) => setNipPejabat(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
+                  >
+                    <option value="">-- Pilih Pejabat --</option>
+                    {pejabatDesa.map(p => (
+                      <option key={p.nip} value={p.nip}>{p.nama_pejabat} (NIP: {p.nip})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                    Dokumen Fisik SPOP (TTD Basah)
+                  </label>
+                  <div className="relative overflow-hidden w-full">
+                    <button 
+                      type="button"
+                      disabled={isUploadingDokumen}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md border border-dashed border-blue-400 text-blue-600 font-semibold hover:bg-blue-50 transition-colors ${isUploadingDokumen ? 'opacity-50 cursor-wait' : ''}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">{isUploadingDokumen ? 'hourglass_empty' : (urlDokumenFisik ? 'check_circle' : 'upload_file')}</span>
+                      {isUploadingDokumen ? 'Mengunggah...' : (urlDokumenFisik ? 'Dokumen Terlampir' : 'Upload PDF/JPG')}
+                    </button>
+                    <input 
+                      type="file" 
+                      accept="image/*,.pdf" 
+                      onChange={handleUploadDokumenFisik}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={isUploadingDokumen}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="lg:col-span-4 space-y-4">
-                <button
-                  onClick={() => handleDecision(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-secondary text-on-secondary font-bold py-4 px-6 rounded-lg hover:brightness-110 transition-all shadow-md active:scale-[0.98]"
-                >
-                  <span className="material-symbols-outlined">check_circle</span>
-                  Setujui Pengajuan
-                </button>
-                <button
-                  onClick={() => handleDecision(false)}
-                  className="w-full flex items-center justify-center gap-2 bg-error text-on-error font-bold py-4 px-6 rounded-lg hover:brightness-110 transition-all shadow-md active:scale-[0.98]"
-                >
-                  <span className="material-symbols-outlined">cancel</span>
-                  Tolak / Perlu Revisi
-                </button>
-                <p className="text-[11px] text-on-surface-variant text-center px-4 leading-tight">
-                  Dengan menekan Setujui, Anda bertanggung jawab penuh atas validasi data ini sesuai peraturan yang berlaku.
-                </p>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                  Catatan / Alasan Verifikasi
+                </label>
+                <textarea
+                  value={decisionNotes}
+                  onChange={(e) => setDecisionNotes(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
+                  placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat nomor sert: 09283/2023..."
+                  rows={3}
+                />
               </div>
+            </div>
+            
+            <div className="lg:col-span-4 space-y-3">
+              <button
+                onClick={() => handleDecision(true)}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                Setujui Pengajuan
+              </button>
+              <button
+                onClick={() => handleDecision(false)}
+                className="w-full flex items-center justify-center gap-2 bg-white border border-red-300 text-red-600 font-semibold py-3 px-4 rounded-md hover:bg-red-50 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[20px]">cancel</span>
+                Tolak / Perlu Revisi
+              </button>
+              <p className="text-xs text-gray-400 text-center px-2 pt-2">
+                Dengan menekan Setujui, Anda bertanggung jawab penuh atas validasi data.
+              </p>
             </div>
           </div>
         </div>

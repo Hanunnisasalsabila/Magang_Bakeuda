@@ -387,15 +387,9 @@ export default function FormulirSPOP({ onNavigate }) {
                 </div>
                 <div className="space-y-8">
                   {/* Jenis Transaksi */}
-<<<<<<< HEAD
-                  <div className="space-y-4 max-w-3xl">
-                    <label className="font-label-sm text-primary block font-medium">Pilih Jenis Transaksi</label>
-                    <div className="flex flex-col sm:flex-row gap-3">
-=======
                   <div className="space-y-4">
-        <label className="font-label-sm text-primary block font-bold">Pilih Jenis Transaksi</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
->>>>>>> 1f344cdd5b5f916009e6727299b58c68f4b01e97
+                    <label className="font-label-sm text-primary block font-medium">Pilih Jenis Transaksi</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { val: 'baru', title: 'Perekaman Baru', desc: 'Mendaftarkan objek pajak yang belum terdata', icon: 'add_box' },
             { val: 'update', title: 'Pemutakhiran Data', desc: 'Memperbarui data objek pajak lama', icon: 'update' },

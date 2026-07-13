@@ -37,7 +37,7 @@ export default function ProfilPengguna({ role }) {
         if (response.data.success) {
           const data = response.data.data;
           setProfileData({
-            id: data.id_user,
+            id: data.id_user || data.id || '',
             name: data.nama_lengkap,
             username: data.username,
             nip: data.nip || '-',
@@ -58,7 +58,7 @@ export default function ProfilPengguna({ role }) {
           if (userStr) {
             const user = JSON.parse(userStr);
             setProfileData({
-              id: user.id_user || '',
+              id: user.id_user || user.id || '',
               name: user.nama_lengkap || user.username || 'Admin BKD',
               username: user.username || '',
               nip: user.nip || '-',
@@ -89,6 +89,12 @@ export default function ProfilPengguna({ role }) {
       setToast({ show: true, message: 'Nama lengkap tidak boleh kosong', type: 'error' });
       return;
     }
+    
+    if (!profileData.id) {
+      setToast({ show: true, message: 'ID pengguna tidak ditemukan. Coba muat ulang halaman.', type: 'error' });
+      return;
+    }
+    
     setIsSaving(true);
     try {
       await api.put(`/users/${profileData.id}`, {
@@ -294,8 +300,8 @@ export default function ProfilPengguna({ role }) {
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  className="px-5 py-2 bg-primary text-on-primary text-sm font-semibold rounded-lg hover:bg-primary/90 active:scale-95 transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
+                  disabled={isSaving || !editForm.name || (editForm.name === profileData.name && editForm.nip === (!profileData.nip || profileData.nip === '-' ? '' : profileData.nip))}
+                  className="px-5 py-2 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2 bg-primary text-on-primary hover:bg-primary/90 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isSaving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
                   Simpan
@@ -405,12 +411,12 @@ export default function ProfilPengguna({ role }) {
       {showPasswordModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowPasswordModal(false)}></div>
-          <div className="bg-surface-container-lowest p-8 rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn">
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn">
             <button onClick={() => setShowPasswordModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
               <span className="material-symbols-outlined text-on-surface-variant">close</span>
             </button>
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                 <span className="material-symbols-outlined text-3xl text-primary">lock_reset</span>
               </div>
               <h2 className="text-xl font-bold text-on-surface">Ganti Kata Sandi</h2>
@@ -427,7 +433,7 @@ export default function ProfilPengguna({ role }) {
                     required
                     value={passwordForm.old}
                     onChange={(e) => setPasswordForm({ ...passwordForm, old: e.target.value })}
-                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                     placeholder="Masukkan kata sandi saat ini"
                   />
                   {passwordForm.old.length > 0 && (
@@ -446,7 +452,7 @@ export default function ProfilPengguna({ role }) {
                     required
                     value={passwordForm.new}
                     onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
-                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                     placeholder="Minimal 6 karakter"
                   />
                   {passwordForm.new.length > 0 && (
@@ -465,7 +471,7 @@ export default function ProfilPengguna({ role }) {
                     required
                     value={passwordForm.confirm}
                     onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-3 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
                     placeholder="Ulangi kata sandi baru"
                   />
                   {passwordForm.confirm.length > 0 && (
@@ -478,8 +484,8 @@ export default function ProfilPengguna({ role }) {
 
               <button
                 type="submit"
-                disabled={isChangingPwd}
-                className="w-full py-3.5 bg-primary text-on-primary font-semibold rounded-xl mt-4 hover:bg-primary/90 active:scale-[0.98] transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                disabled={isChangingPwd || !passwordForm.old || !passwordForm.new || !passwordForm.confirm || passwordForm.new.length < 6 || passwordForm.new !== passwordForm.confirm}
+                className="w-full py-2.5 font-bold bg-primary text-on-primary rounded-xl mt-4 hover:bg-primary/90 transition-all flex justify-center items-center gap-2 shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {isChangingPwd && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
                 Simpan Kata Sandi

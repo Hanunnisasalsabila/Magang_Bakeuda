@@ -75,11 +75,11 @@ export default function ManajemenWilayah() {
     setFormData({ 
       kode_wilayah: wilayah.kode_wilayah, 
       nama_desa: wilayah.nama_desa, 
-      kode_kel: wilayah.kode_kel, 
+      kode_kel: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(7, 10) : '', 
       kecamatan: wilayah.kecamatan, 
-      kode_kec: wilayah.kode_kec, 
-      kabupaten: wilayah.kabupaten, 
-      kode_kab: wilayah.kode_kab 
+      kode_kec: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(4, 7) : '', 
+      kabupaten: 'Purbalingga', 
+      kode_kab: '3303' 
     });
     setFormError('');
     setIsModalOpen(true);
@@ -193,11 +193,11 @@ export default function ManajemenWilayah() {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-lg shadow-sm border border-outline-variant overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
         {/* Toolbar */}
-        <div className="p-4 border-b border-outline-variant/60 bg-surface-container-lowest flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:w-[400px] group">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] group-focus-within:text-primary transition-colors">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px] group-focus-within:text-primary transition-colors">
               search
             </span>
             <input 
@@ -205,7 +205,7 @@ export default function ManajemenWilayah() {
               placeholder="Cari Kode Wilayah, Desa, atau Kecamatan..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-outline-variant rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-on-surface text-sm shadow-sm"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm"
             />
           </div>
           
@@ -214,7 +214,7 @@ export default function ManajemenWilayah() {
               value={filterKecamatan}
               onChange={(e) => setFilterKecamatan(e.target.value)}
               style={{ backgroundImage: 'none' }}
-              className="w-full pl-4 pr-10 py-2.5 bg-white border border-outline-variant rounded-md focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-on-surface font-semibold text-sm shadow-sm outline-none appearance-none cursor-pointer"
+              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm outline-none appearance-none cursor-pointer"
             >
               <option value="">-- Semua Kecamatan --</option>
               {KECAMATAN_DATA.map((kec) => (
@@ -381,33 +381,26 @@ export default function ManajemenWilayah() {
       {/* Modal Add/Edit */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-3xl rounded-[28px] shadow-2xl overflow-hidden animate-scale-in border border-white/20 flex flex-col max-h-[90vh]">
-            <div className="px-8 py-6 border-b border-outline-variant/50 flex justify-between items-center bg-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[22px]">
-                    {modalMode === 'add' ? 'add_location' : 'edit_location'}
-                  </span>
-                </div>
-                <div>
-                  <h2 className="font-display-sm text-xl font-bold text-on-surface">
-                    {modalMode === 'add' ? 'Formulir Data Wilayah' : 'Edit Data Wilayah'}
-                  </h2>
-                  <p className="text-on-surface-variant text-sm mt-0.5">
-                    {modalMode === 'add' ? 'Pendaftaran wilayah administrasi baru ke dalam sistem.' : 'Perbarui nama desa.'}
-                  </p>
-                </div>
+          <div className="absolute inset-0 bg-gray-900/50 transition-opacity" onClick={() => setIsModalOpen(false)}></div>
+          <div className="relative bg-white w-full max-w-3xl rounded-lg shadow-xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-start bg-white shrink-0">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {modalMode === 'add' ? 'Formulir Data Wilayah' : 'Edit Data Wilayah'}
+                </h2>
+                <p className="text-gray-500 text-sm mt-1">
+                  {modalMode === 'add' ? 'Pendaftaran wilayah administrasi baru ke dalam sistem.' : 'Perbarui nama desa.'}
+                </p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low p-2 rounded-full transition-colors shrink-0"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 shrink-0"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             
-            <form onSubmit={handleFormSubmit} className="p-8 overflow-y-auto custom-scrollbar flex-1">
+            <form onSubmit={handleFormSubmit} className="p-6 overflow-y-auto custom-scrollbar flex-1">
               {formError && (
                 <div className="mb-6 p-4 bg-error/10 text-error rounded-xl flex items-start gap-3 border border-error/20">
                   <span className="material-symbols-outlined shrink-0">error</span>
@@ -415,38 +408,38 @@ export default function ManajemenWilayah() {
                 </div>
               )}
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Bagian 1: Wilayah Induk */}
-                <div className="bg-surface-container-lowest/50 p-4 rounded-xl border border-outline-variant/60">
-                  <h3 className="font-bold text-primary mb-3 flex items-center gap-2 text-xs uppercase tracking-widest">
-                    <span className="material-symbols-outlined text-[16px]">map</span>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                    <span className="material-symbols-outlined text-[18px] text-primary">map</span>
                     Data Wilayah Induk
                   </h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Nama Kabupaten</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Kabupaten</label>
                       <input 
                         type="text" 
                         disabled
                         value="Purbalingga" 
-                        className="w-full px-4 py-2.5 text-sm bg-surface-container/50 border border-outline-variant/50 rounded-lg text-on-surface font-semibold shadow-inner outline-none cursor-not-allowed" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500" 
                       />
                     </div>
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Kode Kabupaten</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Kabupaten</label>
                       <input 
                         type="text" 
                         disabled
                         value="3303" 
-                        className="w-full px-4 py-2.5 text-sm bg-surface-container/50 border border-outline-variant/50 rounded-lg text-on-surface-variant font-data-mono shadow-inner outline-none cursor-not-allowed" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500 font-mono" 
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Pilihan Kecamatan <span className="text-error">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Pilihan Kecamatan <span className="text-red-500">*</span></label>
                       <div className="relative">
                         <select 
                           name="kecamatan" 
@@ -454,40 +447,40 @@ export default function ManajemenWilayah() {
                           disabled={modalMode === 'edit'}
                           value={formData.kecamatan} 
                           onChange={handleKecamatanChange}
-                          className={`w-full pl-4 pr-10 py-2.5 bg-white border border-outline-variant rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-on-surface font-semibold shadow-sm outline-none appearance-none ${modalMode === 'edit' ? 'bg-surface-container/50 cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none ${modalMode === 'edit' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}
                         >
                           <option value="">Pilih Kecamatan</option>
                           {KECAMATAN_DATA.map((kec) => (
                             <option key={kec.nama} value={kec.nama}>{kec.nama}</option>
                           ))}
                         </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">
+                        <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[18px] pointer-events-none">
                           expand_more
                         </span>
                       </div>
                     </div>
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Kode Kecamatan</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Kecamatan</label>
                       <input 
                         type="text" 
                         disabled
                         value={formData.kode_kec || ''} 
                         placeholder="Otomatis"
-                        className="w-full px-4 py-2.5 text-sm bg-surface-container/50 border border-outline-variant/50 rounded-lg font-data-mono text-on-surface-variant shadow-inner outline-none cursor-not-allowed" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500 font-mono" 
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Bagian 3: Desa/Kelurahan */}
-                <div className="bg-surface-container-lowest/50 p-4 rounded-xl border border-outline-variant/60">
-                  <h3 className="font-bold text-primary mb-3 flex items-center gap-2 text-xs uppercase tracking-widest">
-                    <span className="material-symbols-outlined text-[16px]">holiday_village</span>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm">
+                    <span className="material-symbols-outlined text-[18px] text-primary">holiday_village</span>
                     Data Desa / Kelurahan
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Nama Desa / Kelurahan <span className="text-error">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Desa / Kelurahan <span className="text-red-500">*</span></label>
                       <input 
                         type="text" 
                         name="nama_desa" 
@@ -495,11 +488,11 @@ export default function ManajemenWilayah() {
                         value={formData.nama_desa} 
                         onChange={handleChange}
                         placeholder="Masukkan nama desa"
-                        className="w-full px-4 py-2.5 text-sm bg-white border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-on-surface shadow-sm outline-none hover:border-primary/50" 
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
                       />
                     </div>
                     <div>
-                      <label className="block font-label-sm font-medium text-on-surface-variant uppercase tracking-wider mb-1.5 text-[10px]">Kode Desa (3 Digit Angka) <span className="text-error">*</span></label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Desa (3 Digit Angka) <span className="text-red-500">*</span></label>
                       <input 
                         type="text" 
                         name="kode_kel" 
@@ -509,8 +502,8 @@ export default function ManajemenWilayah() {
                         onChange={handleChange}
                         maxLength="3"
                         placeholder="Misal: 001"
-                        className={`w-full px-4 py-2.5 text-sm border rounded-lg transition-all font-data-mono shadow-sm outline-none text-on-surface ${
-                          modalMode === 'edit' ? 'bg-surface-container/50 border-outline-variant/50 cursor-not-allowed text-on-surface-variant' : 'bg-white border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary/20 hover:border-primary/50'
+                        className={`w-full px-3 py-2 border rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all ${
+                          modalMode === 'edit' ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' : 'bg-white border-gray-300'
                         }`} 
                       />
                     </div>
@@ -519,9 +512,9 @@ export default function ManajemenWilayah() {
 
                 {/* Bagian 4: Hasil Final */}
                 <div className="pt-2">
-                  <label className="flex items-center gap-1.5 font-label-sm font-medium text-primary uppercase tracking-widest mb-2 text-[10px]">
-                    <span className="material-symbols-outlined text-[14px]">verified</span>
-                    Kode Wilayah Final (Format 10 Digit)
+                  <label className="flex items-center gap-1.5 text-sm font-semibold text-primary mb-2">
+                    <span className="material-symbols-outlined text-[18px]">verified</span>
+                    Kode Wilayah Final
                   </label>
                   <input 
                     type="text" 
@@ -529,29 +522,32 @@ export default function ManajemenWilayah() {
                     disabled
                     value={formData.kode_wilayah || ''} 
                     placeholder="Menunggu data lengkap"
-                    className="w-full px-5 py-3 text-base bg-primary/5 border border-primary/20 text-primary rounded-lg font-data-mono shadow-sm outline-none cursor-not-allowed font-bold tracking-widest text-center" 
+                    className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 text-primary rounded-md font-mono shadow-sm outline-none cursor-not-allowed font-bold text-center sm:text-lg" 
                   />
                 </div>
               </div>
 
-              <div className="mt-10 pt-6 border-t border-outline-variant/40 flex flex-col-reverse sm:flex-row justify-end gap-3">
+              <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 bg-gray-50 -mx-6 px-6 -mb-6 pb-6 pt-5">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 rounded-xl font-bold text-on-surface-variant border border-outline-variant hover:bg-surface-container-high transition-colors text-center"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit" 
-                  disabled={isSubmitting}
-                  className="px-8 py-3 rounded-xl font-bold bg-primary text-on-primary hover:bg-primary/90 hover:-translate-y-0.5 active:translate-y-0 transition-all flex justify-center items-center gap-2 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                  disabled={
+                    isSubmitting || 
+                    !formData.kecamatan || 
+                    !formData.nama_desa || 
+                    !formData.kode_kel || 
+                    formData.kode_kel.length !== 3 ||
+                    (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa)
+                  }
+                  className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  {isSubmitting ? (
-                    <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                  ) : (
-                    <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                  )}
+                  {isSubmitting && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
                   {modalMode === 'add' ? 'Simpan Wilayah' : 'Perbarui Wilayah'}
                 </button>
               </div>
