@@ -4,14 +4,15 @@ enum Role {
 }
 
 model User {
-  id_user       String   @id @default(uuid())
-  username      String   @unique @db.VarChar(50)
-  password_hash String   @db.VarChar(255)
-  nama_lengkap  String   @db.VarChar(100)
-  role          Role
-  kode_wilayah  String?  @db.VarChar(10)
-  nip           String?  @db.VarChar(25)
+  id_user               String   @id @default(uuid())
+  username              String   @unique @db.VarChar(50)
+  password_hash         String   @db.VarChar(255)
+  nama_lengkap          String   @db.VarChar(100)
+  role                  Role
+  kode_wilayah          String?  @db.VarChar(10)
+  nip                   String?  @db.VarChar(25)
   is_active             Boolean  @default(true)
+  force_change_password Boolean  @default(false)
   created_at            DateTime @default(now())
 
   // ── Relasi ──

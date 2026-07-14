@@ -1,0 +1,11 @@
+model PejabatDesa {
+  nip          String @id @db.VarChar(25)
+  nama_pejabat String @db.VarChar(100)
+  jabatan      String @db.VarChar(100)
+  kode_wilayah String @db.VarChar(10)
+
+  // ── Relasi ──
+  wilayah Wilayah @relation(fields: [kode_wilayah], references: [kode_wilayah])
+
+  @@map("pejabat_desa")
+}

@@ -8,7 +8,59 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // 1. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
+  // 0. Buat Data Wilayah Dummy (Standar SISMIOP: Kec 3 digit, Desa 3 digit, total 10 digit tanpa titik)
+  const wilayah1 = await prisma.wilayah.upsert({
+    where: { kode_wilayah: '3303010001' },
+    update: {},
+    create: {
+      kode_wilayah: '3303010001',
+      nama_desa: 'KEDUNGBENDA',
+      kode_kel: '001',
+      kecamatan: 'KEMANGKON',
+      kode_kec: '010',
+      kabupaten: 'KAB. PURBALINGGA',
+      kode_kab: '03',
+    },
+  });
+
+  const wilayah2 = await prisma.wilayah.upsert({
+    where: { kode_wilayah: '3303010002' },
+    update: {},
+    create: {
+      kode_wilayah: '3303010002',
+      nama_desa: 'BOKOL',
+      kode_kel: '002',
+      kecamatan: 'KEMANGKON',
+      kode_kec: '010',
+      kabupaten: 'KAB. PURBALINGGA',
+      kode_kab: '03',
+    },
+  });
+
+  // 1. Buat Data Pejabat Desa Dummy
+  await prisma.pejabatDesa.upsert({
+    where: { nip: '198001012010011001' },
+    update: {},
+    create: {
+      nip: '198001012010011001',
+      nama_pejabat: 'Budi Santoso',
+      jabatan: 'Kepala Desa',
+      kode_wilayah: wilayah1.kode_wilayah,
+    },
+  });
+
+  await prisma.pejabatDesa.upsert({
+    where: { nip: '198502022015022002' },
+    update: {},
+    create: {
+      nip: '198502022015022002',
+      nama_pejabat: 'Siti Aminah',
+      jabatan: 'Sekretaris Desa',
+      kode_wilayah: wilayah1.kode_wilayah,
+    },
+  });
+
+  // 2. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
   const adminExists = await prisma.user.findFirst({
     where: { role: Role.BAKEUDA },
   });
@@ -19,7 +71,7 @@ async function main() {
   }
 
   // 2. Gunakan password dari ENV, atau generate password random sementara
-  const rawPassword = process.env.ADMIN_PASSWORD || Math.random().toString(36).slice(-8) + 'A1@';
+  const rawPassword = 'Bakeuda2026!';
   const hashedPassword = await bcrypt.hash(rawPassword, 12);
 
   // 3. Buat Admin BAKEUDA default
@@ -31,6 +83,21 @@ async function main() {
       username: 'admin',
       password_hash: hashedPassword,
       role: Role.BAKEUDA,
+      force_change_password: true,
+    },
+  });
+
+  // 4. Buat akun DESA untuk testing
+  const desa = await prisma.user.upsert({
+    where: { username: 'desa01' },
+    update: {},
+    create: {
+      nama_lengkap: 'Perangkat Desa 01',
+      username: 'desa01',
+      password_hash: hashedPassword,
+      role: Role.DESA,
+      kode_wilayah: wilayah1.kode_wilayah,
+      force_change_password: true,
     },
   });
 

@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Role } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface JwtPayload {
   userId: string;
@@ -13,7 +14,10 @@ export interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private prisma: PrismaService,
+  ) {
     const secret = configService.getOrThrow<string>('JWT_SECRET');
 
     super({
@@ -23,12 +27,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-validate(payload: JwtPayload) {
-  return {
-    id_user: payload.userId,
-    username: payload.username,
-    role: payload.role,
-    kode_wilayah: payload.kode_wilayah,
-  };
-}
+  async validate(payload: JwtPayload) {
+    const user = await this.prisma.user.findUnique({
+      where: { id_user: payload.userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User tidak ditemukan. Silakan login kembali.');
+    }
+
+    return {
+      id_user: payload.userId,
+      username: payload.username,
+      role: payload.role,
+      kode_wilayah: payload.kode_wilayah,
+    };
+  }
 }

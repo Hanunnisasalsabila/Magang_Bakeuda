@@ -1,55 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
+import wilayahData from '../utils/wilayahData.json';
 
-export default function AntreanVerifikasi({ onNavigate }) {
+export default function AntreanVerifikasi() {
+  const navigate = useNavigate();
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [kelurahan, setKelurahan] = useState('Semua Desa');
   const [search, setSearch] = useState('');
 
-  const [queueData, setQueueData] = useState([
-    {
-      id: 1,
-      nop: { prov: '33', kab: '03', kec: '010', kel: '001' },
-      name: 'Ahmad Sudirman',
-      userId: 'ID: 3303010502890001',
-      address: 'Jl. Ahmad Yani No. 45',
-      rtRw: 'RT 02 / RW 04',
-      kelurahan: 'Purbalingga Lor',
-      kecamatan: 'Purbalingga',
-      date: '24 Okt 2023',
-      time: '09:15 WIB',
-      status: 'Verifikasi',
-      urgent: false,
-    },
-    {
-      id: 2,
-      nop: { prov: '33', kab: '03', kec: '010', kel: '012' },
-      name: 'Siti Aminah',
-      userId: 'ID: 3303010504780005',
-      address: 'Jl. Letkol Isdiman 12',
-      rtRw: 'RT 01 / RW 01',
-      kelurahan: 'Kandanggampang',
-      kecamatan: 'Purbalingga',
-      date: '24 Okt 2023',
-      time: '10:30 WIB',
-      status: 'Verifikasi',
-      urgent: false,
-    },
-    {
-      id: 3,
-      nop: { prov: '33', kab: '03', kec: '021', kel: '005' },
-      name: 'PT. Sejahtera Abadi',
-      userId: 'NPWP: 01.234.567.8-001.000',
-      address: 'Kawasan Industri Kalimanah',
-      rtRw: 'RT 05 / RW 02',
-      kelurahan: 'Kalimanah Wetan',
-      kecamatan: 'Kalimanah',
-      date: '23 Okt 2023',
-      time: 'Overdue (24h+)',
-      status: 'Overdue',
-      urgent: true,
-    },
-  ]);
+  const [queueData, setQueueData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [kecamatanList, setKecamatanList] = useState([]);
+  const [kelurahanList, setKelurahanList] = useState([]);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    if (kecamatan === 'Semua Kecamatan') {
+      const uniqueKel = [...new Set(wilayahData.map(w => w.nama_desa))].filter(Boolean).sort();
+      setKelurahanList(uniqueKel);
+    } else {
+      const filteredKel = wilayahData
+        .filter(w => w.kecamatan === kecamatan)
+        .map(w => w.nama_desa)
+        .filter(Boolean)
+        .sort();
+      setKelurahanList(filteredKel);
+    }
+    setKelurahan('Semua Desa');
+  }, [kecamatan]);
+
+  useEffect(() => {
+    const fetchKecamatan = async () => {
+      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+      setKecamatanList(uniqueKec);
+    };
+    fetchKecamatan();
+
+    const fetchQueue = async () => {
+      try {
+        const res = await api.get('/transaksi-spop?status_ajuan=MENUNGGU_VERIFIKASI_DESA');
+        const formatted = res.data.data.map(item => {
+          const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
+          const parts = nopRaw.replace(/\D/g, '');
+          const prov = parts.substring(0,2) || '33';
+          const kab = parts.substring(2,4) || '03';
+          const kec = parts.substring(4,7) || '000';
+          const kel = parts.substring(7,10) || '000';
+
+          const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000-0000.0`;
+
+          return {
+            id: item.id_transaksi,
+            nop: nopFormatted,
+            name: item.nama_pengaju || 'Tanpa Nama',
+            userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
+            address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
+            rtRw: '',
+            kelurahan: 'Purbalingga',
+            kecamatan: 'Purbalingga',
+            date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+            status: 'Menunggu Verifikasi',
+            urgent: false
+          };
+        });
+
+        setQueueData(formatted);
+      } catch (error) {
+        console.error("Gagal mengambil antrean:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQueue();
+  }, []);
 
   const handleSearchChange = (e) => setSearch(e.target.value);
 
@@ -62,82 +90,65 @@ export default function AntreanVerifikasi({ onNavigate }) {
     return matchesKec && matchesKel && matchesSearch;
   });
 
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <main className="p-gutter overflow-y-auto max-w-screen-2xl mx-auto w-full">
       {/* Breadcrumbs & Header */}
       <div className="mb-section-gap">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <nav className="flex items-center gap-2 text-on-surface-variant mb-2">
-              <span className="font-label-sm text-label-sm text-on-surface-variant/70">Admin</span>
-              <span className="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-              <span className="font-label-sm text-label-sm text-primary font-bold">Verification Queue</span>
-            </nav>
-            <h2 className="font-display-lg text-display-lg text-primary font-bold">Verification Queue</h2>
+            <h2 className="text-2xl text-primary font-bold">Daftar Antrean Validasi SPOP</h2>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Antrean validasi dokumen SPOP (Surat Pemberitahuan Objek Pajak)
+              Daftar tunggu verifikasi dan validasi dokumen SPOP PBB-P2
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full font-label-sm text-label-sm flex items-center gap-2 shadow-sm">
               <span className="w-2.5 h-2.5 bg-secondary rounded-full animate-pulse"></span>
-              {filteredData.length} Menunggu Validasi
+              {filteredData.length} Menunggu Verifikasi
             </span>
           </div>
         </div>
       </div>
 
-      {/* Stats Bar (Quick Look) */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-stack-md">
-        <div className="bg-surface-container-lowest p-4 border border-outline-variant rounded-xl shadow-sm">
-          <p className="text-on-surface-variant font-label-sm text-label-sm font-semibold">Goal Hari Ini</p>
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-headline-md text-headline-md text-primary font-black">24/40</span>
-            <span className="text-secondary font-label-sm text-label-sm font-bold">60%</span>
-          </div>
-          <div className="w-full bg-surface-container h-1.5 rounded-full mt-2 overflow-hidden">
-            <div className="bg-secondary h-full rounded-full transition-all duration-300" style={{ width: '60%' }}></div>
-          </div>
-        </div>
-      </div>
 
       {/* Filters & Search */}
-      <section className="bg-surface-container-low p-gutter rounded-xl border border-outline-variant mb-gutter shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-gutter">
+      <section className="bg-white p-4 rounded-lg border border-gray-200 mb-6 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-3">
-            <label className="block font-section-header text-section-header text-on-surface-variant uppercase mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Kecamatan
             </label>
             <select
               value={kecamatan}
               onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full p-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-primary focus:border-primary"
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
             >
-              <option>Semua Kecamatan</option>
-              <option>Purbalingga</option>
-              <option>Kalimanah</option>
-              <option>Kutasari</option>
-              <option>Mrebet</option>
+              <option value="Semua Kecamatan">Semua Kecamatan</option>
+              {kecamatanList.map(kec => (
+                <option key={kec} value={kec}>{kec}</option>
+              ))}
             </select>
           </div>
           <div className="lg:col-span-3">
-            <label className="block font-section-header text-section-header text-on-surface-variant uppercase mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Kelurahan/Desa
             </label>
             <select
               value={kelurahan}
               onChange={(e) => setKelurahan(e.target.value)}
-              className="w-full p-3 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-primary focus:border-primary"
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
             >
-              <option>Semua Desa</option>
-              <option>Purbalingga Lor</option>
-              <option>Purbalingga Kidul</option>
-              <option>Kandanggampang</option>
-              <option>Kalimanah Wetan</option>
+              <option value="Semua Desa">Semua Desa</option>
+              {kelurahanList.map(kel => (
+                <option key={kel} value={kel}>{kel}</option>
+              ))}
             </select>
           </div>
           <div className="lg:col-span-4">
-            <label className="block font-section-header text-section-header text-on-surface-variant uppercase mb-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Cari NOP/Subjek Pajak
             </label>
             <div className="relative">
@@ -145,10 +156,10 @@ export default function AntreanVerifikasi({ onNavigate }) {
                 type="text"
                 value={search}
                 onChange={handleSearchChange}
-                className="w-full p-3 pl-10 bg-surface-container-lowest border border-outline-variant rounded-lg font-body-md text-body-md focus:ring-primary focus:border-primary"
+                className="w-full px-3 py-2 pl-10 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
                 placeholder="Masukkan NOP atau Nama..."
               />
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
                 search
               </span>
             </div>
@@ -160,7 +171,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
                 setKelurahan('Semua Desa');
                 setSearch('');
               }}
-              className="w-full bg-primary text-on-primary py-3 px-6 rounded-lg font-label-sm text-label-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">filter_list_off</span>
               Reset
@@ -170,66 +181,66 @@ export default function AntreanVerifikasi({ onNavigate }) {
       </section>
 
       {/* Data Table Card */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-primary text-on-primary font-section-header text-section-header">
-                <th className="px-6 py-4 uppercase tracking-wider">NOP</th>
-                <th className="px-6 py-4 uppercase tracking-wider">Subjek Pajak</th>
-                <th className="px-6 py-4 uppercase tracking-wider">Alamat Objek</th>
-                <th className="px-6 py-4 uppercase tracking-wider">Desa/Kelurahan</th>
-                <th className="px-6 py-4 uppercase tracking-wider">Tanggal Kirim</th>
-                <th className="px-6 py-4 uppercase tracking-wider text-center">Aksi</th>
+              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
+                <th className="px-6 py-3 font-semibold">NOP</th>
+                <th className="px-6 py-3 font-semibold">Subjek Pajak</th>
+                <th className="px-6 py-3 font-semibold">Alamat Objek</th>
+                <th className="px-6 py-3 font-semibold">Desa/Kelurahan</th>
+                <th className="px-6 py-3 font-semibold">Tanggal Kirim</th>
+                <th className="px-6 py-3 font-semibold text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {filteredData.length > 0 ? (
-                filteredData.map((item) => (
+            <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-8 text-gray-500">
+                    Memuat antrean...
+                  </td>
+                </tr>
+              ) : paginatedData.length > 0 ? (
+                paginatedData.map((item) => (
                   <tr
                     key={item.id}
                     className={`transition-colors ${
                       item.urgent
-                        ? 'bg-error-container/10 hover:bg-error-container/20'
-                        : 'hover:bg-surface-container-low'
+                        ? 'bg-red-50 hover:bg-red-100'
+                        : 'hover:bg-gray-50'
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="font-data-mono text-data-mono flex gap-1 items-center">
-                        <span className={`px-1 py-0.5 rounded ${item.urgent ? 'bg-error-container text-on-error-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>{item.nop.prov}</span>
-                        <span className={`px-1 py-0.5 rounded ${item.urgent ? 'bg-error-container text-on-error-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>{item.nop.kab}</span>
-                        <span className={`px-1 py-0.5 rounded ${item.urgent ? 'bg-error-container text-on-error-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>{item.nop.kec}</span>
-                        <span className={`px-1 py-0.5 rounded ${item.urgent ? 'bg-error-container text-on-error-container' : 'bg-surface-container-highest text-on-surface-variant'}`}>{item.nop.kel}</span>
+                      <div className="font-mono text-sm font-bold text-gray-800">
+                        {item.nop}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-label-sm text-label-sm text-primary font-bold">{item.name}</p>
-                      <p className="text-[12px] text-on-surface-variant font-medium">{item.userId}</p>
+                      <p className="font-bold text-gray-900">{item.name}</p>
+                      <p className="text-[12px] text-gray-500">{item.userId}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-body-md text-body-md text-on-surface">{item.address}</p>
-                      <p className="text-[12px] text-on-surface-variant font-medium">{item.rtRw}</p>
+                      <p className="text-gray-900">{item.address}</p>
+                      <p className="text-[12px] text-gray-500">{item.rtRw}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-body-md text-body-md text-on-surface">{item.kelurahan}</span>
+                      <span className="text-gray-900">{item.kelurahan}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className={`font-body-md text-body-md ${item.urgent ? 'text-error font-bold' : 'text-on-surface'}`}>{item.date}</p>
-                      <p className={`text-[12px] ${item.urgent ? 'text-error font-medium' : 'text-on-surface-variant'}`}>{item.time}</p>
+                      <p className={`text-gray-900 ${item.urgent ? 'font-bold' : ''}`}>{item.date}</p>
+                      <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-gray-500'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => onNavigate('detail_review')}
-                        className={`px-4 py-2 rounded-lg font-label-sm text-label-sm transition-all flex items-center gap-2 mx-auto ${
+                        onClick={() => navigate('/detail-review/' + item.id)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all mx-auto shadow-sm ${
                           item.urgent
-                            ? 'bg-error text-on-error hover:opacity-95'
-                            : 'bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary'
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[18px]">
-                          {item.urgent ? 'priority_high' : 'rate_review'}
-                        </span>
-                        {item.urgent ? 'Urgent Review' : 'Review'}
+                        Review
                       </button>
                     </td>
                   </tr>
@@ -246,21 +257,79 @@ export default function AntreanVerifikasi({ onNavigate }) {
         </div>
 
         {/* Pagination */}
-        <div className="bg-surface-container-low px-6 py-4 flex items-center justify-between border-t border-outline-variant">
-          <p className="font-body-md text-body-md text-on-surface-variant">
-            Menampilkan <span className="font-bold text-on-surface">1 - {filteredData.length}</span> dari{' '}
-            <span className="font-bold text-on-surface">{filteredData.length}</span> entri
-          </p>
-          <div className="flex items-center gap-1">
-            <button className="p-2 border border-outline-variant rounded-lg hover:bg-surface-variant disabled:opacity-50" disabled>
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="w-10 h-10 bg-primary text-on-primary rounded-lg font-label-sm text-label-sm font-bold">1</button>
-            <button className="p-2 border border-outline-variant rounded-lg hover:bg-surface-variant disabled:opacity-50" disabled>
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+        {filteredData.length > 0 && (
+          <div className="bg-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-500 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <label className="font-semibold whitespace-nowrap">Tampilkan:</label>
+                <div className="relative">
+                  <select 
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    style={{ backgroundImage: 'none' }}
+                    className="pl-3 pr-8 py-1.5 bg-white border border-gray-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-gray-700 font-bold text-sm shadow-sm outline-none appearance-none cursor-pointer"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] pointer-events-none">
+                    expand_more
+                  </span>
+                </div>
+              </div>
+              <div className="hidden sm:block w-px h-4 bg-gray-300"></div>
+              <div>
+                Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> dari <span className="font-bold text-gray-900">{filteredData.length}</span> entri
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+              </button>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum = currentPage;
+                if (totalPages <= 5) pageNum = i + 1;
+                else if (currentPage <= 3) pageNum = i + 1;
+                else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                else pageNum = currentPage - 2 + i;
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
+                      currentPage === pageNum 
+                        ? 'bg-primary text-white border-primary shadow-sm' 
+                        : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="flex items-center justify-center w-8 h-8 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </main>
   );

@@ -1,118 +1,118 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
+import api from '../utils/axios';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
-export default function DashboardDesa({ onNavigate }) {
-  const stats = [
-    {
-      title: 'Total SPOP Dikirim',
-      value: '156',
-      icon: 'description',
-      iconBg: 'bg-primary-fixed',
-      iconColor: 'text-primary',
-      trend: '+12% Bulan Ini',
-      trendColor: 'text-secondary',
-      trendIcon: 'trending_up',
-      borderHover: 'hover:border-primary',
-    },
-    {
-      title: 'Menunggu Validasi',
-      value: '12',
-      icon: 'pending_actions',
-      iconBg: 'bg-secondary-container',
-      iconColor: 'text-secondary',
-      trend: 'Butuh Peninjauan Segera',
-      trendColor: 'text-primary',
-      trendIcon: 'info',
-      borderHover: 'hover:border-secondary',
-    },
-    {
-      title: 'SPOP Disetujui',
-      value: '142',
-      icon: 'domain',
-      iconBg: 'bg-tertiary-fixed',
-      iconColor: 'text-tertiary',
-      trend: 'Terdaftar di Sistem',
-      trendColor: 'text-outline',
-      trendIcon: 'check_circle',
-      borderHover: 'hover:border-tertiary',
-    },
-    {
-      title: 'SPOP Perlu Perbaikan',
-      value: '2',
-      icon: 'report',
-      iconBg: 'bg-error-container',
-      iconColor: 'text-error',
-      trend: 'Perlu Revisi Ulang',
-      trendColor: 'text-error',
-      trendIcon: 'warning',
-      borderHover: 'hover:border-error',
-    },
-  ];
+export default function DashboardDesa() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState([
+    { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Memuat...', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500' },
+    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Memuat...', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500' },
+    { title: 'SPOP Disetujui', value: '0', icon: 'domain', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Memuat...', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500' },
+    { title: 'SPOP Perlu Perbaikan', value: '0', icon: 'report', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Memuat...', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500' },
+  ]);
 
-  const recentSubmissions = [
-    {
-      nop: '33.03.010.001.001.001',
-      name: 'Budi Santoso',
-      type: 'Perekaman Data Baru',
-      date: '24 Okt 2023',
-      status: 'Verifikasi',
-    },
-    {
-      nop: '33.03.010.005.012.000',
-      name: 'Siti Aminah',
-      type: 'Mutakhirkan Data',
-      date: '23 Okt 2023',
-      status: 'Draft',
-    },
-    {
-      nop: '33.03.040.002.009.004',
-      name: 'PT. Maju Bersama',
-      type: 'Penghapusan Data',
-      date: '22 Okt 2023',
-      status: 'Ditolak',
-    },
-  ];
+  const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, listRes, userRes] = await Promise.all([
+          api.get('/transaksi-spop/stats'),
+          api.get('/transaksi-spop'),
+          api.get('/auth/me').catch(() => ({ data: { data: null } }))
+        ]);
+        
+        const dataStats = statsRes.data.data;
+        setStats([
+          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Keseluruhan', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500' },
+          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Perlu verifikasi', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500' },
+          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Tervalidasi', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500' },
+          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Butuh revisi', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500' },
+        ]);
+
+        const rawList = listRes.data.data;
+        const formattedList = rawList.slice(0, 5).map(item => ({
+          id: item.id_transaksi,
+          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+          name: item.nama_pengaju || 'Tanpa Nama',
+          type: item.jenis_transaksi,
+          date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+          status: item.status_ajuan === 'MENUNGGU_VERIFIKASI_DESA' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'PERBAIKAN' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+        }));
+        setRecentSubmissions(formattedList);
+        
+        if (userRes.data?.data) {
+          setUserInfo(userRes.data.data);
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data dashboard:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
 
   return (
-    <main className="p-gutter max-w-screen-2xl mx-auto">
-      {/* Welcome Header */}
-      <div className="mb-section-gap flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <main className="p-4 md:p-6 max-w-screen-2xl mx-auto font-sans space-y-6">
+      {/* Paper Header banner */}
+      <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <p className="text-section-header font-section-header text-secondary mb-2 uppercase">
-            SUBMISI DATA DESA
-          </p>
-          <h2 className="font-display-lg text-display-lg text-primary tracking-tight">
-            Panel Pengajuan SPOP Desa
-          </h2>
-          <p className="text-body-md font-body-md text-on-surface-variant mt-1">
-            Kelola dan pantau pengiriman data pajak dari wilayah desa Anda.
-          </p>
+          <div className="flex items-center gap-6">
+            <img
+              alt="Kabupaten Purbalingga Logo"
+              className="h-16 w-16 object-contain"
+              src={logoPurbalingga}
+            />
+            <div>
+              <h1 className="text-2xl text-blue-900 uppercase font-extrabold tracking-wide">
+                Portal Pelayanan Desa
+              </h1>
+              <p className="text-gray-500 font-medium">
+                Pemerintah Kabupaten Purbalingga
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
+              SISTEM INFORMASI PAJAK DAERAH
+            </span>
+            <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
+              SPOP DIGITAL DESA
+            </span>
+          </div>
         </div>
+        
         <button
-          onClick={() => onNavigate('formulir_spop')}
-          className="bg-primary text-on-primary px-6 py-3 rounded-full flex items-center gap-2 font-label-sm text-label-sm hover:opacity-90 active:scale-95 transition-all shadow-md"
+          onClick={() => navigate('/formulir-spop')}
+          className="bg-blue-900 text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold text-sm hover:bg-blue-950 active:scale-95 transition-all shadow-sm"
         >
-          <span className="material-symbols-outlined">add</span>
+          <span className="material-symbols-outlined text-[20px]">add</span>
           Buat SPOP Baru
         </button>
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-section-gap">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, i) => (
           <div
             key={i}
-            className={`bg-surface-container-lowest p-6 border border-outline-variant rounded-xl shadow-sm transition-colors duration-200 group ${stat.borderHover}`}
+            className={`bg-white p-6 border border-gray-200 rounded-xl shadow-sm transition-colors duration-200 group ${stat.borderHover}`}
           >
             <div
               className={`w-12 h-12 ${stat.iconBg} rounded-lg flex items-center justify-center ${stat.iconColor} mb-4 group-hover:scale-110 transition-transform`}
             >
-              <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span className="material-symbols-outlined text-[24px]">
                 {stat.icon}
               </span>
             </div>
-            <p className="text-on-surface-variant text-label-sm font-label-sm">{stat.title}</p>
-            <p className="font-display-lg text-display-lg text-primary mt-1">{stat.value}</p>
+            <p className="text-gray-500 text-sm font-semibold">{stat.title}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
             <div className={`mt-4 flex items-center gap-1 ${stat.trendColor}`}>
               <span className="material-symbols-outlined text-[16px]">{stat.trendIcon}</span>
               <span className="text-[12px] font-bold">{stat.trend}</span>
@@ -123,162 +123,131 @@ export default function DashboardDesa({ onNavigate }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Submissions Table */}
-        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
-          <div className="p-6 border-b border-outline-variant flex items-center justify-between">
-            <h3 className="font-headline-md text-headline-md text-primary font-bold">
-              Pengajuan SPOP Terbaru
-            </h3>
+        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Pengajuan SPOP Terbaru
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 font-medium">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
+            </div>
             <button
-              onClick={() => onNavigate('daftar_objek')}
-              className="text-primary font-label-sm text-label-sm hover:underline"
+              onClick={() => navigate('/monitoring-pajak')}
+              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-xs font-bold transition-colors"
             >
-              Lihat Semua
+              <span>Lihat Semua</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+            <table className="w-full text-left min-w-max">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap">
                     NOP / Nama Subjek
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap">
                     Jenis Transaksi
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center">
                     Tanggal
                   </th>
-                  <th className="px-6 py-4 font-section-header text-section-header text-primary uppercase">
+                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center">
                     Status
                   </th>
-                  <th className="px-6 py-4"></th>
+                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center pl-12">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {recentSubmissions.map((sub, i) => (
-                  <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-label-sm text-label-sm text-on-surface">{sub.nop}</p>
-                      <p className="text-[12px] text-on-surface-variant">{sub.name}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-body-md font-body-md text-on-surface">
-                        {sub.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-body-md font-body-md text-on-surface">{sub.date}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={sub.status} />
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => onNavigate('detail_review')}
-                        className="material-symbols-outlined text-outline hover:text-primary transition-colors"
-                      >
-                        {sub.status === 'Draft' ? 'edit' : 'visibility'}
-                      </button>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
+                      <span className="material-symbols-outlined animate-spin text-3xl text-blue-600">refresh</span>
+                      <span>Memuat data pengajuan...</span>
                     </td>
                   </tr>
-                ))}
+                ) : recentSubmissions.length > 0 ? (
+                  recentSubmissions.map((sub, i) => (
+                    <tr key={i} className={`hover:bg-gray-50 transition-colors ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
+                      <td className="px-6 py-4">
+                        <p className="font-mono font-bold text-blue-700 text-sm whitespace-nowrap">{sub.nop}</p>
+                        <p className="font-semibold text-gray-900 whitespace-nowrap">{sub.name}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-600">
+                          {sub.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <p className="text-xs font-semibold text-gray-500">{sub.date}</p>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <StatusBadge status={sub.status} />
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
+                        <div className="flex items-center justify-end">
+                          <button
+                            onClick={() => navigate(sub.status === 'Draft' ? '/formulir-spop' : `/detail-review/${sub.id}`)}
+                            className="px-4 py-2 bg-white text-blue-600 border border-gray-200 hover:border-blue-600 hover:bg-blue-50 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              {sub.status === 'Draft' ? 'edit' : 'visibility'}
+                            </span>
+                            {sub.status === 'Draft' ? 'Edit' : 'Detail'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center py-12 text-gray-400">
+                      <div className="flex flex-col items-center gap-2 opacity-60">
+                        <span className="material-symbols-outlined text-4xl">inbox</span>
+                        <p>Belum ada pengajuan SPOP terbaru.</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
 
         {/* Sebaran Map Card */}
-        <div className="bg-primary text-on-primary rounded-xl overflow-hidden flex flex-col shadow-lg relative min-h-[400px]">
-          <div className="p-6 relative z-10 bg-gradient-to-b from-primary/90 to-transparent">
-            <h3 className="font-headline-md text-headline-md font-bold mb-1">
-              Sebaran Objek Pajak
+        <div className="bg-slate-800 text-white rounded-xl overflow-hidden flex flex-col shadow-lg relative min-h-[400px]">
+          <div className="p-6 relative z-10 bg-gradient-to-b from-slate-900 to-transparent">
+            <h3 className="text-lg font-bold mb-1">
+              {userInfo?.wilayah?.nama_desa ? `Desa ${userInfo.wilayah.nama_desa}` : 'Wilayah Tugas Anda'}
             </h3>
-            <p className="text-on-primary-container text-body-md opacity-80">
-              Kecamatan Purbalingga Kota
+            <p className="text-slate-300 text-sm opacity-90">
+              {userInfo?.wilayah?.kecamatan ? `Kecamatan ${userInfo.wilayah.kecamatan}` : 'Memuat data wilayah...'}
             </p>
           </div>
-          <div className="flex-1 w-full relative bg-[#091a3a] overflow-hidden min-h-[220px]">
+          <div className="flex-1 w-full relative bg-slate-900 overflow-hidden min-h-[220px]">
             <img
               alt="Peta Digital Wilayah"
-              className="w-full h-full object-cover opacity-40 grayscale contrast-125"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYhrBcuk844x9pdSFw7Zjr98AI1pPp7lk6oIsgBmhiWaQ675HX0qfeaF3k3v-V-6ju4gyEtJffJU6Nl5gLNmseWs9SH3yKgdVJ5I5uAccK_gbS6pxWBGaLk8KJ3K2q2xhm8vid2toBatyzr7F2iWER3RZJSTFS2WCdIaYxvu0JPb_DC53e0UF-jcbPFZ4WLBYMVbPGSy6lIt4mQ7Czax-NNuPxm9Jo37KVSlGamCgC8kWIeHtwWrH6R-sz2630TDADYA6p9wKD2ASi"
+              className="w-full h-full object-cover opacity-50 mix-blend-luminosity"
+              src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=800&auto=format&fit=crop"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
             {/* Animated Markers */}
-            <div className="absolute top-1/4 left-1/3 w-3 h-3 bg-secondary rounded-full animate-pulse shadow-[0_0_10px_#1b6b51]"></div>
-            <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-secondary rounded-full animate-pulse shadow-[0_0_10px_#1b6b51]"></div>
-            <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-tertiary-fixed-dim rounded-full animate-ping shadow-[0_0_15px_#ffb691]"></div>
+            <div className="absolute top-1/4 left-1/3 w-3 h-3 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_10px_#facc15]"></div>
+            <div className="absolute bottom-1/3 right-1/4 w-3 h-3 bg-yellow-400 rounded-full animate-pulse shadow-[0_0_10px_#facc15]"></div>
+            <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-blue-400 rounded-full animate-ping shadow-[0_0_15px_#60a5fa]"></div>
           </div>
-          <div className="p-6 bg-primary-container/30 backdrop-blur-md border-t border-white/10 relative z-10">
+          <div className="p-6 bg-slate-900/50 backdrop-blur-md border-t border-white/10 relative z-10">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-label-sm font-label-sm">Kepatuhan Terendah</span>
-              <span className="text-error font-bold text-label-sm">Kec. Karangreja</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Total Wajib Pajak</span>
+              <span className="text-white font-bold text-sm">-</span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2 mb-2">
-              <div className="bg-error h-2 rounded-full" style={{ width: '42%' }}></div>
+            <div className="w-full bg-slate-700 rounded-full h-2 mb-2">
+              <div className="bg-blue-500 h-2 rounded-full" style={{ width: '0%' }}></div>
             </div>
-            <p className="text-[12px] opacity-70">Membutuhkan intervensi petugas lapangan segera.</p>
+            <p className="text-xs text-slate-400">Data kepatuhan belum tersedia.</p>
           </div>
-        </div>
-      </div>
-
-      {/* Paper Form Mimic Demo Section */}
-      <div className="mt-section-gap bg-surface-container-lowest border border-outline-variant p-gutter rounded-xl shadow-sm">
-        <div className="flex items-start gap-gutter mb-6 border-b-2 border-primary pb-6">
-          <img
-            alt="Logo Kabupaten Purbalingga"
-            className="w-16 h-16 object-contain"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVheQzbBwjopVwLSxhQICq2qfX1nY3FESRQtNuHtfckd2llQYBokE-s-YxSRYQMmjXibOYJmuAdv_vzfI7c1jHybb1ni0znZ-Xah5xJN68DNDsHnbradNGR_6I17I1OqGAkHK5vw6BEbkcJaJ8EfxvYCsZc-qOtXQW2tS7lJcOocYy0m6jIkZ24q_v71ZwUkFmQr2sslBpHQ8lwYBK-A-9tTLW6AOhtzdT2AidzKQ3tPy5kf9KWLVkVUEMCJ6x83C8JWtYFjgcshmM"
-          />
-          <div className="flex-1">
-            <p className="font-section-header text-section-header tracking-[0.2em] text-on-surface-variant uppercase">
-              PEMERINTAH KABUPATEN PURBALINGGA
-            </p>
-            <h4 className="font-headline-md text-headline-md text-primary font-extrabold uppercase">
-              BADAN KEUANGAN DAERAH
-            </h4>
-            <p className="text-label-sm font-label-sm text-on-surface-variant">
-              Jl. Onje No. 4 Purbalingga Telp. (0281) 891098
-            </p>
-          </div>
-          <div className="border-2 border-primary p-4 text-center min-w-[120px]">
-            <h2 className="font-display-lg text-display-lg text-primary font-black leading-none">
-              SPOP
-            </h2>
-            <p className="text-[9px] font-bold uppercase tracking-tighter mt-1">
-              Surat Pemberitahuan<br />Objek Pajak
-            </p>
-          </div>
-        </div>
-
-        {/* NOP Segmented Display Demo */}
-        <div className="mt-6">
-          <p className="font-section-header text-section-header text-primary mb-3 uppercase">
-            Struktur NOP (Nomor Objek Pajak)
-          </p>
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-            </div>
-            <span className="text-primary font-bold text-xl">.</span>
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">3</div>
-            </div>
-            <span className="text-primary font-bold text-xl">.</span>
-            <div className="flex gap-px bg-outline-variant border border-outline-variant rounded overflow-hidden">
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">1</div>
-              <div className="segmented-input-box flex items-center justify-center font-bold text-primary">0</div>
-            </div>
-            <span className="text-outline font-medium text-sm hidden sm:inline-block ml-4">
-              (Provinsi.Kabupaten.Kecamatan...)
-            </span>
-          </div>
-          <p className="text-[12px] text-on-surface-variant mt-3 italic">
-            * NOP terdiri dari 18 digit kode unik yang mewakili data geospasial objek pajak di daerah.
-          </p>
         </div>
       </div>
     </main>

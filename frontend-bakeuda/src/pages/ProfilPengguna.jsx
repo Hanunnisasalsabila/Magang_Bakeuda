@@ -1,391 +1,506 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../utils/axios';
+import ToastNotification from '../components/ToastNotification';
 
 export default function ProfilPengguna({ role }) {
   const isDesa = role === 'desa';
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [tfaEnabled, setTfaEnabled] = useState(true);
 
-  const [profileData, setProfileData] = useState(
-    isDesa
-      ? {
-          name: 'Pratama Yusuf',
-          nip: '19950812 202003 1 002',
-          role: 'Perangkat Desa Kel. Onje',
-          email: 'pratama.yusuf@purbalinggakab.go.id',
-          phone: '821-4567-8901',
-          dept: 'Pelayanan Publik Desa',
-          avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDjIREGqkvGX_YmE8U5mkjHFNZWnJIWQ8XGtQp9ftG3uexj_bmSAi7PPYjTEYT4bE8XH8EsDyElmXpCGB7CnKIn_finH8_MLPaA305RwKx1T_2cOIMnIF61LIcoWYtP2RzJf1wblUfHU2ArXd8ov-QUdx856Uv_kMx44VuG4QVVHp7PoWbyPd80Pi2YFSED-QvUqIBDjksd19PGxOnFHNRRBcG9DN-Q8vSr_5B8kc4ryx1SSuhAJxI73tQx97edFITVKqVZQ7NYta9g'
+  // Password change states (admin only)
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ old: '', new: '', confirm: '' });
+  const [showOldPwd, setShowOldPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+
+  const [profileData, setProfileData] = useState({
+    id: '',
+    name: '',
+    username: '',
+    nip: '',
+    role: '',
+    dept: '',
+    kode_wilayah: '',
+  });
+
+  const [editForm, setEditForm] = useState({ name: '', nip: '' });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        if (response.data.success) {
+          const data = response.data.data;
+          setProfileData({
+            id: data.id_user || data.id || '',
+            name: data.nama_lengkap,
+            username: data.username,
+            nip: data.nip || '-',
+            role: data.role === 'DESA' ? `Perangkat Desa ${data.wilayah?.nama_desa || ''}` : 'Verifikator BKD',
+            dept: data.wilayah ? `Kecamatan ${data.wilayah.kecamatan}` : 'Badan Keuangan Daerah',
+            kode_wilayah: data.kode_wilayah || '',
+          });
+          setEditForm({
+            name: data.nama_lengkap,
+            nip: data.nip || '',
+          });
         }
-      : {
-          name: 'Drs. H. Ahmad Sudirman',
-          nip: '19820524 201001 1 008',
-          role: 'Verifikator BKD',
-          email: 'ahmad.sudirman@purbalinggakab.go.id',
-          phone: '812-3456-7890',
-          dept: 'Bidang PBB dan BPHTB',
-          avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxbF9pjIIiLDorpixCyJnsp0PPncjH8kAb3SjfdDF11I0-wMqD2Cc69xWuSz7UlGCYRu7G7Htm7YbfsLCJ8dK05Sf4WFUuVIlyeGJJXQdsv5qmc1y1JbFC0RTS5iUKjf5ABz_2WIc8siF6TtJQ3xobUEcqpb4Xn92Epf6kj8qnmDyHQxeeD3D-0IWLqXlCWLuokRnZN34wvJG6pczoJFsJsCIZOZi_ya4gU34pwdjSIiRCLILFbspj_a2t_aQDiIQf_NJCcu1oMx78'
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+        // fallback: try reading from localStorage
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            setProfileData({
+              id: user.id_user || user.id || '',
+              name: user.nama_lengkap || user.username || 'Admin BKD',
+              username: user.username || '',
+              nip: user.nip || '-',
+              role: user.role === 'BAKEUDA' ? 'Verifikator BKD' : `Perangkat Desa`,
+              dept: 'Badan Keuangan Daerah',
+              kode_wilayah: user.kode_wilayah || '',
+            });
+            setEditForm({
+              name: user.nama_lengkap || '',
+              nip: user.nip || '',
+            });
+          } else {
+            setError('Gagal memuat profil');
+          }
+        } catch {
+          setError('Gagal memuat profil');
         }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSaveProfile = async () => {
+    if (!editForm.name.trim()) {
+      setToast({ show: true, message: 'Nama lengkap tidak boleh kosong', type: 'error' });
+      return;
+    }
+    
+    if (!profileData.id) {
+      setToast({ show: true, message: 'ID pengguna tidak ditemukan. Coba muat ulang halaman.', type: 'error' });
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await api.put(`/users/${profileData.id}`, {
+        nama_lengkap: editForm.name,
+        nip: editForm.nip || null,
+      });
+      setProfileData(prev => ({
+        ...prev,
+        name: editForm.name,
+        nip: editForm.nip || '-'
+      }));
+      setIsEditing(false);
+      setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+    } catch (err) {
+      setToast({ show: true, message: err.response?.data?.message || 'Gagal memperbarui profil', type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.new !== passwordForm.confirm) {
+      setToast({ show: true, message: 'Konfirmasi kata sandi tidak cocok', type: 'error' });
+      return;
+    }
+    if (passwordForm.new.length < 6) {
+      setToast({ show: true, message: 'Kata sandi baru minimal 6 karakter', type: 'error' });
+      return;
+    }
+    setIsChangingPwd(true);
+    try {
+      await api.patch('/auth/change-password', {
+        oldPassword: passwordForm.old,
+        newPassword: passwordForm.new,
+      });
+      setShowPasswordModal(false);
+      setPasswordForm({ old: '', new: '', confirm: '' });
+      setToast({ show: true, message: 'Kata sandi berhasil diubah', type: 'success' });
+    } catch (err) {
+      setToast({ show: true, message: err.response?.data?.message || 'Gagal mengubah kata sandi', type: 'error' });
+    } finally {
+      setIsChangingPwd(false);
+    }
+  };
+
+  if (isLoading) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 mt-10">
+      <div className="relative w-14 h-14">
+        <div className="absolute inset-0 rounded-full border-4 border-primary/15"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+      </div>
+      <p className="text-on-surface-variant text-sm tracking-wide">Memuat profil…</p>
+    </div>
   );
 
-  const handleInputChange = (field, e) => {
-    setProfileData(prev => ({ ...prev, [field]: e.target.value }));
-  };
-
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-      }, 4000);
-    }, 1200);
-  };
-
-  const activities = isDesa
-    ? [
-        {
-          desc: 'Mengajukan Formulir SPOP Baru NOP: 33.03.010.001.001.001',
-          time: '3 jam yang lalu • Menunggu Validasi',
-          icon: 'description',
-          iconBg: 'bg-primary-container text-on-primary-container',
-        },
-        {
-          desc: 'Menyimpan draf pemutakhiran NOP: 33.03.010.005.012.000',
-          time: 'Kemarin • Draft',
-          icon: 'edit_note',
-          iconBg: 'bg-surface-container-highest text-on-surface-variant',
-        },
-      ]
-    : [
-        {
-          desc: 'Memverifikasi SPOP NOP: 33.03.110.001.002-0054.0',
-          time: '2 jam yang lalu • Selesai',
-          icon: 'description',
-          iconBg: 'bg-secondary-container text-on-secondary-container',
-        },
-        {
-          desc: 'Mengirim Catatan Perbaikan Objek Pajak Kelurahan Purbalingga Lor',
-          time: '5 jam yang lalu • Menunggu Persetujuan',
-          icon: 'edit_note',
-          iconBg: 'bg-primary-container text-on-primary-container',
-        },
-      ];
+  if (error) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 mt-10 text-center px-6">
+      <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+        <span className="material-symbols-outlined text-3xl text-error">error</span>
+      </div>
+      <p className="text-error font-medium">{error}</p>
+      <p className="text-on-surface-variant text-sm">Coba muat ulang halaman ini.</p>
+    </div>
+  );
 
   return (
-    <main className="p-gutter max-w-screen-2xl mx-auto space-y-8 w-full">
-      {/* Profile Header Card */}
-      <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-        <div className="h-32 bg-primary relative">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
-        </div>
-        <div className="px-6 md:px-8 pb-8 flex flex-col md:flex-row items-center md:items-end gap-6 -mt-12 text-center md:text-left">
-          <div className="relative group select-none">
-            <img
-              alt={`${profileData.name} Profile`}
-              className="w-32 h-32 rounded-xl border-4 border-surface-container-lowest shadow-md object-cover bg-surface"
-              src={profileData.avatar}
-            />
-            <button className="absolute bottom-2 right-2 bg-primary text-white p-1.5 rounded-lg shadow-lg hover:bg-primary-container transition-colors focus:outline-none">
-              <span className="material-symbols-outlined text-[18px]">photo_camera</span>
-            </button>
-          </div>
-          <div className="flex-1 mb-2">
-            <h2 className="font-display-lg text-primary font-bold text-2xl md:text-3xl">
-              {profileData.name}
-            </h2>
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-1 mt-1">
-              <div className="flex items-center gap-2 text-on-surface-variant text-sm">
-                <span className="material-symbols-outlined text-[20px] text-primary">badge</span>
-                <span>NIP: {profileData.nip}</span>
-              </div>
-              <div className="flex items-center gap-2 text-on-surface-variant text-sm">
-                <span className="material-symbols-outlined text-[20px] text-primary">work</span>
-                <span>{profileData.role}</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3 mb-2 w-full md:w-auto">
-            <button
-              onClick={() => alert('Fitur edit foto / info detail.')}
-              className="flex-1 md:flex-none px-6 py-2 border border-outline text-primary font-bold text-sm rounded-lg hover:bg-surface-container-low transition-colors active:scale-95 focus:outline-none"
-            >
-              Ubah Foto
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 md:flex-none px-6 py-2 bg-primary text-on-primary font-bold text-sm rounded-lg hover:shadow-lg transition-all active:scale-95 focus:outline-none flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                  Menyimpan...
-                </>
-              ) : (
-                'Simpan Profil'
-              )}
-            </button>
-          </div>
-        </div>
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full pb-16 animate-fadeIn">
+
+      {/* Hero header banner */}
+      <section className="relative overflow-hidden rounded-b-[28px] md:rounded-3xl bg-primary px-6 pt-10 pb-16 md:pb-20 md:mt-6">
+        <div
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #fff 1.5px, transparent 1.5px)',
+            backgroundSize: '18px 18px',
+          }}
+        />
       </section>
 
-      {/* Main Info Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Personal Information */}
-        <div className="lg:col-span-2 space-y-8">
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">person_outline</span>
-              <h3 className="font-headline-md text-on-background font-bold">Informasi Pribadi</h3>
+      <div className="px-4 md:px-0 -mt-12 md:-mt-14 space-y-5 relative">
+
+        {/* Profile Header - identity card */}
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-md">
+          <div className="flex items-center gap-5">
+            <div className="relative shrink-0">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/70 text-on-primary flex items-center justify-center text-3xl font-bold shadow-md ring-4 ring-surface-container-lowest">
+                {profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-surface-container-lowest" title="Aktif" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Nama Lengkap
-                </label>
-                <input
-                  type="text"
-                  value={profileData.name}
-                  onChange={(e) => handleInputChange('name', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
-                />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-on-surface truncate">
+                  {profileData.name || 'Pengguna SIPD'}
+                </h1>
+                <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[11px] font-semibold rounded-full uppercase tracking-wider border border-primary/20 shrink-0">
+                  {isDesa ? 'Perangkat Desa' : 'Admin BKD'}
+                </span>
               </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  NIP
-                </label>
-                <input
-                  type="text"
-                  value={profileData.nip}
-                  readOnly
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-4 py-3 font-body-md text-on-surface-variant cursor-not-allowed select-none"
-                />
+              <p className="text-on-surface-variant text-sm mt-1 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[15px]">work</span>
+                {profileData.dept}
+              </p>
+              {profileData.username && (
+                <p className="text-on-surface-variant/70 text-xs mt-0.5 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[13px]">alternate_email</span>
+                  {profileData.username}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Main grid: Informasi Pribadi (wide) + Keamanan Akun / Wilayah Tugas (narrow) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+
+          {/* Informasi Pribadi */}
+          <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-2 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">person</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Informasi Pribadi</h3>
               </div>
+              {!isDesa && !isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-primary text-sm font-medium hover:bg-primary/5 active:scale-95 rounded-lg transition-all border border-primary/20"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  Edit
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
               <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Alamat Email
-                </label>
-                <input
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => handleInputChange('email', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Nomor Telepon
-                </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-outline-variant bg-surface-container text-on-surface-variant font-label-sm">
-                    +62
-                  </span>
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Nama Lengkap</label>
+                {isEditing ? (
                   <input
                     type="text"
-                    value={profileData.phone}
-                    onChange={(e) => handleInputChange('phone', e)}
-                    className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-r-lg px-4 py-3 font-body-md text-on-surface"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
+                ) : (
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
+                    {profileData.name || '-'}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">NIP</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editForm.nip}
+                    onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })}
+                    placeholder="Masukkan NIP..."
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                ) : (
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
+                    {profileData.nip || '-'}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Username</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.username || '-'}
                 </div>
               </div>
-              <div className="md:col-span-2 space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs ml-1 block font-semibold">
-                  Departemen / Unit Kerja
-                </label>
-                <input
-                  type="text"
-                  value={profileData.dept}
-                  onChange={(e) => handleInputChange('dept', e)}
-                  className="w-full bg-surface border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 font-body-md text-on-surface"
-                />
+              <div className="space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Jabatan / Role</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.role || '-'}
+                </div>
+              </div>
+              <div className="sm:col-span-2 space-y-1">
+                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Unit Kerja / Departemen</label>
+                <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  {profileData.dept || '-'}
+                </div>
               </div>
             </div>
+
+            {isEditing && (
+              <div className="flex justify-end gap-3 mt-5 pt-4 border-t border-outline-variant/40">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditForm({ name: profileData.name, nip: profileData.nip === '-' ? '' : profileData.nip });
+                  }}
+                  className="px-4 py-2 text-on-surface-variant text-sm font-medium rounded-lg hover:bg-surface-container transition-colors border border-outline-variant"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving || !editForm.name || (editForm.name === profileData.name && editForm.nip === (!profileData.nip || profileData.nip === '-' ? '' : profileData.nip))}
+                  className="px-5 py-2 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2 bg-primary text-on-primary hover:bg-primary/90 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  {isSaving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
+                  Simpan
+                </button>
+              </div>
+            )}
           </section>
 
-          {/* Recent Activity Section */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-            <div className="px-6 md:px-8 py-6 border-b border-outline-variant flex items-center justify-between bg-surface-container-low/20">
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary text-[24px]">history</span>
-                <h3 className="font-headline-md text-on-background font-bold">Aktivitas Terakhir</h3>
+          {/* Keamanan Akun - Admin only, narrow column beside Informasi Pribadi */}
+          {!isDesa && (
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">security</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Keamanan Akun</h3>
               </div>
               <button
-                onClick={() => alert('Membuka riwayat aktivitas lengkap...')}
-                className="text-primary font-label-sm font-semibold hover:underline"
+                onClick={() => {
+                  setPasswordForm({ old: '', new: '', confirm: '' });
+                  setShowPasswordModal(true);
+                }}
+                className="w-full flex items-center gap-3 bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface p-4 rounded-xl transition-all duration-300 group border border-outline-variant hover:border-primary text-left"
               >
-                Lihat Semua
+                <div className="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-on-primary/20 flex items-center justify-center text-primary group-hover:text-on-primary transition-colors shrink-0">
+                  <span className="material-symbols-outlined">key</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold block text-sm">Ganti Kata Sandi</span>
+                  <span className="text-[11px] opacity-70 group-hover:opacity-90">Direkomendasikan diubah secara berkala</span>
+                </div>
+                <span className="material-symbols-outlined opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0">
+                  arrow_forward
+                </span>
               </button>
-            </div>
-            <div className="divide-y divide-outline-variant">
-              {activities.map((act, i) => (
-                <div key={i} className="p-6 flex gap-4 hover:bg-surface-container-low/40 transition-colors">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${act.iconBg}`}>
-                    <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      {act.icon}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-body-md text-on-surface text-sm sm:text-base leading-normal">
-                      {act.desc}
-                    </p>
-                    <p className="text-on-surface-variant text-[12px] mt-1 font-medium">{act.time}</p>
+
+              <div className="mt-auto pt-5 flex items-center gap-2 text-[11px] text-on-surface-variant">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Status akun aktif
+              </div>
+            </section>
+          )}
+
+          {/* Wilayah Tugas - Desa only, narrow column, memakai kode_wilayah yang sudah ada di profileData */}
+          {isDesa && (
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
+                </div>
+                <h3 className="text-base font-semibold text-on-surface">Wilayah Tugas</h3>
+              </div>
+              <div className="space-y-3 flex-1">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kecamatan</label>
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] opacity-60">map</span>
+                    {profileData.dept?.replace('Kecamatan ', '') || '-'}
                   </div>
                 </div>
-              ))}
-              <div className="p-6 flex gap-4 hover:bg-surface-container-low/40 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0 text-on-surface-variant shadow-sm">
-                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    login
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-body-md text-on-surface text-sm sm:text-base">
-                    Login sistem via Google Chrome (Windows 10)
-                  </p>
-                  <p className="text-on-surface-variant text-[12px] mt-1 font-medium">
-                    Kemarin, 08:30 WIB • IP: 182.253.92.12
-                  </p>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kode Wilayah</label>
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] opacity-60">tag</span>
+                    {profileData.kode_wilayah || '-'}
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+              <div className="mt-auto pt-5 flex items-center gap-2 text-[11px] text-on-surface-variant">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                Status akun aktif
+              </div>
+            </section>
+          )}
         </div>
 
-        {/* Right Column: Security & Settings */}
-        <div className="space-y-8">
-          {/* Account Security */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">security</span>
-              <h3 className="font-headline-md text-on-background font-bold">Keamanan Akun</h3>
+        {/* Aktivitas Terakhir / Riwayat Login - both roles. For Desa, the "dikelola admin" note lives as a compact footer inside this same card so the page doesn't feel like disconnected empty blocks. */}
+        <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-primary text-[20px]">history</span>
+              </div>
+              <h3 className="text-base font-semibold text-on-surface">Aktivitas Terakhir</h3>
             </div>
-            <div className="space-y-6">
-              <div
-                onClick={() => alert('Membuka dialog ganti kata sandi...')}
-                className="group border border-outline-variant p-4 rounded-xl hover:border-primary transition-all cursor-pointer bg-surface/50"
+          </div>
+
+          {/* Placeholder — belum ada endpoint riwayat login/aktivitas, tinggal sambungkan ke API saat tersedia */}
+          <div className="flex flex-col items-center text-center gap-1.5 py-6 border-b border-outline-variant/40">
+            <span className="material-symbols-outlined text-2xl text-on-surface-variant/40">manage_history</span>
+            <p className="text-sm text-on-surface-variant">Belum ada data riwayat aktivitas untuk ditampilkan.</p>
+            <p className="text-xs text-on-surface-variant/60">Riwayat login dan perubahan data akan muncul di sini.</p>
+          </div>
+
+          {isDesa && (
+            <div className="flex items-start gap-3 pt-4">
+              <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                <span className="font-medium text-on-surface">Profil dikelola oleh Admin BKD.</span> Jika terdapat kesalahan data atau perlu perubahan, silakan hubungi Admin BKD Kabupaten Purbalingga.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Password Modal - Admin only */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowPasswordModal(false)}></div>
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-2xl w-full max-w-md relative z-10 animate-fadeIn">
+            <button onClick={() => setShowPasswordModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            </button>
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-3xl text-primary">lock_reset</span>
+              </div>
+              <h2 className="text-xl font-bold text-on-surface">Ganti Kata Sandi</h2>
+              <p className="text-sm text-on-surface-variant mt-1">Buat kata sandi baru yang kuat.</p>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Kata Sandi Lama</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">lock</span>
+                  <input
+                    type={showOldPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.old}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, old: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Masukkan kata sandi saat ini"
+                  />
+                  {passwordForm.old.length > 0 && (
+                    <button type="button" onClick={() => setShowOldPwd(!showOldPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showOldPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Kata Sandi Baru</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">vpn_key</span>
+                  <input
+                    type={showNewPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Minimal 6 karakter"
+                  />
+                  {passwordForm.new.length > 0 && (
+                    <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showNewPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-on-surface-variant mb-1 ml-0.5 tracking-wide font-medium">Konfirmasi Kata Sandi</label>
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant/60">check_circle</span>
+                  <input
+                    type={showConfirmPwd ? "text" : "password"}
+                    required
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                    placeholder="Ulangi kata sandi baru"
+                  />
+                  {passwordForm.confirm.length > 0 && (
+                    <button type="button" onClick={() => setShowConfirmPwd(!showConfirmPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
+                      <span className="material-symbols-outlined text-[20px]">{showConfirmPwd ? 'visibility_off' : 'visibility'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isChangingPwd || !passwordForm.old || !passwordForm.new || !passwordForm.confirm || passwordForm.new.length < 6 || passwordForm.new !== passwordForm.confirm}
+                className="w-full py-2.5 font-bold bg-primary text-on-primary rounded-xl mt-4 hover:bg-primary/90 transition-all flex justify-center items-center gap-2 shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-outline">lock_reset</span>
-                    <span className="font-label-sm font-semibold">Ganti Kata Sandi</span>
-                  </div>
-                  <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors">
-                    chevron_right
-                  </span>
-                </div>
-                <p className="text-[12px] text-on-surface-variant mt-2 font-medium">
-                  Terakhir diubah: 4 bulan yang lalu
-                </p>
-              </div>
-
-              <div className="p-4 bg-surface/50 rounded-xl border border-outline-variant">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3 text-on-surface">
-                    <span className="material-symbols-outlined text-outline">verified_user</span>
-                    <span className="font-label-sm font-semibold">Autentikasi 2-Faktor</span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={tfaEnabled}
-                      onChange={() => setTfaEnabled(!tfaEnabled)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
-                  </label>
-                </div>
-                <p className="text-[12px] text-on-surface-variant leading-tight font-medium">
-                  Menambah lapisan keamanan ekstra pada akun Anda menggunakan email / authentikator.
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-outline-variant">
-                <h4 className="font-label-sm text-on-surface-variant text-xs mb-4 font-bold uppercase tracking-wider">
-                  Sesi Aktif
-                </h4>
-                <div className="flex items-center gap-4 text-on-surface">
-                  <span className="material-symbols-outlined text-secondary text-[24px]">computer</span>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-bold">Windows Laptop</p>
-                    <p className="text-[12px] text-on-surface-variant font-medium">Chrome • Sedang Aktif</p>
-                  </div>
-                  <button
-                    onClick={() => alert('Sesi aktif berhasil dikeluarkan.')}
-                    className="text-error font-label-sm font-bold text-xs hover:underline focus:outline-none"
-                  >
-                    Keluar Sesi
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Language & Regional */}
-          <section className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-primary text-[24px]">language</span>
-              <h3 className="font-headline-md text-on-background font-bold">Bahasa &amp; Regional</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs block font-semibold ml-1">
-                  Bahasa Utama
-                </label>
-                <select className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
-                  <option>Bahasa Indonesia</option>
-                  <option>English</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="font-label-sm text-on-surface-variant text-xs block font-semibold ml-1">
-                  Zona Waktu
-                </label>
-                <select className="w-full bg-surface border border-outline-variant rounded-lg px-4 py-2 text-sm focus:ring-primary focus:border-primary">
-                  <option>(GMT+07:00) Jakarta</option>
-                </select>
-              </div>
-            </div>
-          </section>
+                {isChangingPwd && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
+                Simpan Kata Sandi
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Danger Zone */}
-      <section className="bg-error-container border border-error rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
-        <div>
-          <h3 className="font-headline-md text-on-error-container font-bold text-lg">Zona Bahaya</h3>
-          <p className="text-on-error-container opacity-85 font-body-md text-sm mt-1">
-            Penghapusan akun akan menghilangkan semua akses ke sistem perpajakan. Tindakan ini bersifat permanen dan tidak dapat dibatalkan.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            if (confirm('Apakah Anda yakin ingin menonaktifkan akun Anda secara permanen?')) {
-              alert('Permohonan penonaktifan akun dikirim.');
-            }
-          }}
-          className="px-6 py-2.5 bg-error text-on-error font-bold text-sm rounded-lg hover:shadow-lg transition-all active:scale-95 shrink-0 focus:outline-none"
-        >
-          Nonaktifkan Akun
-        </button>
-      </section>
-
-      {/* Success Toast Notification */}
-      <div
-        className={`fixed bottom-8 right-8 bg-secondary-container text-on-secondary-container border border-secondary/35 px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4 transition-all duration-500 z-50 ${
-          showToast ? 'translate-y-0 opacity-100' : 'translate-y-28 opacity-0'
-        }`}
-      >
-        <span className="material-symbols-outlined text-secondary text-[24px]">check_circle</span>
-        <div>
-          <p className="font-bold">Berhasil!</p>
-          <p className="text-sm opacity-90">Perubahan profil telah disimpan.</p>
-        </div>
-        <button className="ml-4 opacity-50 hover:opacity-100" onClick={() => setShowToast(false)}>
-          <span className="material-symbols-outlined">close</span>
-        </button>
-      </div>
+      <ToastNotification
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
     </main>
   );
 }

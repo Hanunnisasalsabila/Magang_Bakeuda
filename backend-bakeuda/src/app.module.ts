@@ -10,6 +10,8 @@ import { SubjekPajakModule } from './subjek-pajak/subjek-pajak.module.js';
 import { ObjekPajakModule } from './objek-pajak/objek-pajak.module.js';
 import { SpptModule } from './sppt/sppt.module.js';
 import { ReferensiJpbModule } from './referensi-jpb/referensi-jpb.module.js';
+import { TransaksiSpopModule } from './transaksi-spop/transaksi-spop.module.js';
+import { PejabatDesaModule } from './pejabat-desa/pejabat-desa.module.js';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { ReferensiJpbModule } from './referensi-jpb/referensi-jpb.module.js';
     ObjekPajakModule,
     SpptModule,
     ReferensiJpbModule,
+    TransaksiSpopModule,
+    PejabatDesaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

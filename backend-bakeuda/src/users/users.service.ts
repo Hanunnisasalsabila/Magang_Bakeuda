@@ -17,6 +17,7 @@ const safeUserSelect = {
   username: true,
   role: true,
   kode_wilayah: true,
+  nip: true,
   created_at: true,
 } as const;
 
@@ -29,7 +30,7 @@ export class UsersService {
   // ─────────────────────────────────────────
 
   async createPetugas(dto: CreatePetugasDto) {
-    const { nama_lengkap, username, password, kode_wilayah } = dto;
+    const { nama_lengkap, username, password, kode_wilayah, nip } = dto;
 
     const existing = await this.prisma.user.findUnique({
       where: { username },
@@ -49,6 +50,7 @@ export class UsersService {
         password_hash: hashedPassword,
         role: Role.DESA,
         kode_wilayah,
+        nip,
       },
       select: safeUserSelect,
     });

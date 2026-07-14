@@ -8,7 +8,8 @@ model Wilayah {
   kode_kab     String @db.VarChar(5)
 
   // ── Relasi ──
-  users User[]
+  users   User[]
+  pejabat PejabatDesa[]
 
   @@map("wilayah")
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength, Matches, IsOptional, MaxLength } from 'class-validator';
 
 export class CreatePetugasDto {
   @IsString()
@@ -19,4 +19,9 @@ export class CreatePetugasDto {
   @IsString()
   @IsNotEmpty({ message: 'Kode wilayah wajib diisi' })
   kode_wilayah: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(25, { message: 'NIP maksimal 25 karakter' })
+  nip?: string;
 }
