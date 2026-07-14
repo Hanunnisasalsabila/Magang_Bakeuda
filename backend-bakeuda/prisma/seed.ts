@@ -31,7 +31,6 @@ async function main() {
       username: 'admin',
       password_hash: hashedPassword,
       role: Role.BAKEUDA,
-      force_change_password: true, // Wajib ganti password di login pertama
     },
   });
 

@@ -17,6 +17,7 @@ import { CreateObjekPajakDto } from './dto/create-objek-pajak.dto.js';
 import { UpdateObjekPajakDto } from './dto/update-objek-pajak.dto.js';
 import { UpdateObjekBumiDto } from './dto/update-objek-bumi.dto.js';
 import { UpdateObjekBangunanDto } from './dto/update-objek-bangunan.dto.js';
+import { UpdateFasilitasBangunanDto } from './dto/update-fasilitas-bangunan.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -50,6 +51,17 @@ export class ObjekPajakController {
     @Body() dto: UpdateObjekBangunanDto,
   ) {
     return this.objekPajakService.updateBangunan(idBangunan, dto);
+  }
+
+  // PUT /objek-pajak/bangunan/:idBangunan/fasilitas — hanya BAKEUDA
+  @Put('bangunan/:idBangunan/fasilitas')
+  @UseGuards(RolesGuard)
+  @Roles('BAKEUDA')
+  async updateFasilitas(
+    @Param('idBangunan') idBangunan: string,
+    @Body() dto: UpdateFasilitasBangunanDto,
+  ) {
+    return this.objekPajakService.updateFasilitasBangunan(idBangunan, dto);
   }
 
   // ─────────────────────────────────────────

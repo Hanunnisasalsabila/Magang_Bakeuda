@@ -1,0 +1,19 @@
+// ─────────────────────────────────────────
+// REFERENSI JENIS PENGGUNAAN BANGUNAN (JPB)
+// Sesuai Lampiran SPOP field 5 — 16 opsi baku
+// Dikelola BAKEUDA, dipakai sebagai sumber dropdown frontend
+// ─────────────────────────────────────────
+
+model ReferensiJenisPenggunaanBangunan {
+  kode_jpb   String   @id @db.VarChar(2)
+  nama_jpb   String   @db.VarChar(50)
+  urutan     Int      @default(0) // untuk urutan tampil di dropdown
+  is_active  Boolean  @default(true)
+  keterangan String?  @db.VarChar(150)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  bangunan ObjekBangunan[]
+
+  @@map("referensi_jenis_penggunaan_bangunan")
+}

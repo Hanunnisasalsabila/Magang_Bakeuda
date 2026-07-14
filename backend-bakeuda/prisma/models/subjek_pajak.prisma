@@ -1,8 +1,9 @@
 enum StatusWp {
   PEMILIK
   PENYEWA
-  PENGGARAP
+  PENGELOLA
   PEMAKAI
+  SENGKETA
 }
 
 enum Pekerjaan {
@@ -13,6 +14,7 @@ enum Pekerjaan {
   PETANI
   NELAYAN
   PENSIUNAN
+  BADAN
   LAINNYA
 }
 

@@ -1,9 +1,8 @@
 enum JenisTanah {
-  TANAH_BANGUNAN
-  TANAH_PERTANIAN
-  TANAH_PERKEBUNAN
-  TANAH_KEHUTANAN
-  TANAH_LAINNYA
+  TANAH_BANGUNAN        // 1. Tanah + Bangunan — sesuai SPOP field 27
+  KAVLING_SIAP_BANGUN   // 2. Kavling Siap Bangun
+  TANAH_KOSONG          // 3. Tanah Kosong
+  FASILITAS_UMUM        // 4. Fasilitas Umum
 }
 
 // ─────────────────────────────────────────
@@ -91,13 +90,14 @@ model ObjekBumi {
 model ObjekBangunan {
   id_bangunan           String   @id @default(uuid())
   nop                   String   @db.VarChar(18)
-  no_bangunan           Int // urutan bangunan ke berapa
-  kode_jpb              String?  @db.VarChar(2) // Jenis Penggunaan Bangunan
+  no_bangunan           Int      // urutan bangunan ke berapa
+  kode_jpb              String?  @db.VarChar(2) // FK → referensi_jenis_penggunaan_bangunan
   no_formulir_lspop     String?  @db.VarChar(11)
   tahun_dibangun        Int?
   tahun_renovasi        Int?
   luas_bangunan         Decimal  @default(0) @db.Decimal(12, 2)
   jumlah_lantai         Int      @default(1)
+  daya_listrik_watt     Int?     // BARU — form lampiran SPOP field 10
   kondisi_bangunan      String?  @db.VarChar(1)
   jenis_konstruksi      String?  @db.VarChar(1)
   jenis_atap            String?  @db.VarChar(1)
@@ -110,8 +110,77 @@ model ObjekBangunan {
   keterangan_jpb        String?  @db.VarChar(50)
   created_at            DateTime @default(now())
 
-  objek_pajak ObjekPajak @relation(fields: [nop], references: [nop], onDelete: Cascade)
+  objek_pajak   ObjekPajak                       @relation(fields: [nop], references: [nop], onDelete: Cascade)
+  referensi_jpb ReferensiJenisPenggunaanBangunan? @relation(fields: [kode_jpb], references: [kode_jpb])
+  fasilitas     ObjekBangunanFasilitas?
 
   @@unique([nop, no_bangunan])
+  @@index([kode_jpb])
   @@map("objek_bangunan")
+}
+
+// ─────────────────────────────────────────
+// FASILITAS BANGUNAN — 1-to-1 dengan ObjekBangunan
+// Sesuai Lampiran SPOP bagian B. FASILITAS (field 17–27)
+// ─────────────────────────────────────────
+
+model ObjekBangunanFasilitas {
+  id_fasilitas String @id @default(uuid())
+  id_bangunan  String @unique @db.VarChar(36)
+
+  // 17. AC
+  jumlah_ac_split  Int @default(0)
+  jumlah_ac_window Int @default(0)
+
+  // 18. AC Sentral
+  ac_sentral Boolean @default(false)
+
+  // 19. Kolam Renang
+  luas_kolam_renang    Decimal @default(0) @db.Decimal(10, 2)
+  kolam_diplester      Boolean @default(false)
+  kolam_dengan_pelapis Boolean @default(false)
+
+  // 20. Perkerasan Halaman (M2) — per kategori
+  perkerasan_ringan         Decimal @default(0) @db.Decimal(10, 2)
+  perkerasan_sedang         Decimal @default(0) @db.Decimal(10, 2)
+  perkerasan_berat          Decimal @default(0) @db.Decimal(10, 2)
+  perkerasan_dengan_penutup Decimal @default(0) @db.Decimal(10, 2)
+
+  // 21. Lapangan Tenis
+  tenis_beton_dgn_lampu          Int @default(0)
+  tenis_beton_tanpa_lampu        Int @default(0)
+  tenis_aspal_dgn_lampu          Int @default(0)
+  tenis_aspal_tanpa_lampu        Int @default(0)
+  tenis_tanah_rumput_dgn_lampu   Int @default(0)
+  tenis_tanah_rumput_tanpa_lampu Int @default(0)
+
+  // 22. Lift
+  lift_penumpang Int @default(0)
+  lift_kapsul    Int @default(0)
+  lift_barang    Int @default(0)
+
+  // 23. Tangga Berjalan
+  tangga_berjalan_lbr_kurang_080m Int @default(0)
+  tangga_berjalan_lbr_lebih_080m  Int @default(0)
+
+  // 24. Pagar
+  panjang_pagar_m Decimal @default(0) @db.Decimal(10, 2)
+  bahan_pagar     String? @db.VarChar(1) // 1=Baja/Besi, 2=Bata/Batako
+
+  // 25. Pemadam Kebakaran
+  hydrant_ada    Boolean @default(false)
+  sprinkler_ada  Boolean @default(false)
+  fire_alarm_ada Boolean @default(false)
+
+  // 26. Saluran PABX
+  jumlah_saluran_pabx Int @default(0)
+
+  // 27. Sumur Artesis
+  kedalaman_sumur_artesis_m Decimal @default(0) @db.Decimal(6, 2)
+
+  updated_at DateTime @updatedAt
+
+  objek_bangunan ObjekBangunan @relation(fields: [id_bangunan], references: [id_bangunan], onDelete: Cascade)
+
+  @@map("objek_bangunan_fasilitas")
 }
