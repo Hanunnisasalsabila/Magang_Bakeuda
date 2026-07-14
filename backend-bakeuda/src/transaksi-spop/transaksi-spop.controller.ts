@@ -27,12 +27,6 @@ export class TransaksiSpopController {
     };
   }
 
-  @Get('stats')
-  async getStats(@Request() req: any) {
-    const kode_wilayah = req.user.kode_wilayah;
-    return this.transaksiSpopService.getStats(kode_wilayah);
-  }
-
   @Get(':id')
   async getDetail(
     @Param('id') id_transaksi: string,
