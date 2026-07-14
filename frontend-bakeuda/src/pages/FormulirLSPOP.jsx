@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PaperHeader from '../components/PaperHeader';
 
-export default function FormulirLSPOP({ onNavigate }) {
+export default function FormulirLSPOP() {
+  const navigate = useNavigate();
   const [nop, setNop] = useState('');
   const [nomorBangunan, setNomorBangunan] = useState(1);
   const [totalBangunan, setTotalBangunan] = useState(1);
@@ -146,19 +148,19 @@ export default function FormulirLSPOP({ onNavigate }) {
 
   if (submitSuccess) {
     return (
-      <main className="p-gutter max-w-5xl mx-auto w-full">
+      <main className="p-gutter max-w-screen-2xl mx-auto w-full">
         <PaperHeader />
         <div className="bg-white border border-outline-variant rounded-xl p-10 shadow-sm text-center space-y-6 animate-fadeIn">
           <div className="w-20 h-20 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="material-symbols-outlined text-[48px]">check_circle</span>
           </div>
-          <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">LSPOP Selesai!</h3>
+          <h3 className="text-display-lg text-primary uppercase font-extrabold">LSPOP Selesai!</h3>
           <p className="text-body-md text-on-surface-variant max-w-lg mx-auto">
             Semua data bangunan (total {totalBangunan} unit) untuk NOP <b>{nop}</b> telah berhasil didaftarkan.
           </p>
           <div className="pt-8">
             <button
-              onClick={() => onNavigate('dashboard_desa')}
+              onClick={() => navigate('/dashboard-desa')}
               className="px-8 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg transition-all"
             >
               Kembali ke Dashboard
@@ -170,7 +172,7 @@ export default function FormulirLSPOP({ onNavigate }) {
   }
 
   return (
-    <main className="p-gutter max-w-5xl mx-auto w-full relative">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full relative">
       <PaperHeader />
       
       <div className="flex justify-between items-end mb-6">

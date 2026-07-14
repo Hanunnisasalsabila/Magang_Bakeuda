@@ -50,7 +50,7 @@ async create(dto: CreateSubjekPajakDto, createdBy: string) {
       pekerjaan: subjek.pekerjaan,
       npwp: subjek.npwp,
       npwpd: subjek.npwpd,
-      no_hp: subjek.no_hp,
+      no_hp: subjek.no_hp, 
       email: subjek.email,
       alamat_jalan: subjek.alamat_jalan,
       blok_kav_no_subjek: subjek.blok_kav_no_subjek,
@@ -135,11 +135,14 @@ async create(dto: CreateSubjekPajakDto, createdBy: string) {
     const updated = await this.prisma.subjekPajak.update({
       where: { nik },
       data: updateData,
+      include: { user: { select: { nama_lengkap: true } } },
     });
+
+    const { user, created_by, ...rest } = updated;
     return {
       success: true,
       message: 'Subjek pajak berhasil diupdate',
-      data: updated,
+      data: { ...rest, dibuat_oleh: user?.nama_lengkap ?? null },
     };
   }
 

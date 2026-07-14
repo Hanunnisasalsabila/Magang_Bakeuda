@@ -9,6 +9,7 @@ import { CreateObjekPajakDto } from './dto/create-objek-pajak.dto.js';
 import { UpdateObjekPajakDto } from './dto/update-objek-pajak.dto.js';
 import { UpdateObjekBumiDto } from './dto/update-objek-bumi.dto.js';
 import { UpdateObjekBangunanDto } from './dto/update-objek-bangunan.dto.js';
+import { UpdateFasilitasBangunanDto } from './dto/update-fasilitas-bangunan.dto.js';
 
 @Injectable()
 export class ObjekPajakService {
@@ -83,12 +84,14 @@ export class ObjekPajakService {
                 kode_jpb: b.kode_jpb,
                 tahun_dibangun: b.tahun_dibangun,
                 jumlah_lantai: b.jumlah_lantai ?? 1,
+                daya_listrik_watt: b.daya_listrik_watt,
                 kondisi_bangunan: b.kondisi_bangunan,
+                fasilitas: b.fasilitas ? { create: b.fasilitas } : undefined,
               })),
             }
           : undefined,
       },
-      include: { bumi: true, bangunan: true },
+      include: { bumi: true, bangunan: { include: { fasilitas: true } } },
     });
 
     return {
@@ -108,7 +111,7 @@ export class ObjekPajakService {
       include: {
         subjek_pajak: { select: { nik: true, nama_subjek: true } },
         bumi: true,
-        bangunan: true,
+        bangunan: { include: { fasilitas: true } },
       },
     });
     if (!objek) throw new NotFoundException('Objek pajak tidak ditemukan');
@@ -265,6 +268,35 @@ export class ObjekPajakService {
     return {
       success: true,
       message: 'Data bangunan berhasil diupdate',
+      data: updated,
+    };
+  }
+
+  // ─────────────────────────────────────────
+  // UPSERT FASILITAS BANGUNAN (1-to-1 dengan ObjekBangunan)
+  // ─────────────────────────────────────────
+
+  async updateFasilitasBangunan(
+    idBangunan: string,
+    dto: UpdateFasilitasBangunanDto,
+  ) {
+    const bangunan = await this.prisma.objekBangunan.findUnique({
+      where: { id_bangunan: idBangunan },
+    });
+    if (!bangunan)
+      throw new NotFoundException('Objek bangunan tidak ditemukan');
+
+    // Pakai upsert karena fasilitas opsional — bangunan sederhana
+    // mungkin belum punya record fasilitas sampai pertama kali diisi
+    const updated = await this.prisma.objekBangunanFasilitas.upsert({
+      where: { id_bangunan: idBangunan },
+      create: { id_bangunan: idBangunan, ...dto },
+      update: dto,
+    });
+
+    return {
+      success: true,
+      message: 'Fasilitas bangunan berhasil diupdate',
       data: updated,
     };
   }

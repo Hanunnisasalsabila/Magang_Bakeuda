@@ -17,14 +17,20 @@ export class TransaksiSpopService {
     const currentYear = new Date().getFullYear();
     const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU_VERIFIKASI_DESA';
 
-    // Validasi Cerdas
-    if (jenis_transaksi === 'MUTASI' && !dto.nop_utama) {
-      throw new BadRequestException('NOP Utama wajib diisi untuk jenis layanan Pemutakhiran Data (Mutasi)');
+    // Validasi Cerdas NOP
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi) && !dto.nop_utama) {
+      throw new BadRequestException(`NOP Utama wajib diisi untuk jenis layanan ${jenis_transaksi}`);
     }
-    if (jenis_transaksi === 'PECAH' && !dto.nop_asal) {
-      throw new BadRequestException('NOP Asal wajib diisi untuk jenis layanan Pecah Tanah');
+    if (['PECAH', 'GABUNG'].includes(jenis_transaksi)) {
+      if (!dto.nop_asal || dto.nop_asal.length === 0) {
+        throw new BadRequestException(`NOP Asal wajib diisi minimal 1 untuk jenis layanan ${jenis_transaksi}`);
+      }
     }
-    if (jenis_tanah_baru === 'TANAH_BANGUNAN') {
+    // Validasi Cerdas Bangunan
+    if (jenis_tanah_baru !== 'TANAH_BANGUNAN') {
+      dto.objek_pajak_sementara.luas_bangunan = 0;
+      dto.objek_pajak_sementara.jumlah_bangunan = 0;
+    } else {
       if (!dto.objek_pajak_sementara.luas_bangunan || dto.objek_pajak_sementara.luas_bangunan <= 0) {
         throw new BadRequestException('Luas bangunan wajib diisi jika jenis tanah adalah TANAH & BANGUNAN');
       }
@@ -45,9 +51,11 @@ export class TransaksiSpopService {
       const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_utama } });
       if (!exists) throw new BadRequestException(`NOP Utama (${dto.nop_utama}) tidak terdaftar di database.`);
     }
-    if (dto.nop_asal) {
-      const exists = await this.prisma.objekPajak.findUnique({ where: { nop: dto.nop_asal } });
-      if (!exists) throw new BadRequestException(`NOP Asal (${dto.nop_asal}) tidak terdaftar di database.`);
+    if (dto.nop_asal && dto.nop_asal.length > 0) {
+      for (const nopAsal of dto.nop_asal) {
+        const exists = await this.prisma.objekPajak.findUnique({ where: { nop: nopAsal } });
+        if (!exists) throw new BadRequestException(`NOP Asal (${nopAsal}) tidak terdaftar di database.`);
+      }
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -104,10 +112,11 @@ export class TransaksiSpopService {
           menggunakan_kuasa: dto.is_kuasa || false,
           
           // Data Detail Asal (Conditionally inserted)
-          detail_asal: (jenis_transaksi !== 'BARU' && (dto.nop_utama || dto.nop_asal)) ? {
-            create: {
-              nop_asal: (dto.nop_utama || dto.nop_asal) || null,
-            }
+          detail_asal: dto.nop_utama || (dto.nop_asal && dto.nop_asal.length > 0) ? {
+            create: [
+              ...(dto.nop_utama ? [{ nop_asal: dto.nop_utama }] : []),
+              ...(dto.nop_asal ? dto.nop_asal.map(n => ({ nop_asal: n })) : []),
+            ]
           } : undefined,
 
           // Data Tujuan
@@ -355,7 +364,7 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({
         where: {
           ...baseWhere,
-          status_ajuan: { in: [StatusAjuan.MENUNGGU_VERIFIKASI_DESA, StatusAjuan.MENUNGGU] }
+          status_ajuan: StatusAjuan.MENUNGGU_VERIFIKASI_DESA
         }
       }),
       this.prisma.transaksiSpop.count({
@@ -367,7 +376,7 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({
         where: {
           ...baseWhere,
-          status_ajuan: { in: [StatusAjuan.PERBAIKAN, StatusAjuan.REVISI] }
+          status_ajuan: StatusAjuan.PERBAIKAN
         }
       })
     ]);

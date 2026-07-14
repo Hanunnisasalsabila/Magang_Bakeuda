@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
 import wilayahData from '../utils/wilayahData.json';
 
-export default function AntreanVerifikasi({ onNavigate }) {
+export default function AntreanVerifikasi() {
+  const navigate = useNavigate();
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [kelurahan, setKelurahan] = useState('Semua Desa');
   const [search, setSearch] = useState('');
@@ -40,7 +42,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
 
     const fetchQueue = async () => {
       try {
-        const res = await api.get('/transaksi-spop?status=MENUNGGU');
+        const res = await api.get('/transaksi-spop?status_ajuan=MENUNGGU_VERIFIKASI_DESA');
         const formatted = res.data.data.map(item => {
           const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
           const parts = nopRaw.replace(/\D/g, '');
@@ -66,134 +68,10 @@ export default function AntreanVerifikasi({ onNavigate }) {
             urgent: false
           };
         });
-        
-        // --- ADD DUMMY DATA FOR UI TESTING IF EMPTY ---
-        if (formatted.length === 0) {
-          formatted.push(
-            {
-              id: 'dummy-1',
-              nop: '33.03.010.001.000-0000.0',
-              name: 'Budi Santoso',
-              userId: 'Pengaju: Budi Santoso',
-              address: 'Tanah Darat',
-              rtRw: 'RT 01 / RW 02',
-              kelurahan: 'Kemangkon',
-              kecamatan: 'Kemangkon',
-              date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '10:30 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: true
-            },
-            {
-              id: 'dummy-2',
-              nop: '33.03.020.010.000-0000.0',
-              name: 'Siti Aminah',
-              userId: 'Pengaju: Siti Aminah',
-              address: 'Tanah Sawah',
-              rtRw: 'RT 03 / RW 01',
-              kelurahan: 'Penaruban',
-              kecamatan: 'Bukateja',
-              date: new Date(Date.now() - 86400000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '14:15 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            },
-            {
-              id: 'dummy-3',
-              nop: '33.03.080.010.000-0000.0',
-              name: 'CV. Maju Jaya',
-              userId: 'Pengaju: Ahmad Dahlan',
-              address: 'Tanah Bangunan Usaha',
-              rtRw: 'RT 05 / RW 04',
-              kelurahan: 'Mrebet',
-              kecamatan: 'Mrebet',
-              date: new Date(Date.now() - 172800000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '09:00 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            },
-            {
-              id: 'dummy-4',
-              nop: '33.03.070.005.000-0000.0',
-              name: 'Agus Setiawan',
-              userId: 'Pengaju: Agus Setiawan',
-              address: 'Tanah Darat',
-              rtRw: 'RT 02 / RW 01',
-              kelurahan: 'Kutasari',
-              kecamatan: 'Kutasari',
-              date: new Date(Date.now() - 259200000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '11:20 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            }
-          );
-        }
-        // ----------------------------------------------
 
         setQueueData(formatted);
       } catch (error) {
         console.error("Gagal mengambil antrean:", error);
-        
-        // --- FALLBACK TO DUMMY DATA ON ERROR ---
-        setQueueData([
-            {
-              id: 'dummy-1',
-              nop: '33.03.010.001.000-0000.0',
-              name: 'Budi Santoso',
-              userId: 'Pengaju: Budi Santoso',
-              address: 'Tanah Darat',
-              rtRw: 'RT 01 / RW 02',
-              kelurahan: 'Kemangkon',
-              kecamatan: 'Kemangkon',
-              date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '10:30 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: true
-            },
-            {
-              id: 'dummy-2',
-              nop: '33.03.020.010.000-0000.0',
-              name: 'Siti Aminah',
-              userId: 'Pengaju: Siti Aminah',
-              address: 'Tanah Sawah',
-              rtRw: 'RT 03 / RW 01',
-              kelurahan: 'Penaruban',
-              kecamatan: 'Bukateja',
-              date: new Date(Date.now() - 86400000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '14:15 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            },
-            {
-              id: 'dummy-3',
-              nop: '33.03.080.010.000-0000.0',
-              name: 'CV. Maju Jaya',
-              userId: 'Pengaju: Ahmad Dahlan',
-              address: 'Tanah Bangunan Usaha',
-              rtRw: 'RT 05 / RW 04',
-              kelurahan: 'Mrebet',
-              kecamatan: 'Mrebet',
-              date: new Date(Date.now() - 172800000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '09:00 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            },
-            {
-              id: 'dummy-4',
-              nop: '33.03.070.005.000-0000.0',
-              name: 'Agus Setiawan',
-              userId: 'Pengaju: Agus Setiawan',
-              address: 'Tanah Darat',
-              rtRw: 'RT 02 / RW 01',
-              kelurahan: 'Kutasari',
-              kecamatan: 'Kutasari',
-              date: new Date(Date.now() - 259200000).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: '11:20 WIB',
-              status: 'Menunggu Verifikasi',
-              urgent: false
-            }
-        ]);
-        // ----------------------------------------------
       } finally {
         setLoading(false);
       }
@@ -355,7 +233,7 @@ export default function AntreanVerifikasi({ onNavigate }) {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button
-                        onClick={() => onNavigate('detail_review', { id: item.id })}
+                        onClick={() => navigate('/detail-review/' + item.id)}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all mx-auto shadow-sm ${
                           item.urgent
                             ? 'bg-red-600 text-white hover:bg-red-700'

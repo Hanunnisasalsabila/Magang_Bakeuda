@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -7,7 +8,8 @@ import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
 import wilayahData from '../utils/wilayahData.json';
 
-export default function DaftarObjekPajak({ onNavigate }) {
+export default function DaftarObjekPajak() {
+  const navigate = useNavigate();
   const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
@@ -185,7 +187,7 @@ export default function DaftarObjekPajak({ onNavigate }) {
           </div>
           
           <button
-            onClick={() => onNavigate && onNavigate('formulir_spop')}
+            onClick={() => navigate('/formulir-spop')}
             className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -294,7 +296,7 @@ export default function DaftarObjekPajak({ onNavigate }) {
                 setKecamatan('Semua Kecamatan');
                 setStatusVerif('Semua Status');
               }}
-              className="w-full bg-surface-container-high border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-highest transition-colors font-semibold focus:outline-none"
+              className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
             >
               Reset Filter
             </button>
@@ -533,7 +535,7 @@ export default function DaftarObjekPajak({ onNavigate }) {
                 </button>
                 <button 
                   onClick={() => {
-                    onNavigate && onNavigate('formulir_spop');
+                    navigate('/formulir-spop');
                     setSelectedObject(null);
                   }}
                   disabled={selectedObject.status === 'Nonaktif'}

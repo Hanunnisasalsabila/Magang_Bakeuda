@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -27,13 +28,15 @@ function LocationPicker({ position, setPosition }) {
   );
 }
 
-export default function FormulirSPOP({ onNavigate }) {
+export default function FormulirSPOP() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
-  const [nopAsal, setNopAsal] = useState('33.03.');
+  const [nopAsalList, setNopAsalList] = useState(['33.03.']);
   const [spptLama, setSpptLama] = useState('');
 
   const [formData, setFormData] = useState({
+    kategoriTransaksi: '',
     transaksi: '',
     nop: {
       prov: '33',
@@ -61,11 +64,13 @@ export default function FormulirSPOP({ onNavigate }) {
     noTelp: '',
     statusWp: '',
     pekerjaan: '',
+    isKuasa: false,
     alamat: '',
     blokKav: '',
     rt: '',
     rw: '',
     kelurahan: '',
+    kecamatan: '',
     kabupaten: 'Purbalingga',
     kodePos: '',
     luasTanah: '',
@@ -81,8 +86,14 @@ export default function FormulirSPOP({ onNavigate }) {
     rt_op: '',
     rw_op: '',
     estimasiNjop: '',
+    luasBangunan: '',
     jumlahBangunan: '0',
-    titikKoordinat: '',
+    latitude: '',
+    longitude: '',
+    batasUtara: '',
+    batasSelatan: '',
+    batasTimur: '',
+    batasBarat: '',
     persetujuan: false,
     lampiran: []
   });
@@ -110,12 +121,12 @@ export default function FormulirSPOP({ onNavigate }) {
   };
 
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.titikKoordinat && formData.titikKoordinat.includes(',')
-    ? formData.titikKoordinat.split(',').map(Number)
+  const currentPosition = formData.latitude && formData.longitude 
+    ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
     : defaultPosition;
 
   const handleMapClick = (pos) => {
-    setFormData(prev => ({ ...prev, titikKoordinat: `${pos[0]}, ${pos[1]}` }));
+    setFormData(prev => ({ ...prev, latitude: pos[0].toString(), longitude: pos[1].toString() }));
   };
 
   const handleNopChange = (nopObj) => {
@@ -126,37 +137,33 @@ export default function FormulirSPOP({ onNavigate }) {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleNopAsalChange = (e) => {
-    let val = e.target.value;
-
-    // Cegah penghapusan prefix 33.03.
+  const handleNopAsalChange = (index, val) => {
     if (!val.startsWith('33.03.')) {
       if (val.length < 6) {
-        setNopAsal('33.03.');
+        setNopAsalList(prev => prev.map((item, i) => i === index ? '33.03.' : item));
         return;
       }
     }
 
     let raw = val.replace(/\D/g, '');
-
-    if (raw.startsWith('3303')) {
-      raw = raw.substring(4);
-    }
-
+    if (raw.startsWith('3303')) raw = raw.substring(4);
     raw = '3303' + raw;
     raw = raw.substring(0, 18);
 
     let formatted = '';
-    if (raw.length > 0) formatted += raw.substring(0, 2); // 33
-    if (raw.length > 2) formatted += '.' + raw.substring(2, 4); // 03
-    if (raw.length > 4) formatted += '.' + raw.substring(4, 7); // Kec
-    if (raw.length > 7) formatted += '.' + raw.substring(7, 10); // Kel
-    if (raw.length > 10) formatted += '.' + raw.substring(10, 13); // Blok
-    if (raw.length > 13) formatted += '.' + raw.substring(13, 17); // No Urut (Ubah strip jadi titik di sini)
-    if (raw.length > 17) formatted += '.' + raw.substring(17, 18); // Kode
+    if (raw.length > 0) formatted += raw.substring(0, 2);
+    if (raw.length > 2) formatted += '.' + raw.substring(2, 4);
+    if (raw.length > 4) formatted += '.' + raw.substring(4, 7);
+    if (raw.length > 7) formatted += '.' + raw.substring(7, 10);
+    if (raw.length > 10) formatted += '.' + raw.substring(10, 13);
+    if (raw.length > 13) formatted += '.' + raw.substring(13, 17);
+    if (raw.length > 17) formatted += '.' + raw.substring(17, 18);
 
-    setNopAsal(formatted);
+    setNopAsalList(prev => prev.map((item, i) => i === index ? formatted : item));
   };
+  
+  const addNopAsal = () => setNopAsalList(prev => [...prev, '33.03.']);
+  const removeNopAsal = (index) => setNopAsalList(prev => prev.filter((_, i) => i !== index));
 
   const handleSpptLamaChange = (e) => {
     // Ambil angka saja, batasi maksimal 9 digit
@@ -190,14 +197,22 @@ export default function FormulirSPOP({ onNavigate }) {
     }
     return res;
   };
-
   const validateStep = (currentStep) => {
     const newErrors = {};
     if (currentStep === 1) {
-      if (!formData.transaksi) newErrors.transaksi = 'Pilih jenis transaksi';
-      const nopObj = formData.nop;
-      const nopString = `${nopObj.prov}${nopObj.kab}${nopObj.kec}${nopObj.kel}${nopObj.blok}${nopObj.nourut}${nopObj.kode}`;
-      if (nopString.length !== 18) newErrors.nop = 'NOP harus 18 digit angka yang lengkap';
+      if (!formData.kategoriTransaksi) newErrors.transaksi = 'Pilih kategori pendaftaran';
+      if (!formData.transaksi) newErrors.transaksi = 'Pilih jenis transaksi secara spesifik';
+      
+      if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi)) {
+        const nopObj = formData.nop;
+        const nopString = `${nopObj.prov}${nopObj.kab}${nopObj.kec}${nopObj.kel}${nopObj.blok}${nopObj.nourut}${nopObj.kode}`;
+        if (nopString.length !== 18) newErrors.nop = 'NOP Utama harus 18 digit angka yang lengkap';
+      }
+
+      if (['PECAH', 'GABUNG'].includes(formData.transaksi)) {
+        const isEmpty = nopAsalList.some(nop => nop.replace(/\D/g, '').length !== 18);
+        if (isEmpty) newErrors.nopAsal = 'Semua NOP Asal wajib 18 digit angka';
+      }
     } else if (currentStep === 2) {
       if (!formData.nik || formData.nik.length !== 16 || !/^\d+$/.test(formData.nik)) newErrors.nik = 'NIK wajib 16 digit angka';
       if (!formData.nama.trim()) newErrors.nama = 'Nama Wajib Pajak wajib diisi';
@@ -249,79 +264,71 @@ export default function FormulirSPOP({ onNavigate }) {
       const nopObj = formData.nop;
       const nopBersamaObj = formData.nopBersama;
 
-      const rawNop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`.replace(/\D/g, '');
-      const rawNopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`.replace(/\D/g, '');
-      const rawNopAsal = nopAsal.replace(/\D/g, '');
+      const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
+      const rawNop = nop.replace(/\D/g, '');
+      
+      const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
+      const rawNopBersama = nopBersama.replace(/\D/g, '');
+      
+      const rawNopAsalList = nopAsalList.map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
 
-      let jenis_layanan = 'BARU';
-      if (formData.transaksi === 'update') jenis_layanan = 'PERUBAHAN_DATA';
-      if (formData.transaksi === 'hapus') jenis_layanan = 'MUTASI';
+      const jenis_layanan = formData.transaksi || 'BARU';
 
-      // Map Enum
-      const statusWpEnum = {
-        'Pemilik': 'PEMILIK',
-        'Penyewa': 'PENYEWA',
-        'Pengelola': 'PENGGARAP',
-        'Pemakai': 'PEMAKAI',
-        'Sengketa': 'SENGKETA'
-      }[formData.statusWp] || 'PEMILIK';
-
-      const pekerjaanEnum = {
-        'PNS': 'PNS',
-        'ABRI': 'TNI_POLRI',
-        'Pensiunan': 'PENSIUNAN',
-        'Badan': 'BADAN',
-        'Lainnya': 'LAINNYA'
-      }[formData.pekerjaan] || 'LAINNYA';
-
-      const jenisTanahEnum = {
-        'Tanah + Bangunan': 'TANAH_BANGUNAN',
-        'Kavling Siap Bangun': 'TANAH_LAINNYA',
-        'Tanah Kosong': 'TANAH_LAINNYA',
-        'Fasilitas Umum': 'TANAH_LAINNYA'
-      }[formData.jenisTanah] || 'TANAH_LAINNYA';
-
-      const token = localStorage.getItem('token');
+      const mapStatusWp = { 'Pemilik': 'PEMILIK', 'Penyewa': 'PENYEWA', 'Pengelola': 'PENGELOLA', 'Pemakai': 'PEMAKAI', 'Sengketa': 'SENGKETA' };
+      const mapPekerjaan = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'Pensiunan': 'PENSIUNAN', 'Badan': 'BADAN', 'Lainnya': 'LAINNYA' };
+      const mapJenisTanah = { 'Tanah + Bangunan': 'TANAH_BANGUNAN', 'Kavling Siap Bangun': 'KAVLING_SIAP_BANGUN', 'Tanah Kosong': 'TANAH_KOSONG', 'Fasilitas Umum': 'FASILITAS_UMUM' };
 
       const payload = {
         jenis_layanan,
         nop_utama: rawNop,
         nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
-        nop_asal: rawNopAsal.length >= 18 ? rawNopAsal : undefined,
+        nop_asal: rawNopAsalList.length > 0 ? rawNopAsalList : undefined,
         no_sppt_lama: spptLama || undefined,
+        is_draft: false,
+        is_kuasa: formData.isKuasa,
         subjek_pajak: {
           nik: formData.nik,
           nama: formData.nama,
-          status_wp: statusWpEnum,
-          pekerjaan: pekerjaanEnum,
+          npwp: formData.npwp || undefined,
+          no_hp: formData.noTelp || undefined,
+          status_wp: mapStatusWp[formData.statusWp] || 'PEMILIK',
+          pekerjaan: mapPekerjaan[formData.pekerjaan] || 'LAINNYA',
           alamat: formData.alamat,
+          blok_kav_no: formData.blokKav || undefined,
           rt: formData.rt || '000',
           rw: formData.rw || '000',
-          kelurahan: formData.kelurahan,
-          kabupaten: formData.kabupaten,
           kode_pos: formData.kodePos || undefined,
+          kelurahan: formData.kelurahan,
+          kecamatan: formData.kecamatan || 'Purbalingga',
+          kabupaten: formData.kabupaten
         },
         objek_pajak_sementara: {
-          jenis_tanah: jenisTanahEnum,
-          luas_tanah: Number(formData.luasTanah),
-          luas_bangunan: parseFloat(formData.luasBangunan) || undefined,
-          jumlah_bangunan: parseInt(formData.jumlahBangunan) || 0,
           jalan_op: formData.alamatObjek,
+          blok_kav_no_op: formData.blokKavObjek || undefined,
           rt_op: formData.rtObjek || '000',
           rw_op: formData.rwObjek || '000',
           kelurahan_op: formData.kelurahanObjek || formData.kelurahan,
           kecamatan_op: formData.kecamatanObjek || 'Purbalingga',
+          luas_tanah: Number(formData.luasTanah),
+          luas_bangunan: mapJenisTanah[formData.jenisTanah] === 'TANAH_BANGUNAN' ? (parseFloat(formData.luasBangunan) || 0) : 0,
+          jumlah_bangunan: mapJenisTanah[formData.jenisTanah] === 'TANAH_BANGUNAN' ? (parseInt(formData.jumlahBangunan) || 0) : 0,
+          jenis_tanah: mapJenisTanah[formData.jenisTanah] || 'TANAH_KOSONG',
+          latitude: formData.latitude || undefined,
+          longitude: formData.longitude || undefined,
+          batas_utara_nop: formData.batasUtara || undefined,
+          batas_selatan_nop: formData.batasSelatan || undefined,
+          batas_timur_nop: formData.batasTimur || undefined,
+          batas_barat_nop: formData.batasBarat || undefined
         },
         lampiran: formData.lampiran.length > 0 ? formData.lampiran : undefined,
       };
 
       const response = await api.post('/transaksi-spop', payload);
-
       const result = response.data;
       setSubmitResult(result);
 
       // Simpan data ke localStorage agar FormulirLSPOP bisa mengaksesnya
-      const finalNop = `33.03.${formData.nop.kec || '000'}.${formData.nop.kel || '000'}.${formData.nop.blok || '000'}.${formData.nop.nourut || '0000'}.${formData.nop.kode || '0'}`;
+      const finalNop = `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
       localStorage.setItem('lspop_nop', finalNop);
       localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
 
@@ -347,7 +354,7 @@ export default function FormulirSPOP({ onNavigate }) {
   ];
 
   return (
-    <main className="p-gutter max-w-5xl mx-auto w-full">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full">
       {/* Paper Header Mockup */}
       <PaperHeader />
 
@@ -421,21 +428,28 @@ export default function FormulirSPOP({ onNavigate }) {
                       ].map((t) => (
                         <label
                           key={t.val}
-                          className={`flex flex-col p-5 border rounded-xl cursor-pointer transition-all ${formData.transaksi === t.val
+                          className={`flex flex-col p-5 border rounded-xl cursor-pointer transition-all ${formData.kategoriTransaksi === t.val
                             ? 'border-primary bg-primary/5 shadow-md ring-1 ring-primary'
                             : 'border-outline-variant hover:border-primary/50 hover:bg-surface-container-low hover:shadow-sm'
                             }`}
                         >
                           <div className="flex items-center justify-between mb-4">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.transaksi === t.val ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.kategoriTransaksi === t.val ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
                               <span className="material-symbols-outlined">{t.icon}</span>
                             </div>
                             <input
                               type="radio"
-                              name="transaksi"
+                              name="kategoriTransaksi"
                               value={t.val}
-                              checked={formData.transaksi === t.val}
-                              onChange={(e) => handleTextChange('transaksi', e)}
+                              checked={formData.kategoriTransaksi === t.val}
+                              onChange={(e) => {
+                                handleTextChange('kategoriTransaksi', e);
+                                if (e.target.value === 'hapus') {
+                                  handleTextChange('transaksi', { target: { value: 'HAPUS' } });
+                                } else {
+                                  handleTextChange('transaksi', { target: { value: '' } });
+                                }
+                              }}
                               className="w-5 h-5 text-primary focus:ring-primary border-outline-variant"
                             />
                           </div>
@@ -447,42 +461,88 @@ export default function FormulirSPOP({ onNavigate }) {
                       ))}
                     </div>
                     {errors.transaksi && <p className="text-error text-sm mt-1">{errors.transaksi}</p>}
+
+                    {formData.kategoriTransaksi === 'baru' && (
+                      <div className="mt-4 p-4 border rounded-xl bg-surface-container-low border-primary/20">
+                        <label className="font-bold text-sm block mb-3 text-primary">Kondisi Pendaftaran (Pilih salah satu):</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          {[
+                            { val: 'BARU', label: 'Murni (Belum Pernah Terdaftar)' },
+                            { val: 'PECAH', label: 'Hasil Pemecahan (Split)' },
+                            { val: 'GABUNG', label: 'Hasil Penggabungan' }
+                          ].map(opt => (
+                            <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
+                              <input 
+                                type="radio" name="transaksi" value={opt.val} 
+                                checked={formData.transaksi === opt.val} 
+                                onChange={(e) => handleTextChange('transaksi', e)}
+                                className="text-primary focus:ring-primary"
+                              />
+                              <span className="text-sm font-medium">{opt.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {formData.kategoriTransaksi === 'update' && (
+                      <div className="mt-4 p-4 border rounded-xl bg-surface-container-low border-primary/20">
+                        <label className="font-bold text-sm block mb-3 text-primary">Jenis Pemutakhiran (Pilih salah satu):</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          {[
+                            { val: 'MUTASI', label: 'Balik Nama / Jual Beli (Mutasi)' },
+                            { val: 'PERUBAHAN_DATA', label: 'Ralat Luas / Alamat (Perubahan Data)' }
+                          ].map(opt => (
+                            <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
+                              <input 
+                                type="radio" name="transaksi" value={opt.val} 
+                                checked={formData.transaksi === opt.val} 
+                                onChange={(e) => handleTextChange('transaksi', e)}
+                                className="text-primary focus:ring-primary"
+                              />
+                              <span className="text-sm font-medium">{opt.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* NOP Section */}
-                  <div className="space-y-4">
-                    <div className="overflow-x-auto pb-4 custom-scrollbar">
-                      <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
-                        <div className="space-y-4">
-                          <SegmentedNOPInput
-                            value={formData.nop}
-                            onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
-                            label="NOP"
-                            showHeaders={true}
-                          />
-                          <SegmentedNOPInput
-                            value={formData.nopBersama}
-                            onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
-                            label="NOP BERSAMA"
-                            showHeaders={false}
-                          />
+                  {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
+                    <div className="space-y-4">
+                      <div className="overflow-x-auto pb-4 custom-scrollbar">
+                        <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                          <div className="space-y-4">
+                            <SegmentedNOPInput
+                              value={formData.nop}
+                              onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
+                              label="NOP"
+                              showHeaders={true}
+                            />
+                            <SegmentedNOPInput
+                              value={formData.nopBersama}
+                              onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                              label="NOP BERSAMA"
+                              showHeaders={false}
+                            />
+                          </div>
+                          {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
                         </div>
-                        {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
                       </div>
-                    </div>
 
-                    <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
-                      <div className="flex gap-2 items-start">
-                        <span className="material-symbols-outlined text-tertiary">info</span>
-                        <div>
-                          <p className="font-label-sm text-tertiary">Peringatan</p>
-                          <p className="text-[12px] text-tertiary leading-tight">
-                            Pastikan NOP sesuai dengan SPPT tahun pajak berjalan untuk mempermudah proses verifikasi otomatis.
-                          </p>
+                      <div className="p-4 bg-tertiary-fixed rounded border border-tertiary/20 max-w-3xl">
+                        <div className="flex gap-2 items-start">
+                          <span className="material-symbols-outlined text-tertiary">info</span>
+                          <div>
+                            <p className="font-label-sm text-tertiary">Peringatan</p>
+                            <p className="text-[12px] text-tertiary leading-tight">
+                              Pastikan NOP sesuai dengan SPPT tahun pajak berjalan untuk mempermudah proses verifikasi otomatis.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </section>
 
@@ -490,32 +550,53 @@ export default function FormulirSPOP({ onNavigate }) {
 
               <section className="bg-surface-container-low p-6 rounded-lg">
                 <div className="flex items-center gap-3 mb-6">
-                  <h4 className="font-section-header text-section-header font-bold text-on-surface-variant uppercase">
+                  <h4 className="text-primary font-bold uppercase">
                     A. INFORMASI TAMBAHAN UNTUK DATA BARU
                   </h4>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Input NOP ASAL */}
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-primary uppercase">NOP Asal</label>
-                    <input
-                      type="text"
-                      value={nopAsal}
-                      onChange={handleNopAsalChange}
-                      placeholder="33.03.XXX.XXX.XXX-XXXX.X"
-                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-                    />
-                  </div>
+                  {['PECAH', 'GABUNG'].includes(formData.transaksi) && (
+                    <div className="flex flex-col gap-3 col-span-2">
+                      <div className="flex items-center justify-between">
+                        <label className="font-label-sm text-on-surface-variant font-bold uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
+                        {formData.transaksi === 'GABUNG' && (
+                          <button type="button" onClick={addNopAsal} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-bold hover:bg-primary/20">
+                            + Tambah NOP Asal
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {nopAsalList.map((nop, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={nop}
+                              onChange={(e) => handleNopAsalChange(idx, e.target.value)}
+                              placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                              className="p-3 bg-background border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+                            />
+                            {formData.transaksi === 'GABUNG' && nopAsalList.length > 1 && (
+                              <button type="button" onClick={() => removeNopAsal(idx)} className="text-error bg-error/10 p-3 rounded-md hover:bg-error/20">
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {errors.nopAsal && <p className="text-error text-sm mt-1">{errors.nopAsal}</p>}
+                    </div>
+                  )}
 
                   {/* Input NO SPPT LAMA */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-primary uppercase">No. SPPT Lama</label>
+                    <label className="font-label-sm text-on-surface-variant font-bold uppercase">No. SPPT Lama</label>
                     <input
                       type="text"
                       value={spptLama}
                       onChange={handleSpptLamaChange}
                       placeholder="XXX.XXX.XXX"
-                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+                      className="p-3 bg-background border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
                   </div>
                 </div>
@@ -623,6 +704,15 @@ export default function FormulirSPOP({ onNavigate }) {
                       placeholder="Sesuai Sertifikat / KTP"
                     />
                     {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
+                    <label className="flex items-center gap-3 cursor-pointer mt-3 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-5 h-5 text-primary focus:ring-primary border-outline-variant rounded"
+                        checked={formData.isKuasa}
+                        onChange={(e) => setFormData(prev => ({ ...prev, isKuasa: e.target.checked }))}
+                      />
+                      <span className="font-label-sm text-on-surface">Bertindak Selaku Kuasa (Bukan Pemilik Langsung)</span>
+                    </label>
                   </div>
 
                   <div className="space-y-2">
@@ -706,6 +796,17 @@ export default function FormulirSPOP({ onNavigate }) {
                         placeholder="Contoh: Purbalingga Lor"
                       />
                       {errors.kelurahan && <p className="text-error text-[12px]">{errors.kelurahan}</p>}
+                    </div>
+                    <div className="md:col-span-8 space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">Kecamatan</label>
+                      <input
+                        type="text"
+                        value={formData.kecamatan}
+                        onChange={(e) => handleTextChange('kecamatan', e)}
+                        className={`w-full h-11 border ${errors.kecamatan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-body-md bg-white`}
+                        placeholder="Contoh: Purbalingga"
+                      />
+                      {errors.kecamatan && <p className="text-error text-[12px]">{errors.kecamatan}</p>}
                     </div>
                     <div className="md:col-span-8 space-y-2">
                       <label className="font-label-sm text-on-surface-variant block">Kabupaten / Kota</label>
@@ -882,6 +983,20 @@ export default function FormulirSPOP({ onNavigate }) {
                     </h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {formData.jenisTanah === 'Tanah + Bangunan' && (
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LUAS BANGUNAN (M²)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={formData.luasBangunan}
+                          onChange={(e) => handleTextChange('luasBangunan', e)}
+                          className={`w-full h-12 border ${errors.luasBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                          placeholder="Contoh: 100"
+                        />
+                        {errors.luasBangunan && <p className="text-error text-[12px]">{errors.luasBangunan}</p>}
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
                       <input
@@ -889,8 +1004,66 @@ export default function FormulirSPOP({ onNavigate }) {
                         min="0"
                         value={formData.jumlahBangunan}
                         onChange={(e) => handleTextChange('jumlahBangunan', e)}
-                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                        className={`w-full h-12 border ${errors.jumlahBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
                         placeholder="Contoh: 1"
+                      />
+                    </div>
+                  </div>
+                  {parseInt(formData.jumlahBangunan) > 0 && (
+                    <div className="mt-2 p-3 bg-secondary-container text-on-secondary-container rounded text-sm flex items-start gap-2 max-w-2xl">
+                      <span className="material-symbols-outlined text-sm mt-0.5">info</span>
+                      <p>Terdapat bangunan pada objek pajak ini. Anda diwajibkan mengisi formulir <b>LSPOP</b> (Lampiran SPOP) untuk pendataan bangunan setelah SPOP disetujui.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* BATAS-BATAS NOP */}
+                <div className="pt-6 border-t border-outline-variant space-y-4 mt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 bg-primary h-8 rounded-full"></div>
+                    <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
+                      BATAS-BATAS OBJEK PAJAK (NOP TETANGGA)
+                    </h4>
+                  </div>
+                  <div className="p-4 bg-surface-container-lowest border border-outline-variant rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS UTARA (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasUtara}
+                        onChange={(e) => handleTextChange('batasUtara', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS SELATAN (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasSelatan}
+                        onChange={(e) => handleTextChange('batasSelatan', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS TIMUR (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasTimur}
+                        onChange={(e) => handleTextChange('batasTimur', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="font-label-sm text-on-surface-variant block">BATAS BARAT (NOP)</label>
+                      <input
+                        type="text"
+                        value={formData.batasBarat}
+                        onChange={(e) => handleTextChange('batasBarat', e)}
+                        className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest"
+                        placeholder="33.03.XXX.XXX.XXX-XXXX.X"
                       />
                     </div>
 
@@ -940,15 +1113,27 @@ export default function FormulirSPOP({ onNavigate }) {
                       </MapContainer>
                     </div>
 
-                    <div className="space-y-2 md:w-1/2">
-                      <label className="font-label-sm text-primary block">TITIK KOORDINAT (LATITUDE, LONGITUDE)</label>
-                      <input
-                        type="text"
-                        value={formData.titikKoordinat}
-                        onChange={(e) => handleTextChange('titikKoordinat', e)}
-                        className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
-                        placeholder="Contoh: -7.3878, 109.3639"
-                      />
+                    <div className="grid grid-cols-2 gap-4 md:w-1/2">
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LATITUDE</label>
+                        <input
+                          type="text"
+                          value={formData.latitude}
+                          onChange={(e) => handleTextChange('latitude', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                          placeholder="-7.3878"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="font-label-sm text-primary block">LONGITUDE</label>
+                        <input
+                          type="text"
+                          value={formData.longitude}
+                          onChange={(e) => handleTextChange('longitude', e)}
+                          className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono bg-white shadow-sm focus:border-primary"
+                          placeholder="109.3639"
+                        />
+                      </div>
                     </div>
 
                     {/* Google Street View Placeholder */}
@@ -1030,7 +1215,7 @@ export default function FormulirSPOP({ onNavigate }) {
                   <div className="bg-surface-container border-b border-outline-variant px-6 py-4 flex justify-between items-center">
                     <div>
                       <p className="text-outline uppercase text-[10px] font-bold tracking-widest">Jenis Transaksi</p>
-                      <p className="font-bold text-primary text-lg uppercase mt-0.5">
+                      <p className="font-label-lg text-on-surface font-bold text-lg uppercase mt-0.5">
                         {formData.transaksi === 'baru' ? 'Perekaman Data Baru' : formData.transaksi === 'update' ? 'Pemutakhiran Data' : 'Penghapusan Data'}
                       </p>
                     </div>
@@ -1130,7 +1315,7 @@ export default function FormulirSPOP({ onNavigate }) {
               <div className="w-24 h-24 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ring-4 ring-secondary/20">
                 <span className="material-symbols-outlined text-[56px]">check_circle</span>
               </div>
-              <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold tracking-tight">
+              <h3 className="text-display-lg text-primary uppercase font-extrabold tracking-tight">
                 SPOP Berhasil Dikirim
               </h3>
               <p className="text-body-lg font-body-lg text-on-surface-variant max-w-lg mx-auto">
@@ -1165,14 +1350,14 @@ export default function FormulirSPOP({ onNavigate }) {
 
               <div className="pt-10 flex justify-center gap-4 flex-col sm:flex-row">
                 <button
-                  onClick={() => onNavigate('dashboard_desa')}
+                  onClick={() => navigate('/dashboard-desa')}
                   className="px-8 py-3 rounded-full border-2 border-outline-variant text-on-surface-variant font-bold hover:bg-surface-container hover:text-on-surface hover:border-outline transition-all"
                 >
                   Kembali ke Dashboard
                 </button>
                 {parseInt(formData.jumlahBangunan) > 0 && (
                   <button
-                    onClick={() => onNavigate('formulir_lspop')}
+                    onClick={() => navigate('/formulir-lspop')}
                     className="px-10 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:bg-primary-dark transition-all flex items-center justify-center gap-2 animate-bounce hover:animate-none"
                   >
                     <span className="material-symbols-outlined">assignment_add</span>
@@ -1244,58 +1429,6 @@ export default function FormulirSPOP({ onNavigate }) {
           )}
         </form>
       </div>
-
-      {/* Contextual Information (Bento Style) */}
-      {
-        step < 5 && (
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
-              <div className="bg-white/40 p-3 rounded-lg text-secondary">
-                <span className="material-symbols-outlined text-[32px]">verified_user</span>
-              </div>
-              <div>
-                <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
-                  Keamanan Data Terjamin
-                </h5>
-                <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
-                  Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
-                </p>
-              </div>
-            </div>
-            <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
-              <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
-                Butuh Bantuan?
-              </h6>
-              <div className="space-y-4">
-                <a
-                  className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                  href="tel:0281891098"
-                >
-                  <span className="material-symbols-outlined text-primary">call</span>
-                  <span className="font-label-sm">Hotline: (0281) 891098</span>
-                </a>
-                <a
-                  className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                  href="mailto:bakeuda@purbalinggakab.go.id"
-                >
-                  <span className="material-symbols-outlined text-primary">mail</span>
-                  <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Footer Small Print */}
-      <footer className="mt-12 pb-12 text-center border-t border-outline-variant pt-8">
-        <p className="text-[12px] text-outline">
-          *) Khusus untuk PNS/ABRI/Pensiunan yang penghasilannya semata-mata berasal dari gaji atau uang pensiunan.
-        </p>
-        <p className="mt-4 font-label-sm text-outline">
-          SIPD Purbalingga © 2026 - Digitalisasi Layanan Perpajakan Daerah
-        </p>
-      </footer>
 
       <ToastNotification
         show={toast.show}

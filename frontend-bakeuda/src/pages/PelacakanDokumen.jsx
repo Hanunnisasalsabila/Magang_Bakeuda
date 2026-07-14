@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export default function PelacakanDokumen({ onNavigate }) {
+export default function PelacakanDokumen() {
+  const navigate = useNavigate();
   const [dataTransaksi, setDataTransaksi] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,13 +66,13 @@ export default function PelacakanDokumen({ onNavigate }) {
     <main className="p-gutter max-w-screen-md mx-auto w-full relative">
       <div className="mb-8 flex items-center gap-4">
         <button 
-          onClick={() => onNavigate('dashboard_desa')}
+          onClick={() => navigate('/dashboard-desa')}
           className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors"
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h2 className="font-display-sm text-display-sm text-primary font-bold">Pelacakan Dokumen</h2>
+          <h2 className="text-primary font-bold">Pelacakan Dokumen</h2>
           <p className="text-on-surface-variant font-label-sm">ID: {dataTransaksi.id_transaksi} | {dataTransaksi.no_formulir}</p>
         </div>
       </div>
@@ -78,8 +80,8 @@ export default function PelacakanDokumen({ onNavigate }) {
       <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-xl shadow-sm mb-section-gap">
         <div className="flex justify-between items-start mb-8 pb-6 border-b border-outline-variant">
           <div>
-            <h3 className="font-headline-md text-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
-            <p className="text-on-surface-variant text-sm mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
+            <h3 className="font-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
+            <p className="font-label-sm text-on-surface-variant mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
           </div>
           <div className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded font-bold text-xs uppercase shadow-sm">
             STATUS: {dataTransaksi.status_ajuan}
@@ -110,7 +112,7 @@ export default function PelacakanDokumen({ onNavigate }) {
                     <h4 className={`font-bold text-base ${isLast ? 'text-primary' : 'text-on-surface'}`}>
                       {item.keterangan}
                     </h4>
-                    <p className="text-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
+                    <p className="font-label-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
                     
                     {/* Status Badge Tag */}
                     <div className="mt-3 inline-flex items-center gap-2 text-xs border border-outline-variant px-2 py-1 rounded bg-surface-container-low">
