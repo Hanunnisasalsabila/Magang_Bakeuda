@@ -296,7 +296,7 @@ export default function DaftarObjekPajak() {
                 setKecamatan('Semua Kecamatan');
                 setStatusVerif('Semua Status');
               }}
-              className="w-full bg-surface-container-high border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-highest transition-colors font-semibold focus:outline-none"
+              className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
             >
               Reset Filter
             </button>

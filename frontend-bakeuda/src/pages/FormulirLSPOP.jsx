@@ -148,13 +148,13 @@ export default function FormulirLSPOP() {
 
   if (submitSuccess) {
     return (
-      <main className="p-gutter max-w-5xl mx-auto w-full">
+      <main className="p-gutter max-w-screen-2xl mx-auto w-full">
         <PaperHeader />
         <div className="bg-white border border-outline-variant rounded-xl p-10 shadow-sm text-center space-y-6 animate-fadeIn">
           <div className="w-20 h-20 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="material-symbols-outlined text-[48px]">check_circle</span>
           </div>
-          <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold">LSPOP Selesai!</h3>
+          <h3 className="text-display-lg text-primary uppercase font-extrabold">LSPOP Selesai!</h3>
           <p className="text-body-md text-on-surface-variant max-w-lg mx-auto">
             Semua data bangunan (total {totalBangunan} unit) untuk NOP <b>{nop}</b> telah berhasil didaftarkan.
           </p>
@@ -172,7 +172,7 @@ export default function FormulirLSPOP() {
   }
 
   return (
-    <main className="p-gutter max-w-5xl mx-auto w-full relative">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full relative">
       <PaperHeader />
       
       <div className="flex justify-between items-end mb-6">

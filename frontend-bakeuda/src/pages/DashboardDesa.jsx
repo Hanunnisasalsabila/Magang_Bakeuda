@@ -61,7 +61,7 @@ export default function DashboardDesa() {
   return (
     <main className="p-4 md:p-6 max-w-screen-2xl mx-auto font-sans space-y-6">
       {/* Paper Header banner */}
-      <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-6">
             <img
@@ -70,19 +70,19 @@ export default function DashboardDesa() {
               src={logoPurbalingga}
             />
             <div>
-              <h1 className="text-2xl text-blue-900 uppercase font-extrabold tracking-wide">
+              <h1 className="text-primary uppercase font-bold text-2xl tracking-wide">
                 Portal Pelayanan Desa
               </h1>
-              <p className="text-gray-500 font-medium">
+              <p className="text-on-surface-variant font-label-md">
                 Pemerintah Kabupaten Purbalingga
               </p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-label-sm tracking-widest rounded">
               SISTEM INFORMASI PAJAK DAERAH
             </span>
-            <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
+            <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-label-sm tracking-widest rounded">
               SPOP DIGITAL DESA
             </span>
           </div>
@@ -90,7 +90,7 @@ export default function DashboardDesa() {
         
         <button
           onClick={() => navigate('/formulir-spop')}
-          className="bg-blue-900 text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold text-sm hover:bg-blue-950 active:scale-95 transition-all shadow-sm"
+          className="bg-primary text-on-primary px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 font-label-md font-bold text-sm hover:bg-primary-dark active:scale-95 transition-all shadow-sm"
         >
           <span className="material-symbols-outlined text-[20px]">add</span>
           Buat SPOP Baru
@@ -102,7 +102,7 @@ export default function DashboardDesa() {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className={`bg-white p-6 border border-gray-200 rounded-xl shadow-sm transition-colors duration-200 group ${stat.borderHover}`}
+            className={`bg-surface-container-lowest p-6 border border-outline-variant rounded-xl shadow-sm transition-colors duration-200 group ${stat.borderHover}`}
           >
             <div
               className={`w-12 h-12 ${stat.iconBg} rounded-lg flex items-center justify-center ${stat.iconColor} mb-4 group-hover:scale-110 transition-transform`}
@@ -111,8 +111,8 @@ export default function DashboardDesa() {
                 {stat.icon}
               </span>
             </div>
-            <p className="text-gray-500 text-sm font-semibold">{stat.title}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+            <p className="text-on-surface-variant font-label-md font-bold">{stat.title}</p>
+            <p className="text-3xl font-black text-on-surface mt-1">{stat.value}</p>
             <div className={`mt-4 flex items-center gap-1 ${stat.trendColor}`}>
               <span className="material-symbols-outlined text-[16px]">{stat.trendIcon}</span>
               <span className="text-[12px] font-bold">{stat.trend}</span>
@@ -123,17 +123,17 @@ export default function DashboardDesa() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Submissions Table */}
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
-          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+          <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="font-bold text-on-surface text-lg">
                 Pengajuan SPOP Terbaru
               </h3>
-              <p className="text-xs text-gray-500 mt-1 font-medium">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
+              <p className="font-label-sm text-on-surface-variant mt-1">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
             </div>
             <button
               onClick={() => navigate('/monitoring-pajak')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-xs font-bold transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md font-label-sm transition-colors"
             >
               <span>Lihat Semua</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
@@ -142,46 +142,46 @@ export default function DashboardDesa() {
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left min-w-max">
               <thead>
-                <tr className="bg-gray-50 text-gray-500 font-semibold uppercase tracking-wider text-[11px]">
-                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap">
+                <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
                     NOP / Nama Subjek
                   </th>
-                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap">
+                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
                     Jenis Transaksi
                   </th>
-                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center">
+                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                     Tanggal
                   </th>
-                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center">
+                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                     Status
                   </th>
-                  <th className="px-6 py-3 border-b border-gray-200 whitespace-nowrap text-center pl-12">
+                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center pl-12">
                     Aksi
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-outline-variant/30 text-on-surface">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-12 text-gray-500 flex flex-col items-center gap-3">
-                      <span className="material-symbols-outlined animate-spin text-3xl text-blue-600">refresh</span>
+                    <td colSpan="5" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
+                      <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
                       <span>Memuat data pengajuan...</span>
                     </td>
                   </tr>
                 ) : recentSubmissions.length > 0 ? (
                   recentSubmissions.map((sub, i) => (
-                    <tr key={i} className={`hover:bg-gray-50 transition-colors ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
+                    <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-lowest/50' : ''}`}>
                       <td className="px-6 py-4">
-                        <p className="font-mono font-bold text-blue-700 text-sm whitespace-nowrap">{sub.nop}</p>
-                        <p className="font-semibold text-gray-900 whitespace-nowrap">{sub.name}</p>
+                        <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap">{sub.nop}</p>
+                        <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{sub.name}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-600">
+                        <span className="font-label-sm text-on-surface-variant">
                           {sub.type}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center whitespace-nowrap">
-                        <p className="text-xs font-semibold text-gray-500">{sub.date}</p>
+                        <p className="font-label-sm text-on-surface-variant">{sub.date}</p>
                       </td>
                       <td className="px-6 py-4 text-center whitespace-nowrap">
                         <StatusBadge status={sub.status} />
@@ -190,7 +190,7 @@ export default function DashboardDesa() {
                         <div className="flex items-center justify-end">
                           <button
                             onClick={() => navigate(sub.status === 'Draft' ? '/formulir-spop' : `/detail-review/${sub.id}`)}
-                            className="px-4 py-2 bg-white text-blue-600 border border-gray-200 hover:border-blue-600 hover:bg-blue-50 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
+                            className="px-4 py-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-surface-container-lowest active:bg-primary/10 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
                           >
                             <span className="material-symbols-outlined text-[16px]">
                               {sub.status === 'Draft' ? 'edit' : 'visibility'}

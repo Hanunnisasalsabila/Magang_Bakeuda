@@ -354,7 +354,7 @@ export default function FormulirSPOP() {
   ];
 
   return (
-    <main className="p-gutter max-w-5xl mx-auto w-full">
+    <main className="p-gutter max-w-screen-2xl mx-auto w-full">
       {/* Paper Header Mockup */}
       <PaperHeader />
 
@@ -550,7 +550,7 @@ export default function FormulirSPOP() {
 
               <section className="bg-surface-container-low p-6 rounded-lg">
                 <div className="flex items-center gap-3 mb-6">
-                  <h4 className="font-section-header text-section-header font-bold text-on-surface-variant uppercase">
+                  <h4 className="text-primary font-bold uppercase">
                     A. INFORMASI TAMBAHAN UNTUK DATA BARU
                   </h4>
                 </div>
@@ -559,7 +559,7 @@ export default function FormulirSPOP() {
                   {['PECAH', 'GABUNG'].includes(formData.transaksi) && (
                     <div className="flex flex-col gap-3 col-span-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-primary uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
+                        <label className="font-label-sm text-on-surface-variant font-bold uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
                         {formData.transaksi === 'GABUNG' && (
                           <button type="button" onClick={addNopAsal} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-bold hover:bg-primary/20">
                             + Tambah NOP Asal
@@ -574,7 +574,7 @@ export default function FormulirSPOP() {
                               value={nop}
                               onChange={(e) => handleNopAsalChange(idx, e.target.value)}
                               placeholder="33.03.XXX.XXX.XXX-XXXX.X"
-                              className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+                              className="p-3 bg-background border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                             />
                             {formData.transaksi === 'GABUNG' && nopAsalList.length > 1 && (
                               <button type="button" onClick={() => removeNopAsal(idx)} className="text-error bg-error/10 p-3 rounded-md hover:bg-error/20">
@@ -590,13 +590,13 @@ export default function FormulirSPOP() {
 
                   {/* Input NO SPPT LAMA */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-bold text-primary uppercase">No. SPPT Lama</label>
+                    <label className="font-label-sm text-on-surface-variant font-bold uppercase">No. SPPT Lama</label>
                     <input
                       type="text"
                       value={spptLama}
                       onChange={handleSpptLamaChange}
                       placeholder="XXX.XXX.XXX"
-                      className="p-3 border border-outline-variant rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+                      className="p-3 bg-background border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
                   </div>
                 </div>
@@ -1215,7 +1215,7 @@ export default function FormulirSPOP() {
                   <div className="bg-surface-container border-b border-outline-variant px-6 py-4 flex justify-between items-center">
                     <div>
                       <p className="text-outline uppercase text-[10px] font-bold tracking-widest">Jenis Transaksi</p>
-                      <p className="font-bold text-primary text-lg uppercase mt-0.5">
+                      <p className="font-label-lg text-on-surface font-bold text-lg uppercase mt-0.5">
                         {formData.transaksi === 'baru' ? 'Perekaman Data Baru' : formData.transaksi === 'update' ? 'Pemutakhiran Data' : 'Penghapusan Data'}
                       </p>
                     </div>
@@ -1315,7 +1315,7 @@ export default function FormulirSPOP() {
               <div className="w-24 h-24 bg-secondary-container text-secondary rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ring-4 ring-secondary/20">
                 <span className="material-symbols-outlined text-[56px]">check_circle</span>
               </div>
-              <h3 className="font-display-lg text-display-lg text-primary uppercase font-extrabold tracking-tight">
+              <h3 className="text-display-lg text-primary uppercase font-extrabold tracking-tight">
                 SPOP Berhasil Dikirim
               </h3>
               <p className="text-body-lg font-body-lg text-on-surface-variant max-w-lg mx-auto">
@@ -1429,58 +1429,6 @@ export default function FormulirSPOP() {
           )}
         </form>
       </div>
-
-      {/* Contextual Information (Bento Style) */}
-      {
-        step < 5 && (
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-secondary-container p-6 rounded-xl flex items-start gap-4 shadow-sm">
-              <div className="bg-white/40 p-3 rounded-lg text-secondary">
-                <span className="material-symbols-outlined text-[32px]">verified_user</span>
-              </div>
-              <div>
-                <h5 className="font-headline-md text-headline-md font-bold text-on-secondary-container mb-2">
-                  Keamanan Data Terjamin
-                </h5>
-                <p className="font-body-md text-on-secondary-container opacity-85 leading-snug">
-                  Seluruh data yang Anda masukkan dilindungi oleh enkripsi standar pemerintah dan hanya digunakan untuk keperluan perpajakan daerah Kabupaten Purbalingga sesuai regulasi yang berlaku.
-                </p>
-              </div>
-            </div>
-            <div className="bg-surface-container-high p-6 rounded-xl flex flex-col justify-between shadow-sm">
-              <h6 className="font-section-header text-section-header text-primary mb-4 uppercase">
-                Butuh Bantuan?
-              </h6>
-              <div className="space-y-4">
-                <a
-                  className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                  href="tel:0281891098"
-                >
-                  <span className="material-symbols-outlined text-primary">call</span>
-                  <span className="font-label-sm">Hotline: (0281) 891098</span>
-                </a>
-                <a
-                  className="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
-                  href="mailto:bakeuda@purbalinggakab.go.id"
-                >
-                  <span className="material-symbols-outlined text-primary">mail</span>
-                  <span className="font-label-sm">bakeuda@purbalinggakab.go.id</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Footer Small Print */}
-      <footer className="mt-12 pb-12 text-center border-t border-outline-variant pt-8">
-        <p className="text-[12px] text-outline">
-          *) Khusus untuk PNS/ABRI/Pensiunan yang penghasilannya semata-mata berasal dari gaji atau uang pensiunan.
-        </p>
-        <p className="mt-4 font-label-sm text-outline">
-          SIPD Purbalingga © 2026 - Digitalisasi Layanan Perpajakan Daerah
-        </p>
-      </footer>
 
       <ToastNotification
         show={toast.show}

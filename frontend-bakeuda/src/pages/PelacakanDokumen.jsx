@@ -72,7 +72,7 @@ export default function PelacakanDokumen() {
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h2 className="font-display-sm text-display-sm text-primary font-bold">Pelacakan Dokumen</h2>
+          <h2 className="text-primary font-bold">Pelacakan Dokumen</h2>
           <p className="text-on-surface-variant font-label-sm">ID: {dataTransaksi.id_transaksi} | {dataTransaksi.no_formulir}</p>
         </div>
       </div>
@@ -80,8 +80,8 @@ export default function PelacakanDokumen() {
       <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-xl shadow-sm mb-section-gap">
         <div className="flex justify-between items-start mb-8 pb-6 border-b border-outline-variant">
           <div>
-            <h3 className="font-headline-md text-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
-            <p className="text-on-surface-variant text-sm mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
+            <h3 className="font-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
+            <p className="font-label-sm text-on-surface-variant mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
           </div>
           <div className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded font-bold text-xs uppercase shadow-sm">
             STATUS: {dataTransaksi.status_ajuan}
@@ -112,7 +112,7 @@ export default function PelacakanDokumen() {
                     <h4 className={`font-bold text-base ${isLast ? 'text-primary' : 'text-on-surface'}`}>
                       {item.keterangan}
                     </h4>
-                    <p className="text-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
+                    <p className="font-label-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
                     
                     {/* Status Badge Tag */}
                     <div className="mt-3 inline-flex items-center gap-2 text-xs border border-outline-variant px-2 py-1 rounded bg-surface-container-low">
