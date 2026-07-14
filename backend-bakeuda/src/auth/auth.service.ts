@@ -50,7 +50,6 @@ export class AuthService {
           username: user.username,
           role: user.role,
           kode_wilayah: user.kode_wilayah,
-          must_change_password: user.force_change_password,
         },
       },
     };
@@ -72,7 +71,6 @@ export class AuthService {
       where: { id_user: userId },
       data: {
         password_hash: hashedNewPassword,
-        force_change_password: false, // Reset flag
       },
     });
 

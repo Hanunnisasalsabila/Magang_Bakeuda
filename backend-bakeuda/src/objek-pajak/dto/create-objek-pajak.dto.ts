@@ -6,6 +6,8 @@ import {
   IsArray,
   ValidateNested,
   IsNumber,
+  IsInt,
+  IsBoolean,
   IsPositive,
   Length,
   MaxLength,
@@ -14,6 +16,64 @@ import {
 import { Type } from 'class-transformer';
 import { JenisTanah } from '@prisma/client';
 
+// ─────────────────────────────────────────
+// FASILITAS BANGUNAN (opsional, sesuai SPOP Lampiran B field 17–27)
+// ─────────────────────────────────────────
+export class FasilitasBangunanDto {
+  // 17. AC
+  @IsOptional() @IsInt() jumlah_ac_split?: number;
+  @IsOptional() @IsInt() jumlah_ac_window?: number;
+
+  // 18. AC Sentral
+  @IsOptional() @IsBoolean() ac_sentral?: boolean;
+
+  // 19. Kolam Renang
+  @IsOptional() @IsNumber() luas_kolam_renang?: number;
+  @IsOptional() @IsBoolean() kolam_diplester?: boolean;
+  @IsOptional() @IsBoolean() kolam_dengan_pelapis?: boolean;
+
+  // 20. Perkerasan Halaman
+  @IsOptional() @IsNumber() perkerasan_ringan?: number;
+  @IsOptional() @IsNumber() perkerasan_sedang?: number;
+  @IsOptional() @IsNumber() perkerasan_berat?: number;
+  @IsOptional() @IsNumber() perkerasan_dengan_penutup?: number;
+
+  // 21. Lapangan Tenis
+  @IsOptional() @IsInt() tenis_beton_dgn_lampu?: number;
+  @IsOptional() @IsInt() tenis_beton_tanpa_lampu?: number;
+  @IsOptional() @IsInt() tenis_aspal_dgn_lampu?: number;
+  @IsOptional() @IsInt() tenis_aspal_tanpa_lampu?: number;
+  @IsOptional() @IsInt() tenis_tanah_rumput_dgn_lampu?: number;
+  @IsOptional() @IsInt() tenis_tanah_rumput_tanpa_lampu?: number;
+
+  // 22. Lift
+  @IsOptional() @IsInt() lift_penumpang?: number;
+  @IsOptional() @IsInt() lift_kapsul?: number;
+  @IsOptional() @IsInt() lift_barang?: number;
+
+  // 23. Tangga Berjalan
+  @IsOptional() @IsInt() tangga_berjalan_lbr_kurang_080m?: number;
+  @IsOptional() @IsInt() tangga_berjalan_lbr_lebih_080m?: number;
+
+  // 24. Pagar
+  @IsOptional() @IsNumber() panjang_pagar_m?: number;
+  @IsOptional() @IsString() @MaxLength(1) bahan_pagar?: string; // 1=Baja/Besi, 2=Bata/Batako
+
+  // 25. Pemadam Kebakaran
+  @IsOptional() @IsBoolean() hydrant_ada?: boolean;
+  @IsOptional() @IsBoolean() sprinkler_ada?: boolean;
+  @IsOptional() @IsBoolean() fire_alarm_ada?: boolean;
+
+  // 26. Saluran PABX
+  @IsOptional() @IsInt() jumlah_saluran_pabx?: number;
+
+  // 27. Sumur Artesis
+  @IsOptional() @IsNumber() kedalaman_sumur_artesis_m?: number;
+}
+
+// ─────────────────────────────────────────
+// BANGUNAN — 1 item per bangunan dalam 1 NOP
+// ─────────────────────────────────────────
 export class BumiDto {
   @IsNumber()
   @IsPositive()
@@ -52,12 +112,24 @@ export class BangunanDto {
   @IsOptional()
   jumlah_lantai?: number;
 
+  @IsInt()
+  @IsOptional()
+  daya_listrik_watt?: number; // BARU — SPOP Lampiran field 10
+
   @IsString()
   @IsOptional()
   @MaxLength(1)
   kondisi_bangunan?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => FasilitasBangunanDto)
+  fasilitas?: FasilitasBangunanDto; // BARU — SPOP Lampiran B field 17–27
 }
 
+// ─────────────────────────────────────────
+// MAIN DTO
+// ─────────────────────────────────────────
 export class CreateObjekPajakDto {
   @IsString()
   @IsNotEmpty()
