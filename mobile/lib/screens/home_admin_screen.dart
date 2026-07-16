@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'tabs/admin_dashboard_tab.dart';
+import 'tabs/profile_tab.dart';
+import 'tabs/verifikasi_spop_tab.dart';
+import 'akun_desa_screen.dart';
+import 'login_screen.dart';
+import '../services/auth_service.dart';
 
 class HomeAdminScreen extends StatefulWidget {
   const HomeAdminScreen({super.key});
@@ -13,18 +18,18 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
 
   final List<Widget> _pages = [
     const AdminDashboardTab(),
-    const Center(child: Text('Akun Desa (Segera Hadir)')),
-    const Center(child: Text('Antrean Verifikasi (Segera Hadir)')),
-    const Center(child: Text('Review SPOP (Segera Hadir)')),
-    const Center(child: Text('Profil Admin (Segera Hadir)')),
+    const VerifikasiSpopTab(),
+    const ProfileTab(
+      name: 'Admin BKD',
+      email: 'admin@purbalingga.go.id',
+      role: 'Admin',
+    ),
   ];
 
   final List<String> _titles = [
-    'Dashboard Admin',
-    'Manajemen Akun Desa',
-    'Antrean Verifikasi',
-    'Review SPOP',
-    'Profil Pengguna',
+    'SPOP Digital',
+    'Verifikasi',
+    'Profil',
   ];
 
   @override
@@ -33,10 +38,42 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/logo-purbalingga.png', height: 28),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BAKEUDA',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900, 
+                    fontSize: 16,
+                    letterSpacing: 1.2,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  'SPOP Digital',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: theme.colorScheme.background,
+        foregroundColor: theme.colorScheme.onBackground,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: Icon(Icons.notifications_none_rounded, color: theme.colorScheme.primary),
             onPressed: () {
               // TODO: Notifikasi
             },
@@ -48,46 +85,102 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
+              padding: EdgeInsets.zero,
+              margin: EdgeInsets.zero,
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary,
+                image: const DecorationImage(
+                  image: NetworkImage('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=800&auto=format&fit=crop'),
+                  fit: BoxFit.cover,
+                  opacity: 0.2,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: theme.colorScheme.onPrimary,
-                    radius: 30,
-                    child: Icon(Icons.admin_panel_settings, size: 40, color: theme.colorScheme.primary),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.9),
+                      theme.colorScheme.primary.withOpacity(0.4),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Admin BKD',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Image.asset('assets/logo-purbalingga.png', height: 32, width: 32),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Admin BKD',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'admin@purbalingga.go.id',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'admin@purbalingga.go.id',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onPrimary.withOpacity(0.8),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text('Pusat Bantuan'),
-              onTap: () {},
+              leading: const Icon(Icons.manage_accounts_outlined),
+              title: const Text('Akun Desa'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const AkunDesaScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.fact_check_outlined),
+              title: const Text('Antrean SPOP'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _currentIndex = 1; // Switch to Verifikasi Tab
+                });
+              },
             ),
             const Divider(),
             ListTile(
               leading: Icon(Icons.logout, color: theme.colorScheme.error),
               title: Text('Logout', style: TextStyle(color: theme.colorScheme.error)),
-              onTap: () {
-                // TODO: Logout logic
+              onTap: () async {
+                final authService = AuthService();
+                await authService.logout();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               },
             ),
           ],
@@ -119,24 +212,14 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_filled),
+              label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.manage_accounts_outlined),
-              activeIcon: Icon(Icons.manage_accounts),
-              label: 'Akun Desa',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.fact_check_outlined),
-              activeIcon: Icon(Icons.fact_check),
-              label: 'Antrean',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.rate_review_outlined),
-              activeIcon: Icon(Icons.rate_review),
-              label: 'Review',
+              icon: Icon(Icons.verified_user_outlined),
+              activeIcon: Icon(Icons.verified_user),
+              label: 'Verifikasi',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),

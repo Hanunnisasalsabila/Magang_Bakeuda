@@ -2,22 +2,24 @@ import 'package:flutter/material.dart';
 
 class CustomTextField extends StatefulWidget {
   final String label;
-  final String hintText;
+  final String? hintText;
   final TextEditingController? controller;
   final bool isPassword;
   final IconData? prefixIcon;
   final String? Function(String?)? validator;
   final TextInputType keyboardType;
+  final int maxLines;
 
   const CustomTextField({
     Key? key,
     required this.label,
-    required this.hintText,
+    this.hintText,
     this.controller,
     this.isPassword = false,
     this.prefixIcon,
     this.validator,
     this.keyboardType = TextInputType.text,
+    this.maxLines = 1,
   }) : super(key: key);
 
   @override
@@ -52,6 +54,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           obscureText: _obscureText,
           validator: widget.validator,
           keyboardType: widget.keyboardType,
+          maxLines: widget.isPassword ? 1 : widget.maxLines,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface,
           ),
