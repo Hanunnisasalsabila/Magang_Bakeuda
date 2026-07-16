@@ -39,7 +39,6 @@ model SubjekPajak {
   // ── Relasi ──
   user          User                    @relation("CreatedByUser", fields: [created_by], references: [id_user])
   objek_pajak   ObjekPajak[]
-  detail_tujuan DetailTransaksiTujuan[]
 
   @@index([nama_subjek])
   @@map("subjek_pajak")

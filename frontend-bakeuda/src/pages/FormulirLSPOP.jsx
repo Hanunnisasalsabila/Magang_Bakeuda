@@ -61,6 +61,19 @@ export default function FormulirLSPOP() {
       const payload = JSON.parse(spopPayloadStr);
       if (payload.is_draft) setIsDraft(true);
     }
+    
+    const draftBangunanStr = localStorage.getItem('lspop_draft_bangunan');
+    if (draftBangunanStr) {
+      try {
+        const parsedList = JSON.parse(draftBangunanStr);
+        if (Array.isArray(parsedList) && parsedList.length > 0) {
+          setBangunanList(parsedList);
+          setNomorBangunan(parsedList.length + 1);
+        }
+      } catch (e) {
+        console.error('Failed to parse draft bangunan', e);
+      }
+    }
 
     if (savedNop) setNop(savedNop);
     if (savedTotal) {
@@ -277,19 +290,14 @@ export default function FormulirLSPOP() {
 
     setIsSubmitting(true);
     const sanitizedData = getSanitizedData();
-    const newBangunanList = [...bangunanList, sanitizedData];
     
-    if (nomorBangunan < totalBangunan) {
-      setBangunanList(newBangunanList);
-      setIsSubmitting(false);
-      setToast({ show: true, message: `Draft Bangunan Ke-${nomorBangunan} disimpan lokal.`, type: 'success' });
-      setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
-      setNomorBangunan(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      resetForm();
-    } else {
-      await submitToServer(newBangunanList, true);
-    }
+    // Cek apakah form bangunan saat ini ada isinya selain atribut metadata
+    const hasData = Object.keys(sanitizedData).some(k => !['noFormulir', 'jenisTransaksi', 'jumlahBng', 'bangunanM2'].includes(k));
+    
+    // Jika ada isinya, ikut sertakan dalam draft
+    const newBangunanList = hasData ? [...bangunanList, sanitizedData] : bangunanList;
+    
+    await submitToServer(newBangunanList, true);
   };
 
   const resetForm = () => {
@@ -362,16 +370,21 @@ export default function FormulirLSPOP() {
       localStorage.removeItem('lspop_nop');
       localStorage.removeItem('lspop_total_bangunan');
       localStorage.removeItem('lspop_id_transaksi');
+      localStorage.removeItem('lspop_draft_bangunan');
       
-          
-          setSubmitSuccess(true);
-        } catch (error) {
-          console.error('Error submitting terpadu:', error);
-          const errorMsg = error.response?.data?.message || 'Gagal mengirim formulir terpadu.';
-          setToast({ show: true, message: errorMsg, type: 'error' });
-          setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
-          setIsSubmitting(false);
-        }
+      if (isSaveDraft) {
+        setToast({ show: true, message: 'Draft berhasil disimpan ke akun Anda.', type: 'success' });
+        setTimeout(() => navigate('/dashboard-desa'), 2000);
+      } else {
+        setSubmitSuccess(true);
+      }
+    } catch (error) {
+      console.error('Error submitting terpadu:', error);
+      const errorMsg = error.response?.data?.message || 'Gagal mengirim formulir terpadu.';
+      setToast({ show: true, message: errorMsg, type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+      setIsSubmitting(false);
+    }
   };
 
   const RadioGroup = ({ label, field, options, columns = 3 }) => (

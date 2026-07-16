@@ -253,6 +253,34 @@ export default function FormulirSPOP() {
             setSpptLama(spptLamaVal);
             if (nopsAsal.length > 0) setNopAsalList(nopsAsal);
 
+            // 1. Sanitize dummy values
+            const sanitize = (val, dummyVals) => dummyVals.includes(val) ? '' : val;
+
+            const cleanNik = sanitize(detailTujuan?.nik_calon_subjek, ['0000000000000000', '']);
+            const cleanNama = sanitize(data.nama_pengaju, ['DRAFT', '']);
+            const cleanAlamat = sanitize(subjekPajak?.alamat_jalan, ['DRAFT', '']);
+            const cleanKel = sanitize(subjekPajak?.kelurahan, ['DRAFT', '']);
+            const cleanKec = sanitize(subjekPajak?.kecamatan, ['DRAFT', '']);
+            const cleanKab = sanitize(subjekPajak?.kabupaten, ['DRAFT', '']);
+            const cleanRt = sanitize(subjekPajak?.rt, ['000', '']);
+            const cleanRw = sanitize(subjekPajak?.rw, ['000', '']);
+            const cleanJenisTanah = sanitize(detailTujuan?.jenis_tanah_baru, ['TANAH_KOSONG', '']);
+            const cleanPekerjaan = sanitize(subjekPajak?.pekerjaan, ['LAINNYA', '']);
+            
+            // 2. Extract and store data_bangunan_json for LSPOP
+            if (detailTujuan?.data_bangunan_json) {
+              localStorage.setItem('lspop_draft_bangunan', JSON.stringify(detailTujuan.data_bangunan_json));
+            }
+
+            // 3. Smart Step Jump
+            let calculatedStep = 2;
+            if (detailTujuan && (detailTujuan.luas_tanah_baru > 0 || detailTujuan.jalan_op_baru)) {
+              calculatedStep = 4;
+            } else if (cleanNik || cleanNama || cleanAlamat) {
+              calculatedStep = 3;
+            }
+            setStep(calculatedStep);
+
             setFormData(prev => ({
               ...prev,
               transaksi: data.jenis_transaksi,
@@ -264,22 +292,22 @@ export default function FormulirSPOP() {
               isKuasa: data.menggunakan_kuasa,
               nop: nopObj,
               nopBersama: nopBersamaObj,
-              nik: detailTujuan?.nik_calon_subjek || '',
-              nama: data.nama_pengaju || '',
+              nik: cleanNik,
+              nama: cleanNama,
               statusWp: subjekPajak?.status_wp ? mapWpRev[subjekPajak.status_wp] : '',
-              pekerjaan: subjekPajak?.pekerjaan ? mapPekerjaanRev[subjekPajak.pekerjaan] : '',
-              alamat: subjekPajak?.alamat_jalan || '',
-              rt: subjekPajak?.rt || '',
-              rw: subjekPajak?.rw || '',
-              kelurahan: subjekPajak?.kelurahan || '',
-              kecamatan: subjekPajak?.kecamatan || '',
-              kabupaten: subjekPajak?.kabupaten || '',
+              pekerjaan: cleanPekerjaan ? mapPekerjaanRev[cleanPekerjaan] : '',
+              alamat: cleanAlamat,
+              rt: cleanRt,
+              rw: cleanRw,
+              kelurahan: cleanKel,
+              kecamatan: cleanKec,
+              kabupaten: cleanKab,
               kodePos: subjekPajak?.kode_pos || '',
               npwp: subjekPajak?.npwp || '',
               noTelp: subjekPajak?.no_hp || '',
               blokKav: subjekPajak?.blok_kav_no_subjek || '',
               luasTanah: detailTujuan?.luas_tanah_baru || '',
-              jenisTanah: detailTujuan?.jenis_tanah_baru || '',
+              jenisTanah: cleanJenisTanah,
               luasBangunan: detailTujuan?.luas_bangunan_baru || '',
               jumlahBangunan: detailTujuan?.jumlah_bangunan_baru || '0',
               alamatObjek: detailTujuan?.jalan_op_baru || '',

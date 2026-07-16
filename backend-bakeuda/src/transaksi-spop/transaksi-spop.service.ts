@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { StatusAjuan } from '@prisma/client';
+import { StatusAjuan, Pekerjaan, StatusWp } from '@prisma/client';
 import { CreateSpopDto } from './dto/create-spop.dto.js';
 import { CreateDraftDto } from './dto/create-draft.dto.js';
 import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
@@ -80,44 +80,7 @@ export class TransaksiSpopService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-      // 1. Pastikan SubjekPajak ada / Upsert
-      await tx.subjekPajak.upsert({
-        where: { nik: dto.subjek_pajak.nik },
-        update: {
-          nama_subjek: dto.subjek_pajak.nama,
-          pekerjaan: pekerjaan_enum,
-          status_wp: status_wp,
-          npwp: dto.subjek_pajak.npwp,
-          no_hp: dto.subjek_pajak.no_hp,
-          email: dto.subjek_pajak.email,
-          alamat_jalan: dto.subjek_pajak.alamat,
-          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
-          rt: dto.subjek_pajak.rt,
-          rw: dto.subjek_pajak.rw,
-          kelurahan: dto.subjek_pajak.kelurahan,
-          kecamatan: dto.subjek_pajak.kecamatan,
-          kabupaten: dto.subjek_pajak.kabupaten,
-          kode_pos: dto.subjek_pajak.kode_pos,
-        },
-        create: {
-          nik: dto.subjek_pajak.nik,
-          nama_subjek: dto.subjek_pajak.nama,
-          pekerjaan: pekerjaan_enum,
-          status_wp: status_wp,
-          npwp: dto.subjek_pajak.npwp,
-          no_hp: dto.subjek_pajak.no_hp,
-          email: dto.subjek_pajak.email,
-          alamat_jalan: dto.subjek_pajak.alamat,
-          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
-          rt: dto.subjek_pajak.rt,
-          rw: dto.subjek_pajak.rw,
-          kelurahan: dto.subjek_pajak.kelurahan,
-          kecamatan: dto.subjek_pajak.kecamatan,
-          kabupaten: dto.subjek_pajak.kabupaten,
-          kode_pos: dto.subjek_pajak.kode_pos,
-          created_by: id_user,
-        },
-      });
+      // 1. (Dihapus) Tidak lagi melakukan upsert SubjekPajak di tabel Master saat submit transaksi
 
       // 2. Buat Cangkang Transaksi
       const transaksi = await tx.transaksiSpop.create({
@@ -143,7 +106,8 @@ export class TransaksiSpopService {
           // Data Tujuan
           detail_tujuan: {
             create: {
-              nik_calon_subjek: dto.subjek_pajak.nik,
+              nik_calon_subjek: dto.subjek_pajak.nik !== '0000000000000000' && dto.subjek_pajak.nik !== '' ? dto.subjek_pajak.nik : undefined,
+              calon_subjek_json: (dto.subjek_pajak as any),
               luas_tanah_baru: dto.objek_pajak_sementara.luas_tanah,
               luas_bangunan_baru: dto.objek_pajak_sementara.luas_bangunan || 0,
               jumlah_bangunan_baru: dto.objek_pajak_sementara.jumlah_bangunan || 0,
@@ -224,44 +188,7 @@ export class TransaksiSpopService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-      // 1. Pastikan SubjekPajak ada / Upsert (hanya jika NIK diisi valid, atau dummy jika tidak)
-      await tx.subjekPajak.upsert({
-        where: { nik: nik },
-        update: {
-          nama_subjek: nama_subjek,
-          pekerjaan: subjek.pekerjaan || 'LAINNYA',
-          status_wp: subjek.status_wp || 'PEMILIK',
-          npwp: subjek.npwp,
-          no_hp: subjek.no_hp,
-          email: subjek.email,
-          alamat_jalan: subjek.alamat || 'DRAFT',
-          blok_kav_no_subjek: subjek.blok_kav_no,
-          rt: subjek.rt || '000',
-          rw: subjek.rw || '000',
-          kelurahan: subjek.kelurahan || 'DRAFT',
-          kecamatan: subjek.kecamatan || 'DRAFT',
-          kabupaten: subjek.kabupaten || 'DRAFT',
-          kode_pos: subjek.kode_pos,
-        },
-        create: {
-          nik: nik,
-          nama_subjek: nama_subjek,
-          pekerjaan: subjek.pekerjaan || 'LAINNYA',
-          status_wp: subjek.status_wp || 'PEMILIK',
-          npwp: subjek.npwp,
-          no_hp: subjek.no_hp,
-          email: subjek.email,
-          alamat_jalan: subjek.alamat || 'DRAFT',
-          blok_kav_no_subjek: subjek.blok_kav_no,
-          rt: subjek.rt || '000',
-          rw: subjek.rw || '000',
-          kelurahan: subjek.kelurahan || 'DRAFT',
-          kecamatan: subjek.kecamatan || 'DRAFT',
-          kabupaten: subjek.kabupaten || 'DRAFT',
-          kode_pos: subjek.kode_pos,
-          created_by: id_user,
-        },
-      });
+      // 1. (Dihapus) Tidak lagi upsert ke Master untuk Draft Subjek Pajak
 
       // 2. Jika ID transaksi sudah ada, hapus detail lama (karena kita akan replace)
       if (dto.id_transaksi) {
@@ -316,7 +243,8 @@ export class TransaksiSpopService {
       await tx.detailTransaksiTujuan.create({
         data: {
           id_transaksi: transaksi.id_transaksi,
-          nik_calon_subjek: nik,
+          nik_calon_subjek: nik !== '0000000000000000' && nik !== '' ? nik : undefined,
+          calon_subjek_json: Object.keys(subjek).length > 0 ? (subjek as any) : undefined,
           luas_tanah_baru: objek.luas_tanah || 0,
           luas_bangunan_baru: objek.luas_bangunan || 0,
           jumlah_bangunan_baru: objek.jumlah_bangunan || 0,
@@ -519,6 +447,68 @@ export class TransaksiSpopService {
           });
         }
 
+        // 2.5 Upsert ke Master SubjekPajak (Wajib Pajak)
+        if (tujuan.calon_subjek_json) {
+          const subjekTemp: any = tujuan.calon_subjek_json;
+          let pekerjaan_enum: Pekerjaan = Pekerjaan.LAINNYA;
+          switch (subjekTemp.pekerjaan) {
+            case 'PNS': pekerjaan_enum = Pekerjaan.PNS; break;
+            case 'ABRI': pekerjaan_enum = Pekerjaan.ABRI; break;
+            case 'PENSIUNAN': pekerjaan_enum = Pekerjaan.PENSIUNAN; break;
+            case 'BADAN': pekerjaan_enum = Pekerjaan.BADAN; break;
+          }
+          let status_wp: StatusWp = StatusWp.PEMILIK;
+          switch (subjekTemp.status_wp) {
+            case 'PENYEWA': status_wp = StatusWp.PENYEWA; break;
+            case 'PENGELOLA': status_wp = StatusWp.PENGELOLA; break;
+            case 'PEMAKAI': status_wp = StatusWp.PEMAKAI; break;
+            case 'SENGKETA': status_wp = StatusWp.SENGKETA; break;
+          }
+
+          const nikToSave = subjekTemp.nik || tujuan.nik_calon_subjek || '0000000000000000';
+
+          await tx.subjekPajak.upsert({
+            where: { nik: nikToSave },
+            update: {
+              nama_subjek: subjekTemp.nama || 'TANPA NAMA',
+              pekerjaan: pekerjaan_enum,
+              status_wp: status_wp,
+              npwp: subjekTemp.npwp,
+              no_hp: subjekTemp.no_hp,
+              email: subjekTemp.email,
+              alamat_jalan: subjekTemp.alamat || 'TANPA ALAMAT',
+              blok_kav_no_subjek: subjekTemp.blok_kav_no,
+              rt: subjekTemp.rt,
+              rw: subjekTemp.rw,
+              kelurahan: subjekTemp.kelurahan || 'TANPA KELURAHAN',
+              kecamatan: subjekTemp.kecamatan,
+              kabupaten: subjekTemp.kabupaten || 'TANPA KABUPATEN',
+              kode_pos: subjekTemp.kode_pos,
+            },
+            create: {
+              nik: nikToSave,
+              nama_subjek: subjekTemp.nama || 'TANPA NAMA',
+              pekerjaan: pekerjaan_enum,
+              status_wp: status_wp,
+              npwp: subjekTemp.npwp,
+              no_hp: subjekTemp.no_hp,
+              email: subjekTemp.email,
+              alamat_jalan: subjekTemp.alamat || 'TANPA ALAMAT',
+              blok_kav_no_subjek: subjekTemp.blok_kav_no,
+              rt: subjekTemp.rt,
+              rw: subjekTemp.rw,
+              kelurahan: subjekTemp.kelurahan || 'TANPA KELURAHAN',
+              kecamatan: subjekTemp.kecamatan,
+              kabupaten: subjekTemp.kabupaten || 'TANPA KABUPATEN',
+              kode_pos: subjekTemp.kode_pos,
+              created_by: idVerifikator,
+            }
+          });
+
+          // Memastikan nik yang dipakai ke ObjekPajak adalah nikToSave
+          tujuan.nik_calon_subjek = nikToSave;
+        }
+
         // 3. Insert ke Master ObjekPajak (Tanah/Bumi)
         const kode_propinsi = finalNop.substring(0, 2);
         const kode_dati2 = finalNop.substring(2, 4);
@@ -541,7 +531,7 @@ export class TransaksiSpopService {
               kode_blok,
               no_urut,
               kode_jenis_op,
-              nik_subjek: tujuan.nik_calon_subjek,
+              nik_subjek: tujuan.nik_calon_subjek || '0000000000000000',
               no_persil: tujuan.no_persil_baru,
               jalan_op: tujuan.jalan_op_baru || '',
               blok_kav_no: tujuan.blok_kav_no_baru,
@@ -561,7 +551,7 @@ export class TransaksiSpopService {
           await tx.objekPajak.update({
             where: { nop: finalNop },
             data: {
-              nik_subjek: tujuan.nik_calon_subjek,
+              nik_subjek: tujuan.nik_calon_subjek || '0000000000000000',
               no_persil: tujuan.no_persil_baru,
               jalan_op: tujuan.jalan_op_baru || '',
               blok_kav_no: tujuan.blok_kav_no_baru,
@@ -645,11 +635,7 @@ export class TransaksiSpopService {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
       include: {
-        detail_tujuan: {
-          include: {
-            calon_subjek: true,
-          }
-        },
+        detail_tujuan: true,
         detail_asal: true,
         pengaju: {
           select: {
@@ -680,7 +666,7 @@ export class TransaksiSpopService {
     // Attach calon_subjek_temp for frontend compatibility
     const responseData = {
       ...transaksi,
-      calon_subjek_temp: transaksi.detail_tujuan?.[0]?.calon_subjek || null
+      calon_subjek_temp: transaksi.detail_tujuan?.[0]?.calon_subjek_json || null
     };
 
     return {
