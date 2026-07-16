@@ -42,7 +42,7 @@ export default function AntreanVerifikasi() {
 
     const fetchQueue = async () => {
       try {
-        const res = await api.get('/transaksi-spop?status_ajuan=MENUNGGU_VERIFIKASI_DESA');
+        const res = await api.get('/transaksi-spop?status_ajuan=MENUNGGU');
         const formatted = res.data.data.map(item => {
           const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
           const parts = nopRaw.replace(/\D/g, '');

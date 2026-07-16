@@ -41,7 +41,7 @@ export default function DashboardDesa() {
           name: item.nama_pengaju || 'Tanpa Nama',
           type: item.jenis_transaksi,
           date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-          status: item.status_ajuan === 'MENUNGGU_VERIFIKASI_DESA' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'PERBAIKAN' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
+          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'PERBAIKAN' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
         }));
         setRecentSubmissions(formattedList);
         
@@ -189,7 +189,7 @@ export default function DashboardDesa() {
                       <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                         <div className="flex items-center justify-end">
                           <button
-                            onClick={() => navigate(sub.status === 'Draft' ? '/formulir-spop' : `/detail-review/${sub.id}`)}
+                            onClick={() => navigate(sub.status === 'Draft' ? `/formulir-spop/${sub.id}` : `/detail-review/${sub.id}`)}
                             className="px-4 py-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-surface-container-lowest active:bg-primary/10 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
                           >
                             <span className="material-symbols-outlined text-[16px]">

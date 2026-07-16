@@ -281,7 +281,7 @@ export default function MonitoringObjekPajak() {
                         
                         {(obj.status === 'Draft' || obj.status === 'Perlu Revisi') && (
                           <button
-                            onClick={() => navigate('/formulir-spop', { state: { editData: obj  } })}
+                            onClick={() => navigate(`/formulir-spop/${obj.id}`)}
                             className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:border-yellow-500 hover:bg-yellow-100 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
                           >
                             <span className="material-symbols-outlined text-[16px]">edit</span>

@@ -2,40 +2,38 @@ import 'dotenv/config';
 import { PrismaClient, Role } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 
 const connectionString = process.env.DATABASE_URL!;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // 0. Buat Data Wilayah Dummy (Standar SISMIOP: Kec 3 digit, Desa 3 digit, total 10 digit tanpa titik)
-  const wilayah1 = await prisma.wilayah.upsert({
-    where: { kode_wilayah: '3303010001' },
-    update: {},
-    create: {
-      kode_wilayah: '3303010001',
-      nama_desa: 'KEDUNGBENDA',
-      kode_kel: '001',
-      kecamatan: 'KEMANGKON',
-      kode_kec: '010',
-      kabupaten: 'KAB. PURBALINGGA',
-      kode_kab: '03',
-    },
-  });
+  // 0. Buat Data Wilayah dari wilayahData.json
+  const wilayahDataPath = path.join(process.cwd(), '..', 'frontend-bakeuda', 'src', 'utils', 'wilayahData.json');
+  const wilayahDataRaw = fs.readFileSync(wilayahDataPath, 'utf8');
+  const wilayahData = JSON.parse(wilayahDataRaw);
 
-  const wilayah2 = await prisma.wilayah.upsert({
-    where: { kode_wilayah: '3303010002' },
-    update: {},
-    create: {
-      kode_wilayah: '3303010002',
-      nama_desa: 'BOKOL',
-      kode_kel: '002',
-      kecamatan: 'KEMANGKON',
-      kode_kec: '010',
-      kabupaten: 'KAB. PURBALINGGA',
-      kode_kab: '03',
-    },
-  });
+  console.log(`Menyimpan ${wilayahData.length} data wilayah...`);
+  
+  // Menggunakan createMany untuk mempercepat jika belum ada, atau upsert jika perlu
+  for (const w of wilayahData) {
+    await prisma.wilayah.upsert({
+      where: { kode_wilayah: w.kode_wilayah },
+      update: {},
+      create: {
+        kode_wilayah: w.kode_wilayah,
+        nama_desa: w.nama_desa,
+        kode_kel: w.kode_kel,
+        kecamatan: w.kecamatan,
+        kode_kec: w.kode_kec,
+        kabupaten: w.kabupaten,
+        kode_kab: w.kode_kab,
+      },
+    });
+  }
+  console.log('✅ Berhasil insert wilayah.');
 
   // 1. Buat Data Pejabat Desa Dummy
   await prisma.pejabatDesa.upsert({
@@ -45,7 +43,7 @@ async function main() {
       nip: '198001012010011001',
       nama_pejabat: 'Budi Santoso',
       jabatan: 'Kepala Desa',
-      kode_wilayah: wilayah1.kode_wilayah,
+      kode_wilayah: '3303012001',
     },
   });
 
@@ -56,7 +54,7 @@ async function main() {
       nip: '198502022015022002',
       nama_pejabat: 'Siti Aminah',
       jabatan: 'Sekretaris Desa',
-      kode_wilayah: wilayah1.kode_wilayah,
+      kode_wilayah: '3303012001',
     },
   });
 
@@ -96,7 +94,7 @@ async function main() {
       username: 'desa01',
       password_hash: hashedPassword,
       role: Role.DESA,
-      kode_wilayah: wilayah1.kode_wilayah,
+      kode_wilayah: '3303012001',
       force_change_password: true,
     },
   });

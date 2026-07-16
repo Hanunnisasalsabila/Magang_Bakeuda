@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
+import SegmentedNOPInput from '../components/SegmentedNOPInput';
 
 export default function DetailReviewSPOP() {
   const navigate = useNavigate();
@@ -13,20 +14,15 @@ export default function DetailReviewSPOP() {
   const [decisionNotes, setDecisionNotes] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-
-  // Tahap 5: State untuk Verifikasi Desa
-  const [nipPejabat, setNipPejabat] = useState('');
-  const [urlDokumenFisik, setUrlDokumenFisik] = useState('');
-  const [pejabatDesa, setPejabatDesa] = useState([]);
-  const [isUploadingDokumen, setIsUploadingDokumen] = useState(false);
+  const [isBakeuda, setIsBakeuda] = useState(false);
 
   useEffect(() => {
-    // Simulasi Fetch Pejabat Desa
-    setPejabatDesa([
-      { nip: '198001012010011001', nama_pejabat: 'Bapak Kades Purbalingga' },
-      { nip: '198502022015021002', nama_pejabat: 'Bapak Sekdes Purbalingga' }
-    ]);
-
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setIsBakeuda(user.role_user === 'ADMIN_BAKEUDA');
+    }
+    
     const fetchDetail = async () => {
       try {
         const res = await api.get(`/transaksi-spop/${id}`);
@@ -45,30 +41,35 @@ export default function DetailReviewSPOP() {
     }
   }, [id]);
 
-  const handleDecision = async (approved) => {
-    if (approved && (!nipPejabat || !urlDokumenFisik)) {
-      setToastMessage('Gagal: Pilih NIP Pejabat dan Unggah Dokumen Fisik terlebih dahulu!');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      return;
-    }
+  const [nopBaru, setNopBaru] = useState({ prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' });
 
+  const handleDecision = async (approved) => {
     try {
-      if (approved) {
-        await api.patch(`/transaksi-spop/${id}/verifikasi-desa`, {
-          nipPemeriksaDesa: nipPejabat,
-          urlDokumenFisik: urlDokumenFisik
+      if (data.status_ajuan === 'MENUNGGU') {
+        // VERIFIKASI BAKEUDA
+        let finalNopStr = undefined;
+        if (approved && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
+          finalNopStr = `${nopBaru.prov}${nopBaru.kab}${nopBaru.kec}${nopBaru.kel}${nopBaru.blok}${nopBaru.nourut}${nopBaru.kode}`;
+          if (finalNopStr.length !== 18) {
+            setToastMessage('Gagal: Harap lengkapi 18 digit NOP Baru sebelum menyetujui!');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+          }
+        }
+        
+        await api.patch(`/transaksi-spop/${id}/verifikasi-bakeuda`, {
+          status_ajuan: approved ? 'DISETUJUI' : 'DITOLAK',
+          catatan: decisionNotes,
+          nop_baru: finalNopStr
         });
-        setToastMessage('Verifikasi Desa Berhasil! Dokumen diteruskan ke Antrean Bakeuda.');
-      } else {
-        // Backend hasn't implemented full reject feature yet for this level
-        setToastMessage('Pengajuan SPOP ditolak (Akan dikembalikan jika fitur tersedia).');
+        setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${approved ? 'DISETUJUI' : 'DITOLAK'}`);
       }
 
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
-        navigate('/dashboard-desa');
+        navigate(-1);
       }, 2000);
     } catch (error) {
       setToastMessage(error.response?.data?.message || 'Terjadi kesalahan saat memproses data');
@@ -77,17 +78,7 @@ export default function DetailReviewSPOP() {
     }
   };
 
-  const handleUploadDokumenFisik = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setIsUploadingDokumen(true);
-      setTimeout(() => {
-        setIsUploadingDokumen(false);
-        const dummyUrl = `https://dummyimage.com/600x400/004b3a/fff&text=SPOP_Fisik_${encodeURIComponent(file.name)}`;
-        setUrlDokumenFisik(dummyUrl);
-      }, 1500);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -295,10 +286,11 @@ export default function DetailReviewSPOP() {
         </div>
       </div>
 
-      {/* Verification Action Card */}
-      <div className="mt-8 mb-12">
-        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
-          <div className="mb-6 border-b border-gray-200 pb-4">
+      {/* Verification Action Card - HANYA UNTUK BAKEUDA */}
+      {isBakeuda && (
+        <div className="mt-8 mb-12">
+          <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
+            <div className="mb-6 border-b border-gray-200 pb-4">
             <h3 className="text-lg text-gray-900 flex items-center gap-2 font-bold">
               <span className="material-symbols-outlined text-blue-600">assignment_turned_in</span>
               Keputusan Verifikasi
@@ -310,45 +302,14 @@ export default function DetailReviewSPOP() {
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-8 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                    Pejabat Berwenang (Kades/Sekdes)
-                  </label>
-                  <select
-                    value={nipPejabat}
-                    onChange={(e) => setNipPejabat(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
-                  >
-                    <option value="">-- Pilih Pejabat --</option>
-                    {pejabatDesa.map(p => (
-                      <option key={p.nip} value={p.nip}>{p.nama_pejabat} (NIP: {p.nip})</option>
-                    ))}
-                  </select>
+
+              {data.status_ajuan === 'MENUNGGU' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
+                <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
+                  <h4 className="font-bold text-blue-900 mb-2">Penetapan NOP Baru</h4>
+                  <p className="text-sm text-blue-700 mb-4">Silakan masukkan Kode Blok dan Nomor Urut sesuai Peta Blok Bakeuda untuk menginjeksi NOP Baru.</p>
+                  <SegmentedNOPInput value={nopBaru} onChange={setNopBaru} />
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
-                    Dokumen Fisik SPOP (TTD Basah)
-                  </label>
-                  <div className="relative overflow-hidden w-full">
-                    <button 
-                      type="button"
-                      disabled={isUploadingDokumen}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md border border-dashed border-blue-400 text-blue-600 font-semibold hover:bg-blue-50 transition-colors ${isUploadingDokumen ? 'opacity-50 cursor-wait' : ''}`}
-                    >
-                      <span className="material-symbols-outlined text-[20px]">{isUploadingDokumen ? 'hourglass_empty' : (urlDokumenFisik ? 'check_circle' : 'upload_file')}</span>
-                      {isUploadingDokumen ? 'Mengunggah...' : (urlDokumenFisik ? 'Dokumen Terlampir' : 'Upload PDF/JPG')}
-                    </button>
-                    <input 
-                      type="file" 
-                      accept="image/*,.pdf" 
-                      onChange={handleUploadDokumenFisik}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isUploadingDokumen}
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
 
               <div className="space-y-1">
                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -382,10 +343,11 @@ export default function DetailReviewSPOP() {
               <p className="text-xs text-gray-400 text-center px-2 pt-2">
                 Dengan menekan Setujui, Anda bertanggung jawab penuh atas validasi data.
               </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-surface-container-high px-gutter py-8 text-on-surface-variant border-t border-outline-variant rounded-t-xl">

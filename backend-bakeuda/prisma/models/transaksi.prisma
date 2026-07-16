@@ -9,10 +9,8 @@ enum JenisTransaksi {
 
 enum StatusAjuan {
   DRAFT
-  MENUNGGU_VERIFIKASI_DESA
   MENUNGGU
   PROSES
-  PERBAIKAN
   REVISI
   DITOLAK
   DISETUJUI
@@ -92,6 +90,7 @@ model DetailTransaksiTujuan {
   batas_selatan        String?    @db.VarChar(50)
   batas_timur          String?    @db.VarChar(50)
   batas_barat          String?    @db.VarChar(50)
+  data_bangunan_json   Json?      // Menampung array data LSPOP sementara sebelum verifikasi Bakeuda
 
   // ── Relasi ──
   transaksi    TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])

@@ -10,7 +10,7 @@ const charMap = [
   { seg: 'kode', len: 1 }
 ];
 
-export default function SegmentedNOPInput({ value, onChange, label, showHeaders }) {
+export default function SegmentedNOPInput({ value, onChange, label, showHeaders, optional }) {
   const [chars, setChars] = useState(Array(18).fill(''));
   const refs = useRef([]);
 
@@ -95,8 +95,9 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders 
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full">
       {label && (
-        <div className="w-32 font-bold text-on-surface whitespace-nowrap md:text-left flex-shrink-0">
+        <div className="w-32 font-bold text-on-surface md:text-left flex-shrink-0 flex items-center flex-wrap gap-1">
           {label}
+          {optional && <span className="text-on-surface-variant font-normal text-[11px] normal-case">(Opsional)</span>}
         </div>
       )}
       <div className="flex flex-nowrap gap-2 sm:gap-3">

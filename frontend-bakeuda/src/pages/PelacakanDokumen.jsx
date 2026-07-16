@@ -16,7 +16,7 @@ export default function PelacakanDokumen() {
           no_formulir: 'SPOP-A01-2024',
           nama_pengaju: 'BUDI SANTOSO, S.T.',
           tanggal_pengajuan: '2023-10-14T10:45:00Z',
-          status_ajuan: 'PROSES', // atau MENUNGGU_VERIFIKASI_DESA
+          status_ajuan: 'PROSES', // atau MENUNGGU
           riwayat: [
             {
               id_riwayat: 1,
@@ -29,14 +29,14 @@ export default function PelacakanDokumen() {
             {
               id_riwayat: 2,
               status_lama: 'DRAFT',
-              status_baru: 'MENUNGGU_VERIFIKASI_DESA',
+              status_baru: 'MENUNGGU',
               keterangan: 'Menunggu Persetujuan Kelurahan',
               waktu_kejadian: '2023-10-14T11:00:00Z',
               nama_pelaku: 'Operator Desa',
             },
             {
               id_riwayat: 3,
-              status_lama: 'MENUNGGU_VERIFIKASI_DESA',
+              status_lama: 'MENUNGGU',
               status_baru: 'PROSES',
               keterangan: 'Telah Disetujui Desa, Dikirim ke Bakeuda (NIP Kades: 198001012010011001)',
               waktu_kejadian: '2023-10-14T15:30:00Z',
@@ -100,7 +100,7 @@ export default function PelacakanDokumen() {
                   {/* Circle Marker */}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${isLast ? 'bg-primary text-white shadow-md' : 'bg-surface-container-high border-2 border-surface-container text-outline'}`}>
                     <span className="material-symbols-outlined text-[20px]">
-                      {item.status_baru === 'DRAFT' ? 'draft' : item.status_baru === 'MENUNGGU_VERIFIKASI_DESA' ? 'pending_actions' : 'check_circle'}
+                      {item.status_baru === 'DRAFT' ? 'draft' : item.status_baru === 'MENUNGGU' ? 'pending_actions' : 'check_circle'}
                     </span>
                   </div>
                   
