@@ -5,7 +5,9 @@ import {
   IsNumber,
   IsString,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
+import { BahanPagar } from '@prisma/client';
 
 /**
  * DTO untuk update/upsert fasilitas bangunan.
@@ -50,7 +52,7 @@ export class UpdateFasilitasBangunanDto {
 
   // 24. Pagar
   @IsOptional() @IsNumber() panjang_pagar_m?: number;
-  @IsOptional() @IsString() @MaxLength(1) bahan_pagar?: string; // 1=Baja/Besi, 2=Bata/Batako
+  @IsOptional() @IsEnum(BahanPagar) bahan_pagar?: BahanPagar;
 
   // 25. Pemadam Kebakaran
   @IsOptional() @IsBoolean() hydrant_ada?: boolean;

@@ -1,8 +1,58 @@
 enum JenisTanah {
-  TANAH_BANGUNAN        // 1. Tanah + Bangunan — sesuai SPOP field 27
-  KAVLING_SIAP_BANGUN   // 2. Kavling Siap Bangun
-  TANAH_KOSONG          // 3. Tanah Kosong
-  FASILITAS_UMUM        // 4. Fasilitas Umum
+  TANAH_BANGUNAN // 1. Tanah + Bangunan — sesuai SPOP field 27
+  KAVLING_SIAP_BANGUN // 2. Kavling Siap Bangun
+  TANAH_KOSONG // 3. Tanah Kosong
+  FASILITAS_UMUM // 4. Fasilitas Umum
+}
+
+enum KondisiBangunan {
+  SANGAT_BAIK // 1. Sangat Baik
+  BAIK        // 2. Baik
+  SEDANG      // 3. Sedang
+  JELEK       // 4. Jelek
+}
+
+enum JenisKonstruksi {
+  BAJA      // 1. Baja
+  BETON     // 2. Beton
+  BATU_BATA // 3. Batu Bata
+  KAYU      // 4. Kayu
+}
+
+enum JenisAtap {
+  DECRABON_BETON_GLAZUR // 1. Decrabon/Beton/Gtg Glazur
+  GENTENG_BETON_ALUMINIUM // 2. Gtg Beton/Aluminium
+  GENTENG_BIASA_SIRAP     // 3. Gtg Biasa/Sirap
+  ASBES                   // 4. Asbes
+  SENG                    // 5. Seng
+}
+
+enum JenisDinding {
+  KACA_ALUMINIUM // 1. Kaca/Aluminium
+  BETON          // 2. Beton
+  BATU_BATA_CONBLOK // 3. Batu Bata/Conblok
+  KAYU              // 4. Kayu
+  SENG              // 5. Seng
+  TIDAK_ADA_DINDING // 6. Tidak Ada Dinding
+}
+
+enum JenisLantai {
+  MARMER      // 1. Marmer
+  KERAMIK     // 2. Keramik
+  TERASO      // 3. Teraso
+  UBIN_PC_PAPAN // 4. Ubin PC/Papan
+  SEMEN         // 5. Semen
+}
+
+enum JenisLangitLangit {
+  AKUSTIK_JATI      // 1. Akustik/Jati
+  TRIPLEK_ASBES_BAMBU // 2. Triplek/Asbes/Bambu
+  TIDAK_ADA           // 3. Tidak Ada
+}
+
+enum BahanPagar {
+  BAJA_BESI    // 1. Baja/Besi
+  BATA_BATAKO  // 2. Bata/Batako
 }
 
 // ─────────────────────────────────────────
@@ -12,24 +62,18 @@ enum JenisTanah {
 model ObjekPajak {
   nop String @id @db.VarChar(18)
 
-  // Komponen pembentuk NOP (sesuai struktur legacy SISMIOP)
-  kode_propinsi  String @db.VarChar(2)
-  kode_dati2     String @db.VarChar(2)
-  kode_kecamatan String @db.VarChar(3)
-  kode_kelurahan String @db.VarChar(3)
-  kode_blok      String @db.VarChar(3)
-  no_urut        String @db.VarChar(4)
-  kode_jenis_op  String @db.VarChar(1)
+  kode_wilayah  String @db.VarChar(10) // FK ke Wilayah — GANTI 4 field lama
+  kode_blok     String @db.VarChar(3)
+  no_urut       String @db.VarChar(4)
+  kode_jenis_op String @db.VarChar(1)
 
-  nik_subjek   String     @db.VarChar(16)
-  no_persil    String?    @db.VarChar(20)
-  jalan_op     String     @db.VarChar(255)
-  blok_kav_no  String?    @db.VarChar(50)
-  rw_op        String?    @db.VarChar(5)
-  rt_op        String?    @db.VarChar(5)
-  kelurahan_op String     @db.VarChar(100)
-  kecamatan_op String     @db.VarChar(100)
-  jenis_tanah  JenisTanah
+  nik_subjek  String     @db.VarChar(16)
+  no_persil   String?    @db.VarChar(20)
+  jalan_op    String     @db.VarChar(255)
+  blok_kav_no String?    @db.VarChar(50)
+  rw_op       String?    @db.VarChar(5)
+  rt_op       String?    @db.VarChar(5)
+  jenis_tanah JenisTanah
 
   // Agregat (dihitung ulang dari relasi bumi/bangunan setiap update)
   luas_tanah      Decimal  @default(0) @db.Decimal(10, 2)
@@ -46,6 +90,7 @@ model ObjekPajak {
   created_at    DateTime  @default(now())
 
   // ── Relasi ──
+  wilayah       Wilayah               @relation(fields: [kode_wilayah], references: [kode_wilayah])
   subjek_pajak  SubjekPajak           @relation(fields: [nik_subjek], references: [nik])
   user_nonaktif User?                 @relation("NonaktifOlehUser", fields: [nonaktif_oleh], references: [id_user])
   transaksi     TransaksiSpop[]       @relation("ObjekBersama")
@@ -55,8 +100,9 @@ model ObjekPajak {
   bumi     ObjekBumi[]
   bangunan ObjekBangunan[]
 
-  @@unique([kode_propinsi, kode_dati2, kode_kecamatan, kode_kelurahan, kode_blok, no_urut, kode_jenis_op])
+  @@unique([kode_wilayah, kode_blok, no_urut, kode_jenis_op])
   @@index([nik_subjek])
+  @@index([kode_wilayah])
   @@map("objek_pajak")
 }
 
@@ -90,27 +136,27 @@ model ObjekBumi {
 model ObjekBangunan {
   id_bangunan           String   @id @default(uuid())
   nop                   String   @db.VarChar(18)
-  no_bangunan           Int      // urutan bangunan ke berapa
+  no_bangunan           Int // urutan bangunan ke berapa
   kode_jpb              String?  @db.VarChar(2) // FK → referensi_jenis_penggunaan_bangunan
   no_formulir_lspop     String?  @db.VarChar(11)
   tahun_dibangun        Int?
   tahun_renovasi        Int?
   luas_bangunan         Decimal  @default(0) @db.Decimal(12, 2)
   jumlah_lantai         Int      @default(1)
-  daya_listrik_watt     Int?     // BARU — form lampiran SPOP field 10
-  kondisi_bangunan      String?  @db.VarChar(1)
-  jenis_konstruksi      String?  @db.VarChar(1)
-  jenis_atap            String?  @db.VarChar(1)
-  kode_dinding          String?  @db.VarChar(1)
-  kode_lantai           String?  @db.VarChar(1)
-  kode_langit_langit    String?  @db.VarChar(1)
+  daya_listrik_watt     Int? // BARU — form lampiran SPOP field 10
+  kondisi_bangunan      KondisiBangunan?
+  jenis_konstruksi      JenisKonstruksi?
+  jenis_atap            JenisAtap?
+  kode_dinding          JenisDinding?
+  kode_lantai           JenisLantai?
+  kode_langit_langit    JenisLangitLangit?
   nilai_sistem_bangunan Decimal? @db.Decimal(15, 2)
   tanggal_pendataan     DateTime @default(now())
   nip_pendata           String?  @db.VarChar(20)
   keterangan_jpb        String?  @db.VarChar(50)
   created_at            DateTime @default(now())
 
-  objek_pajak   ObjekPajak                       @relation(fields: [nop], references: [nop], onDelete: Cascade)
+  objek_pajak   ObjekPajak                        @relation(fields: [nop], references: [nop], onDelete: Cascade)
   referensi_jpb ReferensiJenisPenggunaanBangunan? @relation(fields: [kode_jpb], references: [kode_jpb])
   fasilitas     ObjekBangunanFasilitas?
 
@@ -165,7 +211,7 @@ model ObjekBangunanFasilitas {
 
   // 24. Pagar
   panjang_pagar_m Decimal @default(0) @db.Decimal(10, 2)
-  bahan_pagar     String? @db.VarChar(1) // 1=Baja/Besi, 2=Bata/Batako
+  bahan_pagar     BahanPagar?
 
   // 25. Pemadam Kebakaran
   hydrant_ada    Boolean @default(false)

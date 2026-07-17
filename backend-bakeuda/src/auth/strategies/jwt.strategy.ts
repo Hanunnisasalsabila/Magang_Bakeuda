@@ -9,7 +9,7 @@ export interface JwtPayload {
   userId: string;
   username: string;
   role: Role;
-  kode_wilayah: string;
+  kode_wilayah: string | null;
 }
 
 @Injectable()

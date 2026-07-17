@@ -1,40 +1,59 @@
 import {
   IsString,
   IsNotEmpty,
+  IsOptional,
+  IsBoolean,
   MaxLength,
-  MinLength,
+  Length,
 } from 'class-validator';
 
 export class CreateWilayahDto {
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(10)
-  kode_wilayah: string;
+  @IsOptional()
+  @Length(10, 10)
+  kode_wilayah?: string;
 
   @IsString()
   @IsNotEmpty()
-  nama_desa: string;
+  @Length(2, 2)
+  kode_propinsi: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  nama_propinsi?: string;
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5)
-  kode_kel: string;
+  @Length(2, 2)
+  kode_dati2: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  kabupaten?: string;
 
   @IsString()
   @IsNotEmpty()
+  @Length(3, 3)
+  kode_kecamatan: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
   kecamatan: string;
 
   @IsString()
   @IsNotEmpty()
-  @MaxLength(5)
-  kode_kec: string;
+  @Length(3, 3)
+  kode_kelurahan: string;
 
   @IsString()
   @IsNotEmpty()
-  kabupaten: string;
+  @MaxLength(100)
+  nama_desa: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(5)
-  kode_kab: string;
+  @IsBoolean()
+  @IsOptional()
+  is_active?: boolean;
 }

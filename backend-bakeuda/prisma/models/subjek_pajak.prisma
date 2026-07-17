@@ -28,15 +28,14 @@ model SubjekPajak {
   blok_kav_no_subjek String?   @db.VarChar(50)
   rw                 String?   @db.VarChar(5)
   rt                 String?   @db.VarChar(5)
-  kelurahan          String    @db.VarChar(100)
-  kecamatan          String?   @db.VarChar(100) // dari legacy KECAMATAN_WP
-  kabupaten          String    @db.VarChar(100)
+  kode_wilayah       String    @db.VarChar(10) // FK ke Wilayah
   kode_pos           String?   @db.VarChar(5)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
   created_by         String // FK → users.id_user
 
   // ── Relasi ──
+  wilayah       Wilayah                 @relation(fields: [kode_wilayah], references: [kode_wilayah])
   user          User                    @relation("CreatedByUser", fields: [created_by], references: [id_user])
   objek_pajak   ObjekPajak[]
   detail_tujuan DetailTransaksiTujuan[]

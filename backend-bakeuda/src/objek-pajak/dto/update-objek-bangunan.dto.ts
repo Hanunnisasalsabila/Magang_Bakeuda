@@ -4,7 +4,9 @@ import {
   IsString,
   IsOptional,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
+import { KondisiBangunan } from '@prisma/client';
 
 export class UpdateObjekBangunanDto {
   @IsNumber()
@@ -12,10 +14,9 @@ export class UpdateObjekBangunanDto {
   @IsOptional()
   luas_bangunan?: number;
 
-  @IsString()
+  @IsEnum(KondisiBangunan)
   @IsOptional()
-  @MaxLength(1)
-  kondisi_bangunan?: string;
+  kondisi_bangunan?: KondisiBangunan;
 
   @IsNumber()
   @IsOptional()

@@ -2,16 +2,16 @@
 CREATE TYPE "JenisDokumen" AS ENUM ('KTP', 'SHM', 'AJB', 'GIRIK', 'SHGB', 'IMB', 'LAINNYA');
 
 -- CreateEnum
-CREATE TYPE "JenisTanah" AS ENUM ('TANAH_BANGUNAN', 'TANAH_PERTANIAN', 'TANAH_PERKEBUNAN', 'TANAH_KEHUTANAN', 'TANAH_LAINNYA');
+CREATE TYPE "JenisTanah" AS ENUM ('TANAH_BANGUNAN', 'KAVLING_SIAP_BANGUN', 'TANAH_KOSONG', 'FASILITAS_UMUM');
 
 -- CreateEnum
 CREATE TYPE "StatusBayar" AS ENUM ('BELUM_BAYAR', 'LUNAS', 'KEDALUWARSA');
 
 -- CreateEnum
-CREATE TYPE "StatusWp" AS ENUM ('PEMILIK', 'PENYEWA', 'PENGGARAP', 'PEMAKAI');
+CREATE TYPE "StatusWp" AS ENUM ('PEMILIK', 'PENYEWA', 'PENGELOLA', 'PEMAKAI', 'SENGKETA');
 
 -- CreateEnum
-CREATE TYPE "Pekerjaan" AS ENUM ('PNS', 'TNI_POLRI', 'PEGAWAI_SWASTA', 'WIRASWASTA', 'PETANI', 'NELAYAN', 'PENSIUNAN', 'LAINNYA');
+CREATE TYPE "Pekerjaan" AS ENUM ('PNS', 'TNI_POLRI', 'PEGAWAI_SWASTA', 'WIRASWASTA', 'PETANI', 'NELAYAN', 'PENSIUNAN', 'BADAN', 'LAINNYA');
 
 -- CreateEnum
 CREATE TYPE "JenisTransaksi" AS ENUM ('BARU', 'MUTASI', 'PECAH', 'GABUNG', 'PERUBAHAN_DATA');
@@ -38,10 +38,7 @@ CREATE TABLE "lampiran_dokumen" (
 -- CreateTable
 CREATE TABLE "objek_pajak" (
     "nop" VARCHAR(18) NOT NULL,
-    "kode_propinsi" VARCHAR(2) NOT NULL,
-    "kode_dati2" VARCHAR(2) NOT NULL,
-    "kode_kecamatan" VARCHAR(3) NOT NULL,
-    "kode_kelurahan" VARCHAR(3) NOT NULL,
+    "kode_wilayah" VARCHAR(10) NOT NULL,
     "kode_blok" VARCHAR(3) NOT NULL,
     "no_urut" VARCHAR(4) NOT NULL,
     "kode_jenis_op" VARCHAR(1) NOT NULL,
@@ -51,8 +48,6 @@ CREATE TABLE "objek_pajak" (
     "blok_kav_no" VARCHAR(50),
     "rw_op" VARCHAR(5),
     "rt_op" VARCHAR(5),
-    "kelurahan_op" VARCHAR(100) NOT NULL,
-    "kecamatan_op" VARCHAR(100) NOT NULL,
     "jenis_tanah" "JenisTanah" NOT NULL,
     "luas_tanah" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "luas_bangunan" DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -97,6 +92,7 @@ CREATE TABLE "objek_bangunan" (
     "tahun_renovasi" INTEGER,
     "luas_bangunan" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "jumlah_lantai" INTEGER NOT NULL DEFAULT 1,
+    "daya_listrik_watt" INTEGER,
     "kondisi_bangunan" VARCHAR(1),
     "jenis_konstruksi" VARCHAR(1),
     "jenis_atap" VARCHAR(1),
@@ -110,6 +106,56 @@ CREATE TABLE "objek_bangunan" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "objek_bangunan_pkey" PRIMARY KEY ("id_bangunan")
+);
+
+-- CreateTable
+CREATE TABLE "objek_bangunan_fasilitas" (
+    "id_fasilitas" TEXT NOT NULL,
+    "id_bangunan" VARCHAR(36) NOT NULL,
+    "jumlah_ac_split" INTEGER NOT NULL DEFAULT 0,
+    "jumlah_ac_window" INTEGER NOT NULL DEFAULT 0,
+    "ac_sentral" BOOLEAN NOT NULL DEFAULT false,
+    "luas_kolam_renang" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "kolam_diplester" BOOLEAN NOT NULL DEFAULT false,
+    "kolam_dengan_pelapis" BOOLEAN NOT NULL DEFAULT false,
+    "perkerasan_ringan" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "perkerasan_sedang" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "perkerasan_berat" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "perkerasan_dengan_penutup" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "tenis_beton_dgn_lampu" INTEGER NOT NULL DEFAULT 0,
+    "tenis_beton_tanpa_lampu" INTEGER NOT NULL DEFAULT 0,
+    "tenis_aspal_dgn_lampu" INTEGER NOT NULL DEFAULT 0,
+    "tenis_aspal_tanpa_lampu" INTEGER NOT NULL DEFAULT 0,
+    "tenis_tanah_rumput_dgn_lampu" INTEGER NOT NULL DEFAULT 0,
+    "tenis_tanah_rumput_tanpa_lampu" INTEGER NOT NULL DEFAULT 0,
+    "lift_penumpang" INTEGER NOT NULL DEFAULT 0,
+    "lift_kapsul" INTEGER NOT NULL DEFAULT 0,
+    "lift_barang" INTEGER NOT NULL DEFAULT 0,
+    "tangga_berjalan_lbr_kurang_080m" INTEGER NOT NULL DEFAULT 0,
+    "tangga_berjalan_lbr_lebih_080m" INTEGER NOT NULL DEFAULT 0,
+    "panjang_pagar_m" DECIMAL(10,2) NOT NULL DEFAULT 0,
+    "bahan_pagar" VARCHAR(1),
+    "hydrant_ada" BOOLEAN NOT NULL DEFAULT false,
+    "sprinkler_ada" BOOLEAN NOT NULL DEFAULT false,
+    "fire_alarm_ada" BOOLEAN NOT NULL DEFAULT false,
+    "jumlah_saluran_pabx" INTEGER NOT NULL DEFAULT 0,
+    "kedalaman_sumur_artesis_m" DECIMAL(6,2) NOT NULL DEFAULT 0,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "objek_bangunan_fasilitas_pkey" PRIMARY KEY ("id_fasilitas")
+);
+
+-- CreateTable
+CREATE TABLE "referensi_jenis_penggunaan_bangunan" (
+    "kode_jpb" VARCHAR(2) NOT NULL,
+    "nama_jpb" VARCHAR(50) NOT NULL,
+    "urutan" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "keterangan" VARCHAR(150),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "referensi_jenis_penggunaan_bangunan_pkey" PRIMARY KEY ("kode_jpb")
 );
 
 -- CreateTable
@@ -146,9 +192,7 @@ CREATE TABLE "subjek_pajak" (
     "blok_kav_no_subjek" VARCHAR(50),
     "rw" VARCHAR(5),
     "rt" VARCHAR(5),
-    "kelurahan" VARCHAR(100) NOT NULL,
-    "kecamatan" VARCHAR(100),
-    "kabupaten" VARCHAR(100) NOT NULL,
+    "kode_wilayah" VARCHAR(10) NOT NULL,
     "kode_pos" VARCHAR(5),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
@@ -222,12 +266,17 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "wilayah" (
     "kode_wilayah" VARCHAR(10) NOT NULL,
-    "nama_desa" VARCHAR(100) NOT NULL,
-    "kode_kel" VARCHAR(5) NOT NULL,
+    "kode_propinsi" VARCHAR(2) NOT NULL,
+    "nama_propinsi" VARCHAR(50) NOT NULL DEFAULT 'Jawa Tengah',
+    "kode_dati2" VARCHAR(2) NOT NULL,
+    "kabupaten" VARCHAR(100) NOT NULL DEFAULT 'Purbalingga',
+    "kode_kecamatan" VARCHAR(3) NOT NULL,
     "kecamatan" VARCHAR(100) NOT NULL,
-    "kode_kec" VARCHAR(5) NOT NULL,
-    "kabupaten" VARCHAR(100) NOT NULL,
-    "kode_kab" VARCHAR(5) NOT NULL,
+    "kode_kelurahan" VARCHAR(3) NOT NULL,
+    "nama_desa" VARCHAR(100) NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "wilayah_pkey" PRIMARY KEY ("kode_wilayah")
 );
@@ -236,13 +285,22 @@ CREATE TABLE "wilayah" (
 CREATE INDEX "objek_pajak_nik_subjek_idx" ON "objek_pajak"("nik_subjek");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "objek_pajak_kode_propinsi_kode_dati2_kode_kecamatan_kode_ke_key" ON "objek_pajak"("kode_propinsi", "kode_dati2", "kode_kecamatan", "kode_kelurahan", "kode_blok", "no_urut", "kode_jenis_op");
+CREATE INDEX "objek_pajak_kode_wilayah_idx" ON "objek_pajak"("kode_wilayah");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "objek_pajak_kode_wilayah_kode_blok_no_urut_kode_jenis_op_key" ON "objek_pajak"("kode_wilayah", "kode_blok", "no_urut", "kode_jenis_op");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "objek_bumi_nop_no_bumi_key" ON "objek_bumi"("nop", "no_bumi");
 
 -- CreateIndex
+CREATE INDEX "objek_bangunan_kode_jpb_idx" ON "objek_bangunan"("kode_jpb");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "objek_bangunan_nop_no_bangunan_key" ON "objek_bangunan"("nop", "no_bangunan");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "objek_bangunan_fasilitas_id_bangunan_key" ON "objek_bangunan_fasilitas"("id_bangunan");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "subjek_pajak_legacy_subjek_id_key" ON "subjek_pajak"("legacy_subjek_id");
@@ -253,11 +311,20 @@ CREATE INDEX "subjek_pajak_nama_subjek_idx" ON "subjek_pajak"("nama_subjek");
 -- CreateIndex
 CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
+-- CreateIndex
+CREATE INDEX "wilayah_kode_kecamatan_idx" ON "wilayah"("kode_kecamatan");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "wilayah_kode_propinsi_kode_dati2_kode_kecamatan_kode_kelura_key" ON "wilayah"("kode_propinsi", "kode_dati2", "kode_kecamatan", "kode_kelurahan");
+
 -- AddForeignKey
 ALTER TABLE "lampiran_dokumen" ADD CONSTRAINT "lampiran_dokumen_id_transaksi_fkey" FOREIGN KEY ("id_transaksi") REFERENCES "transaksi_spop"("id_transaksi") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "lampiran_dokumen" ADD CONSTRAINT "lampiran_dokumen_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "users"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "objek_pajak" ADD CONSTRAINT "objek_pajak_kode_wilayah_fkey" FOREIGN KEY ("kode_wilayah") REFERENCES "wilayah"("kode_wilayah") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "objek_pajak" ADD CONSTRAINT "objek_pajak_nik_subjek_fkey" FOREIGN KEY ("nik_subjek") REFERENCES "subjek_pajak"("nik") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -272,6 +339,12 @@ ALTER TABLE "objek_bumi" ADD CONSTRAINT "objek_bumi_nop_fkey" FOREIGN KEY ("nop"
 ALTER TABLE "objek_bangunan" ADD CONSTRAINT "objek_bangunan_nop_fkey" FOREIGN KEY ("nop") REFERENCES "objek_pajak"("nop") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "objek_bangunan" ADD CONSTRAINT "objek_bangunan_kode_jpb_fkey" FOREIGN KEY ("kode_jpb") REFERENCES "referensi_jenis_penggunaan_bangunan"("kode_jpb") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "objek_bangunan_fasilitas" ADD CONSTRAINT "objek_bangunan_fasilitas_id_bangunan_fkey" FOREIGN KEY ("id_bangunan") REFERENCES "objek_bangunan"("id_bangunan") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "sppt" ADD CONSTRAINT "sppt_nop_fkey" FOREIGN KEY ("nop") REFERENCES "objek_pajak"("nop") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -279,6 +352,9 @@ ALTER TABLE "sppt" ADD CONSTRAINT "sppt_generated_by_fkey" FOREIGN KEY ("generat
 
 -- AddForeignKey
 ALTER TABLE "sppt" ADD CONSTRAINT "sppt_id_transaksi_asal_fkey" FOREIGN KEY ("id_transaksi_asal") REFERENCES "transaksi_spop"("id_transaksi") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "subjek_pajak" ADD CONSTRAINT "subjek_pajak_kode_wilayah_fkey" FOREIGN KEY ("kode_wilayah") REFERENCES "wilayah"("kode_wilayah") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "subjek_pajak" ADD CONSTRAINT "subjek_pajak_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id_user") ON DELETE RESTRICT ON UPDATE CASCADE;

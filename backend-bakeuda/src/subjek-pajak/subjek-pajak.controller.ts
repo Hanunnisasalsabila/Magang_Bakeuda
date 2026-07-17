@@ -24,21 +24,21 @@ export class SubjekPajakController {
 
   // GET /subjek-pajak?q=keyword
   @Get()
-  async search(@Query('q') keyword?: string) {
-    return this.subjekPajakService.search(keyword ?? '');
+  async search(@Query('q') keyword: string, @Request() req: any) {
+    return this.subjekPajakService.search(keyword ?? '', req.user);
   }
 
   // POST /subjek-pajak
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateSubjekPajakDto, @Request() req: any) {
-    return this.subjekPajakService.create(dto, req.user.id_user);
+    return this.subjekPajakService.create(dto, req.user);
   }
 
   // GET /subjek-pajak/:nik
   @Get(':nik')
-  async getByNik(@Param('nik') nik: string) {
-    return this.subjekPajakService.getByNik(nik);
+  async getByNik(@Param('nik') nik: string, @Request() req: any) {
+    return this.subjekPajakService.getByNik(nik, req.user);
   }
 
   // PUT /subjek-pajak/:nik
@@ -46,13 +46,14 @@ export class SubjekPajakController {
   async update(
     @Param('nik') nik: string,
     @Body() dto: UpdateSubjekPajakDto,
+    @Request() req: any,
   ) {
-    return this.subjekPajakService.update(nik, dto);
+    return this.subjekPajakService.update(nik, dto, req.user);
   }
 
   // DELETE /subjek-pajak/:nik
   @Delete(':nik')
-  async delete(@Param('nik') nik: string) {
-    return this.subjekPajakService.delete(nik);
+  async delete(@Param('nik') nik: string, @Request() req: any) {
+    return this.subjekPajakService.delete(nik, req.user);
   }
 }

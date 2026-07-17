@@ -67,19 +67,9 @@ export class CreateSubjekPajakDto {
   rt?: string;
 
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  kelurahan: string;
-
-  @IsString()
   @IsOptional()
-  @MaxLength(100)
-  kecamatan?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  kabupaten: string;
+  @Length(10, 10)
+  kode_wilayah?: string;
 
   @IsString()
   @IsOptional()
