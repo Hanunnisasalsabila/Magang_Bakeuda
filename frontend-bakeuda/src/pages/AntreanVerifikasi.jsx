@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 
 export default function AntreanVerifikasi() {
   const navigate = useNavigate();
@@ -14,16 +13,18 @@ export default function AntreanVerifikasi() {
   const [loading, setLoading] = useState(true);
   const [kecamatanList, setKecamatanList] = useState([]);
   const [kelurahanList, setKelurahanList] = useState([]);
+  const [allWilayah, setAllWilayah] = useState([]);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
+    if (allWilayah.length === 0) return;
     if (kecamatan === 'Semua Kecamatan') {
-      const uniqueKel = [...new Set(wilayahData.map(w => w.nama_desa))].filter(Boolean).sort();
+      const uniqueKel = [...new Set(allWilayah.map(w => w.nama_desa))].filter(Boolean).sort();
       setKelurahanList(uniqueKel);
     } else {
-      const filteredKel = wilayahData
+      const filteredKel = allWilayah
         .filter(w => w.kecamatan === kecamatan)
         .map(w => w.nama_desa)
         .filter(Boolean)
@@ -31,12 +32,19 @@ export default function AntreanVerifikasi() {
       setKelurahanList(filteredKel);
     }
     setKelurahan('Semua Desa');
-  }, [kecamatan]);
+  }, [kecamatan, allWilayah]);
 
   useEffect(() => {
     const fetchKecamatan = async () => {
-      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
-      setKecamatanList(uniqueKec);
+      try {
+        const res = await api.get('/wilayah');
+        const data = res.data.data;
+        setAllWilayah(data);
+        const uniqueKec = [...new Set(data.map(w => w.kecamatan))].filter(Boolean).sort();
+        setKecamatanList(uniqueKec);
+      } catch (err) {
+        console.error("Gagal mengambil data wilayah:", err);
+      }
     };
     fetchKecamatan();
 

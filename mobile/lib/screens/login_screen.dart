@@ -241,6 +241,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Username tidak boleh kosong';
                             }
+                            if (value.length < 4) {
+                              return 'Minimal 4 karakter';
+                            }
+                            if (value.contains(' ')) {
+                              return 'Tidak boleh ada spasi';
+                            }
                             return null;
                           },
                         ),
@@ -254,6 +260,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Password tidak boleh kosong';
+                            }
+                            if (value.length < 6) {
+                              return 'Minimal 6 karakter';
                             }
                             return null;
                           },

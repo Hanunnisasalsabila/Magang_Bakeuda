@@ -25,11 +25,12 @@ async function main() {
       create: {
         kode_wilayah: w.kode_wilayah,
         nama_desa: w.nama_desa,
-        kode_kel: w.kode_kel,
+        kode_kelurahan: w.kode_kel,
         kecamatan: w.kecamatan,
-        kode_kec: w.kode_kec,
+        kode_kecamatan: w.kode_kec,
         kabupaten: w.kabupaten,
-        kode_kab: w.kode_kab,
+        kode_dati2: w.kode_kab,
+        kode_propinsi: '33',
       },
     });
   }

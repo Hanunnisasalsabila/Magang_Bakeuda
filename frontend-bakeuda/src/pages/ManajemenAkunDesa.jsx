@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 import ToastNotification from '../components/ToastNotification';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CetakKredensialModal from '../components/CetakKredensialModal';
@@ -13,7 +12,7 @@ export default function ManajemenAkunDesa() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterWilayah, setFilterWilayah] = useState('');
-  const [wilayahList, setWilayahList] = useState(wilayahData);
+  const [wilayahList, setWilayahList] = useState([]);
   
   // Pagination & Sorting state
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +57,16 @@ export default function ManajemenAkunDesa() {
 
   useEffect(() => {
     fetchUsers();
+    
+    const fetchWilayah = async () => {
+      try {
+        const res = await api.get('/wilayah');
+        setWilayahList(res.data.data);
+      } catch (err) {
+        console.error("Gagal memuat wilayah", err);
+      }
+    };
+    fetchWilayah();
   }, []);
 
   const openAddModal = () => {

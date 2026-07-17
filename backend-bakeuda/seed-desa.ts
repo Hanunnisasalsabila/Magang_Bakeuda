@@ -10,19 +10,19 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const passwordHash = await bcrypt.hash('desa123', 10);
   await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: { password_hash: adminPassword },
+    where: { username: 'desa' },
+    update: { password_hash: passwordHash },
     create: {
-      id_user: 'admin-12345',
-      nama_lengkap: 'Super Admin Bakeuda',
-      username: 'admin',
-      password_hash: adminPassword,
-      role: 'BAKEUDA',
+      id_user: 'desa-12345',
+      nama_lengkap: 'Perangkat Desa',
+      username: 'desa',
+      password_hash: passwordHash,
+      role: 'DESA',
     },
   });
-  console.log("Admin user created!");
+  console.log("Desa user created!");
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

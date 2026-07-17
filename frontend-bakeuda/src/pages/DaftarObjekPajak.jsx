@@ -6,7 +6,6 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 
 export default function DaftarObjekPajak() {
   const navigate = useNavigate();
@@ -31,8 +30,13 @@ export default function DaftarObjekPajak() {
 
   useEffect(() => {
     const fetchKecamatan = async () => {
-      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
-      setKecamatanList(uniqueKec);
+      try {
+        const res = await api.get('/wilayah');
+        const uniqueKec = [...new Set(res.data.data.map(w => w.kecamatan))].filter(Boolean).sort();
+        setKecamatanList(uniqueKec);
+      } catch (err) {
+        console.error("Gagal mengambil data wilayah:", err);
+      }
     };
     fetchKecamatan();
   }, []);

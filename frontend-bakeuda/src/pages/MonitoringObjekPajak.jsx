@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import StatusBadge from '../components/StatusBadge';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 
 export default function MonitoringObjekPajak() {
   const navigate = useNavigate();
@@ -17,8 +16,13 @@ export default function MonitoringObjekPajak() {
 
   React.useEffect(() => {
     const fetchKecamatan = async () => {
-      const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
-      setKecamatanList(uniqueKec);
+      try {
+        const res = await api.get('/wilayah');
+        const uniqueKec = [...new Set(res.data.data.map(w => w.kecamatan))].filter(Boolean).sort();
+        setKecamatanList(uniqueKec);
+      } catch (err) {
+        console.error("Gagal mengambil data wilayah:", err);
+      }
     };
     fetchKecamatan();
   }, []);
