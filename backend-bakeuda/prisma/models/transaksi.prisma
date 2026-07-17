@@ -9,10 +9,8 @@ enum JenisTransaksi {
 
 enum StatusAjuan {
   DRAFT
-  MENUNGGU_VERIFIKASI_DESA
   MENUNGGU
   PROSES
-  PERBAIKAN
   REVISI
   DITOLAK
   DISETUJUI
@@ -37,12 +35,15 @@ model TransaksiSpop {
   id_verifikator     String? // FK → users.id_user (verifikator BAKEUDA)
   verified_at        DateTime?
   catatan_bakeuda    String? // TEXT
+  locked_by          String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
+  locked_at          DateTime?
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
 
   // ── Relasi ──
   pengaju       User                    @relation("PengajuUser", fields: [id_user], references: [id_user])
   verifikator   User?                   @relation("VerifikatorUser", fields: [id_verifikator], references: [id_user])
+  reviewer      User?                   @relation("ReviewerUser", fields: [locked_by], references: [id_user])
   objek_bersama ObjekPajak?             @relation("ObjekBersama", fields: [nop_bersama], references: [nop])
   detail_asal   DetailTransaksiAsal[]
   detail_tujuan DetailTransaksiTujuan[]
@@ -73,7 +74,7 @@ model DetailTransaksiAsal {
 model DetailTransaksiTujuan {
   id_detail_tujuan     String     @id @default(uuid())
   id_transaksi         String // FK → transaksi_spop
-  nik_calon_subjek     String     @db.VarChar(16)
+  nik_calon_subjek     String?    @db.VarChar(16)
   luas_tanah_baru      Decimal    @db.Decimal(10, 2)
   luas_bangunan_baru   Decimal    @default(0) @db.Decimal(10, 2)
   jumlah_bangunan_baru Int        @default(0)
@@ -92,10 +93,11 @@ model DetailTransaksiTujuan {
   batas_selatan        String?    @db.VarChar(50)
   batas_timur          String?    @db.VarChar(50)
   batas_barat          String?    @db.VarChar(50)
+  data_bangunan_json   Json?      // Menampung array data LSPOP sementara sebelum verifikasi Bakeuda
+  calon_subjek_json    Json?      // Menampung draf Subjek Pajak sebelum disetujui
 
   // ── Relasi ──
   transaksi    TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
-  calon_subjek SubjekPajak   @relation(fields: [nik_calon_subjek], references: [nik])
 
   @@map("detail_transaksi_tujuan")
 }

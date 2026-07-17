@@ -1,8 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { StatusAjuan } from '@prisma/client';
+import { StatusAjuan, Pekerjaan, StatusWp } from '@prisma/client';
 import { CreateSpopDto } from './dto/create-spop.dto.js';
-import { VerifikasiDesaDto } from './dto/verifikasi-desa.dto.js';
+import { CreateDraftDto } from './dto/create-draft.dto.js';
+import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
 
 @Injectable()
 export class TransaksiSpopService {
@@ -15,15 +16,27 @@ export class TransaksiSpopService {
     const status_wp = dto.subjek_pajak.status_wp;
 
     const currentYear = new Date().getFullYear();
-    const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU_VERIFIKASI_DESA';
+    const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU';
 
-    // Validasi Cerdas NOP
-    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi) && !dto.nop_utama) {
-      throw new BadRequestException(`NOP Utama wajib diisi untuk jenis layanan ${jenis_transaksi}`);
-    }
-    if (['PECAH', 'GABUNG'].includes(jenis_transaksi)) {
-      if (!dto.nop_asal || dto.nop_asal.length === 0) {
-        throw new BadRequestException(`NOP Asal wajib diisi minimal 1 untuk jenis layanan ${jenis_transaksi}`);
+    // Validasi & Pembersihan Cerdas NOP berdasarkan Jenis Transaksi
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi)) {
+      if (!dto.is_draft && !dto.nop_utama) {
+        throw new BadRequestException(`NOP Utama wajib diisi untuk jenis layanan ${jenis_transaksi}`);
+      }
+      dto.nop_asal = []; // Paksa kosong
+      dto.no_sppt_lama = undefined; // Paksa kosong
+    } else if (jenis_transaksi === 'BARU') {
+      dto.nop_utama = undefined; // Paksa kosong
+      dto.nop_asal = []; // Paksa kosong
+    } else if (jenis_transaksi === 'PECAH') {
+      dto.nop_utama = undefined; // Paksa kosong
+      if (!dto.is_draft && (!dto.nop_asal || dto.nop_asal.filter(n => n && n.trim() !== '').length !== 1)) {
+        throw new BadRequestException(`NOP Asal wajib diisi tepat 1 untuk jenis layanan ${jenis_transaksi}`);
+      }
+    } else if (jenis_transaksi === 'GABUNG') {
+      dto.nop_utama = undefined; // Paksa kosong
+      if (!dto.is_draft && (!dto.nop_asal || dto.nop_asal.filter(n => n && n.trim() !== '').length < 2)) {
+        throw new BadRequestException(`NOP Asal wajib diisi minimal 2 untuk jenis layanan ${jenis_transaksi}`);
       }
     }
     // Validasi Cerdas Bangunan
@@ -39,6 +52,13 @@ export class TransaksiSpopService {
       const hasSuratKuasa = dto.lampiran?.some(l => l.jenis_dokumen === 'SURAT_KUASA');
       if (!hasSuratKuasa) {
         throw new BadRequestException('Surat Kuasa wajib dilampirkan jika pendaftar bertindak selaku kuasa');
+      }
+    }
+
+    if (['BARU', 'PECAH'].includes(jenis_transaksi)) {
+      const hasDenahLokasi = dto.lampiran?.some(l => l.jenis_dokumen === 'DENAH_LOKASI');
+      if (!hasDenahLokasi) {
+        throw new BadRequestException(`Denah Lokasi wajib dilampirkan untuk jenis layanan ${jenis_transaksi}`);
       }
     }
 
@@ -58,45 +78,9 @@ export class TransaksiSpopService {
       }
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Pastikan SubjekPajak ada / Upsert
-      await tx.subjekPajak.upsert({
-        where: { nik: dto.subjek_pajak.nik },
-        update: {
-          nama_subjek: dto.subjek_pajak.nama,
-          pekerjaan: pekerjaan_enum,
-          status_wp: status_wp,
-          npwp: dto.subjek_pajak.npwp,
-          no_hp: dto.subjek_pajak.no_hp,
-          email: dto.subjek_pajak.email,
-          alamat_jalan: dto.subjek_pajak.alamat,
-          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
-          rt: dto.subjek_pajak.rt,
-          rw: dto.subjek_pajak.rw,
-          kelurahan: dto.subjek_pajak.kelurahan,
-          kecamatan: dto.subjek_pajak.kecamatan,
-          kabupaten: dto.subjek_pajak.kabupaten,
-          kode_pos: dto.subjek_pajak.kode_pos,
-        },
-        create: {
-          nik: dto.subjek_pajak.nik,
-          nama_subjek: dto.subjek_pajak.nama,
-          pekerjaan: pekerjaan_enum,
-          status_wp: status_wp,
-          npwp: dto.subjek_pajak.npwp,
-          no_hp: dto.subjek_pajak.no_hp,
-          email: dto.subjek_pajak.email,
-          alamat_jalan: dto.subjek_pajak.alamat,
-          blok_kav_no_subjek: dto.subjek_pajak.blok_kav_no,
-          rt: dto.subjek_pajak.rt,
-          rw: dto.subjek_pajak.rw,
-          kelurahan: dto.subjek_pajak.kelurahan,
-          kecamatan: dto.subjek_pajak.kecamatan,
-          kabupaten: dto.subjek_pajak.kabupaten,
-          kode_pos: dto.subjek_pajak.kode_pos,
-          created_by: id_user,
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+      // 1. (Dihapus) Tidak lagi melakukan upsert SubjekPajak di tabel Master saat submit transaksi
 
       // 2. Buat Cangkang Transaksi
       const transaksi = await tx.transaksiSpop.create({
@@ -112,17 +96,18 @@ export class TransaksiSpopService {
           menggunakan_kuasa: dto.is_kuasa || false,
           
           // Data Detail Asal (Conditionally inserted)
-          detail_asal: dto.nop_utama || (dto.nop_asal && dto.nop_asal.length > 0) ? {
+          detail_asal: (dto.nop_utama && dto.nop_utama.trim() !== '') || (dto.nop_asal && dto.nop_asal.filter(n => n && n.trim() !== '').length > 0) ? {
             create: [
-              ...(dto.nop_utama ? [{ nop_asal: dto.nop_utama }] : []),
-              ...(dto.nop_asal ? dto.nop_asal.map(n => ({ nop_asal: n })) : []),
+              ...(dto.nop_utama && dto.nop_utama.trim() !== '' ? [{ nop_asal: dto.nop_utama }] : []),
+              ...(dto.nop_asal ? dto.nop_asal.filter(n => n && n.trim() !== '').map(n => ({ nop_asal: n })) : []),
             ]
           } : undefined,
 
           // Data Tujuan
           detail_tujuan: {
             create: {
-              nik_calon_subjek: dto.subjek_pajak.nik,
+              nik_calon_subjek: dto.subjek_pajak.nik !== '0000000000000000' && dto.subjek_pajak.nik !== '' ? dto.subjek_pajak.nik : undefined,
+              calon_subjek_json: (dto.subjek_pajak as any),
               luas_tanah_baru: dto.objek_pajak_sementara.luas_tanah,
               luas_bangunan_baru: dto.objek_pajak_sementara.luas_bangunan || 0,
               jumlah_bangunan_baru: dto.objek_pajak_sementara.jumlah_bangunan || 0,
@@ -154,7 +139,7 @@ export class TransaksiSpopService {
           riwayat: {
             create: {
               status_riwayat: final_status,
-              keterangan: dto.is_draft ? 'Draft Formulir SPOP Disimpan' : 'Formulir SPOP Diajukan, Menunggu Verifikasi Desa',
+              keterangan: dto.is_draft ? 'Draft Formulir SPOP Disimpan' : 'Formulir SPOP Diajukan ke Bakeuda',
             },
           },
         },
@@ -167,10 +152,280 @@ export class TransaksiSpopService {
       });
 
       return transaksi;
+      });
+    } catch (error) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException('NOP Asal atau NOP Bersama yang dimasukkan belum terdaftar di sistem. Harap periksa kembali.');
+      }
+      throw error;
+    }
+  }
+
+  async saveDraft(dto: CreateDraftDto, id_user: string) {
+    const currentYear = new Date().getFullYear();
+    const final_status = 'DRAFT';
+
+    const subjek = dto.subjek_pajak || {};
+    const objek = dto.objek_pajak_sementara || {};
+
+    const nik = subjek.nik || '0000000000000000';
+    const nama_subjek = subjek.nama || 'DRAFT';
+    const jenis_layanan = dto.jenis_layanan || 'BARU';
+    const jenis_tanah_baru = objek.jenis_tanah || 'TANAH_KOSONG';
+
+    // Validasi & Pembersihan Cerdas NOP berdasarkan Jenis Transaksi untuk Draft
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_layanan as string)) {
+      dto.nop_asal = []; // Paksa kosong
+      dto.no_sppt_lama = undefined; // Paksa kosong
+    } else if (jenis_layanan === 'BARU') {
+      dto.nop_utama = undefined; // Paksa kosong
+      dto.nop_asal = []; // Paksa kosong
+    } else if (jenis_layanan === 'PECAH') {
+      dto.nop_utama = undefined; // Paksa kosong
+    } else if (jenis_layanan === 'GABUNG') {
+      dto.nop_utama = undefined; // Paksa kosong
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+      // 1. (Dihapus) Tidak lagi upsert ke Master untuk Draft Subjek Pajak
+
+      // 2. Jika ID transaksi sudah ada, hapus detail lama (karena kita akan replace)
+      if (dto.id_transaksi) {
+        await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+        await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+        await tx.lampiranDokumen.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+      }
+
+          // 3. Upsert Transaksi SPOP
+          const transaksi = await tx.transaksiSpop.upsert({
+        where: { id_transaksi: dto.id_transaksi || '00000000-0000-0000-0000-000000000000' },
+        update: {
+          jenis_transaksi: jenis_layanan,
+          nop_bersama: dto.nop_bersama || null,
+          no_sppt_lama: dto.no_sppt_lama || null,
+          nama_pengaju: nama_subjek,
+          menggunakan_kuasa: dto.is_kuasa || false,
+          updated_at: new Date(),
+        },
+        create: {
+          ...(dto.id_transaksi ? { id_transaksi: dto.id_transaksi } : {}),
+          id_user,
+          tahun_pajak: currentYear,
+          jenis_transaksi: jenis_layanan,
+          nop_bersama: dto.nop_bersama || null,
+          no_sppt_lama: dto.no_sppt_lama || null,
+          nama_pengaju: nama_subjek,
+          tanggal_pengajuan: new Date(),
+          status_ajuan: final_status,
+          menggunakan_kuasa: dto.is_kuasa || false,
+          riwayat: {
+            create: {
+              status_riwayat: final_status,
+              keterangan: 'Draft Formulir SPOP Disimpan',
+            },
+          },
+        },
+      });
+
+      // 4. Create Detail Asal, Detail Tujuan, Lampiran (karena sudah dihapus jika update)
+      const detail_asal_data: any[] = [];
+      if (dto.nop_utama && dto.nop_utama.trim() !== '') {
+        detail_asal_data.push({ nop_asal: dto.nop_utama, id_transaksi: transaksi.id_transaksi });
+      }
+      if (dto.nop_asal && dto.nop_asal.length > 0) {
+        dto.nop_asal.filter(n => n && n.trim() !== '').forEach(n => detail_asal_data.push({ nop_asal: n, id_transaksi: transaksi.id_transaksi }));
+      }
+      if (detail_asal_data.length > 0) {
+        await tx.detailTransaksiAsal.createMany({ data: detail_asal_data });
+      }
+
+      await tx.detailTransaksiTujuan.create({
+        data: {
+          id_transaksi: transaksi.id_transaksi,
+          nik_calon_subjek: nik !== '0000000000000000' && nik !== '' ? nik : undefined,
+          calon_subjek_json: Object.keys(subjek).length > 0 ? (subjek as any) : undefined,
+          luas_tanah_baru: objek.luas_tanah || 0,
+          luas_bangunan_baru: objek.luas_bangunan || 0,
+          jumlah_bangunan_baru: objek.jumlah_bangunan || 0,
+          jenis_tanah_baru,
+          jalan_op_baru: objek.jalan_op,
+          rt_op_baru: objek.rt_op,
+          rw_op_baru: objek.rw_op,
+          blok_kav_no_baru: objek.blok_kav_no,
+          kelurahan_op_baru: objek.kelurahan_op,
+          kecamatan_op_baru: objek.kecamatan_op,
+          no_persil_baru: objek.no_persil,
+          latitude: objek.latitude,
+          longitude: objek.longitude,
+          batas_utara: objek.batas_utara,
+          batas_selatan: objek.batas_selatan,
+          batas_timur: objek.batas_timur,
+          batas_barat: objek.batas_barat,
+          data_bangunan_json: dto.bangunan && dto.bangunan.length > 0 ? (dto.bangunan as any) : undefined,
+          nop_generated: ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_layanan as string) ? dto.nop_utama : undefined,
+        }
+      });
+
+      if (dto.lampiran && dto.lampiran.length > 0) {
+        await tx.lampiranDokumen.createMany({
+          data: dto.lampiran.map(l => ({
+            id_transaksi: transaksi.id_transaksi,
+            jenis_dokumen: l.jenis_dokumen || 'DRAFT',
+            url_file: l.url_file || '',
+            uploaded_by: id_user,
+          }))
+        });
+      }
+
+      return await tx.transaksiSpop.findUnique({
+        where: { id_transaksi: transaksi.id_transaksi },
+        include: { detail_tujuan: true, detail_asal: true, lampiran: true, riwayat: true }
+      });
     });
+    } catch (error) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException('Draft gagal disimpan: NOP Asal atau NOP Bersama yang Anda masukkan belum terdaftar di sistem.');
+      }
+      throw error;
+    }
+  }
+
+  async lockForReview(id_transaksi: string, idAdmin: string) {
+    // 1. Atomic Update
+    const updateResult = await this.prisma.transaksiSpop.updateMany({
+      where: {
+        id_transaksi,
+        status_ajuan: 'MENUNGGU',
+        locked_by: null,
+      },
+      data: {
+        status_ajuan: 'PROSES',
+        locked_by: idAdmin,
+        locked_at: new Date(),
+      },
+    });
+
+    if (updateResult.count === 0) {
+      // Gagal mengunci, cari tahu alasannya
+      const transaksi = await this.prisma.transaksiSpop.findUnique({
+        where: { id_transaksi },
+        include: { reviewer: true },
+      });
+
+      if (!transaksi) {
+        throw new NotFoundException('Data transaksi tidak ditemukan.');
+      }
+
+      if (transaksi.status_ajuan === 'PROSES') {
+        if (transaksi.locked_by === idAdmin) {
+          // Re-entry aman (Admin A refresh halaman)
+          return this.getDetailTransaksi(id_transaksi);
+        } else {
+          throw new BadRequestException(
+            `🔒 Berkas sedang direviu oleh ${transaksi.reviewer?.nama_lengkap || 'Admin Lain'}. Silakan pilih berkas lain.`
+          );
+        }
+      }
+
+      throw new BadRequestException('Berkas tidak dalam status MENUNGGU atau sudah diproses.');
+    }
+
+    // 2. Jika berhasil mengunci, catat ke riwayat
+    await this.prisma.riwayatPelacakan.create({
+      data: {
+        id_transaksi,
+        status_riwayat: 'PROSES',
+        keterangan: 'Berkas mulai direviu oleh Admin Bakeuda.',
+      },
+    });
+
+    return this.getDetailTransaksi(id_transaksi);
+  }
+
+  async unlockReview(id_transaksi: string, idAdmin: string) {
+    const transaksi = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi },
+    });
+
+    if (!transaksi) {
+      throw new NotFoundException('Data transaksi tidak ditemukan.');
+    }
+
+    if (transaksi.status_ajuan !== 'PROSES') {
+      throw new BadRequestException('Berkas tidak sedang dalam status PROSES.');
+    }
+
+    // Untuk saat ini, kita anggap semua role BAKEUDA bisa unlock (super admin mode sementara)
+    // Jika nanti ada role khusus, bisa dicek di sini.
+    // if (transaksi.locked_by !== idAdmin && !(isAdminSuperAdmin(idAdmin))) { ... }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaksiSpop.update({
+        where: { id_transaksi },
+        data: {
+          status_ajuan: 'MENUNGGU',
+          locked_by: null,
+          locked_at: null,
+        },
+      });
+
+      await tx.riwayatPelacakan.create({
+        data: {
+          id_transaksi,
+          status_riwayat: 'MENUNGGU',
+          keterangan: 'Reviu dibatalkan (Lepas Kunci). Berkas kembali ke antrean.',
+        },
+      });
+    });
+
+    return { message: 'Kunci berhasil dilepas. Berkas kembali ke antrean.' };
+  }
+
+  async autoReleaseExpiredLocks() {
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    const expiredLocks = await this.prisma.transaksiSpop.findMany({
+      where: {
+        status_ajuan: 'PROSES',
+        locked_at: {
+          lt: thirtyMinsAgo,
+        },
+      },
+    });
+
+    if (expiredLocks.length === 0) return 0;
+
+    const ids = expiredLocks.map(t => t.id_transaksi);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaksiSpop.updateMany({
+        where: { id_transaksi: { in: ids } },
+        data: {
+          status_ajuan: 'MENUNGGU',
+          locked_by: null,
+          locked_at: null,
+        },
+      });
+
+      const riwayatData = ids.map(id => ({
+        id_transaksi: id,
+        status_riwayat: 'MENUNGGU' as StatusAjuan,
+        keterangan: 'Kunci dilepas otomatis (timeout 30 menit)',
+      }));
+
+      await tx.riwayatPelacakan.createMany({
+        data: riwayatData,
+      });
+    });
+
+    return ids.length;
   }
 
   async getAllTransaksi(status_ajuan?: string, kode_wilayah?: string) {
+    // Jalankan auto release expired locks setiap kali inbox dipanggil
+    await this.autoReleaseExpiredLocks();
+
     const where: any = {};
     if (status_ajuan) {
       where.status_ajuan = status_ajuan;
@@ -191,6 +446,11 @@ export class TransaksiSpopService {
               nama_lengkap: true,
               kode_wilayah: true,
             }
+          },
+          reviewer: {
+            select: {
+              nama_lengkap: true,
+            }
           }
         },
         orderBy: {
@@ -209,8 +469,7 @@ export class TransaksiSpopService {
 
 
 
-  async ajukanKeLurah(id_transaksi: string, kode_wilayah_user: string) {
-    // 1. Pengecekan Keberadaan Dokumen & Keamanan Cross-Reference Wilayah
+  async ajukanKeBakeuda(id_transaksi: string, kode_wilayah_user: string) {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
       include: { pengaju: true },
@@ -220,105 +479,309 @@ export class TransaksiSpopService {
       throw new NotFoundException('Draf transaksi tidak ditemukan.');
     }
 
-    // Validasi Keamanan: Pastikan dokumen ini milik desa/wilayah dari operator yang request
     if (transaksi.pengaju.kode_wilayah !== kode_wilayah_user) {
       throw new BadRequestException('Anda tidak berhak mengajukan dokumen dari wilayah lain.');
     }
 
-    if (transaksi.status_ajuan !== 'DRAFT') {
-      throw new BadRequestException('Hanya dokumen berstatus DRAFT yang dapat diajukan ke kelurahan.');
+    if (transaksi.status_ajuan !== 'DRAFT' && transaksi.status_ajuan !== 'REVISI') {
+      throw new BadRequestException('Hanya dokumen berstatus DRAFT atau REVISI yang dapat diajukan.');
     }
 
-    // 2. Eksekusi Database menggunakan Transaction
     return await this.prisma.$transaction(async (tx) => {
-      // A. Geser Status Transaksi Utama
       const updatedTransaksi = await tx.transaksiSpop.update({
         where: { id_transaksi },
-        data: {
-          status_ajuan: 'MENUNGGU_VERIFIKASI_DESA',
-        },
+        data: { status_ajuan: 'MENUNGGU' },
       });
 
-      // B. Catat Jejak Digitalnya di Tabel Riwayat
       await tx.riwayatPelacakan.create({
         data: {
           id_transaksi: id_transaksi,
-          status_riwayat: 'MENUNGGU_VERIFIKASI_DESA',
-          keterangan: 'Berkas berhasil diinput dan sedang mengantre validasi internal Kepala Desa.',
+          status_riwayat: 'MENUNGGU',
+          keterangan: 'Berkas berhasil diajukan dan sedang menunggu verifikasi dari Bakeuda.',
         },
       });
 
       return {
-        message: 'Berkas berhasil diajukan ke Kelurahan.',
+        message: 'Berkas berhasil diajukan ke Bakeuda.',
         data: updatedTransaksi,
       };
     });
   }
 
-  async verifikasiOlehDesa(
+  async verifikasiBakeuda(
     id_transaksi: string, 
-    dto: VerifikasiDesaDto, 
-    kodeWilayahUser: string
+    dto: VerifikasiBakeudaDto,
+    idVerifikator: string
   ) {
-    // 1. Validasi Status Transaksi
     const transaksi = await this.prisma.transaksiSpop.findUnique({
-      where: { id_transaksi }
+      where: { id_transaksi },
+      include: {
+        detail_tujuan: true,
+        detail_asal: true
+      }
     });
 
     if (!transaksi) {
       throw new NotFoundException('Data SPOP tidak ditemukan.');
     }
 
-    if (transaksi.status_ajuan !== 'MENUNGGU_VERIFIKASI_DESA') {
-      throw new BadRequestException('SPOP ini belum diajukan ke tahap persetujuan atau sudah diproses.');
+    if (transaksi.status_ajuan !== 'PROSES') {
+      throw new BadRequestException('SPOP ini belum direviu (belum di-lock). Silakan mulai reviu terlebih dahulu.');
     }
 
-    // 2. VALIDASI KEAMANAN BERLAPIS
-    // Cek apakah NIP tersebut ada di database DAN terdaftar di wilayah yang sama dengan operator
-    const pejabatValid = await this.prisma.pejabatDesa.findFirst({
-      where: {
-        nip: dto.nipPemeriksaDesa,
-        kode_wilayah: kodeWilayahUser,
-      },
-    });
-
-    if (!pejabatValid) {
-      throw new ForbiddenException('NIP Pemeriksa tidak valid atau tidak terdaftar di wilayah Anda.');
+    if (transaksi.locked_by !== idVerifikator) {
+      throw new BadRequestException('Hanya admin yang sedang mereviu yang boleh mengambil keputusan akhir.');
     }
 
-    // 3. Eksekusi Transaction (Ubah Status SPOP + Catat Riwayat)
     return await this.prisma.$transaction(async (tx) => {
-      // A. Update Transaksi (Stempel Kades masuk ke DB)
       const updatedTransaksi = await tx.transaksiSpop.update({
         where: { id_transaksi },
         data: { 
-          status_ajuan: 'PROSES', // Berubah jadi PROSES (Masuk antrean Bakeuda)
-          nip_pemeriksa_desa: dto.nipPemeriksaDesa,
-          url_dokumen_fisik: dto.urlDokumenFisik
+          status_ajuan: dto.status_ajuan,
+          id_verifikator: idVerifikator,
+          verified_at: new Date(),
+          catatan_bakeuda: dto.catatan || null,
+          locked_by: null,
+          locked_at: null,
         },
       });
 
-      // B. Catat Riwayat Pelacakan
+      let ket = '';
+      if (dto.status_ajuan === 'DISETUJUI') ket = 'Berkas disetujui oleh Bakeuda.';
+      else if (dto.status_ajuan === 'DITOLAK') ket = `Berkas ditolak. Catatan: ${dto.catatan}`;
+      else if (dto.status_ajuan === 'REVISI') ket = `Berkas dikembalikan untuk direvisi. Catatan: ${dto.catatan}`;
+
       await tx.riwayatPelacakan.create({
         data: {
           id_transaksi: id_transaksi,
-          status_riwayat: 'PROSES',
-          keterangan: `Berkas disetujui oleh ${pejabatValid.nama_pejabat} (${pejabatValid.jabatan}) dan dikirim ke Kabupaten.`,
+          status_riwayat: dto.status_ajuan,
+          keterangan: ket,
         },
       });
 
+      // === FASE 3: MASTERING (EKSEKUSI PENANAMAN DATA MASTER) ===
+      if (dto.status_ajuan === 'DISETUJUI' && transaksi.detail_tujuan.length > 0) {
+        const tujuan = transaksi.detail_tujuan[0];
+        const finalNop = dto.nop_baru || tujuan.nop_generated;
+
+        if (!finalNop || finalNop.length !== 18) {
+          throw new BadRequestException('NOP tidak valid atau belum diisi (harus 18 digit).');
+        }
+
+        // 1. Menonaktifkan NOP Lama (jika ada dan diset nonaktif)
+        if (transaksi.detail_asal.length > 0) {
+          for (const asal of transaksi.detail_asal) {
+            if (asal.nonaktifkan_saat_disetujui && asal.nop_asal) {
+              await tx.objekPajak.update({
+                where: { nop: asal.nop_asal },
+                data: {
+                  status_aktif: false,
+                  nonaktif_oleh: idVerifikator,
+                  nonaktif_at: new Date()
+                }
+              });
+            }
+          }
+        }
+
+        // 2. Update nop_generated di detail_tujuan jika diinput manual
+        if (dto.nop_baru && dto.nop_baru !== tujuan.nop_generated) {
+          await tx.detailTransaksiTujuan.update({
+            where: { id_detail_tujuan: tujuan.id_detail_tujuan },
+            data: { nop_generated: dto.nop_baru }
+          });
+        }
+
+        // 2.5 Upsert ke Master SubjekPajak (Wajib Pajak)
+        if (tujuan.calon_subjek_json) {
+          const subjekTemp: any = tujuan.calon_subjek_json;
+          let pekerjaan_enum: Pekerjaan = Pekerjaan.LAINNYA;
+          switch (subjekTemp.pekerjaan) {
+            case 'PNS': pekerjaan_enum = Pekerjaan.PNS; break;
+            case 'ABRI': pekerjaan_enum = Pekerjaan.ABRI; break;
+            case 'PENSIUNAN': pekerjaan_enum = Pekerjaan.PENSIUNAN; break;
+            case 'BADAN': pekerjaan_enum = Pekerjaan.BADAN; break;
+          }
+          let status_wp: StatusWp = StatusWp.PEMILIK;
+          switch (subjekTemp.status_wp) {
+            case 'PENYEWA': status_wp = StatusWp.PENYEWA; break;
+            case 'PENGELOLA': status_wp = StatusWp.PENGELOLA; break;
+            case 'PEMAKAI': status_wp = StatusWp.PEMAKAI; break;
+            case 'SENGKETA': status_wp = StatusWp.SENGKETA; break;
+          }
+
+          const nikToSave = subjekTemp.nik || tujuan.nik_calon_subjek || '0000000000000000';
+
+          await tx.subjekPajak.upsert({
+            where: { nik: nikToSave },
+            update: {
+              nama_subjek: subjekTemp.nama || 'TANPA NAMA',
+              pekerjaan: pekerjaan_enum,
+              status_wp: status_wp,
+              npwp: subjekTemp.npwp,
+              no_hp: subjekTemp.no_hp,
+              email: subjekTemp.email,
+              alamat_jalan: subjekTemp.alamat || 'TANPA ALAMAT',
+              blok_kav_no_subjek: subjekTemp.blok_kav_no,
+              rt: subjekTemp.rt,
+              rw: subjekTemp.rw,
+              kelurahan: subjekTemp.kelurahan || 'TANPA KELURAHAN',
+              kecamatan: subjekTemp.kecamatan,
+              kabupaten: subjekTemp.kabupaten || 'TANPA KABUPATEN',
+              kode_pos: subjekTemp.kode_pos,
+            },
+            create: {
+              nik: nikToSave,
+              nama_subjek: subjekTemp.nama || 'TANPA NAMA',
+              pekerjaan: pekerjaan_enum,
+              status_wp: status_wp,
+              npwp: subjekTemp.npwp,
+              no_hp: subjekTemp.no_hp,
+              email: subjekTemp.email,
+              alamat_jalan: subjekTemp.alamat || 'TANPA ALAMAT',
+              blok_kav_no_subjek: subjekTemp.blok_kav_no,
+              rt: subjekTemp.rt,
+              rw: subjekTemp.rw,
+              kelurahan: subjekTemp.kelurahan || 'TANPA KELURAHAN',
+              kecamatan: subjekTemp.kecamatan,
+              kabupaten: subjekTemp.kabupaten || 'TANPA KABUPATEN',
+              kode_pos: subjekTemp.kode_pos,
+              created_by: idVerifikator,
+            }
+          });
+
+          // Memastikan nik yang dipakai ke ObjekPajak adalah nikToSave
+          tujuan.nik_calon_subjek = nikToSave;
+        }
+
+        // 3. Insert ke Master ObjekPajak (Tanah/Bumi)
+        const kode_propinsi = finalNop.substring(0, 2);
+        const kode_dati2 = finalNop.substring(2, 4);
+        const kode_kecamatan = finalNop.substring(4, 7);
+        const kode_kelurahan = finalNop.substring(7, 10);
+        const kode_blok = finalNop.substring(10, 13);
+        const no_urut = finalNop.substring(13, 17);
+        const kode_jenis_op = finalNop.substring(17, 18);
+
+        // Pastikan NOP belum ada
+        const existingOp = await tx.objekPajak.findUnique({ where: { nop: finalNop } });
+        if (!existingOp) {
+          await tx.objekPajak.create({
+            data: {
+              nop: finalNop,
+              kode_propinsi,
+              kode_dati2,
+              kode_kecamatan,
+              kode_kelurahan,
+              kode_blok,
+              no_urut,
+              kode_jenis_op,
+              nik_subjek: tujuan.nik_calon_subjek || '0000000000000000',
+              no_persil: tujuan.no_persil_baru,
+              jalan_op: tujuan.jalan_op_baru || '',
+              blok_kav_no: tujuan.blok_kav_no_baru,
+              rw_op: tujuan.rw_op_baru,
+              rt_op: tujuan.rt_op_baru,
+              kelurahan_op: tujuan.kelurahan_op_baru || '',
+              kecamatan_op: tujuan.kecamatan_op_baru || '',
+              jenis_tanah: tujuan.jenis_tanah_baru,
+              luas_tanah: tujuan.luas_tanah_baru,
+              luas_bangunan: tujuan.luas_bangunan_baru,
+              jumlah_bangunan: tujuan.jumlah_bangunan_baru,
+              status_aktif: true,
+            }
+          });
+        } else if (['MUTASI', 'PERUBAHAN_DATA'].includes(transaksi.jenis_transaksi)) {
+          // Jika mutasi/perubahan, update data master yang ada
+          await tx.objekPajak.update({
+            where: { nop: finalNop },
+            data: {
+              nik_subjek: tujuan.nik_calon_subjek || '0000000000000000',
+              no_persil: tujuan.no_persil_baru,
+              jalan_op: tujuan.jalan_op_baru || '',
+              blok_kav_no: tujuan.blok_kav_no_baru,
+              rw_op: tujuan.rw_op_baru,
+              rt_op: tujuan.rt_op_baru,
+              kelurahan_op: tujuan.kelurahan_op_baru || '',
+              kecamatan_op: tujuan.kecamatan_op_baru || '',
+              jenis_tanah: tujuan.jenis_tanah_baru,
+              luas_tanah: tujuan.luas_tanah_baru,
+              luas_bangunan: tujuan.luas_bangunan_baru,
+              jumlah_bangunan: tujuan.jumlah_bangunan_baru,
+              status_aktif: true,
+            }
+          });
+        }
+
+        // 4. Insert ke Master ObjekBangunan (LSPOP)
+        if (tujuan.data_bangunan_json && Array.isArray(tujuan.data_bangunan_json)) {
+          // Hapus bangunan lama jika mutasi/perubahan data dan mengupdate bangunan
+          if (['MUTASI', 'PERUBAHAN_DATA'].includes(transaksi.jenis_transaksi)) {
+             await tx.objekBangunanFasilitas.deleteMany({
+               where: { objek_bangunan: { nop: finalNop } }
+             });
+             await tx.objekBangunan.deleteMany({
+               where: { nop: finalNop }
+             });
+          }
+
+          let no_bng = 1;
+          for (const bngRaw of tujuan.data_bangunan_json as any[]) {
+            const bng = bngRaw as any;
+            // Pemetaan JPB ke Kode 2 digit (Dummy mapping, aslinya join ke referensi)
+            let kode_jpb = '01'; // Default Perumahan
+            if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
+            else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
+            else if (bng.jenisPenggunaan === 'Toko/Apotik/Pasar/Ruko') kode_jpb = '04';
+
+            const createdBng = await tx.objekBangunan.create({
+              data: {
+                nop: finalNop,
+                no_bangunan: no_bng,
+                kode_jpb: kode_jpb,
+                luas_bangunan: bng.luasBangunan ? parseFloat(bng.luasBangunan) : 0,
+                jumlah_lantai: bng.jumlahLantai ? parseInt(bng.jumlahLantai) : 1,
+                tahun_dibangun: bng.tahunDibangun ? parseInt(bng.tahunDibangun) : null,
+                tahun_renovasi: bng.tahunDirenovasi ? parseInt(bng.tahunDirenovasi) : null,
+                daya_listrik_watt: bng.dayaListrik ? parseInt(bng.dayaListrik) : null,
+                kondisi_bangunan: bng.kondisi === 'Sangat Baik' ? '1' : (bng.kondisi === 'Baik' ? '2' : (bng.kondisi === 'Sedang' ? '3' : '4')),
+                jenis_konstruksi: bng.konstruksi === 'Baja' ? '1' : (bng.konstruksi === 'Beton' ? '2' : '3'),
+                jenis_atap: bng.atap === 'Genting/Beton' ? '1' : '2',
+                kode_dinding: bng.dinding === 'Bata/Beton' ? '1' : '2',
+                kode_lantai: bng.lantai === 'Marmer' ? '1' : (bng.lantai === 'Keramik' ? '2' : '3'),
+                kode_langit_langit: bng.langitLangit === 'Eternit' ? '1' : '2',
+              }
+            });
+
+            // Insert Fasilitas
+            await tx.objekBangunanFasilitas.create({
+              data: {
+                id_bangunan: createdBng.id_bangunan,
+                jumlah_ac_split: bng.acSplit ? parseInt(bng.acSplit) : 0,
+                jumlah_ac_window: bng.acWindow ? parseInt(bng.acWindow) : 0,
+                ac_sentral: bng.acSentral === 'Ada',
+                luas_kolam_renang: bng.kolamRenangLuas ? parseFloat(bng.kolamRenangLuas) : 0,
+                kolam_diplester: bng.kolamRenangFinishing === 'Diplester',
+              }
+            });
+            no_bng++;
+          }
+        }
+      }
+
       return {
-        message: 'Verifikasi kelurahan berhasil. Dokumen telah diteruskan ke Bakeuda.',
+        message: `Verifikasi berhasil dengan status ${dto.status_ajuan}.`,
         data: updatedTransaksi
       };
     });
   }
 
-  async getDetailTransaksi(id_transaksi: string, kodeWilayahUser: string) {
+  async getDetailTransaksi(id_transaksi: string, kodeWilayahUser?: string) {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
       include: {
         detail_tujuan: true,
+        detail_asal: true,
         pengaju: {
           select: {
             nama_lengkap: true,
@@ -331,6 +794,11 @@ export class TransaksiSpopService {
             waktu_kejadian: 'asc',
           },
         },
+        reviewer: {
+          select: {
+            nama_lengkap: true,
+          }
+        }
       },
     });
 
@@ -345,9 +813,18 @@ export class TransaksiSpopService {
       // throw new ForbiddenException('Akses ditolak.'); 
     }
 
+    // Attach calon_subjek_temp for frontend compatibility
+    const responseData = {
+      ...transaksi,
+      calon_subjek_temp: transaksi.detail_tujuan?.[0]?.calon_subjek_json || null,
+      locked_by: transaksi.locked_by,
+      locked_at: transaksi.locked_at,
+      reviewer_nama: transaksi.reviewer?.nama_lengkap || null,
+    };
+
     return {
       success: true,
-      data: transaksi,
+      data: responseData,
     };
   }
 
@@ -364,7 +841,7 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({
         where: {
           ...baseWhere,
-          status_ajuan: StatusAjuan.MENUNGGU_VERIFIKASI_DESA
+          status_ajuan: StatusAjuan.MENUNGGU
         }
       }),
       this.prisma.transaksiSpop.count({
@@ -376,7 +853,7 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({
         where: {
           ...baseWhere,
-          status_ajuan: StatusAjuan.PERBAIKAN
+          status_ajuan: StatusAjuan.REVISI
         }
       })
     ]);

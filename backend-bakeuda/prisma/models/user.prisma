@@ -21,8 +21,10 @@ model User {
   objek_nonaktif         ObjekPajak[]      @relation("NonaktifOlehUser")
   transaksi_diajukan     TransaksiSpop[]   @relation("PengajuUser")
   transaksi_diverifikasi TransaksiSpop[]   @relation("VerifikatorUser")
+  transaksi_di_review    TransaksiSpop[]   @relation("ReviewerUser")
   lampiran_diupload      LampiranDokumen[] @relation("UploadedByUser")
   sppt_digenerate        Sppt[]            @relation("GeneratedByUser")
+  aktivitas_user         UserActivity[]
 
   @@map("users")
 }

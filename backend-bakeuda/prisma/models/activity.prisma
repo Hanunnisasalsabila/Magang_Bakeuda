@@ -1,0 +1,12 @@
+model UserActivity {
+  id_activity String   @id @default(uuid())
+  id_user     String
+  type        String   @db.VarChar(50)
+  title       String   @db.VarChar(255)
+  created_at  DateTime @default(now())
+
+  // ── Relasi ──
+  user User @relation(fields: [id_user], references: [id_user], onDelete: Cascade)
+
+  @@map("user_activities")
+}

@@ -16,7 +16,7 @@ export default function PelacakanDokumen() {
           no_formulir: 'SPOP-A01-2024',
           nama_pengaju: 'BUDI SANTOSO, S.T.',
           tanggal_pengajuan: '2023-10-14T10:45:00Z',
-          status_ajuan: 'PROSES', // atau MENUNGGU_VERIFIKASI_DESA
+          status_ajuan: 'PROSES', // atau MENUNGGU
           riwayat: [
             {
               id_riwayat: 1,
@@ -29,14 +29,14 @@ export default function PelacakanDokumen() {
             {
               id_riwayat: 2,
               status_lama: 'DRAFT',
-              status_baru: 'MENUNGGU_VERIFIKASI_DESA',
+              status_baru: 'MENUNGGU',
               keterangan: 'Menunggu Persetujuan Kelurahan',
               waktu_kejadian: '2023-10-14T11:00:00Z',
               nama_pelaku: 'Operator Desa',
             },
             {
               id_riwayat: 3,
-              status_lama: 'MENUNGGU_VERIFIKASI_DESA',
+              status_lama: 'MENUNGGU',
               status_baru: 'PROSES',
               keterangan: 'Telah Disetujui Desa, Dikirim ke Bakeuda (NIP Kades: 198001012010011001)',
               waktu_kejadian: '2023-10-14T15:30:00Z',
@@ -72,7 +72,7 @@ export default function PelacakanDokumen() {
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <div>
-          <h2 className="font-display-sm text-display-sm text-primary font-bold">Pelacakan Dokumen</h2>
+          <h2 className="text-primary font-bold">Pelacakan Dokumen</h2>
           <p className="text-on-surface-variant font-label-sm">ID: {dataTransaksi.id_transaksi} | {dataTransaksi.no_formulir}</p>
         </div>
       </div>
@@ -80,8 +80,8 @@ export default function PelacakanDokumen() {
       <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-xl shadow-sm mb-section-gap">
         <div className="flex justify-between items-start mb-8 pb-6 border-b border-outline-variant">
           <div>
-            <h3 className="font-headline-md text-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
-            <p className="text-on-surface-variant text-sm mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
+            <h3 className="font-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
+            <p className="font-label-sm text-on-surface-variant mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
           </div>
           <div className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded font-bold text-xs uppercase shadow-sm">
             STATUS: {dataTransaksi.status_ajuan}
@@ -100,7 +100,7 @@ export default function PelacakanDokumen() {
                   {/* Circle Marker */}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${isLast ? 'bg-primary text-white shadow-md' : 'bg-surface-container-high border-2 border-surface-container text-outline'}`}>
                     <span className="material-symbols-outlined text-[20px]">
-                      {item.status_baru === 'DRAFT' ? 'draft' : item.status_baru === 'MENUNGGU_VERIFIKASI_DESA' ? 'pending_actions' : 'check_circle'}
+                      {item.status_baru === 'DRAFT' ? 'draft' : item.status_baru === 'MENUNGGU' ? 'pending_actions' : 'check_circle'}
                     </span>
                   </div>
                   
@@ -112,7 +112,7 @@ export default function PelacakanDokumen() {
                     <h4 className={`font-bold text-base ${isLast ? 'text-primary' : 'text-on-surface'}`}>
                       {item.keterangan}
                     </h4>
-                    <p className="text-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
+                    <p className="font-label-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
                     
                     {/* Status Badge Tag */}
                     <div className="mt-3 inline-flex items-center gap-2 text-xs border border-outline-variant px-2 py-1 rounded bg-surface-container-low">

@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsString, IsNumber, ValidateNested, IsArray, IsOptional, IsBoolean, IsEnum, MaxLength, IsEmail, IsNotEmpty } from 'class-validator';
 import { JenisTransaksi, JenisTanah, StatusWp, Pekerjaan } from '@prisma/client';
+import { BangunanLspopDto } from './bangunan-lspop.dto.js';
 
 export class SubjekPajakTempDto {
   @IsString() 
@@ -90,4 +91,10 @@ export class CreateSpopDto {
   @ValidateNested({ each: true })
   @Type(() => LampiranDto)
   lampiran?: LampiranDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BangunanLspopDto)
+  bangunan?: BangunanLspopDto[];
 }

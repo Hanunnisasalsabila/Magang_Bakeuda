@@ -93,10 +93,10 @@ export default function DashboardAdmin() {
             src={logoPurbalingga}
           />
           <div>
-            <h1 className="text-2xl text-gray-900 uppercase font-extrabold tracking-wide">
+            <h1 className="text-2xl text-on-surface uppercase font-extrabold tracking-wide">
               Badan Keuangan Daerah
             </h1>
-            <p className="text-gray-500 font-medium">
+            <p className="text-on-surface-variant font-medium">
               Pemerintah Kabupaten Purbalingga
             </p>
           </div>
@@ -116,11 +116,11 @@ export default function DashboardAdmin() {
         {bentoCards.map((card, i) => (
           <div key={i} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-lg ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-blue-50 text-blue-600').replace('bg-error-container text-error', 'bg-red-50 text-red-600').replace('bg-secondary-container text-on-secondary-container', 'bg-green-50 text-green-600')}`}>
+              <div className={`p-3 rounded-lg ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-primary-container text-on-primary-container').replace('bg-error-container text-error', 'bg-error-container text-error').replace('bg-secondary-container text-on-secondary-container', 'bg-secondary-container text-on-secondary-container')}`}>
                 <span className="material-symbols-outlined">{card.icon}</span>
               </div>
               {card.badgeText && (
-                <span className={`text-xs font-bold ${card.badgeColor.replace('text-secondary', 'text-blue-600').replace('text-error font-bold', 'text-red-600').replace('text-on-surface-variant', 'text-gray-500')}`}>
+                <span className={`text-xs font-bold ${card.badgeColor.replace('text-secondary', 'text-blue-600').replace('text-error font-bold', 'text-red-600').replace('text-on-surface-variant', 'text-on-surface-variant')}`}>
                   {card.badgeText}
                 </span>
               )}
@@ -130,10 +130,10 @@ export default function DashboardAdmin() {
                 </div>
               )}
             </div>
-            <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">
+            <p className="text-on-surface-variant font-label-md font-bold mb-1">
               {card.title}
             </p>
-            <h2 className="text-3xl font-bold text-gray-900">{card.value}</h2>
+            <h2 className="text-3xl font-bold text-on-surface">{card.value}</h2>
             <p className="text-[10px] text-gray-400 mt-2 italic">{card.meta}</p>
           </div>
         ))}
@@ -145,10 +145,10 @@ export default function DashboardAdmin() {
         <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6 flex flex-col shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-lg text-gray-900 font-bold">
+              <h3 className="text-lg text-on-surface font-bold">
                 Tren Pengajuan SPOP
               </h3>
-              <p className="text-gray-500 text-sm">Statistik 7 hari terakhir</p>
+              <p className="text-on-surface-variant text-sm">Statistik 7 hari terakhir</p>
             </div>
             <select
               value={activeSelect}
@@ -175,7 +175,7 @@ export default function DashboardAdmin() {
                   style={{ height: bar.height }}
                   title={bar.title}
                 />
-                <span className="text-[10px] text-gray-500 font-bold">{bar.label}</span>
+                <span className="text-[10px] text-on-surface-variant font-bold">{bar.label}</span>
               </div>
             ))}
           </div>
@@ -185,10 +185,10 @@ export default function DashboardAdmin() {
         <div className="bg-white border border-gray-200 rounded-xl flex flex-col justify-between shadow-sm">
           <div>
             <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg text-gray-900 font-bold">
+              <h3 className="text-lg text-on-surface font-bold">
                 Petugas Verifikator
               </h3>
-              <p className="text-gray-500 text-sm">Status aktif saat ini</p>
+              <p className="text-on-surface-variant text-sm">Status aktif saat ini</p>
             </div>
             <div className="p-6 space-y-4">
               {verifiers.map((verifier, i) => (
@@ -197,8 +197,8 @@ export default function DashboardAdmin() {
                     {getInitials(verifier.name)}
                   </div>
                   <div className="flex-grow min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{verifier.name}</p>
-                    <p className="text-[11px] text-gray-500 truncate">{verifier.role}</p>
+                    <p className="text-sm font-semibold text-on-surface truncate">{verifier.name}</p>
+                    <p className="text-[11px] text-on-surface-variant truncate">{verifier.role}</p>
                   </div>
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${verifier.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
                 </div>

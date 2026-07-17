@@ -3,6 +3,7 @@ enum JenisTanah {
   KAVLING_SIAP_BANGUN // 2. Kavling Siap Bangun
   TANAH_KOSONG // 3. Tanah Kosong
   FASILITAS_UMUM // 4. Fasilitas Umum
+  TANAH_LAINNYA
 }
 
 enum KondisiBangunan {

@@ -131,7 +131,7 @@ function AppContent() {
         <Route path="/dashboard-admin" element={<DashboardAdmin />} />
         <Route path="/manajemen-akun-desa" element={<ManajemenAkunDesa />} />
         <Route path="/manajemen-wilayah" element={<ManajemenWilayah />} />
-        <Route path="/formulir-spop" element={<FormulirSPOP />} />
+        <Route path="/formulir-spop/:id?" element={<FormulirSPOP />} />
         <Route path="/formulir-lspop" element={<FormulirLSPOP />} />
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
