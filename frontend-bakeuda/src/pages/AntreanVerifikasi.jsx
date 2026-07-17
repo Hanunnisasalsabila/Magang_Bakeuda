@@ -42,8 +42,19 @@ export default function AntreanVerifikasi() {
 
     const fetchQueue = async () => {
       try {
-        const res = await api.get('/transaksi-spop?status_ajuan=MENUNGGU');
-        const formatted = res.data.data.map(item => {
+        const [resMenunggu, resProses] = await Promise.all([
+          api.get('/transaksi-spop?status_ajuan=MENUNGGU'),
+          api.get('/transaksi-spop?status_ajuan=PROSES')
+        ]);
+        const allData = [...resMenunggu.data.data, ...resProses.data.data];
+
+        const userStr = localStorage.getItem('user');
+        let myId = null;
+        if (userStr) {
+          try { myId = JSON.parse(userStr).id; } catch (e) {}
+        }
+
+        const formatted = allData.map(item => {
           const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
           const parts = nopRaw.replace(/\D/g, '');
           const prov = parts.substring(0,2) || '33';
@@ -53,6 +64,23 @@ export default function AntreanVerifikasi() {
 
           const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000-0000.0`;
 
+          // Tentukan status badge dan aksi
+          let badgeStatus = 'Menunggu Verifikasi';
+          let isLockedByMe = false;
+          let isLockedByOther = false;
+          let lockedByName = '';
+
+          if (item.status_ajuan === 'PROSES') {
+            if (item.locked_by === myId) {
+              badgeStatus = 'Anda Sedang Mereviu';
+              isLockedByMe = true;
+            } else {
+              lockedByName = item.reviewer?.nama_lengkap || 'Admin Lain';
+              badgeStatus = `Sedang direviu oleh ${lockedByName}`;
+              isLockedByOther = true;
+            }
+          }
+
           return {
             id: item.id_transaksi,
             nop: nopFormatted,
@@ -60,15 +88,20 @@ export default function AntreanVerifikasi() {
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
             address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
             rtRw: '',
-            kelurahan: 'Purbalingga',
-            kecamatan: 'Purbalingga',
+            kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || 'Purbalingga',
+            kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || 'Purbalingga',
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-            status: 'Menunggu Verifikasi',
+            status: badgeStatus,
+            isLockedByMe,
+            isLockedByOther,
+            lockedByName,
+            rawStatus: item.status_ajuan,
             urgent: false
           };
         });
 
+        formatted.sort((a, b) => new Date(b.date) - new Date(a.date));
         setQueueData(formatted);
       } catch (error) {
         console.error("Gagal mengambil antrean:", error);
@@ -76,8 +109,27 @@ export default function AntreanVerifikasi() {
         setLoading(false);
       }
     };
+    
     fetchQueue();
+    const intervalId = setInterval(fetchQueue, 15000); // Polling tiap 15 detik
+    return () => clearInterval(intervalId);
   }, []);
+
+  const handleUnlock = async (id) => {
+    if (!window.confirm("Apakah Anda yakin ingin melepas kunci reviu admin lain?")) return;
+    try {
+      await api.patch(`/transaksi-spop/${id}/unlock`);
+      // Force refresh data
+      setQueueData(prev => prev.map(item => {
+        if (item.id === id) {
+          return { ...item, status: 'Menunggu Verifikasi', isLockedByOther: false, isLockedByMe: false, rawStatus: 'MENUNGGU' };
+        }
+        return item;
+      }));
+    } catch (error) {
+      alert(error.response?.data?.message || 'Gagal melepas kunci.');
+    }
+  };
 
   const handleSearchChange = (e) => setSearch(e.target.value);
 
@@ -232,16 +284,40 @@ export default function AntreanVerifikasi() {
                       <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-gray-500'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => navigate('/detail-review/' + item.id)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all mx-auto shadow-sm ${
-                          item.urgent
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        Review
-                      </button>
+                      <div className="flex flex-col items-center gap-2">
+                        {item.isLockedByOther ? (
+                          <>
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-200">
+                              🔒 {item.status}
+                            </span>
+                            <button
+                              onClick={() => handleUnlock(item.id)}
+                              className="text-[10px] text-red-600 hover:text-red-800 underline font-semibold flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">lock_open</span>
+                              Lepas Kunci
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {item.isLockedByMe && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 mb-1">
+                                🔵 {item.status}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => navigate('/detail-review/' + item.id)}
+                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm w-full ${
+                                item.isLockedByMe 
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              {item.isLockedByMe ? 'Lanjut Reviu' : 'Tinjau Berkas'}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

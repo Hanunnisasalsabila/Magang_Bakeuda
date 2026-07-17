@@ -35,12 +35,15 @@ model TransaksiSpop {
   id_verifikator     String? // FK → users.id_user (verifikator BAKEUDA)
   verified_at        DateTime?
   catatan_bakeuda    String? // TEXT
+  locked_by          String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
+  locked_at          DateTime?
   created_at         DateTime       @default(now())
   updated_at         DateTime       @updatedAt
 
   // ── Relasi ──
   pengaju       User                    @relation("PengajuUser", fields: [id_user], references: [id_user])
   verifikator   User?                   @relation("VerifikatorUser", fields: [id_verifikator], references: [id_user])
+  reviewer      User?                   @relation("ReviewerUser", fields: [locked_by], references: [id_user])
   objek_bersama ObjekPajak?             @relation("ObjekBersama", fields: [nop_bersama], references: [nop])
   detail_asal   DetailTransaksiAsal[]
   detail_tujuan DetailTransaksiTujuan[]

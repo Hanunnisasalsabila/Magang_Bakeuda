@@ -86,4 +86,20 @@ export class TransaksiSpopController {
     const idVerifikator = req.user.id_user; 
     return this.transaksiSpopService.verifikasiBakeuda(id_transaksi, dto, idVerifikator);
   }
+
+  @Patch(':id/lock')
+  async lockForReview(
+    @Param('id') id_transaksi: string,
+    @Request() req: any
+  ) {
+    return this.transaksiSpopService.lockForReview(id_transaksi, req.user.id_user);
+  }
+
+  @Patch(':id/unlock')
+  async unlockReview(
+    @Param('id') id_transaksi: string,
+    @Request() req: any
+  ) {
+    return this.transaksiSpopService.unlockReview(id_transaksi, req.user.id_user);
+  }
 }

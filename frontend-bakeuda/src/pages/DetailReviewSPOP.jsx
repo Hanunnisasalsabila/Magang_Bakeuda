@@ -16,16 +16,34 @@ export default function DetailReviewSPOP() {
   const [toastMessage, setToastMessage] = useState('');
   const [isBakeuda, setIsBakeuda] = useState(false);
 
+  const [lockedByOther, setLockedByOther] = useState(false);
+  const [lockErrorMsg, setLockErrorMsg] = useState('');
+
   useEffect(() => {
+    let bakeudaFlag = false;
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
-      setIsBakeuda(user.role_user === 'ADMIN_BAKEUDA');
+      bakeudaFlag = user.role === 'BAKEUDA';
+      setIsBakeuda(bakeudaFlag);
     }
     
     const fetchDetail = async () => {
       try {
-        const res = await api.get(`/transaksi-spop/${id}`);
+        let res;
+        if (bakeudaFlag) {
+          try {
+            res = await api.patch(`/transaksi-spop/${id}/lock`);
+          } catch (err) {
+            res = await api.get(`/transaksi-spop/${id}`);
+            if (res.data.data.status_ajuan === 'PROSES') {
+              setLockedByOther(true);
+              setLockErrorMsg(err.response?.data?.message || 'Berkas sedang dikunci oleh admin lain.');
+            }
+          }
+        } else {
+          res = await api.get(`/transaksi-spop/${id}`);
+        }
         setData(res.data.data);
       } catch (error) {
         console.error('Gagal mengambil detail SPOP:', error);
@@ -39,13 +57,46 @@ export default function DetailReviewSPOP() {
     if (id) {
       fetchDetail();
     }
+
+    // Polling untuk mengecek apakah kunci kita dilepas paksa oleh admin lain saat AFK
+    const interval = setInterval(async () => {
+      if (!bakeudaFlag) return;
+      try {
+        const checkRes = await api.get(`/transaksi-spop/${id}`);
+        const currentData = checkRes.data.data;
+        const myId = userStr ? JSON.parse(userStr).id : null;
+        
+        if (currentData.status_ajuan === 'MENUNGGU') {
+          setLockedByOther(true);
+          setLockErrorMsg('Kunci reviu telah dilepas secara paksa oleh admin lain.');
+        } else if (currentData.status_ajuan === 'PROSES' && currentData.locked_by !== myId) {
+          setLockedByOther(true);
+          setLockErrorMsg('Berkas telah diambil alih oleh admin lain.');
+        }
+      } catch (e) {
+        // Abaikan error polling
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [id]);
+
+  const handleCancelReview = async () => {
+    try {
+      await api.patch(`/transaksi-spop/${id}/unlock`);
+      navigate(-1);
+    } catch (error) {
+      setToastMessage('Gagal melepas kunci');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
 
   const [nopBaru, setNopBaru] = useState({ prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' });
 
   const handleDecision = async (approved) => {
     try {
-      if (data.status_ajuan === 'MENUNGGU') {
+      if (data.status_ajuan === 'PROSES') {
         // VERIFIKASI BAKEUDA
         let finalNopStr = undefined;
         if (approved && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
@@ -98,6 +149,7 @@ export default function DetailReviewSPOP() {
   }
 
   const detailTujuan = data.detail_tujuan?.[0] || {};
+  const calonSubjek = detailTujuan.calon_subjek_json || {};
   const nopDisplay = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
   
   // Format Tanggal
@@ -145,6 +197,32 @@ export default function DetailReviewSPOP() {
         </div>
       </div>
 
+      {/* Locked by Other Warning */}
+      {lockedByOther && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg mb-6 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[24px]">lock</span>
+            <div>
+              <p className="font-bold text-sm">Mode Read-Only</p>
+              <p className="text-sm">{lockErrorMsg}</p>
+            </div>
+          </div>
+          <button onClick={() => navigate(-1)} className="bg-white text-red-700 px-4 py-2 rounded-md font-semibold text-sm border border-red-200 hover:bg-red-100 transition-colors">
+            Kembali ke Antrean
+          </button>
+        </div>
+      )}
+
+      {/* Button Cancel Review (Bakeuda Only) */}
+      {!lockedByOther && isBakeuda && data.status_ajuan === 'PROSES' && (
+        <div className="flex justify-end mb-4">
+          <button onClick={handleCancelReview} className="text-sm flex items-center gap-2 text-gray-600 hover:text-red-600 font-semibold bg-white border border-gray-200 px-4 py-2 rounded-md shadow-sm transition-colors">
+            <span className="material-symbols-outlined text-[18px]">close</span>
+            Batal Reviu / Kembali
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Digital Form Data */}
         <div className="lg:col-span-7 space-y-6">
@@ -174,20 +252,20 @@ export default function DetailReviewSPOP() {
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Nama Subjek Pajak
                   </label>
-                  <div className="font-semibold text-gray-900 text-base">{data.nama_pengaju || 'Tidak Diketahui'}</div>
+                  <div className="font-semibold text-gray-900 text-base">{calonSubjek.nama_subjek || data.nama_pengaju || 'Tidak Diketahui'}</div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     Status Subjek Pajak
                   </label>
-                  <div className="font-semibold text-blue-700">Tergantung Berkas</div>
+                  <div className="font-semibold text-blue-700">{calonSubjek.status_subjek || 'Tergantung Berkas'}</div>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
                     NIK / NPWP
                   </label>
                   <div className="font-mono font-medium text-sm text-gray-800">
-                    {detailTujuan.nik_calon_subjek || '-'}
+                    {calonSubjek.nik_npwp || detailTujuan.nik_calon_subjek || '-'}
                   </div>
                 </div>
               </div>
@@ -303,7 +381,7 @@ export default function DetailReviewSPOP() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-8 space-y-4">
 
-              {data.status_ajuan === 'MENUNGGU' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
+              {data.status_ajuan === 'PROSES' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
                 <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
                   <h4 className="font-bold text-blue-900 mb-2">Penetapan NOP Baru</h4>
                   <p className="text-sm text-blue-700 mb-4">Silakan masukkan Kode Blok dan Nomor Urut sesuai Peta Blok Bakeuda untuk menginjeksi NOP Baru.</p>

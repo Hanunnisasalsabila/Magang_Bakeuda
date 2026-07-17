@@ -291,7 +291,141 @@ export class TransaksiSpopService {
     }
   }
 
+  async lockForReview(id_transaksi: string, idAdmin: string) {
+    // 1. Atomic Update
+    const updateResult = await this.prisma.transaksiSpop.updateMany({
+      where: {
+        id_transaksi,
+        status_ajuan: 'MENUNGGU',
+        locked_by: null,
+      },
+      data: {
+        status_ajuan: 'PROSES',
+        locked_by: idAdmin,
+        locked_at: new Date(),
+      },
+    });
+
+    if (updateResult.count === 0) {
+      // Gagal mengunci, cari tahu alasannya
+      const transaksi = await this.prisma.transaksiSpop.findUnique({
+        where: { id_transaksi },
+        include: { reviewer: true },
+      });
+
+      if (!transaksi) {
+        throw new NotFoundException('Data transaksi tidak ditemukan.');
+      }
+
+      if (transaksi.status_ajuan === 'PROSES') {
+        if (transaksi.locked_by === idAdmin) {
+          // Re-entry aman (Admin A refresh halaman)
+          return this.getDetailTransaksi(id_transaksi);
+        } else {
+          throw new BadRequestException(
+            `🔒 Berkas sedang direviu oleh ${transaksi.reviewer?.nama_lengkap || 'Admin Lain'}. Silakan pilih berkas lain.`
+          );
+        }
+      }
+
+      throw new BadRequestException('Berkas tidak dalam status MENUNGGU atau sudah diproses.');
+    }
+
+    // 2. Jika berhasil mengunci, catat ke riwayat
+    await this.prisma.riwayatPelacakan.create({
+      data: {
+        id_transaksi,
+        status_riwayat: 'PROSES',
+        keterangan: 'Berkas mulai direviu oleh Admin Bakeuda.',
+      },
+    });
+
+    return this.getDetailTransaksi(id_transaksi);
+  }
+
+  async unlockReview(id_transaksi: string, idAdmin: string) {
+    const transaksi = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi },
+    });
+
+    if (!transaksi) {
+      throw new NotFoundException('Data transaksi tidak ditemukan.');
+    }
+
+    if (transaksi.status_ajuan !== 'PROSES') {
+      throw new BadRequestException('Berkas tidak sedang dalam status PROSES.');
+    }
+
+    // Untuk saat ini, kita anggap semua role BAKEUDA bisa unlock (super admin mode sementara)
+    // Jika nanti ada role khusus, bisa dicek di sini.
+    // if (transaksi.locked_by !== idAdmin && !(isAdminSuperAdmin(idAdmin))) { ... }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaksiSpop.update({
+        where: { id_transaksi },
+        data: {
+          status_ajuan: 'MENUNGGU',
+          locked_by: null,
+          locked_at: null,
+        },
+      });
+
+      await tx.riwayatPelacakan.create({
+        data: {
+          id_transaksi,
+          status_riwayat: 'MENUNGGU',
+          keterangan: 'Reviu dibatalkan (Lepas Kunci). Berkas kembali ke antrean.',
+        },
+      });
+    });
+
+    return { message: 'Kunci berhasil dilepas. Berkas kembali ke antrean.' };
+  }
+
+  async autoReleaseExpiredLocks() {
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
+    const expiredLocks = await this.prisma.transaksiSpop.findMany({
+      where: {
+        status_ajuan: 'PROSES',
+        locked_at: {
+          lt: thirtyMinsAgo,
+        },
+      },
+    });
+
+    if (expiredLocks.length === 0) return 0;
+
+    const ids = expiredLocks.map(t => t.id_transaksi);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaksiSpop.updateMany({
+        where: { id_transaksi: { in: ids } },
+        data: {
+          status_ajuan: 'MENUNGGU',
+          locked_by: null,
+          locked_at: null,
+        },
+      });
+
+      const riwayatData = ids.map(id => ({
+        id_transaksi: id,
+        status_riwayat: 'MENUNGGU' as StatusAjuan,
+        keterangan: 'Kunci dilepas otomatis (timeout 30 menit)',
+      }));
+
+      await tx.riwayatPelacakan.createMany({
+        data: riwayatData,
+      });
+    });
+
+    return ids.length;
+  }
+
   async getAllTransaksi(status_ajuan?: string, kode_wilayah?: string) {
+    // Jalankan auto release expired locks setiap kali inbox dipanggil
+    await this.autoReleaseExpiredLocks();
+
     const where: any = {};
     if (status_ajuan) {
       where.status_ajuan = status_ajuan;
@@ -311,6 +445,11 @@ export class TransaksiSpopService {
             select: {
               nama_lengkap: true,
               kode_wilayah: true,
+            }
+          },
+          reviewer: {
+            select: {
+              nama_lengkap: true,
             }
           }
         },
@@ -386,8 +525,12 @@ export class TransaksiSpopService {
       throw new NotFoundException('Data SPOP tidak ditemukan.');
     }
 
-    if (transaksi.status_ajuan !== 'MENUNGGU') {
-      throw new BadRequestException('SPOP ini belum diajukan atau sedang diproses/draft.');
+    if (transaksi.status_ajuan !== 'PROSES') {
+      throw new BadRequestException('SPOP ini belum direviu (belum di-lock). Silakan mulai reviu terlebih dahulu.');
+    }
+
+    if (transaksi.locked_by !== idVerifikator) {
+      throw new BadRequestException('Hanya admin yang sedang mereviu yang boleh mengambil keputusan akhir.');
     }
 
     return await this.prisma.$transaction(async (tx) => {
@@ -397,7 +540,9 @@ export class TransaksiSpopService {
           status_ajuan: dto.status_ajuan,
           id_verifikator: idVerifikator,
           verified_at: new Date(),
-          catatan_bakeuda: dto.catatan || null
+          catatan_bakeuda: dto.catatan || null,
+          locked_by: null,
+          locked_at: null,
         },
       });
 
@@ -631,7 +776,7 @@ export class TransaksiSpopService {
     });
   }
 
-  async getDetailTransaksi(id_transaksi: string, kodeWilayahUser: string) {
+  async getDetailTransaksi(id_transaksi: string, kodeWilayahUser?: string) {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
       include: {
@@ -649,6 +794,11 @@ export class TransaksiSpopService {
             waktu_kejadian: 'asc',
           },
         },
+        reviewer: {
+          select: {
+            nama_lengkap: true,
+          }
+        }
       },
     });
 
@@ -666,7 +816,10 @@ export class TransaksiSpopService {
     // Attach calon_subjek_temp for frontend compatibility
     const responseData = {
       ...transaksi,
-      calon_subjek_temp: transaksi.detail_tujuan?.[0]?.calon_subjek_json || null
+      calon_subjek_temp: transaksi.detail_tujuan?.[0]?.calon_subjek_json || null,
+      locked_by: transaksi.locked_by,
+      locked_at: transaksi.locked_at,
+      reviewer_nama: transaksi.reviewer?.nama_lengkap || null,
     };
 
     return {
