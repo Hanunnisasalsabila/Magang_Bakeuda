@@ -15,6 +15,7 @@ import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
 import ManajemenWilayah from './pages/ManajemenWilayah';
 import PelacakanDokumen from './pages/PelacakanDokumen';
 import FormulirLSPOP from './pages/FormulirLSPOP';
+import RiwayatPersetujuan from './pages/RiwayatPersetujuan';
 
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
@@ -32,6 +33,7 @@ const pageTitles = {
   '/monitoring-pajak': 'Monitoring Objek Pajak',
   '/pelacakan-dokumen': 'Pelacakan Dokumen',
   '/profil': 'Profil Pengguna',
+  '/riwayat-persetujuan': 'Riwayat Persetujuan',
   '/help': 'Pusat Bantuan'
 };
 
@@ -135,6 +137,7 @@ function AppContent() {
         <Route path="/formulir-lspop" element={<FormulirLSPOP />} />
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
+        <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
         <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
         <Route path="/pelacakan-dokumen" element={<PelacakanDokumen />} />

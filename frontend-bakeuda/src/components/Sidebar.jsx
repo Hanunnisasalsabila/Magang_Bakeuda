@@ -20,6 +20,7 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
         { path: '/manajemen-wilayah', label: 'Data Wilayah', icon: 'map' },
         { path: '/antrean-verifikasi', label: 'Antrean Validasi', icon: 'fact_check' },
         { path: '/detail-review', label: 'Verifikasi Berkas', icon: 'rate_review' },
+        { path: '/riwayat-persetujuan', label: 'Riwayat Persetujuan', icon: 'task_alt' },
         { path: '/profil', label: 'Profil Akun', icon: 'person' },
       ];
 
