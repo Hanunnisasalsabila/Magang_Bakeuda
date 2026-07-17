@@ -47,12 +47,24 @@ export class WilayahService {
   // ─────────────────────────────────────────
 
   async create(dto: CreateWilayahDto) {
+    const kode_wilayah =
+      dto.kode_wilayah ||
+      dto.kode_propinsi +
+        dto.kode_dati2 +
+        dto.kode_kecamatan +
+        dto.kode_kelurahan;
+
     const existing = await this.prisma.wilayah.findUnique({
-      where: { kode_wilayah: dto.kode_wilayah },
+      where: { kode_wilayah },
     });
     if (existing) throw new ConflictException('Kode wilayah sudah digunakan');
 
-    const wilayah = await this.prisma.wilayah.create({ data: dto });
+    const wilayah = await this.prisma.wilayah.create({
+      data: {
+        ...dto,
+        kode_wilayah,
+      },
+    });
     return {
       success: true,
       message: 'Wilayah berhasil ditambahkan',

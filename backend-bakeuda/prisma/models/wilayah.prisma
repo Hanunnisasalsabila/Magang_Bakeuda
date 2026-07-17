@@ -1,15 +1,30 @@
 model Wilayah {
+  // kode_wilayah = gabungan propinsi+dati2+kecamatan+kelurahan (10 digit)
   kode_wilayah String @id @db.VarChar(10)
-  nama_desa    String @db.VarChar(100)
-  kode_kel     String @db.VarChar(5)
-  kecamatan    String @db.VarChar(100)
-  kode_kec     String @db.VarChar(5)
-  kabupaten    String @db.VarChar(100)
-  kode_kab     String @db.VarChar(5)
+
+  kode_propinsi String @db.VarChar(2)
+  nama_propinsi String @default("Jawa Tengah") @db.VarChar(50)
+
+  kode_dati2 String @db.VarChar(2)
+  kabupaten  String @default("Purbalingga") @db.VarChar(100)
+
+  kode_kecamatan String @db.VarChar(3)
+  kecamatan      String @db.VarChar(100)
+
+  kode_kelurahan String @db.VarChar(3)
+  nama_desa      String @db.VarChar(100)
+
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // ── Relasi ──
   users   User[]
   pejabat PejabatDesa[]
+  objek_pajak  ObjekPajak[]
+  subjek_pajak SubjekPajak[]
 
+  @@unique([kode_propinsi, kode_dati2, kode_kecamatan, kode_kelurahan])
+  @@index([kode_kecamatan])
   @@map("wilayah")
 }

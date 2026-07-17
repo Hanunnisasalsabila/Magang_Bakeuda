@@ -37,6 +37,7 @@ export class AuthService {
       username: user.username,
       role: user.role,
       kode_wilayah: user.kode_wilayah,
+      nip: user.nip,
     };
 
     const token = this.jwtService.sign(payload);
@@ -58,6 +59,7 @@ export class AuthService {
           username: user.username,
           role: user.role,
           kode_wilayah: user.kode_wilayah,
+          nip: user.nip,
         },
       },
     };

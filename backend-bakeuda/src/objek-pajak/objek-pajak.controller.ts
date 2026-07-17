@@ -21,6 +21,7 @@ import { UpdateFasilitasBangunanDto } from './dto/update-fasilitas-bangunan.dto.
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { KLASIFIKASI_BANGUNAN_META } from './objek-pajak-meta.constants.js';
 
 @Controller('objek-pajak')
 @UseGuards(JwtAuthGuard)
@@ -64,27 +65,41 @@ export class ObjekPajakController {
     return this.objekPajakService.updateFasilitasBangunan(idBangunan, dto);
   }
 
+  // POST /objek-pajak/bangunan/:idBangunan/hitung-njop — hanya BAKEUDA
+  @Post('bangunan/:idBangunan/hitung-njop')
+  @UseGuards(RolesGuard)
+  @Roles('BAKEUDA')
+  async hitungNjopBangunan(@Param('idBangunan') idBangunan: string) {
+    return this.objekPajakService.hitungUlangNjopBangunan(idBangunan);
+  }
+
   // ─────────────────────────────────────────
   // Route dinamis (:nop) — setelah statis
   // ─────────────────────────────────────────
 
+  // GET /objek-pajak/meta/enums
+  @Get('meta/enums')
+  async getEnumMeta() {
+    return { success: true, data: KLASIFIKASI_BANGUNAN_META };
+  }
+
   // GET /objek-pajak?q=keyword
   @Get()
-  async search(@Query('q') keyword?: string) {
-    return this.objekPajakService.search(keyword ?? '');
+  async search(@Query('q') keyword: string, @Request() req: any) {
+    return this.objekPajakService.search(keyword ?? '', req.user);
   }
 
   // POST /objek-pajak — semua role
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateObjekPajakDto) {
-    return this.objekPajakService.create(dto);
+  async create(@Body() dto: CreateObjekPajakDto, @Request() req: any) {
+    return this.objekPajakService.create(dto, req.user);
   }
 
   // GET /objek-pajak/:nop
   @Get(':nop')
-  async getByNop(@Param('nop') nop: string) {
-    return this.objekPajakService.getByNop(nop);
+  async getByNop(@Param('nop') nop: string, @Request() req: any) {
+    return this.objekPajakService.getByNop(nop, req.user);
   }
 
   // PUT /objek-pajak/:nop — hanya BAKEUDA (update NJOP & data objek)
@@ -94,8 +109,9 @@ export class ObjekPajakController {
   async update(
     @Param('nop') nop: string,
     @Body() dto: UpdateObjekPajakDto,
+    @Request() req: any,
   ) {
-    return this.objekPajakService.update(nop, dto);
+    return this.objekPajakService.update(nop, dto, req.user);
   }
 
   // DELETE /objek-pajak/:nop — hanya BAKEUDA (nonaktifkan NOP)
@@ -103,6 +119,6 @@ export class ObjekPajakController {
   @UseGuards(RolesGuard)
   @Roles('BAKEUDA')
   async nonaktifkan(@Param('nop') nop: string, @Request() req: any) {
-    return this.objekPajakService.nonaktifkan(nop, req.user.id_user);
+    return this.objekPajakService.nonaktifkan(nop, req.user);
   }
 }

@@ -27,13 +27,7 @@ export class UpdateObjekPajakDto {
   @IsOptional()
   rt_op?: string;
 
-  @IsString()
-  @IsOptional()
-  kelurahan_op?: string;
 
-  @IsString()
-  @IsOptional()
-  kecamatan_op?: string;
 
   @IsEnum(JenisTanah)
   @IsOptional()

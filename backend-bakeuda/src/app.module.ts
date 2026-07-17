@@ -14,6 +14,8 @@ import { SpptModule } from './sppt/sppt.module.js';
 import { ReferensiJpbModule } from './referensi-jpb/referensi-jpb.module.js';
 import { TransaksiSpopModule } from './transaksi-spop/transaksi-spop.module.js';
 import { PejabatDesaModule } from './pejabat-desa/pejabat-desa.module.js';
+import { ReferensiDbkbModule } from './referensi-dbkb/referensi-dbkb.module.js';
+import { ReferensiNilaiFasilitasModule } from './referensi-nilai-fasilitas/referensi-nilai-fasilitas.module.js';
 import { ActivitiesModule } from './activities/activities.module.js';
 
 @Module({
@@ -33,6 +35,8 @@ import { ActivitiesModule } from './activities/activities.module.js';
     ReferensiJpbModule,
     TransaksiSpopModule,
     PejabatDesaModule,
+    ReferensiDbkbModule,
+    ReferensiNilaiFasilitasModule,
     ActivitiesModule,
   ],
   controllers: [AppController],

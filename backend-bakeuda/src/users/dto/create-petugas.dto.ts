@@ -7,9 +7,7 @@ export class CreatePetugasDto {
 
   @IsString()
   @MinLength(3, { message: 'Username minimal 3 karakter' })
-  @Matches(/^[a-zA-Z0-9_]+$/, {
-    message: 'Username hanya boleh huruf, angka, dan underscore',
-  })
+  @Matches(/^[a-zA-Z0-9_]+$/, { message: 'Username hanya boleh huruf, angka, dan underscore' })
   username: string;
 
   @IsString()
@@ -26,5 +24,6 @@ export class CreatePetugasDto {
   @IsOptional()
   @IsString()
   @MaxLength(25, { message: 'NIP maksimal 25 karakter' })
+  @Matches(/^[0-9]+$/, { message: 'NIP hanya boleh angka' })
   nip?: string;
 }

@@ -14,7 +14,16 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { JenisTanah } from '@prisma/client';
+import {
+  JenisTanah,
+  KondisiBangunan,
+  JenisKonstruksi,
+  JenisAtap,
+  JenisDinding,
+  JenisLantai,
+  JenisLangitLangit,
+  BahanPagar,
+} from '@prisma/client';
 
 // ─────────────────────────────────────────
 // FASILITAS BANGUNAN (opsional, sesuai SPOP Lampiran B field 17–27)
@@ -57,7 +66,7 @@ export class FasilitasBangunanDto {
 
   // 24. Pagar
   @IsOptional() @IsNumber() panjang_pagar_m?: number;
-  @IsOptional() @IsString() @MaxLength(1) bahan_pagar?: string; // 1=Baja/Besi, 2=Bata/Batako
+  @IsOptional() @IsEnum(BahanPagar) bahan_pagar?: BahanPagar;
 
   // 25. Pemadam Kebakaran
   @IsOptional() @IsBoolean() hydrant_ada?: boolean;
@@ -116,10 +125,29 @@ export class BangunanDto {
   @IsOptional()
   daya_listrik_watt?: number; // BARU — SPOP Lampiran field 10
 
-  @IsString()
   @IsOptional()
-  @MaxLength(1)
-  kondisi_bangunan?: string;
+  @IsEnum(KondisiBangunan)
+  kondisi_bangunan?: KondisiBangunan;
+
+  @IsOptional()
+  @IsEnum(JenisKonstruksi)
+  jenis_konstruksi?: JenisKonstruksi;
+
+  @IsOptional()
+  @IsEnum(JenisAtap)
+  jenis_atap?: JenisAtap;
+
+  @IsOptional()
+  @IsEnum(JenisDinding)
+  kode_dinding?: JenisDinding;
+
+  @IsOptional()
+  @IsEnum(JenisLantai)
+  kode_lantai?: JenisLantai;
+
+  @IsOptional()
+  @IsEnum(JenisLangitLangit)
+  kode_langit_langit?: JenisLangitLangit;
 
   @IsOptional()
   @ValidateNested()
@@ -133,23 +161,8 @@ export class BangunanDto {
 export class CreateObjekPajakDto {
   @IsString()
   @IsNotEmpty()
-  @Length(2, 2)
-  kode_propinsi: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @Length(2, 2)
-  kode_dati2: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @Length(3, 3)
-  kode_kecamatan: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @Length(3, 3)
-  kode_kelurahan: string;
+  @Length(10, 10)
+  kode_wilayah?: string; // Diberi opsional di DTO karena bisa diisi otomatis di Service (untuk DESA)
 
   @IsString()
   @IsNotEmpty()
@@ -190,15 +203,7 @@ export class CreateObjekPajakDto {
   @MaxLength(5)
   rt_op?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  kelurahan_op: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  kecamatan_op: string;
 
   @IsEnum(JenisTanah)
   jenis_tanah: JenisTanah;

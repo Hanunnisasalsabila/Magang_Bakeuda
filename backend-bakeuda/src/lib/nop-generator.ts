@@ -1,40 +1,34 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '@prisma/client';
 
 export interface GenerateNopInput {
-  kode_propinsi: string; // 2 digit
-  kode_dati2: string; // 2 digit
-  kode_kecamatan: string; // 3 digit
-  kode_kelurahan: string; // 3 digit
+  kode_wilayah: string; // WAJIB sudah tervalidasi ada di tabel Wilayah
   kode_blok: string; // 3 digit
   kode_jenis_op: string; // 1 digit
 }
 
 /**
- * NOP 18 digit = propinsi(2) + dati2(2) + kecamatan(3) + kelurahan(3)
- *              + blok(3) + no_urut(4) + jenis_op(1)
+ * NOP 18 digit = kode_wilayah(10) + blok(3) + no_urut(4) + jenis_op(1)
  */
 @Injectable()
 export class NopGeneratorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generateNop(input: GenerateNopInput): Promise<string> {
-    const {
-      kode_propinsi,
-      kode_dati2,
-      kode_kecamatan,
-      kode_kelurahan,
-      kode_blok,
-      kode_jenis_op,
-    } = input;
+  async generateNop(
+    input: GenerateNopInput,
+    tx: Prisma.TransactionClient = this.prisma,
+  ): Promise<string> {
+    const { kode_wilayah, kode_blok, kode_jenis_op } = input;
+
+    // Validasi wilayah benar-benar ada — mencegah NOP dengan kode wilayah palsu
+    const wilayah = await tx.wilayah.findUnique({ where: { kode_wilayah } });
+    if (!wilayah) throw new BadRequestException('Kode wilayah tidak valid/tidak terdaftar');
 
     // Cari no_urut terakhir untuk kombinasi wilayah + blok ini
-    const lastObjek = await this.prisma.objekPajak.findFirst({
+    const lastObjek = await tx.objekPajak.findFirst({
       where: {
-        kode_propinsi,
-        kode_dati2,
-        kode_kecamatan,
-        kode_kelurahan,
+        kode_wilayah,
         kode_blok,
       },
       orderBy: { no_urut: 'desc' },
@@ -44,10 +38,7 @@ export class NopGeneratorService {
     const noUrutStr = nextUrut.toString().padStart(4, '0');
 
     const nop =
-      kode_propinsi.padStart(2, '0') +
-      kode_dati2.padStart(2, '0') +
-      kode_kecamatan.padStart(3, '0') +
-      kode_kelurahan.padStart(3, '0') +
+      kode_wilayah +
       kode_blok.padStart(3, '0') +
       noUrutStr +
       kode_jenis_op;
@@ -59,10 +50,7 @@ export class NopGeneratorService {
   parseNop(nop: string) {
     if (nop.length !== 18) throw new Error('NOP harus 18 digit');
     return {
-      kode_propinsi: nop.substring(0, 2),
-      kode_dati2: nop.substring(2, 4),
-      kode_kecamatan: nop.substring(4, 7),
-      kode_kelurahan: nop.substring(7, 10),
+      kode_wilayah: nop.substring(0, 10),
       kode_blok: nop.substring(10, 13),
       no_urut: nop.substring(13, 17),
       kode_jenis_op: nop.substring(17, 18),

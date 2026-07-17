@@ -10,33 +10,34 @@ import { UpdateObjekPajakDto } from './dto/update-objek-pajak.dto.js';
 import { UpdateObjekBumiDto } from './dto/update-objek-bumi.dto.js';
 import { UpdateObjekBangunanDto } from './dto/update-objek-bangunan.dto.js';
 import { UpdateFasilitasBangunanDto } from './dto/update-fasilitas-bangunan.dto.js';
+import { PbbCalculatorService } from '../lib/pbb-calculator.js';
+import {
+  CurrentUser,
+  resolveWilayahForCreate,
+  buildWilayahScope,
+  assertWilayahAccess,
+} from '../common/wilayah-scope.helper.js';
 
 @Injectable()
 export class ObjekPajakService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
+    private readonly pbbCalculator: PbbCalculatorService,
   ) {}
 
   // ─────────────────────────────────────────
   // CREATE — generate NOP + nested bumi/bangunan
   // ─────────────────────────────────────────
 
-  async create(dto: CreateObjekPajakDto) {
+  async create(dto: CreateObjekPajakDto, currentUser: CurrentUser) {
+    const kodeWilayah = resolveWilayahForCreate(dto.kode_wilayah, currentUser);
+
     const subjek = await this.prisma.subjekPajak.findUnique({
       where: { nik: dto.nik_subjek },
     });
     if (!subjek)
       throw new BadRequestException('Subjek pajak (NIK) tidak ditemukan');
-
-    const nop = await this.nopGenerator.generateNop({
-      kode_propinsi: dto.kode_propinsi,
-      kode_dati2: dto.kode_dati2,
-      kode_kecamatan: dto.kode_kecamatan,
-      kode_kelurahan: dto.kode_kelurahan,
-      kode_blok: dto.kode_blok,
-      kode_jenis_op: dto.kode_jenis_op,
-    });
 
     // Hitung agregat dari bumi & bangunan
     const totalLuasTanah = dto.bumi.reduce((sum, b) => sum + b.luas_bumi, 0);
@@ -45,54 +46,63 @@ export class ObjekPajakService {
       0,
     );
 
-    const objek = await this.prisma.objekPajak.create({
-      data: {
-        nop,
-        kode_propinsi: dto.kode_propinsi,
-        kode_dati2: dto.kode_dati2,
-        kode_kecamatan: dto.kode_kecamatan,
-        kode_kelurahan: dto.kode_kelurahan,
-        kode_blok: dto.kode_blok,
-        no_urut: nop.substring(13, 17),
-        kode_jenis_op: dto.kode_jenis_op,
-        nik_subjek: dto.nik_subjek,
-        no_persil: dto.no_persil,
-        jalan_op: dto.jalan_op,
-        blok_kav_no: dto.blok_kav_no,
-        rw_op: dto.rw_op,
-        rt_op: dto.rt_op,
-        kelurahan_op: dto.kelurahan_op,
-        kecamatan_op: dto.kecamatan_op,
-        jenis_tanah: dto.jenis_tanah,
-        luas_tanah: totalLuasTanah,
-        luas_bangunan: totalLuasBangunan,
-        jumlah_bangunan: dto.bangunan?.length ?? 0,
-        bumi: {
-          create: dto.bumi.map((b, idx) => ({
-            no_bumi: idx + 1,
-            luas_bumi: b.luas_bumi,
-            kode_znt: b.kode_znt,
-            jenis_bumi: b.jenis_bumi,
-            nilai_sistem_bumi: b.nilai_sistem_bumi ?? 0,
-          })),
-        },
-        bangunan: dto.bangunan
-          ? {
-              create: dto.bangunan.map((b, idx) => ({
-                no_bangunan: idx + 1,
-                luas_bangunan: b.luas_bangunan,
-                kode_jpb: b.kode_jpb,
-                tahun_dibangun: b.tahun_dibangun,
-                jumlah_lantai: b.jumlah_lantai ?? 1,
-                daya_listrik_watt: b.daya_listrik_watt,
-                kondisi_bangunan: b.kondisi_bangunan,
-                fasilitas: b.fasilitas ? { create: b.fasilitas } : undefined,
+    const objek = await this.prisma.$transaction(
+      async (tx) => {
+        const nop = await this.nopGenerator.generateNop(
+          {
+            kode_wilayah: kodeWilayah,
+            kode_blok: dto.kode_blok,
+            kode_jenis_op: dto.kode_jenis_op,
+          },
+          tx as any,
+        );
+
+        return tx.objekPajak.create({
+          data: {
+            nop,
+            kode_wilayah: kodeWilayah,
+            kode_blok: dto.kode_blok,
+            no_urut: nop.substring(13, 17),
+            kode_jenis_op: dto.kode_jenis_op,
+            nik_subjek: dto.nik_subjek,
+            no_persil: dto.no_persil,
+            jalan_op: dto.jalan_op,
+            blok_kav_no: dto.blok_kav_no,
+            rw_op: dto.rw_op,
+            rt_op: dto.rt_op,
+            jenis_tanah: dto.jenis_tanah,
+            luas_tanah: totalLuasTanah,
+            luas_bangunan: totalLuasBangunan,
+            jumlah_bangunan: dto.bangunan?.length ?? 0,
+            bumi: {
+              create: dto.bumi.map((b, idx) => ({
+                no_bumi: idx + 1,
+                luas_bumi: b.luas_bumi,
+                kode_znt: b.kode_znt,
+                jenis_bumi: b.jenis_bumi,
+                nilai_sistem_bumi: b.nilai_sistem_bumi ?? 0,
               })),
-            }
-          : undefined,
+            },
+            bangunan: dto.bangunan
+              ? {
+                  create: dto.bangunan.map((b, idx) => ({
+                    no_bangunan: idx + 1,
+                    luas_bangunan: b.luas_bangunan,
+                    kode_jpb: b.kode_jpb,
+                    tahun_dibangun: b.tahun_dibangun,
+                    jumlah_lantai: b.jumlah_lantai ?? 1,
+                    daya_listrik_watt: b.daya_listrik_watt,
+                    kondisi_bangunan: b.kondisi_bangunan,
+                    fasilitas: b.fasilitas ? { create: b.fasilitas } : undefined,
+                  })),
+                }
+              : undefined,
+          },
+          include: { bumi: true, bangunan: { include: { fasilitas: true } }, wilayah: true },
+        });
       },
-      include: { bumi: true, bangunan: { include: { fasilitas: true } } },
-    });
+      { isolationLevel: 'Serializable' },
+    );
 
     return {
       success: true,
@@ -105,16 +115,20 @@ export class ObjekPajakService {
   // GET BY NOP
   // ─────────────────────────────────────────
 
-  async getByNop(nop: string) {
+  async getByNop(nop: string, currentUser: CurrentUser) {
     const objek = await this.prisma.objekPajak.findUnique({
       where: { nop },
       include: {
         subjek_pajak: { select: { nik: true, nama_subjek: true } },
         bumi: true,
         bangunan: { include: { fasilitas: true } },
+        wilayah: true,
       },
     });
     if (!objek) throw new NotFoundException('Objek pajak tidak ditemukan');
+
+    assertWilayahAccess(currentUser, objek.kode_wilayah);
+
     return { success: true, data: objek };
   }
 
@@ -122,9 +136,12 @@ export class ObjekPajakService {
   // SEARCH
   // ─────────────────────────────────────────
 
-  async search(keyword: string) {
+  async search(keyword: string, currentUser: CurrentUser) {
+    const scope = buildWilayahScope(currentUser);
+
     const results = await this.prisma.objekPajak.findMany({
       where: {
+        ...scope,
         OR: [
           { nop: { contains: keyword } },
           { jalan_op: { contains: keyword, mode: 'insensitive' } },
@@ -135,7 +152,7 @@ export class ObjekPajakService {
           },
         ],
       },
-      include: { subjek_pajak: { select: { nama_subjek: true } } },
+      include: { subjek_pajak: { select: { nama_subjek: true } }, wilayah: true },
       take: 50,
     });
     return { success: true, total: results.length, data: results };
@@ -145,9 +162,12 @@ export class ObjekPajakService {
   // UPDATE HEADER OBJEK PAJAK (NJOP, alamat, dll)
   // ─────────────────────────────────────────
 
-  async update(nop: string, dto: UpdateObjekPajakDto) {
+  async update(nop: string, dto: UpdateObjekPajakDto, currentUser: CurrentUser) {
     const existing = await this.prisma.objekPajak.findUnique({ where: { nop } });
     if (!existing) throw new NotFoundException('Objek pajak tidak ditemukan');
+    
+    assertWilayahAccess(currentUser, existing.kode_wilayah);
+
     if (!existing.status_aktif)
       throw new BadRequestException(
         'Objek pajak nonaktif, tidak bisa diupdate',
@@ -165,7 +185,7 @@ export class ObjekPajakService {
     const updated = await this.prisma.objekPajak.update({
       where: { nop },
       data: { ...dto, njop_total: njopTotal },
-      include: { bumi: true, bangunan: true },
+      include: { bumi: true, bangunan: true, wilayah: true },
     });
 
     return {
@@ -179,9 +199,12 @@ export class ObjekPajakService {
   // NONAKTIFKAN NOP
   // ─────────────────────────────────────────
 
-  async nonaktifkan(nop: string, userId: string) {
+  async nonaktifkan(nop: string, currentUser: CurrentUser) {
     const objek = await this.prisma.objekPajak.findUnique({ where: { nop } });
     if (!objek) throw new NotFoundException('Objek pajak tidak ditemukan');
+    
+    assertWilayahAccess(currentUser, objek.kode_wilayah);
+
     if (!objek.status_aktif)
       throw new BadRequestException('Objek pajak sudah nonaktif');
 
@@ -189,7 +212,7 @@ export class ObjekPajakService {
       where: { nop },
       data: {
         status_aktif: false,
-        nonaktif_oleh: userId,
+        nonaktif_oleh: currentUser.id_user,
         nonaktif_at: new Date(),
       },
     });
@@ -286,8 +309,6 @@ export class ObjekPajakService {
     if (!bangunan)
       throw new NotFoundException('Objek bangunan tidak ditemukan');
 
-    // Pakai upsert karena fasilitas opsional — bangunan sederhana
-    // mungkin belum punya record fasilitas sampai pertama kali diisi
     const updated = await this.prisma.objekBangunanFasilitas.upsert({
       where: { id_bangunan: idBangunan },
       create: { id_bangunan: idBangunan, ...dto },
@@ -298,6 +319,48 @@ export class ObjekPajakService {
       success: true,
       message: 'Fasilitas bangunan berhasil diupdate',
       data: updated,
+    };
+  }
+
+  // ─────────────────────────────────────────
+  // HITUNG ULANG NJOP BANGUNAN (via PbbCalculatorService)
+  // ─────────────────────────────────────────
+
+  async hitungUlangNjopBangunan(idBangunan: string) {
+    const tahunIni = new Date().getFullYear();
+    const nilai = await this.pbbCalculator.hitungNjopBangunan(
+      idBangunan,
+      tahunIni,
+    );
+
+    const bangunan = await this.prisma.objekBangunan.update({
+      where: { id_bangunan: idBangunan },
+      data: { nilai_sistem_bangunan: nilai },
+    });
+
+    // Sinkronkan agregat njop_bangunan di header ObjekPajak
+    // (jumlah semua nilai_sistem_bangunan dalam 1 NOP)
+    const semuaBangunan = await this.prisma.objekBangunan.findMany({
+      where: { nop: bangunan.nop },
+    });
+    const totalNjopBangunan = semuaBangunan.reduce(
+      (sum, b) => sum + Number(b.nilai_sistem_bangunan ?? 0),
+      0,
+    );
+    await this.prisma.objekPajak.update({
+      where: { nop: bangunan.nop },
+      data: { njop_bangunan: totalNjopBangunan },
+    });
+
+    return {
+      success: true,
+      message: 'NJOP bangunan berhasil dihitung ulang',
+      data: {
+        id_bangunan: bangunan.id_bangunan,
+        nop: bangunan.nop,
+        nilai_sistem_bangunan: nilai,
+        total_njop_bangunan_nop: totalNjopBangunan,
+      },
     };
   }
 }

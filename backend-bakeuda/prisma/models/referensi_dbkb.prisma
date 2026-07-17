@@ -1,0 +1,72 @@
+// ─────────────────────────────────────────
+// REFERENSI DBKB — Daftar Biaya Komponen Bangunan
+// Satu tabel untuk semua kategori klasifikasi bangunan,
+// supaya sinkronisasi Oracle bisa 1 alur ETL untuk semua kategori.
+// ─────────────────────────────────────────
+
+enum KategoriDbkb {
+  KONDISI_BANGUNAN
+  JENIS_KONSTRUKSI
+  JENIS_ATAP
+  JENIS_DINDING
+  JENIS_LANTAI
+  JENIS_LANGIT_LANGIT
+  JENIS_PENGGUNAAN_BANGUNAN // basis nilai dasar per JPB, sebelum faktor kualitas
+}
+
+model ReferensiDbkb {
+  id_dbkb       String       @id @default(uuid())
+  kategori      KategoriDbkb
+  kode          String       @db.VarChar(50) // value enum terkait, misal "BAIK", "BETON", dst — atau kode_jpb untuk kategori JPB
+  nilai_per_m2  Decimal      @default(0) @db.Decimal(15, 2)
+  tahun_berlaku Int
+  sumber_data   String       @default("MANUAL") // "MANUAL" atau "ORACLE_SYNC"
+  synced_at     DateTime?
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  @@unique([kategori, kode, tahun_berlaku])
+  @@map("referensi_dbkb")
+}
+
+// ─────────────────────────────────────────
+// REFERENSI NILAI FASILITAS — Nilai Tambah per Fasilitas
+// ─────────────────────────────────────────
+
+enum JenisFasilitas {
+  AC_SPLIT
+  AC_WINDOW
+  AC_SENTRAL
+  KOLAM_RENANG_PER_M2
+  PERKERASAN_RINGAN_PER_M2
+  PERKERASAN_SEDANG_PER_M2
+  PERKERASAN_BERAT_PER_M2
+  PERKERASAN_DENGAN_PENUTUP_PER_M2
+  LAPANGAN_TENIS_BETON
+  LAPANGAN_TENIS_ASPAL
+  LAPANGAN_TENIS_TANAH_RUMPUT
+  LIFT_PENUMPANG
+  LIFT_KAPSUL
+  LIFT_BARANG
+  TANGGA_BERJALAN
+  PAGAR_PER_M
+  HYDRANT
+  SPRINKLER
+  FIRE_ALARM
+  SALURAN_PABX
+  SUMUR_ARTESIS_PER_M
+}
+
+model ReferensiNilaiFasilitas {
+  id_nilai_fasilitas String         @id @default(uuid())
+  jenis_fasilitas    JenisFasilitas
+  nilai_tambah       Decimal        @default(0) @db.Decimal(15, 2) // per unit ATAU per m2, tergantung jenisnya
+  tahun_berlaku      Int
+  sumber_data        String         @default("MANUAL")
+  synced_at          DateTime?
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+
+  @@unique([jenis_fasilitas, tahun_berlaku])
+  @@map("referensi_nilai_fasilitas")
+}
