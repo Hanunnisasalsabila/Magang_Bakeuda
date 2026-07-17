@@ -149,7 +149,7 @@ export default function DaftarObjekPajak() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display-lg text-blue-900 font-bold text-3xl">Daftar Objek Pajak</h2>
+          <h2 className=" text-blue-900 font-bold text-3xl">Daftar Objek Pajak</h2>
           <p className="text-on-surface-variant max-w-2xl mt-1 text-sm md:text-base">
             Daftar keseluruhan informasi Objek Pajak Bumi dan Bangunan (PBB) yang terdaftar di wilayah Kabupaten Purbalingga.
           </p>
@@ -207,7 +207,7 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">45,920</p>
+          <p className="text-3xl  text-on-surface font-black">45,920</p>
           <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">trending_up</span>
             Bertambah +123 dari bulan lalu
@@ -223,7 +223,7 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">45,105</p>
+          <p className="text-3xl  text-on-surface font-black">45,105</p>
           <p className="text-xs text-on-surface-variant mt-2">
             Objek pajak tertagih
           </p>
@@ -238,7 +238,7 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl font-display-md text-on-surface font-black">815</p>
+          <p className="text-3xl  text-on-surface font-black">815</p>
           <p className="text-xs text-on-surface-variant mt-2">
             Dalam proses pemecahan/penggabungan
           </p>
@@ -370,7 +370,7 @@ export default function DaftarObjekPajak() {
 
         {/* Pagination Footer */}
         <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50">
-          <div className="flex items-center gap-4 text-sm text-gray-500 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Tampilkan</span>
               <select 
@@ -379,7 +379,7 @@ export default function DaftarObjekPajak() {
                   setItemsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-white border border-gray-300 rounded-md py-1 pl-3 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-gray-900 cursor-pointer appearance-none"
+                className="bg-white border border-gray-300 rounded-md py-1 pl-3 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-on-surface cursor-pointer appearance-none"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                   backgroundPosition: 'right 0.5rem center',
@@ -397,8 +397,8 @@ export default function DaftarObjekPajak() {
             </div>
             <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
             <div>
-              Menampilkan <span className="font-bold text-gray-900">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
-              <span className="font-bold text-gray-900">{totalItems}</span> data
+              Menampilkan <span className="font-bold text-on-surface">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
+              <span className="font-bold text-on-surface">{totalItems}</span> data
             </div>
           </div>
           
@@ -471,7 +471,7 @@ export default function DaftarObjekPajak() {
                   <span className="material-symbols-outlined text-[24px]">real_estate_agent</span>
                 </div>
                 <div>
-                  <h3 className="font-display-sm text-on-surface font-black text-xl leading-tight">Detail Objek Pajak</h3>
+                  <h3 className=" text-on-surface font-black text-xl leading-tight">Detail Objek Pajak</h3>
                   <p className="text-sm font-data-mono text-primary font-bold mt-1">NOP: {selectedObject.nop}</p>
                 </div>
               </div>

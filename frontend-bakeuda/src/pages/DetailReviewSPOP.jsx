@@ -11,6 +11,13 @@ export default function DetailReviewSPOP() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // State untuk form Desa (Kades/Sekdes)
+  const [nipPejabat, setNipPejabat] = useState('');
+  const [pejabatDesa, setPejabatDesa] = useState([]);
+  const [isUploadingDokumen, setIsUploadingDokumen] = useState(false);
+  const [urlDokumenFisik, setUrlDokumenFisik] = useState('');
+  const handleUploadDokumenFisik = (e) => { console.log('File selected'); };
+
   const [decisionNotes, setDecisionNotes] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -56,6 +63,8 @@ export default function DetailReviewSPOP() {
 
     if (id) {
       fetchDetail();
+    } else {
+      setLoading(false);
     }
 
     // Polling untuk mengecek apakah kunci kita dilepas paksa oleh admin lain saat AFK
@@ -134,7 +143,7 @@ export default function DetailReviewSPOP() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-500 font-medium text-lg">Memuat Detail SPOP...</p>
+        <p className="text-on-surface-variant font-medium text-lg">Memuat Detail SPOP...</p>
       </div>
     );
   }
@@ -171,13 +180,13 @@ export default function DetailReviewSPOP() {
             />
           </div>
           <div>
-            <p className="text-gray-500 uppercase tracking-wider text-xs font-semibold mb-1">
+            <p className="text-on-surface-variant uppercase tracking-wider text-xs font-semibold mb-1">
               Badan Keuangan Daerah (Bakeuda)
             </p>
-            <h2 className="text-2xl text-gray-900 leading-tight font-bold">
+            <h2 className="text-2xl text-on-surface leading-tight font-bold">
               Verifikasi Berkas SPOP PBB-P2
             </h2>
-            <p className="text-gray-500 mt-1 text-sm">
+            <p className="text-on-surface-variant mt-1 text-sm">
               Formulir {data.no_formulir || 'SPOP-A01-2024'} • ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
             </p>
           </div>
@@ -229,10 +238,10 @@ export default function DetailReviewSPOP() {
           {/* NOP */}
           <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
             <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[18px] text-gray-500">pin</span>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">pin</span>
               Nomor Objek Pajak (NOP)
             </h3>
-            <div className="font-mono text-lg font-bold text-gray-900 tracking-wider">
+            <div className="font-mono text-lg font-bold text-on-surface tracking-wider">
               {nopDisplay}
             </div>
             <p className="text-[11px] text-gray-400 mt-2 italic">
@@ -249,19 +258,19 @@ export default function DetailReviewSPOP() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
                     Nama Subjek Pajak
                   </label>
                   <div className="font-semibold text-gray-900 text-base">{calonSubjek.nama_subjek || data.nama_pengaju || 'Tidak Diketahui'}</div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
                     Status Subjek Pajak
                   </label>
                   <div className="font-semibold text-blue-700">{calonSubjek.status_subjek || 'Tergantung Berkas'}</div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
                     NIK / NPWP
                   </label>
                   <div className="font-mono font-medium text-sm text-gray-800">
@@ -271,11 +280,11 @@ export default function DetailReviewSPOP() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
                     Alamat Objek Pajak
                   </label>
-                  <div className="font-semibold text-gray-900">{detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'} / RW {detailTujuan.rw_op_baru || '-'}</div>
-                  <div className="text-gray-500 text-sm font-medium mt-0.5">
+                  <div className="font-semibold text-on-surface">{detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'} / RW {detailTujuan.rw_op_baru || '-'}</div>
+                  <div className="text-on-surface-variant text-sm font-medium mt-0.5">
                     DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
                   </div>
                 </div>
@@ -291,14 +300,14 @@ export default function DetailReviewSPOP() {
             </h3>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Luas Tanah (m²)</label>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Luas Tanah (m²)</label>
                 <div className="flex items-center gap-3 font-semibold text-lg">
                   <span className="text-green-700 bg-green-50 px-2 py-1 rounded">{detailTujuan.luas_tanah_baru || 0} m²</span>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Jenis Tanah</label>
-                <div className="font-semibold text-gray-900 text-lg">{detailTujuan.jenis_tanah_baru || '-'}</div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Jenis Tanah</label>
+                <div className="font-semibold text-on-surface text-lg">{detailTujuan.jenis_tanah_baru || '-'}</div>
               </div>
             </div>
           </section>
@@ -311,14 +320,14 @@ export default function DetailReviewSPOP() {
             </h3>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Jumlah Bangunan</label>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Jumlah Bangunan</label>
                 <div className="flex items-center gap-3 font-semibold text-lg">
                   <span>{detailTujuan.jumlah_bangunan_baru || 0}</span>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Luas Bangunan (m²)</label>
-                <div className="font-semibold text-gray-900 text-lg">{detailTujuan.luas_bangunan_baru || 0} m²</div>
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Luas Bangunan (m²)</label>
+                <div className="font-semibold text-on-surface text-lg">{detailTujuan.luas_bangunan_baru || 0} m²</div>
               </div>
             </div>
           </section>
@@ -357,40 +366,82 @@ export default function DetailReviewSPOP() {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 italic">Tidak ada lampiran dokumen.</p>
+                <p className="text-sm text-on-surface-variant italic">Tidak ada lampiran dokumen.</p>
               )}
             </div>
           </section>
         </div>
       </div>
 
-      {/* Verification Action Card - HANYA UNTUK BAKEUDA */}
-      {isBakeuda && (
-        <div className="mt-8 mb-12">
-          <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
-            <div className="mb-6 border-b border-gray-200 pb-4">
+      {/* Verification Action Card */}
+      <div className="mt-8 mb-12">
+        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
+          <div className="mb-6 border-b border-gray-200 pb-4">
             <h3 className="text-lg text-gray-900 flex items-center gap-2 font-bold">
               <span className="material-symbols-outlined text-blue-600">assignment_turned_in</span>
               Keputusan Verifikasi
             </h3>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="text-on-surface-variant text-sm mt-1">
               Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung diteruskan ke tingkat Kabupaten.
             </p>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-8 space-y-4">
-
-              {data.status_ajuan === 'PROSES' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
-                <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              {/* Render untuk Bakeuda */}
+              {isBakeuda && data.status_ajuan === 'PROSES' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
+                <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg mb-4">
                   <h4 className="font-bold text-blue-900 mb-2">Penetapan NOP Baru</h4>
                   <p className="text-sm text-blue-700 mb-4">Silakan masukkan Kode Blok dan Nomor Urut sesuai Peta Blok Bakeuda untuk menginjeksi NOP Baru.</p>
                   <SegmentedNOPInput value={nopBaru} onChange={setNopBaru} />
                 </div>
               )}
 
+              {/* Render untuk Desa */}
+              {!isBakeuda && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
+                      Pejabat Berwenang (Kades/Sekdes)
+                    </label>
+                    <select
+                      value={nipPejabat}
+                      onChange={(e) => setNipPejabat(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
+                    >
+                      <option value="">-- Pilih Pejabat --</option>
+                      {pejabatDesa.map(p => (
+                        <option key={p.nip} value={p.nip}>{p.nama_pejabat} (NIP: {p.nip})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
+                      Dokumen Fisik SPOP (TTD Basah)
+                    </label>
+                    <div className="relative overflow-hidden w-full">
+                      <button 
+                        type="button"
+                        disabled={isUploadingDokumen}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-md border border-dashed border-blue-400 text-blue-600 font-semibold hover:bg-blue-50 transition-colors ${isUploadingDokumen ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        <span className="material-symbols-outlined text-[20px]">{isUploadingDokumen ? 'hourglass_empty' : (urlDokumenFisik ? 'check_circle' : 'upload_file')}</span>
+                        {isUploadingDokumen ? 'Mengunggah...' : (urlDokumenFisik ? 'Dokumen Terlampir' : 'Upload PDF/JPG')}
+                      </button>
+                      <input 
+                        type="file" 
+                        accept="image/*,.pdf" 
+                        onChange={handleUploadDokumenFisik}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploadingDokumen}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">
+                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">
                   Catatan / Alasan Verifikasi
                 </label>
                 <textarea
@@ -425,7 +476,6 @@ export default function DetailReviewSPOP() {
             </div>
           </div>
         </div>
-      )}
 
       {/* Footer */}
       <footer className="bg-surface-container-high px-gutter py-8 text-on-surface-variant border-t border-outline-variant rounded-t-xl">

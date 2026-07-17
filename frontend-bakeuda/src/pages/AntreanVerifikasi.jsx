@@ -167,16 +167,16 @@ export default function AntreanVerifikasi() {
 
 
       {/* Filters & Search */}
-      <section className="bg-white p-4 rounded-lg border border-gray-200 mb-6 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-          <div className="lg:col-span-3">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+      <section className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant mb-6 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-1.5">
+            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Kecamatan
             </label>
             <select
               value={kecamatan}
               onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
+              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
             >
               <option value="Semua Kecamatan">Semua Kecamatan</option>
               {kecamatanList.map(kec => (
@@ -184,14 +184,14 @@ export default function AntreanVerifikasi() {
               ))}
             </select>
           </div>
-          <div className="lg:col-span-3">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <div className="space-y-1.5">
+            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Kelurahan/Desa
             </label>
             <select
               value={kelurahan}
               onChange={(e) => setKelurahan(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
+              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
             >
               <option value="Semua Desa">Semua Desa</option>
               {kelurahanList.map(kel => (
@@ -199,8 +199,8 @@ export default function AntreanVerifikasi() {
               ))}
             </select>
           </div>
-          <div className="lg:col-span-4">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+          <div className="space-y-1.5">
+            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Cari NOP/Subjek Pajak
             </label>
             <div className="relative">
@@ -208,7 +208,7 @@ export default function AntreanVerifikasi() {
                 type="text"
                 value={search}
                 onChange={handleSearchChange}
-                className="w-full px-3 py-2 pl-10 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-gray-700"
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
                 placeholder="Masukkan NOP atau Nama..."
               />
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
@@ -216,40 +216,39 @@ export default function AntreanVerifikasi() {
               </span>
             </div>
           </div>
-          <div className="lg:col-span-2 flex items-end">
+          <div className="space-y-1.5 flex flex-col justify-end">
             <button
               onClick={() => {
                 setKecamatan('Semua Kecamatan');
                 setKelurahan('Semua Desa');
                 setSearch('');
               }}
-              className="w-full bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-background border border-outline-variant rounded-lg h-10 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none flex items-center justify-center"
             >
-              <span className="material-symbols-outlined text-[18px]">filter_list_off</span>
-              Reset
+              Reset Filter
             </button>
           </div>
         </div>
       </section>
 
       {/* Data Table Card */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto custom-scrollbar w-full">
+          <table className="w-full text-left border-collapse min-w-max">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-semibold">NOP</th>
-                <th className="px-6 py-3 font-semibold">Subjek Pajak</th>
-                <th className="px-6 py-3 font-semibold">Alamat Objek</th>
-                <th className="px-6 py-3 font-semibold">Desa/Kelurahan</th>
-                <th className="px-6 py-3 font-semibold">Tanggal Kirim</th>
-                <th className="px-6 py-3 font-semibold text-center">Aksi</th>
+              <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Desa/Kelurahan</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Tanggal Kirim</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-gray-500">
+                  <td colSpan={6} className="text-center p-8 text-on-surface-variant">
                     Memuat antrean...
                   </td>
                 </tr>
@@ -269,19 +268,19 @@ export default function AntreanVerifikasi() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-bold text-gray-900">{item.name}</p>
-                      <p className="text-[12px] text-gray-500">{item.userId}</p>
+                      <p className="font-bold text-on-surface">{item.name}</p>
+                      <p className="text-[12px] text-on-surface-variant">{item.userId}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-gray-900">{item.address}</p>
-                      <p className="text-[12px] text-gray-500">{item.rtRw}</p>
+                      <p className="text-on-surface">{item.address}</p>
+                      <p className="text-[12px] text-on-surface-variant">{item.rtRw}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-gray-900">{item.kelurahan}</span>
+                      <span className="text-on-surface">{item.kelurahan}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className={`text-gray-900 ${item.urgent ? 'font-bold' : ''}`}>{item.date}</p>
-                      <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-gray-500'}`}>{item.time}</p>
+                      <p className={`text-on-surface ${item.urgent ? 'font-bold' : ''}`}>{item.date}</p>
+                      <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-on-surface-variant'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex flex-col items-center gap-2">
@@ -335,7 +334,7 @@ export default function AntreanVerifikasi() {
         {/* Pagination */}
         {filteredData.length > 0 && (
           <div className="bg-white px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-200">
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-500 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto">
               <div className="flex items-center gap-2">
                 <label className="font-semibold whitespace-nowrap">Tampilkan:</label>
                 <div className="relative">
@@ -361,7 +360,7 @@ export default function AntreanVerifikasi() {
               </div>
               <div className="hidden sm:block w-px h-4 bg-gray-300"></div>
               <div>
-                Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> dari <span className="font-bold text-gray-900">{filteredData.length}</span> entri
+                Menampilkan <span className="font-bold text-on-surface">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-on-surface">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> dari <span className="font-bold text-on-surface">{filteredData.length}</span> entri
               </div>
             </div>
             

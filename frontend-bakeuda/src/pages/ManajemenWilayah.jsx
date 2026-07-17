@@ -174,7 +174,7 @@ export default function ManajemenWilayah() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-display-lg text-display-lg text-primary tracking-tight">
+          <h1 className=" text-display-lg text-primary tracking-tight">
             Manajemen Wilayah
           </h1>
           <p className="text-on-surface-variant font-body-lg mt-1 opacity-80 max-w-3xl">
@@ -388,7 +388,7 @@ export default function ManajemenWilayah() {
                 <h2 className="text-lg font-semibold text-gray-800">
                   {modalMode === 'add' ? 'Formulir Data Wilayah' : 'Edit Data Wilayah'}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-on-surface-variant text-sm mt-1">
                   {modalMode === 'add' ? 'Pendaftaran wilayah administrasi baru ke dalam sistem.' : 'Perbarui nama desa.'}
                 </p>
               </div>
@@ -423,7 +423,7 @@ export default function ManajemenWilayah() {
                         type="text" 
                         disabled
                         value="Purbalingga" 
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant" 
                       />
                     </div>
                     <div>
@@ -432,7 +432,7 @@ export default function ManajemenWilayah() {
                         type="text" 
                         disabled
                         value="3303" 
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500 font-mono" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
                       />
                     </div>
                   </div>
@@ -447,7 +447,7 @@ export default function ManajemenWilayah() {
                           disabled={modalMode === 'edit'}
                           value={formData.kecamatan} 
                           onChange={handleKecamatanChange}
-                          className={`w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none ${modalMode === 'edit' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : 'cursor-pointer'}`}
+                          className={`w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none ${modalMode === 'edit' ? 'bg-gray-100 cursor-not-allowed text-on-surface-variant' : 'cursor-pointer'}`}
                         >
                           <option value="">Pilih Kecamatan</option>
                           {KECAMATAN_DATA.map((kec) => (
@@ -466,7 +466,7 @@ export default function ManajemenWilayah() {
                         disabled
                         value={formData.kode_kec || ''} 
                         placeholder="Otomatis"
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-500 font-mono" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
                       />
                     </div>
                   </div>
@@ -503,7 +503,7 @@ export default function ManajemenWilayah() {
                         maxLength="3"
                         placeholder="Misal: 001"
                         className={`w-full px-3 py-2 border rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all ${
-                          modalMode === 'edit' ? 'bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed' : 'bg-white border-gray-300'
+                          modalMode === 'edit' ? 'bg-gray-100 border-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-white border-gray-300'
                         }`} 
                       />
                     </div>
@@ -545,7 +545,7 @@ export default function ManajemenWilayah() {
                     formData.kode_kel.length !== 3 ||
                     (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa)
                   }
-                  className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
+                  className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-on-surface-variant disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isSubmitting && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
                   {modalMode === 'add' ? 'Simpan Wilayah' : 'Perbarui Wilayah'}

@@ -171,7 +171,7 @@ export default function ManajemenAkunDesa() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-display-lg text-display-lg text-primary tracking-tight">
+          <h1 className=" text-display-lg text-primary tracking-tight">
             Manajemen Akun Desa
           </h1>
           <p className="text-on-surface-variant font-body-lg mt-1 opacity-80">
@@ -472,7 +472,7 @@ export default function ManajemenAkunDesa() {
                 <h2 className="text-lg font-semibold text-gray-800">
                   {modalMode === 'add' ? 'Tambah Akun Baru' : 'Edit Akun Pengguna'}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-on-surface-variant text-sm mt-1">
                   {modalMode === 'add' ? 'Lengkapi data untuk membuat akses login.' : 'Ubah informasi atau reset password pengguna.'}
                 </p>
               </div>
@@ -559,7 +559,7 @@ export default function ManajemenAkunDesa() {
                       )}
                     </div>
                     {modalMode === 'edit' && (
-                      <p className="mt-1.5 text-xs text-gray-500">
+                      <p className="mt-1.5 text-xs text-on-surface-variant">
                         Kosongkan jika tidak ingin mengubah password
                       </p>
                     )}
@@ -611,7 +611,7 @@ export default function ManajemenAkunDesa() {
                       formData.password === ''
                     ))
                   }
-                  className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
+                  className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-on-surface-variant disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isSubmitting && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}
                   {modalMode === 'add' ? 'Simpan Pengguna' : 'Simpan Perubahan'}
