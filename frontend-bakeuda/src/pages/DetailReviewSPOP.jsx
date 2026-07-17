@@ -150,9 +150,25 @@ export default function DetailReviewSPOP() {
 
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-red-500 font-medium text-lg">Data SPOP Tidak Ditemukan</p>
-        <button onClick={() => navigate(-1)} className="text-blue-600 underline">Kembali</button>
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full text-center shadow-sm flex flex-col items-center animate-fadeIn">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
+            <span className="material-symbols-outlined text-[40px] text-red-500">
+              find_in_page
+            </span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Data SPOP Tidak Ditemukan</h2>
+          <p className="text-gray-500 mb-8 leading-relaxed text-sm">
+            Berkas SPOP tidak tersedia atau Anda tidak memiliki hak akses.
+          </p>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="w-full sm:w-auto px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 shadow-sm transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+            Kembali Sebelumnya
+          </button>
+        </div>
       </div>
     );
   }
