@@ -16,7 +16,7 @@ export class TransaksiSpopService {
     const status_wp = dto.subjek_pajak.status_wp;
 
     const currentYear = new Date().getFullYear();
-    const final_status = dto.is_draft ? 'DRAFT' : 'MENUNGGU';
+    const final_status: StatusAjuan = dto.is_draft ? StatusAjuan.DRAFT : StatusAjuan.MENUNGGU;
 
     // Validasi & Pembersihan Cerdas NOP berdasarkan Jenis Transaksi
     if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi)) {
@@ -80,11 +80,14 @@ export class TransaksiSpopService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
-      // 1. (Dihapus) Tidak lagi melakukan upsert SubjekPajak di tabel Master saat submit transaksi
+      // 1. Jika ID transaksi sudah ada (submit dari draf), hapus detail lama
+      if (dto.id_transaksi) {
+        await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+        await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+        await tx.lampiranDokumen.deleteMany({ where: { id_transaksi: dto.id_transaksi } });
+      }
 
-      // 2. Buat Cangkang Transaksi
-      const transaksi = await tx.transaksiSpop.create({
-        data: {
+      const upsertData = {
           id_user,
           tahun_pajak: currentYear,
           jenis_transaksi,
@@ -142,6 +145,18 @@ export class TransaksiSpopService {
               keterangan: dto.is_draft ? 'Draft Formulir SPOP Disimpan' : 'Formulir SPOP Diajukan ke Bakeuda',
             },
           },
+      };
+
+      // 2. Buat atau Timpa Transaksi
+      const transaksi = await tx.transaksiSpop.upsert({
+        where: { id_transaksi: dto.id_transaksi || '00000000-0000-0000-0000-000000000000' },
+        update: {
+          ...upsertData,
+          updated_at: new Date(),
+        },
+        create: {
+          ...(dto.id_transaksi ? { id_transaksi: dto.id_transaksi } : {}),
+          ...upsertData,
         },
         include: {
           detail_tujuan: true,
@@ -163,7 +178,7 @@ export class TransaksiSpopService {
 
   async saveDraft(dto: CreateDraftDto, id_user: string) {
     const currentYear = new Date().getFullYear();
-    const final_status = 'DRAFT';
+    const final_status: StatusAjuan = StatusAjuan.DRAFT;
 
     const subjek = dto.subjek_pajak || {};
     const objek = dto.objek_pajak_sementara || {};

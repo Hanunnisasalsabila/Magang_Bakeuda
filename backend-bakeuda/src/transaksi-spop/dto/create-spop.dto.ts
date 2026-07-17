@@ -67,6 +67,7 @@ export class LampiranDto {
 }
 
 export class CreateSpopDto {
+  @IsOptional() @IsString() id_transaksi?: string;
   @IsOptional() @IsBoolean() is_draft?: boolean;
   @IsOptional() @IsBoolean() is_kuasa?: boolean;
 

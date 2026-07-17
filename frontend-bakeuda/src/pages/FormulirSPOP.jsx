@@ -254,11 +254,11 @@ export default function FormulirSPOP() {
             if (nopsAsal.length > 0) setNopAsalList(nopsAsal);
 
             // 1. Sanitize dummy values
-            const sanitize = (val, dummyVals) => dummyVals.includes(val) ? '' : val;
+            const sanitize = (val, dummyVals) => (!val || dummyVals.includes(val)) ? '' : val;
 
             const cleanNik = sanitize(detailTujuan?.nik_calon_subjek, ['0000000000000000', '']);
             const cleanNama = sanitize(data.nama_pengaju, ['DRAFT', '']);
-            const cleanAlamat = sanitize(subjekPajak?.alamat_jalan, ['DRAFT', '']);
+            const cleanAlamat = sanitize(subjekPajak?.alamat, ['DRAFT', '']);
             const cleanKel = sanitize(subjekPajak?.kelurahan, ['DRAFT', '']);
             const cleanKec = sanitize(subjekPajak?.kecamatan, ['DRAFT', '']);
             const cleanKab = sanitize(subjekPajak?.kabupaten, ['DRAFT', '']);
@@ -273,10 +273,13 @@ export default function FormulirSPOP() {
             }
 
             // 3. Smart Step Jump
+            const isStep2Complete = cleanNik?.length === 16 && cleanNama && subjekPajak?.status_wp && subjekPajak?.pekerjaan && cleanAlamat && cleanRt && cleanRw && cleanKel && cleanKec && cleanKab;
+            const isStep3Complete = detailTujuan?.jalan_op_baru && detailTujuan?.rt_op_baru && detailTujuan?.rw_op_baru && detailTujuan?.kelurahan_op_baru && detailTujuan?.kecamatan_op_baru && detailTujuan?.luas_tanah_baru > 0 && cleanJenisTanah;
+            
             let calculatedStep = 2;
-            if (detailTujuan && (detailTujuan.luas_tanah_baru > 0 || detailTujuan.jalan_op_baru)) {
+            if (isStep2Complete && isStep3Complete) {
               calculatedStep = 4;
-            } else if (cleanNik || cleanNama || cleanAlamat) {
+            } else if (isStep2Complete) {
               calculatedStep = 3;
             }
             setStep(calculatedStep);
@@ -323,6 +326,7 @@ export default function FormulirSPOP() {
               batasSelatan: detailTujuan?.batas_selatan || '',
               batasTimur: detailTujuan?.batas_timur || '',
               batasBarat: detailTujuan?.batas_barat || '',
+              lampiran: data.lampiran || [],
             }));
           }
         })
@@ -399,7 +403,7 @@ export default function FormulirSPOP() {
     } else if (currentStep === 2) {
       if (!formData.nik || !/^\d{16}$/.test(formData.nik)) newErrors.nik = 'NIK wajib 16 digit angka';
       
-      const namaVal = formData.nama.trim();
+      const namaVal = (formData.nama || '').trim();
       if (!namaVal || namaVal.length < 3 || namaVal.length > 100 || !/^[a-zA-Z\s.,']+$/.test(namaVal)) {
         newErrors.nama = 'Nama Wajib Pajak 3-100 karakter, hanya huruf, spasi, titik, koma, petik';
       }
@@ -415,7 +419,7 @@ export default function FormulirSPOP() {
         newErrors.noTelp = 'No. HP harus diawali 08/62, total 10-15 digit angka';
       }
 
-      const alamatVal = formData.alamat.trim();
+      const alamatVal = (formData.alamat || '').trim();
       if (!alamatVal || alamatVal.length < 5 || alamatVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(alamatVal)) {
         newErrors.alamat = 'Alamat 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
@@ -423,7 +427,7 @@ export default function FormulirSPOP() {
       if (!formData.rt || !/^\d{1,3}$/.test(formData.rt)) newErrors.rt = 'RT wajib 1-3 digit angka';
       if (!formData.rw || !/^\d{1,3}$/.test(formData.rw)) newErrors.rw = 'RW wajib 1-3 digit angka';
 
-      const kelVal = formData.kelurahan.trim();
+      const kelVal = (formData.kelurahan || '').trim();
       if (!kelVal || kelVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kelVal)) {
         newErrors.kelurahan = 'Kelurahan maksimal 100 karakter, hanya huruf, angka, spasi';
       }
@@ -433,7 +437,7 @@ export default function FormulirSPOP() {
         newErrors.kecamatan = 'Kecamatan maksimal 100 karakter, hanya huruf, angka, spasi';
       }
       
-      const kabVal = formData.kabupaten.trim();
+      const kabVal = (formData.kabupaten || '').trim();
       if (!kabVal || kabVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kabVal)) {
         newErrors.kabupaten = 'Kabupaten maksimal 100 karakter, hanya huruf, angka, spasi';
       }
@@ -448,7 +452,7 @@ export default function FormulirSPOP() {
       if (formData.kodePos && !/^\d{5}$/.test(formData.kodePos)) newErrors.kodePos = 'Kode Pos harus 5 digit angka';
       
     } else if (currentStep === 3) {
-      const jalanOpVal = formData.alamatObjek.trim();
+      const jalanOpVal = (formData.alamatObjek || '').trim();
       if (!jalanOpVal || jalanOpVal.length < 5 || jalanOpVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(jalanOpVal)) {
         newErrors.alamatObjek = 'Jalan OP 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
@@ -586,7 +590,10 @@ export default function FormulirSPOP() {
         batas_timur_nop: formData.batasTimur || undefined,
         batas_barat_nop: formData.batasBarat || undefined
       },
-      lampiran: formData.lampiran.length > 0 ? formData.lampiran : undefined,
+      lampiran: formData.lampiran.length > 0 ? formData.lampiran.map(l => ({
+        jenis_dokumen: l.jenis_dokumen,
+        url_file: l.url_file
+      })) : undefined,
     };
   };
 
@@ -1332,6 +1339,7 @@ export default function FormulirSPOP() {
                       type="number"
                       value={formData.luasTanah}
                       onChange={(e) => handleTextChange('luasTanah', e)}
+                      onWheel={(e) => e.target.blur()}
                       className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
                       placeholder="Contoh: 150"
                     />
@@ -1394,6 +1402,7 @@ export default function FormulirSPOP() {
                         min="0"
                         value={formData.jenisTanah !== 'TANAH_BANGUNAN' ? '0' : formData.jumlahBangunan}
                         onChange={(e) => handleTextChange('jumlahBangunan', e)}
+                        onWheel={(e) => e.target.blur()}
                         disabled={formData.jenisTanah !== 'TANAH_BANGUNAN'}
                         className={`w-full h-12 border ${errors.jumlahBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm ${formData.jenisTanah !== 'TANAH_BANGUNAN' ? 'bg-surface-container-lowest cursor-not-allowed opacity-70' : ''}`}
                         placeholder="Contoh: 1"
