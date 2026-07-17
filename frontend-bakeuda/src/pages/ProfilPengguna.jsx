@@ -9,6 +9,7 @@ export default function ProfilPengguna({ role }) {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activities, setActivities] = useState([]);
 
   // Password change states (admin only)
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -81,7 +82,18 @@ export default function ProfilPengguna({ role }) {
       }
     };
 
+    const fetchActivities = async () => {
+      try {
+        const response = await api.get('/activities');
+        setActivities(response.data);
+      } catch (err) {
+        console.error('Activities fetch error:', err);
+      }
+    };
+
     fetchProfile();
+    fetchActivities();
+    
   }, []);
 
   const handleSaveProfile = async () => {
@@ -97,9 +109,9 @@ export default function ProfilPengguna({ role }) {
     
     setIsSaving(true);
     try {
-      await api.put(`/users/${profileData.id}`, {
+      await api.put('/auth/me', {
         nama_lengkap: editForm.name,
-        nip: editForm.nip || null,
+        nip: editForm.nip || '',
       });
       setProfileData(prev => ({
         ...prev,
@@ -108,6 +120,10 @@ export default function ProfilPengguna({ role }) {
       }));
       setIsEditing(false);
       setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+      api.post('/activities', { type: 'edit', title: 'Memperbarui informasi profil akun' }).catch(() => {});
+      // Refresh activities
+      const res = await api.get('/activities').catch(() => null);
+      if (res) setActivities(res.data);
     } catch (err) {
       setToast({ show: true, message: err.response?.data?.message || 'Gagal memperbarui profil', type: 'error' });
     } finally {
@@ -134,6 +150,10 @@ export default function ProfilPengguna({ role }) {
       setShowPasswordModal(false);
       setPasswordForm({ old: '', new: '', confirm: '' });
       setToast({ show: true, message: 'Kata sandi berhasil diubah', type: 'success' });
+      api.post('/activities', { type: 'edit', title: 'Berhasil mengubah kata sandi akun' }).catch(() => {});
+      // Refresh activities
+      const res = await api.get('/activities').catch(() => null);
+      if (res) setActivities(res.data);
     } catch (err) {
       setToast({ show: true, message: err.response?.data?.message || 'Gagal mengubah kata sandi', type: 'error' });
     } finally {
@@ -160,6 +180,43 @@ export default function ProfilPengguna({ role }) {
       <p className="text-on-surface-variant text-sm">Coba muat ulang halaman ini.</p>
     </div>
   );
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    const timeString = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit yang lalu`;
+    
+    const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    if (isToday) return `Hari ini, ${timeString}`;
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth() && date.getFullYear() === yesterday.getFullYear();
+    if (isYesterday) return `Kemarin, ${timeString}`;
+
+    return `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${timeString}`;
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'login': return { icon: 'login', color: 'text-blue-600', bg: 'bg-blue-100' };
+      case 'view': return { icon: 'visibility', color: 'text-purple-600', bg: 'bg-purple-100' };
+      case 'submit': return { icon: 'description', color: 'text-green-600', bg: 'bg-green-100' };
+      case 'verify': return { icon: 'fact_check', color: 'text-green-600', bg: 'bg-green-100' };
+      case 'edit': 
+      case 'update': return { icon: 'edit', color: 'text-orange-600', bg: 'bg-orange-100' };
+      case 'create': return { icon: 'add_circle', color: 'text-emerald-600', bg: 'bg-emerald-100' };
+      case 'delete': return { icon: 'delete', color: 'text-red-600', bg: 'bg-red-100' };
+      default: return { icon: 'info', color: 'text-gray-600', bg: 'bg-gray-100' };
+    }
+  };
 
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto w-full pb-16 animate-fadeIn">
@@ -209,7 +266,7 @@ export default function ProfilPengguna({ role }) {
           </div>
         </section>
 
-        {/* Main grid: Informasi Pribadi (wide) + Keamanan Akun / Wilayah Tugas (narrow) */}
+        {/* Main grid: Informasi Pribadi (wide) + Keamanan Akun (narrow) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
 
           {/* Informasi Pribadi */}
@@ -278,13 +335,22 @@ export default function ProfilPengguna({ role }) {
                   {profileData.role || '-'}
                 </div>
               </div>
-              <div className="sm:col-span-2 space-y-1">
+              <div className={`${isDesa ? 'sm:col-span-1' : 'sm:col-span-2'} space-y-1`}>
                 <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Unit Kerja / Departemen</label>
                 <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[15px] opacity-60">lock</span>
+                  <span className="material-symbols-outlined text-[15px] opacity-60">work</span>
                   {profileData.dept || '-'}
                 </div>
               </div>
+              {isDesa && (
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kode Wilayah</label>
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px] opacity-60">tag</span>
+                    {profileData.kode_wilayah || '-'}
+                  </div>
+                </div>
+              )}
             </div>
 
             {isEditing && (
@@ -310,9 +376,10 @@ export default function ProfilPengguna({ role }) {
             )}
           </section>
 
-          {/* Keamanan Akun - Admin only, narrow column beside Informasi Pribadi */}
-          {!isDesa && (
-            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
+          {/* Right Column: Keamanan Akun */}
+          <div className="lg:col-span-1 flex flex-col gap-5">
+            {/* Keamanan Akun - Available for both roles */}
+            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm flex flex-col h-full flex-1">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                   <span className="material-symbols-outlined text-primary text-[20px]">security</span>
@@ -343,39 +410,7 @@ export default function ProfilPengguna({ role }) {
                 Status akun aktif
               </div>
             </section>
-          )}
-
-          {/* Wilayah Tugas - Desa only, narrow column, memakai kode_wilayah yang sudah ada di profileData */}
-          {isDesa && (
-            <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm lg:col-span-1 flex flex-col h-full">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-primary text-[20px]">location_on</span>
-                </div>
-                <h3 className="text-base font-semibold text-on-surface">Wilayah Tugas</h3>
-              </div>
-              <div className="space-y-3 flex-1">
-                <div className="space-y-1">
-                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kecamatan</label>
-                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[15px] opacity-60">map</span>
-                    {profileData.dept?.replace('Kecamatan ', '') || '-'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kode Wilayah</label>
-                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[15px] opacity-60">tag</span>
-                    {profileData.kode_wilayah || '-'}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-auto pt-5 flex items-center gap-2 text-[11px] text-on-surface-variant">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                Status akun aktif
-              </div>
-            </section>
-          )}
+          </div>
         </div>
 
         {/* Aktivitas Terakhir / Riwayat Login - both roles. For Desa, the "dikelola admin" note lives as a compact footer inside this same card so the page doesn't feel like disconnected empty blocks. */}
@@ -388,20 +423,39 @@ export default function ProfilPengguna({ role }) {
               <h3 className="text-base font-semibold text-on-surface">Aktivitas Terakhir</h3>
             </div>
           </div>
-
-          {/* Placeholder — belum ada endpoint riwayat login/aktivitas, tinggal sambungkan ke API saat tersedia */}
-          <div className="flex flex-col items-center text-center gap-1.5 py-6 border-b border-outline-variant/40">
-            <span className="material-symbols-outlined text-2xl text-on-surface-variant/40">manage_history</span>
-            <p className="text-sm text-on-surface-variant">Belum ada data riwayat aktivitas untuk ditampilkan.</p>
-            <p className="text-xs text-on-surface-variant/60">Riwayat login dan perubahan data akan muncul di sini.</p>
+          {/* Activities List */}
+          <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
+            {activities.length > 0 ? activities.map((activity) => {
+              const { icon, color, bg } = getActivityIcon(activity.type);
+              return (
+                <div key={activity.id_activity} className="flex items-start gap-3 p-3 rounded-xl hover:bg-surface-container/50 transition-colors border border-transparent hover:border-outline-variant/40">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
+                    <span className={`material-symbols-outlined text-[20px] ${color}`}>
+                      {icon}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-on-surface">{activity.title}</p>
+                    <p className="text-[11px] text-on-surface-variant mt-0.5">{formatTime(activity.created_at)}</p>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="flex flex-col items-center text-center gap-1.5 py-6">
+                <span className="material-symbols-outlined text-2xl text-on-surface-variant/40">manage_history</span>
+                <p className="text-sm text-on-surface-variant">Belum ada riwayat aktivitas.</p>
+              </div>
+            )}
           </div>
 
           {isDesa && (
-            <div className="flex items-start gap-3 pt-4">
-              <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                <span className="font-medium text-on-surface">Profil dikelola oleh Admin BKD.</span> Jika terdapat kesalahan data atau perlu perubahan, silakan hubungi Admin BKD Kabupaten Purbalingga.
-              </p>
+            <div className="mt-5 pt-4 border-t border-outline-variant/40 bg-surface-container/30 rounded-lg p-3">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
+                <p className="text-sm text-on-surface-variant leading-relaxed">
+                  <span className="font-medium text-on-surface">Profil dikelola oleh Admin BKD.</span> Jika terdapat kesalahan data atau perlu perubahan, silakan hubungi Admin BKD Kabupaten Purbalingga.
+                </p>
+              </div>
             </div>
           )}
         </section>
@@ -453,7 +507,7 @@ export default function ProfilPengguna({ role }) {
                     value={passwordForm.new}
                     onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
                     className="w-full bg-surface-container border border-outline-variant rounded-xl pl-10 pr-12 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                    placeholder="Minimal 6 karakter"
+                    placeholder="Minimal 8 karakter"
                   />
                   {passwordForm.new.length > 0 && (
                     <button type="button" onClick={() => setShowNewPwd(!showNewPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-primary rounded-full">
@@ -484,7 +538,7 @@ export default function ProfilPengguna({ role }) {
 
               <button
                 type="submit"
-                disabled={isChangingPwd || !passwordForm.old || !passwordForm.new || !passwordForm.confirm || passwordForm.new.length < 6 || passwordForm.new !== passwordForm.confirm}
+                disabled={isChangingPwd || !passwordForm.old || !passwordForm.new || !passwordForm.confirm || passwordForm.new.length < 8 || passwordForm.new !== passwordForm.confirm}
                 className="w-full py-2.5 font-bold bg-primary text-on-primary rounded-xl mt-4 hover:bg-primary/90 transition-all flex justify-center items-center gap-2 shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
               >
                 {isChangingPwd && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}

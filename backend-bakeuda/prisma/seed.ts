@@ -10,14 +10,14 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // 0. Buat Data Wilayah dari wilayahData.json
+  console.log('🌱 Memulai proses seeding database...');
+
+  // 1. Buat Data Wilayah dari wilayahData.json
   const wilayahDataPath = path.join(process.cwd(), '..', 'frontend-bakeuda', 'src', 'utils', 'wilayahData.json');
   const wilayahDataRaw = fs.readFileSync(wilayahDataPath, 'utf8');
   const wilayahData = JSON.parse(wilayahDataRaw);
 
-  console.log(`Menyimpan ${wilayahData.length} data wilayah...`);
-  
-  // Menggunakan createMany untuk mempercepat jika belum ada, atau upsert jika perlu
+  console.log(`🗺️ Menyimpan ${wilayahData.length} data wilayah...`);
   for (const w of wilayahData) {
     await prisma.wilayah.upsert({
       where: { kode_wilayah: w.kode_wilayah },
@@ -33,78 +33,80 @@ async function main() {
       },
     });
   }
-  console.log('✅ Berhasil insert wilayah.');
+  console.log('✅ Berhasil insert data wilayah.');
 
-  // 1. Buat Data Pejabat Desa Dummy
-  await prisma.pejabatDesa.upsert({
-    where: { nip: '198001012010011001' },
-    update: {},
+  // ==========================================
+  // LOGIKA 1: SUPER ADMIN (BAKEUDA)
+  // Super Admin jumlahnya terbatas (biasanya hanya 1 atau beberapa orang di dinas pusat).
+  // Mereka tidak terikat wilayah tertentu (kode_wilayah = null).
+  // Oleh karena itu, akun mereka biasanya di-hardcode (dibuat manual) saat awal aplikasi berdiri.
+  // ==========================================
+  const adminPassword = await bcrypt.hash('AdminBakeuda2026!', 10);
+
+  await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: { password_hash: adminPassword }, // Pastikan update passwordnya sesuai WA teman
     create: {
-      nip: '198001012010011001',
-      nama_pejabat: 'Budi Santoso',
-      jabatan: 'Kepala Desa',
-      kode_wilayah: '3303012001',
+      nama_lengkap: 'Super Admin Utama BAKEUDA',
+      username: 'admin',
+      password_hash: adminPassword,
+      role: Role.BAKEUDA,
+      is_active: true,
+      force_change_password: true,
     },
   });
 
-  await prisma.pejabatDesa.upsert({
-    where: { nip: '198502022015022002' },
-    update: {},
-    create: {
-      nip: '198502022015022002',
-      nama_pejabat: 'Siti Aminah',
-      jabatan: 'Sekretaris Desa',
-      kode_wilayah: '3303012001',
-    },
-  });
+  console.log('✅ Berhasil membuat akun Super Admin Bakeuda.');
 
-  // 2. Cek apakah admin BAKEUDA sudah ada (Idempotent check)
-  const adminExists = await prisma.user.findFirst({
-    where: { role: Role.BAKEUDA },
-  });
+  // ==========================================
+  // LOGIKA 2: PERANGKAT DESA
+  // Akun desa jumlahnya sangat banyak (sebanyak jumlah desa x jumlah perangkat).
+  // Mereka terikat kuat pada SATU desa (punya kode_wilayah).
+  // Kita buatkan sistem otomatis (generator) berdasarkan daftar wilayah.
+  // ==========================================
+  // Hapus semua akun DESA lama agar tidak terjadi duplikasi saat re-seed
+  await prisma.user.deleteMany({ where: { role: Role.DESA } });
+  await prisma.pejabatDesa.deleteMany();
 
-  if (adminExists) {
-    console.log('✅ Seeder dilewati: Admin BAKEUDA sudah ada di database.');
-    return;
+  console.log('👥 Sedang men-generate akun perangkat desa (1 akun per desa = 239 Akun)...');
+  const desaPassword = await bcrypt.hash('BakeudaDesa2026!', 12);
+
+  for (const w of wilayahData) {
+    if (!w.nama_desa) continue;
+
+    const cleanNamaDesa = w.nama_desa.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+    const cleanKecamatan = w.kecamatan.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+    const usernameDesa = `desa_${cleanNamaDesa}_${cleanKecamatan}`;
+
+    await prisma.user.upsert({
+      where: { username: usernameDesa },
+      update: {},
+      create: {
+        nama_lengkap: `Perangkat Desa ${w.nama_desa} (Kec. ${w.kecamatan})`,
+        username: usernameDesa,
+        password_hash: desaPassword,
+        role: Role.DESA,
+        kode_wilayah: w.kode_wilayah, 
+        is_active: true,
+        force_change_password: false,
+      },
+    });
+
+    const nipDummy = `${w.kode_wilayah}001`; 
+    await prisma.pejabatDesa.upsert({
+      where: { nip: nipDummy },
+      update: {},
+      create: {
+        nip: nipDummy,
+        nama_pejabat: `Kepala Desa ${w.nama_desa}`,
+        jabatan: 'Kepala Desa',
+        kode_wilayah: w.kode_wilayah,
+      },
+    });
   }
 
-  // 2. Gunakan password dari ENV, atau generate password random sementara
-  const rawPassword = 'Bakeuda2026!';
-  const hashedPassword = await bcrypt.hash(rawPassword, 12);
-
-  // 3. Buat Admin BAKEUDA default
-  const adminBakeuda = await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      nama_lengkap: 'Super Admin BAKEUDA',
-      username: 'admin',
-      password_hash: hashedPassword,
-      role: Role.BAKEUDA,
-      force_change_password: true,
-    },
-  });
-
-  // 4. Buat akun DESA untuk testing
-  const desa = await prisma.user.upsert({
-    where: { username: 'desa01' },
-    update: {},
-    create: {
-      nama_lengkap: 'Perangkat Desa 01',
-      username: 'desa01',
-      password_hash: hashedPassword,
-      role: Role.DESA,
-      kode_wilayah: '3303012001',
-      force_change_password: true,
-    },
-  });
-
-  console.log('✅ Seeder berhasil dijalankan!');
-  console.log('---');
-  console.log(`👤 Username : ${adminBakeuda.username}`);
-  console.log(`🔑 Password : ${rawPassword}`);
-  console.log('---');
-  console.log('⚠️  HARAP SIMPAN PASSWORD INI. Anda akan dipaksa untuk mengubahnya pada saat login pertama.');
+  console.log('✅ Berhasil men-generate ribuan akun Perangkat Desa.');
+  console.log('--- SEEDING SELESAI ---');
 }
 
 main()

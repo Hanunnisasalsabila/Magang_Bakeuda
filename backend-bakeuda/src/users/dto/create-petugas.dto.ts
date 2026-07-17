@@ -14,6 +14,9 @@ export class CreatePetugasDto {
 
   @IsString()
   @MinLength(8, { message: 'Password minimal 8 karakter' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/, {
+    message: 'Password harus mengandung huruf besar, huruf kecil, angka, dan simbol',
+  })
   password: string;
 
   @IsString()

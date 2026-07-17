@@ -37,7 +37,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
   }).sort((a, b) => a.nama_desa.localeCompare(b.nama_desa)) : [];
 
   const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const defaultPassword = `bakeuda${new Date().getFullYear()}`;
+  const defaultPassword = `BakeudaDesa${new Date().getFullYear()}!`;
 
   // Build the print HTML content as a standalone document
   const buildPrintHTML = () => {

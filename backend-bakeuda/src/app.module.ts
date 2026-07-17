@@ -14,6 +14,7 @@ import { SpptModule } from './sppt/sppt.module.js';
 import { ReferensiJpbModule } from './referensi-jpb/referensi-jpb.module.js';
 import { TransaksiSpopModule } from './transaksi-spop/transaksi-spop.module.js';
 import { PejabatDesaModule } from './pejabat-desa/pejabat-desa.module.js';
+import { ActivitiesModule } from './activities/activities.module.js';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PejabatDesaModule } from './pejabat-desa/pejabat-desa.module.js';
     ReferensiJpbModule,
     TransaksiSpopModule,
     PejabatDesaModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -24,6 +24,7 @@ model User {
   transaksi_di_review    TransaksiSpop[]   @relation("ReviewerUser")
   lampiran_diupload      LampiranDokumen[] @relation("UploadedByUser")
   sppt_digenerate        Sppt[]            @relation("GeneratedByUser")
+  aktivitas_user         UserActivity[]
 
   @@map("users")
 }

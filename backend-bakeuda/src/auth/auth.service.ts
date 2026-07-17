@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ActivitiesService } from '../activities/activities.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 
@@ -10,6 +11,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private activitiesService: ActivitiesService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -38,6 +40,12 @@ export class AuthService {
     };
 
     const token = this.jwtService.sign(payload);
+
+    // Log the activity asynchronously
+    this.activitiesService.create(user.id_user, {
+      type: 'login',
+      title: 'Berhasil masuk ke sistem SIPD Purbalingga',
+    }).catch(err => console.error('Failed to log activity:', err));
 
     return {
       success: true,
@@ -78,6 +86,8 @@ export class AuthService {
       },
     });
 
+    await this.activitiesService.logActivity(userId, 'update', 'Memperbarui kata sandi akun');
+
     return {
       success: true,
       message: 'Password berhasil diubah. Silakan gunakan password baru untuk login.',
@@ -108,6 +118,26 @@ export class AuthService {
     return {
       success: true,
       data: user,
+    };
+  }
+
+  async updateProfile(userId: string, dto: { nama_lengkap: string; nip?: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id_user: userId } });
+    if (!user) throw new UnauthorizedException('User tidak ditemukan');
+
+    await this.prisma.user.update({
+      where: { id_user: userId },
+      data: {
+        nama_lengkap: dto.nama_lengkap,
+        nip: dto.nip,
+      },
+    });
+
+    await this.activitiesService.logActivity(userId, 'update', 'Memperbarui informasi profil akun');
+
+    return {
+      success: true,
+      message: 'Profil berhasil diperbarui',
     };
   }
 }

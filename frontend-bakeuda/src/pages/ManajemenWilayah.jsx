@@ -5,8 +5,8 @@ import ToastNotification from '../components/ToastNotification';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function ManajemenWilayah() {
-  const [wilayahList, setWilayahList] = useState(wilayahData);
-  const [isLoading, setIsLoading] = useState(false);
+  const [wilayahList, setWilayahList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,16 +38,26 @@ export default function ManajemenWilayah() {
   const KECAMATAN_DATA = React.useMemo(() => {
     const map = new Map();
     wilayahList.forEach(w => {
-      if (w.kecamatan && w.kode_kec && !map.has(w.kecamatan)) {
-        map.set(w.kecamatan, w.kode_kec);
+      if (w.kecamatan && w.kode_wilayah && w.kode_wilayah.length >= 10 && !map.has(w.kecamatan)) {
+        map.set(w.kecamatan, w.kode_wilayah.substring(4, 7));
       }
     });
     return Array.from(map.entries()).map(([nama, kode]) => ({ nama, kode })).sort((a,b) => a.nama.localeCompare(b.nama));
   }, [wilayahList]);
 
   const fetchWilayah = async () => {
-    // Diganti menggunakan data JSON lokal agar tidak membebani backend yang masih dummy
-    setWilayahList(wilayahData);
+    setIsLoading(true);
+    try {
+      const res = await api.get('/wilayah');
+      if (res.data.success) {
+        setWilayahList(res.data.data);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Gagal memuat data wilayah dari server');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -444,10 +454,9 @@ export default function ManajemenWilayah() {
                         <select 
                           name="kecamatan" 
                           required 
-                          disabled={modalMode === 'edit'}
                           value={formData.kecamatan} 
                           onChange={handleKecamatanChange}
-                          className={`w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none ${modalMode === 'edit' ? 'bg-gray-100 cursor-not-allowed text-on-surface-variant' : 'cursor-pointer'}`}
+                          className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none bg-none cursor-pointer"
                         >
                           <option value="">Pilih Kecamatan</option>
                           {KECAMATAN_DATA.map((kec) => (
@@ -497,14 +506,11 @@ export default function ManajemenWilayah() {
                         type="text" 
                         name="kode_kel" 
                         required 
-                        disabled={modalMode === 'edit'}
                         value={formData.kode_kel} 
                         onChange={handleChange}
                         maxLength="3"
                         placeholder="Misal: 001"
-                        className={`w-full px-3 py-2 border rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all ${
-                          modalMode === 'edit' ? 'bg-gray-100 border-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-white border-gray-300'
-                        }`} 
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
                       />
                     </div>
                   </div>
@@ -543,7 +549,7 @@ export default function ManajemenWilayah() {
                     !formData.nama_desa || 
                     !formData.kode_kel || 
                     formData.kode_kel.length !== 3 ||
-                    (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa)
+                    (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa && formData.kecamatan === selectedWilayah.kecamatan && formData.kode_kel === (selectedWilayah.kode_wilayah ? selectedWilayah.kode_wilayah.substring(7, 10) : ''))
                   }
                   className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-on-surface-variant disabled:cursor-not-allowed disabled:shadow-none"
                 >
