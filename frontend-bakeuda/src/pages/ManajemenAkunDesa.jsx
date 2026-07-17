@@ -144,8 +144,25 @@ export default function ManajemenAkunDesa() {
     }
   };
 
+  const formatNIP = (value) => {
+    if (!value) return '';
+    let val = value.replace(/\D/g, '');
+    val = val.substring(0, 18);
+    let formatted = '';
+    if (val.length > 0) formatted += val.substring(0, 8);
+    if (val.length > 8) formatted += ' ' + val.substring(8, 14);
+    if (val.length > 14) formatted += ' ' + val.substring(14, 15);
+    if (val.length > 15) formatted += ' ' + val.substring(15, 18);
+    return formatted;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'nip') {
+      setFormData({ ...formData, [name]: formatNIP(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSort = (key) => {
@@ -537,8 +554,9 @@ export default function ManajemenAkunDesa() {
                       name="nip" 
                       value={formData.nip} 
                       onChange={handleChange}
-                      placeholder="Contoh: 198501012010011001"
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all font-mono" 
+                      placeholder="Contoh: 19850101 201001 1 001"
+                      maxLength={21}
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all text-gray-900" 
                     />
                   </div>
                   <div>

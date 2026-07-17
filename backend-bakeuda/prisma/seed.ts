@@ -17,6 +17,11 @@ async function main() {
   const wilayahDataRaw = fs.readFileSync(wilayahDataPath, 'utf8');
   const wilayahData = JSON.parse(wilayahDataRaw);
 
+  console.log(`🗺️ Menghapus data lama...`);
+  await prisma.user.deleteMany({});
+  await prisma.pejabatDesa.deleteMany({});
+  await prisma.wilayah.deleteMany({});
+
   console.log(`🗺️ Menyimpan ${wilayahData.length} data wilayah...`);
   for (const w of wilayahData) {
     await prisma.wilayah.upsert({

@@ -8,10 +8,9 @@ export default function DashboardAdmin() {
   const navigate = useNavigate();
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
   const [bentoCards, setBentoCards] = useState([
-    { title: 'Pengajuan Masuk', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
-    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
-    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
-    { title: 'Tingkat Kepatuhan', value: '0%', icon: 'verified', progress: 0, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
+    { title: 'Pengajuan Masuk', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary', link: '/antrean-verifikasi' },
+    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
   ]);
 
   const [verifiers, setVerifiers] = useState([]);
@@ -29,10 +28,9 @@ export default function DashboardAdmin() {
         
         const dataStats = statsRes.data.data;
         setBentoCards([
-          { title: 'Pengajuan Masuk', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary' },
-          { title: 'Menunggu Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error' },
-          { title: 'Total Objek Pajak', value: (dataStats.totalObjek || 0).toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary' },
-          { title: 'Tingkat Kepatuhan', value: `${dataStats.kepatuhan || 0}%`, icon: 'verified', progress: dataStats.kepatuhan || 0, meta: 'Verifikasi tepat waktu', bgIcon: 'bg-secondary-container text-on-secondary-container' },
+          { title: 'Pengajuan Masuk', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary', link: '/antrean-verifikasi' },
+          { title: 'Menunggu Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+          { title: 'Total Objek Pajak', value: (dataStats.totalObjek || 0).toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
         ]);
 
         if (usersRes.data && usersRes.data.success) {
@@ -64,7 +62,7 @@ export default function DashboardAdmin() {
 
 
 
-  const barChartData = [
+  const barChartData = activeSelect === 'Minggu Ini' ? [
     { label: 'SEN', height: '60%', value: 120, title: 'Senin: 120' },
     { label: 'SEL', height: '80%', value: 156, title: 'Selasa: 156' },
     { label: 'RAB', height: '40%', value: 80, title: 'Rabu: 80' },
@@ -72,6 +70,11 @@ export default function DashboardAdmin() {
     { label: 'JUM', height: '75%', value: 145, title: 'Jumat: 145' },
     { label: 'SAB', height: '20%', value: 40, title: 'Sabtu: 40' },
     { label: 'MIN', height: '10%', value: 12, title: 'Minggu: 12' },
+  ] : [
+    { label: 'MG 1', height: '50%', value: 320, title: 'Minggu 1: 320' },
+    { label: 'MG 2', height: '85%', value: 500, title: 'Minggu 2: 500' },
+    { label: 'MG 3', height: '40%', value: 250, title: 'Minggu 3: 250' },
+    { label: 'MG 4', height: '70%', value: 410, title: 'Minggu 4: 410' },
   ];
 
   const getInitials = (name) => {
@@ -112,9 +115,9 @@ export default function DashboardAdmin() {
       </div>
 
       {/* Bento Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {bentoCards.map((card, i) => (
-          <div key={i} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-md transition-shadow">
+          <div key={i} onClick={() => navigate(card.link)} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-lg ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-primary-container text-on-primary-container').replace('bg-error-container text-error', 'bg-error-container text-error').replace('bg-secondary-container text-on-secondary-container', 'bg-secondary-container text-on-secondary-container')}`}>
                 <span className="material-symbols-outlined">{card.icon}</span>
@@ -139,29 +142,30 @@ export default function DashboardAdmin() {
         ))}
       </div>
 
-      {/* Main Layout: Chart and Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+      {/* Main Layout: Chart */}
+      <div className="grid grid-cols-1 gap-gutter">
         {/* Trend Chart Section */}
-        <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6 flex flex-col shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-lg text-on-surface font-bold">
                 Tren Pengajuan SPOP
               </h3>
-              <p className="text-on-surface-variant text-sm">Statistik 7 hari terakhir</p>
+              <p className="text-on-surface-variant text-sm">Statistik pengajuan berdasarkan periode</p>
             </div>
             <select
               value={activeSelect}
               onChange={(e) => setActiveSelect(e.target.value)}
-              className="bg-white text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 pr-8 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              className="bg-white text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 pr-8 focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm"
             >
               <option>Minggu Ini</option>
               <option>Bulan Ini</option>
             </select>
           </div>
-          <div className="h-64 flex items-end justify-between gap-3 px-2 relative border-b border-gray-200 pb-2">
+          <div className="h-72 flex items-end justify-between gap-4 px-4 relative border-b border-gray-200 pb-2 mt-4">
             {/* Chart Gridlines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
+              <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
               <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
               <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
               <div className="border-t border-gray-200 border-dashed w-full h-0"></div>
@@ -171,47 +175,13 @@ export default function DashboardAdmin() {
             {barChartData.map((bar, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group relative z-10">
                 <div
-                  className="w-full bg-blue-100 hover:bg-blue-500 rounded-t transition-colors duration-200 cursor-pointer"
+                  className="w-full max-w-[80px] bg-blue-100 hover:bg-blue-500 rounded-t-md transition-all duration-300 cursor-pointer shadow-sm"
                   style={{ height: bar.height }}
                   title={bar.title}
                 />
-                <span className="text-[10px] text-on-surface-variant font-bold">{bar.label}</span>
+                <span className="text-[11px] text-on-surface-variant font-bold">{bar.label}</span>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Verifiers active state list */}
-        <div className="bg-white border border-gray-200 rounded-xl flex flex-col justify-between shadow-sm">
-          <div>
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg text-on-surface font-bold">
-                Petugas Verifikator
-              </h3>
-              <p className="text-on-surface-variant text-sm">Status aktif saat ini</p>
-            </div>
-            <div className="p-6 space-y-4">
-              {verifiers.map((verifier, i) => (
-                <div key={i} className={`flex items-center gap-3 ${verifier.status === 'offline' ? 'opacity-60' : ''}`}>
-                  <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center border border-blue-200 shadow-sm flex-shrink-0 text-sm">
-                    {getInitials(verifier.name)}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <p className="text-sm font-semibold text-on-surface truncate">{verifier.name}</p>
-                    <p className="text-[11px] text-on-surface-variant truncate">{verifier.role}</p>
-                  </div>
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${verifier.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-            <button 
-              onClick={() => navigate('/manajemen-akun-desa')}
-              className="w-full py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-colors shadow-sm"
-            >
-              Lihat Semua
-            </button>
           </div>
         </div>
       </div>

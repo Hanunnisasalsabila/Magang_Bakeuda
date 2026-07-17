@@ -439,7 +439,7 @@ export default function ManajemenWilayah() {
                         type="text" 
                         disabled
                         value={`${formData.kode_propinsi}${formData.kode_dati2}`} 
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-900" 
                       />
                     </div>
                   </div>
@@ -472,7 +472,7 @@ export default function ManajemenWilayah() {
                         disabled
                         value={formData.kode_kecamatan || 'Otomatis'} 
                         placeholder="Otomatis"
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-900" 
                       />
                     </div>
                   </div>
@@ -507,7 +507,7 @@ export default function ManajemenWilayah() {
                         onChange={handleChange}
                         maxLength="3"
                         placeholder="Misal: 001"
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all text-gray-900" 
                       />
                     </div>
                   </div>
@@ -525,7 +525,7 @@ export default function ManajemenWilayah() {
                     disabled
                     value={formData.kode_wilayah || ''} 
                     placeholder="Menunggu data lengkap"
-                    className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 text-primary rounded-md font-mono shadow-sm outline-none cursor-not-allowed font-bold text-center sm:text-lg" 
+                    className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 text-gray-900 rounded-md shadow-sm outline-none cursor-not-allowed text-center sm:text-lg" 
                   />
                 </div>
               </div>
