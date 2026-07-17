@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { StatusAjuan, Pekerjaan, StatusWp } from '@prisma/client';
+import { StatusAjuan, Pekerjaan, StatusWp, KondisiBangunan, JenisKonstruksi, JenisAtap, JenisDinding, JenisLantai, JenisLangitLangit } from '@prisma/client';
 import { CreateSpopDto } from './dto/create-spop.dto.js';
 import { CreateDraftDto } from './dto/create-draft.dto.js';
 import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
@@ -625,7 +625,7 @@ export class TransaksiSpopService {
               blok_kav_no_subjek: subjekTemp.blok_kav_no,
               rt: subjekTemp.rt,
               rw: subjekTemp.rw,
-              kode_wilayah: subjekTemp.kode_wilayah || finalNop.substring(0, 10),
+              kode_wilayah: subjekTemp.kode_wilayah || '3303000000',
               kode_pos: subjekTemp.kode_pos,
             },
             create: {
@@ -640,7 +640,7 @@ export class TransaksiSpopService {
               blok_kav_no_subjek: subjekTemp.blok_kav_no,
               rt: subjekTemp.rt,
               rw: subjekTemp.rw,
-              kode_wilayah: subjekTemp.kode_wilayah || finalNop.substring(0, 10),
+              kode_wilayah: subjekTemp.kode_wilayah || '3303000000',
               kode_pos: subjekTemp.kode_pos,
               created_by: idVerifikator,
             }
@@ -675,6 +675,7 @@ export class TransaksiSpopService {
               blok_kav_no: tujuan.blok_kav_no_baru,
               rw_op: tujuan.rw_op_baru,
               rt_op: tujuan.rt_op_baru,
+
               jenis_tanah: tujuan.jenis_tanah_baru,
               luas_tanah: tujuan.luas_tanah_baru,
               luas_bangunan: tujuan.luas_bangunan_baru,
@@ -693,6 +694,7 @@ export class TransaksiSpopService {
               blok_kav_no: tujuan.blok_kav_no_baru,
               rw_op: tujuan.rw_op_baru,
               rt_op: tujuan.rt_op_baru,
+
               jenis_tanah: tujuan.jenis_tanah_baru,
               luas_tanah: tujuan.luas_tanah_baru,
               luas_bangunan: tujuan.luas_bangunan_baru,
@@ -733,12 +735,12 @@ export class TransaksiSpopService {
                 tahun_dibangun: bng.tahunDibangun ? parseInt(bng.tahunDibangun) : null,
                 tahun_renovasi: bng.tahunDirenovasi ? parseInt(bng.tahunDirenovasi) : null,
                 daya_listrik_watt: bng.dayaListrik ? parseInt(bng.dayaListrik) : null,
-                kondisi_bangunan: bng.kondisi === 'Sangat Baik' ? 'SANGAT_BAIK' : (bng.kondisi === 'Baik' ? 'BAIK' : (bng.kondisi === 'Sedang' ? 'SEDANG' : 'JELEK')),
-                jenis_konstruksi: bng.konstruksi === 'Baja' ? 'BAJA' : (bng.konstruksi === 'Beton' ? 'BETON' : (bng.konstruksi === 'Batu Bata' ? 'BATU_BATA' : 'KAYU')),
-                jenis_atap: bng.atap === 'Decrabon/Beton/Gtg Glazur' ? 'DECRABON_BETON_GLAZUR' : (bng.atap === 'Gtg Beton/Aluminium' ? 'GENTENG_BETON_ALUMINIUM' : (bng.atap === 'Gtg Biasa/Sirap' ? 'GENTENG_BIASA_SIRAP' : (bng.atap === 'Asbes' ? 'ASBES' : 'SENG'))),
-                kode_dinding: bng.dinding === 'Kaca/Aluminium' ? 'KACA_ALUMINIUM' : (bng.dinding === 'Beton' ? 'BETON' : (bng.dinding === 'Batu Bata/Conblok' ? 'BATU_BATA_CONBLOK' : (bng.dinding === 'Kayu' ? 'KAYU' : (bng.dinding === 'Seng' ? 'SENG' : 'TIDAK_ADA_DINDING')))),
-                kode_lantai: bng.lantai === 'Marmer' ? 'MARMER' : (bng.lantai === 'Keramik' ? 'KERAMIK' : (bng.lantai === 'Teraso' ? 'TERASO' : (bng.lantai === 'Ubin PC/Papan' ? 'UBIN_PC_PAPAN' : 'SEMEN'))),
-                kode_langit_langit: bng.langitLangit === 'Akustik/Jati' ? 'AKUSTIK_JATI' : (bng.langitLangit === 'Triplek/Asbes/Bambu' ? 'TRIPLEK_ASBES_BAMBU' : 'TIDAK_ADA'),
+                kondisi_bangunan: bng.kondisi === 'Sangat Baik' ? KondisiBangunan.SANGAT_BAIK : (bng.kondisi === 'Baik' ? KondisiBangunan.BAIK : (bng.kondisi === 'Sedang' ? KondisiBangunan.SEDANG : KondisiBangunan.JELEK)),
+                jenis_konstruksi: bng.konstruksi === 'Baja' ? JenisKonstruksi.BAJA : (bng.konstruksi === 'Beton' ? JenisKonstruksi.BETON : (bng.konstruksi === 'Batu Bata' ? JenisKonstruksi.BATU_BATA : JenisKonstruksi.KAYU)),
+                jenis_atap: bng.atap === 'Genting/Beton' ? JenisAtap.DECRABON_BETON_GLAZUR : (bng.atap === 'Asbes' ? JenisAtap.ASBES : JenisAtap.SENG),
+                kode_dinding: bng.dinding === 'Bata/Beton' ? JenisDinding.BATU_BATA_CONBLOK : (bng.dinding === 'Kayu' ? JenisDinding.KAYU : JenisDinding.SENG),
+                kode_lantai: bng.lantai === 'Marmer' ? JenisLantai.MARMER : (bng.lantai === 'Keramik' ? JenisLantai.KERAMIK : JenisLantai.SEMEN),
+                kode_langit_langit: bng.langitLangit === 'Eternit' ? JenisLangitLangit.AKUSTIK_JATI : JenisLangitLangit.TRIPLEK_ASBES_BAMBU,
               }
             });
 

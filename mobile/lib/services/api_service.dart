@@ -23,7 +23,7 @@ class ApiService {
           return handler.next(options);
         },
         onError: (DioException e, handler) {
-          // TODO: Handle 401 Unauthorized globally if needed (e.g. force logout)
+          
           return handler.next(e);
         },
       ),

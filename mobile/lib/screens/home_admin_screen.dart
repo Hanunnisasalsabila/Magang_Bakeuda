@@ -26,11 +26,6 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     ),
   ];
 
-  final List<String> _titles = [
-    'SPOP Digital',
-    'Verifikasi',
-    'Profil',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -69,13 +64,13 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         ),
         centerTitle: false,
         elevation: 0,
-        backgroundColor: theme.colorScheme.background,
-        foregroundColor: theme.colorScheme.onBackground,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
             icon: Icon(Icons.notifications_none_rounded, color: theme.colorScheme.primary),
             onPressed: () {
-              // TODO: Notifikasi
+              
             },
           )
         ],
@@ -100,8 +95,8 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.primary.withOpacity(0.9),
-                      theme.colorScheme.primary.withOpacity(0.4),
+                      theme.colorScheme.primary.withValues(alpha: 0.9),
+                      theme.colorScheme.primary.withValues(alpha: 0.4),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -136,7 +131,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                               Text(
                                 'admin@purbalingga.go.id',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
@@ -191,7 +186,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.onSurface.withOpacity(0.1),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),

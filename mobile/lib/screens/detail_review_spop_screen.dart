@@ -79,7 +79,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
           ),
           child: Column(
             children: items.entries.map((entry) {
@@ -122,7 +122,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Review SPOP'),
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -181,7 +181,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
           color: theme.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
