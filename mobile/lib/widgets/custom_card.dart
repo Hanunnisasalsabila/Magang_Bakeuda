@@ -10,14 +10,14 @@ class CustomCard extends StatelessWidget {
   final bool isGlass;
 
   const CustomCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding = const EdgeInsets.all(24.0),
     this.margin = EdgeInsets.zero,
     this.borderRadius = 16.0,
     this.color,
     this.isGlass = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,18 +28,18 @@ class CustomCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: isGlass 
-            ? (color ?? Colors.white).withOpacity(0.4) 
+            ? (color ?? Colors.white).withValues(alpha: 0.4) 
             : (color ?? theme.colorScheme.surface),
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: isGlass ? null : [
           BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.05),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.01),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.01),
             blurRadius: 2,
             offset: const Offset(0, 1),
             spreadRadius: 0,
@@ -47,8 +47,8 @@ class CustomCard extends StatelessWidget {
         ],
         border: Border.all(
           color: isGlass 
-              ? Colors.white.withOpacity(0.4) 
-              : theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ? Colors.white.withValues(alpha: 0.4) 
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: isGlass ? 1.5 : 1,
         ),
       ),

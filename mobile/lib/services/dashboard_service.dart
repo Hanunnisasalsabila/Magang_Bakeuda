@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 
 class DashboardService {
@@ -12,7 +12,7 @@ class DashboardService {
       }
       return null;
     } catch (e) {
-      print('Error fetching stats: $e');
+      debugPrint('Error fetching stats: $e');
       return null;
     }
   }
@@ -26,7 +26,7 @@ class DashboardService {
       }
       return [];
     } catch (e) {
-      print('Error fetching transactions: $e');
+      debugPrint('Error fetching transactions: $e');
       return [];
     }
   }
@@ -41,7 +41,7 @@ class DashboardService {
       }
       return [];
     } catch (e) {
-      print('Error fetching verifiers: $e');
+      debugPrint('Error fetching verifiers: $e');
       return [];
     }
   }

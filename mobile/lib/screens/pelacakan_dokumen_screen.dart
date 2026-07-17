@@ -74,7 +74,7 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
                               height: 24,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.surfaceVariant,
+                                color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
                                 border: Border.all(
                                   color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.outline,
                                 ),
@@ -87,7 +87,7 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
                               Container(
                                 width: 2,
                                 height: 40,
-                                color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.surfaceVariant,
+                                color: isCompleted ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
                               ),
                           ],
                         ),
@@ -139,7 +139,7 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pelacakan Dokumen'),
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
       body: ListView.builder(

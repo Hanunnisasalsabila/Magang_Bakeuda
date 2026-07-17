@@ -87,7 +87,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
@@ -207,7 +207,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Formulir LSPOP'),
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
       body: Form(

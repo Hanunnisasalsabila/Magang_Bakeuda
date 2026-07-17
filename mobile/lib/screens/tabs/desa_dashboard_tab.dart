@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../../services/dashboard_service.dart';
 
 class DesaDashboardTab extends StatefulWidget {
@@ -67,7 +66,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     }
 
     return Container(
-      color: theme.colorScheme.background,
+      color: theme.colorScheme.surface,
       child: RefreshIndicator(
         onRefresh: _fetchData,
         color: theme.colorScheme.primary,
@@ -122,7 +121,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1E3A8A).withOpacity(0.3),
+                color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -155,7 +154,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                     Text(
                       'Mulai pendataan objek pajak baru',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 11,
                       ),
                     ),
@@ -222,7 +221,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: iconColor, size: 20),
@@ -238,7 +237,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -302,7 +301,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -314,7 +313,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -347,7 +346,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
                                   fontSize: 9,
-                                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                                 ),
                               ),
                             ],

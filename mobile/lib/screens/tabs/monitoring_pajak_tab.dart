@@ -80,7 +80,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
             color: theme.colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -103,7 +103,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                 ),
                 onChanged: (value) {
@@ -152,7 +152,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                      Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
                       Text('Tidak ada data ditemukan', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
                     ],
@@ -172,7 +172,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
                       color: theme.colorScheme.surface,
                       child: InkWell(
                         onTap: () {
-                          // TODO: Navigate to detail
+                          
                         },
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
@@ -186,7 +186,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: statusColor.withOpacity(0.1),
+                                      color: statusColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(

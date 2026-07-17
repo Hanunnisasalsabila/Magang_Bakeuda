@@ -18,7 +18,7 @@ class AkunDesaScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manajemen Akun Desa'),
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
       body: ListView.builder(
@@ -33,12 +33,12 @@ class AkunDesaScreen extends StatelessWidget {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.2)),
+              side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: CircleAvatar(
-                backgroundColor: isAktif ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceVariant,
+                backgroundColor: isAktif ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
                 child: Icon(
                   Icons.holiday_village_outlined,
                   color: isAktif ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
@@ -49,7 +49,7 @@ class AkunDesaScreen extends StatelessWidget {
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isAktif ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  color: isAktif ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

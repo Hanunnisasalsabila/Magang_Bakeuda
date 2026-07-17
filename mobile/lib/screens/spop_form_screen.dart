@@ -111,7 +111,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
@@ -279,7 +279,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: Border.all(color: theme.colorScheme.outline),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -319,7 +319,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Formulir SPOP'),
-        backgroundColor: theme.colorScheme.background,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
       body: Form(

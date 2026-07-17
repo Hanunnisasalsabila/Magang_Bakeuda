@@ -8,13 +8,13 @@ class CustomButton extends StatelessWidget {
   final IconData? icon;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.isLoading = false,
     this.isFullWidth = true,
     this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +53,8 @@ class CustomButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         elevation: 0,
-        disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.6),
-        disabledForegroundColor: theme.colorScheme.onPrimary.withOpacity(0.8),
+        disabledBackgroundColor: theme.colorScheme.primary.withValues(alpha: 0.6),
+        disabledForegroundColor: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
       ),
       child: buttonContent,
     );

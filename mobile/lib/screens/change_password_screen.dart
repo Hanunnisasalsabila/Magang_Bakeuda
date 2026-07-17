@@ -128,7 +128,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           // Background 
           Positioned.fill(
             child: Container(
-              color: theme.colorScheme.background,
+              color: theme.colorScheme.surface,
             ),
           ),
           Positioned(
@@ -139,7 +139,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.15),
+                color: theme.colorScheme.secondary.withValues(alpha: 0.15),
               ),
             ),
           ),
@@ -151,7 +151,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: theme.colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -204,7 +204,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                               color: theme.colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: theme.colorScheme.errorContainer.withOpacity(0.5),
+                                color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
                               ),
                             ),
                             child: Row(

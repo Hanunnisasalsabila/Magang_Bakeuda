@@ -40,7 +40,8 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
       MaterialPageRoute(builder: (context) => DetailReviewSpopScreen(data: data)),
     );
 
-    if (result != null && mounted) {
+    if (result != null) {
+      if (!context.mounted) return;
       if (result == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pengajuan Berhasil Disetujui!')),
@@ -65,7 +66,7 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
             color: theme.colorScheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
