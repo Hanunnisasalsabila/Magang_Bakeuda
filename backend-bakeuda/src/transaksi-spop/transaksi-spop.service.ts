@@ -128,6 +128,7 @@ export class TransaksiSpopService {
               batas_selatan: dto.objek_pajak_sementara.batas_selatan,
               batas_timur: dto.objek_pajak_sementara.batas_timur,
               batas_barat: dto.objek_pajak_sementara.batas_barat,
+              data_bangunan_json: dto.bangunan && dto.bangunan.length > 0 ? (dto.bangunan as any) : undefined,
             },
           },
           // Data Lampiran
@@ -301,6 +302,173 @@ export class TransaksiSpopService {
     } catch (error) {
       if (error.code === 'P2003') {
         throw new BadRequestException('Draft gagal disimpan: NOP Asal atau NOP Bersama yang Anda masukkan belum terdaftar di sistem.');
+      }
+      throw error;
+    }
+  }
+
+  async updateTransaksi(id_transaksi: string, dto: CreateSpopDto | CreateDraftDto, id_user_request: string) {
+    const transaksiLama = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi },
+      include: { lampiran: true, detail_tujuan: true },
+    });
+
+    if (!transaksiLama) {
+      throw new NotFoundException('Data transaksi tidak ditemukan.');
+    }
+
+    // Lapis 1: Guard Status
+    if (transaksiLama.status_ajuan !== 'DRAFT' && transaksiLama.status_ajuan !== 'REVISI') {
+      throw new BadRequestException('Hanya berkas DRAFT atau REVISI yang dapat diperbarui.');
+    }
+
+    // Lapis 2: Guard Kepemilikan (Ownership)
+    if (transaksiLama.id_user !== id_user_request) {
+      throw new ForbiddenException('Akses ditolak. Anda tidak berhak mengubah data milik pengguna lain.');
+    }
+
+    const isFullSubmit = !dto.is_draft;
+    const final_status: StatusAjuan = transaksiLama.status_ajuan; 
+    
+    const jenis_transaksi = dto.jenis_layanan || transaksiLama.jenis_transaksi;
+    const currentYear = new Date().getFullYear();
+
+    const subjek = dto.subjek_pajak || {};
+    const objek = dto.objek_pajak_sementara || {};
+
+    const nik = subjek.nik || '0000000000000000';
+    const nama_subjek = subjek.nama || (isFullSubmit ? '' : 'DRAFT');
+    const jenis_tanah_baru = objek.jenis_tanah || 'TANAH_KOSONG';
+
+    // Validasi Dasar NOP
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi as string)) {
+      if (isFullSubmit && !dto.nop_utama) {
+        throw new BadRequestException(`NOP Utama wajib diisi untuk jenis layanan ${jenis_transaksi}`);
+      }
+      dto.nop_asal = []; 
+      dto.no_sppt_lama = undefined; 
+    } else if (jenis_transaksi === 'BARU') {
+      dto.nop_utama = undefined; 
+      dto.nop_asal = []; 
+    } else if (jenis_transaksi === 'PECAH') {
+      dto.nop_utama = undefined; 
+      if (isFullSubmit && (!dto.nop_asal || dto.nop_asal.filter(n => n && n.trim() !== '').length !== 1)) {
+        throw new BadRequestException(`NOP Asal wajib diisi tepat 1 untuk jenis layanan ${jenis_transaksi}`);
+      }
+    } else if (jenis_transaksi === 'GABUNG') {
+      dto.nop_utama = undefined; 
+      if (isFullSubmit && (!dto.nop_asal || dto.nop_asal.filter(n => n && n.trim() !== '').length < 2)) {
+        throw new BadRequestException(`NOP Asal wajib diisi minimal 2 untuk jenis layanan ${jenis_transaksi}`);
+      }
+    }
+    
+    // Retensi Lampiran (Lapis 3 attachment handling)
+    let lampiranFinal: any[] = [];
+    if (dto.lampiran && dto.lampiran.length > 0) {
+      lampiranFinal = dto.lampiran;
+    } else {
+      lampiranFinal = transaksiLama.lampiran; // Pertahankan yang lama
+    }
+
+    if (isFullSubmit) {
+       if (dto.is_kuasa && !lampiranFinal.some(l => l.jenis_dokumen === 'SURAT_KUASA')) {
+          throw new BadRequestException('Surat Kuasa wajib dilampirkan jika pendaftar bertindak selaku kuasa');
+       }
+       if (['BARU', 'PECAH'].includes(jenis_transaksi as string) && !lampiranFinal.some(l => l.jenis_dokumen === 'DENAH_LOKASI')) {
+          throw new BadRequestException(`Denah Lokasi wajib dilampirkan untuk jenis layanan ${jenis_transaksi}`);
+       }
+    }
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // Hapus child data lama
+        await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
+        await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
+        await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
+
+        // Update Transaksi Induk
+        await tx.transaksiSpop.update({
+          where: { id_transaksi },
+          data: {
+            jenis_transaksi: jenis_transaksi as string as any,
+            nop_bersama: dto.nop_bersama || null,
+            no_sppt_lama: dto.no_sppt_lama || null,
+            nama_pengaju: nama_subjek,
+            menggunakan_kuasa: dto.is_kuasa || false,
+            updated_at: new Date(),
+          }
+        });
+
+        // Insert Detail Asal
+        const detail_asal_data: any[] = [];
+        if (dto.nop_utama && dto.nop_utama.trim() !== '') {
+          detail_asal_data.push({ nop_asal: dto.nop_utama, id_transaksi });
+        }
+        if (dto.nop_asal && dto.nop_asal.length > 0) {
+          dto.nop_asal.filter(n => n && n.trim() !== '').forEach(n => detail_asal_data.push({ nop_asal: n, id_transaksi }));
+        }
+        if (detail_asal_data.length > 0) {
+          await tx.detailTransaksiAsal.createMany({ data: detail_asal_data });
+        }
+
+        // Insert Detail Tujuan (Lapis 3 Safety Net: Hanya update staging, tidak ke Master)
+        await tx.detailTransaksiTujuan.create({
+          data: {
+            id_transaksi,
+            nik_calon_subjek: nik !== '0000000000000000' && nik !== '' ? nik : undefined,
+            calon_subjek_json: Object.keys(subjek).length > 0 ? (subjek as any) : undefined,
+            luas_tanah_baru: objek.luas_tanah || 0,
+            luas_bangunan_baru: objek.luas_bangunan || 0,
+            jumlah_bangunan_baru: objek.jumlah_bangunan || 0,
+            jenis_tanah_baru: jenis_tanah_baru as string as any,
+            jalan_op_baru: objek.jalan_op,
+            rt_op_baru: objek.rt_op,
+            rw_op_baru: objek.rw_op,
+            blok_kav_no_baru: objek.blok_kav_no,
+            kelurahan_op_baru: objek.kelurahan_op,
+            kecamatan_op_baru: objek.kecamatan_op,
+            no_persil_baru: objek.no_persil,
+            latitude: objek.latitude,
+            longitude: objek.longitude,
+            batas_utara: objek.batas_utara,
+            batas_selatan: objek.batas_selatan,
+            batas_timur: objek.batas_timur,
+            batas_barat: objek.batas_barat,
+            data_bangunan_json: dto.bangunan && dto.bangunan.length > 0 
+              ? (dto.bangunan as any) 
+              : (transaksiLama.detail_tujuan?.[0]?.data_bangunan_json || undefined),
+            nop_generated: ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_transaksi as string) ? dto.nop_utama : undefined,
+          }
+        });
+
+        // Insert Lampiran (baik yang baru, atau dari retensi yang lama)
+        if (lampiranFinal && lampiranFinal.length > 0) {
+          await tx.lampiranDokumen.createMany({
+            data: lampiranFinal.map(l => ({
+              id_transaksi,
+              jenis_dokumen: l.jenis_dokumen || 'DRAFT',
+              url_file: l.url_file || '',
+              uploaded_by: l.uploaded_by || id_user_request,
+            }))
+          });
+        }
+
+        await tx.riwayatPelacakan.create({
+          data: {
+            id_transaksi,
+            status_riwayat: final_status,
+            keterangan: 'Data berkas telah diperbarui oleh Desa.',
+          },
+        });
+
+        return await tx.transaksiSpop.findUnique({
+          where: { id_transaksi },
+          include: { detail_tujuan: true, detail_asal: true, lampiran: true, riwayat: true }
+        });
+      });
+    } catch (error) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException('NOP Asal atau NOP Bersama yang Anda masukkan belum terdaftar di sistem.');
       }
       throw error;
     }
@@ -505,7 +673,10 @@ export class TransaksiSpopService {
     return await this.prisma.$transaction(async (tx) => {
       const updatedTransaksi = await tx.transaksiSpop.update({
         where: { id_transaksi },
-        data: { status_ajuan: 'MENUNGGU' },
+        data: { 
+          status_ajuan: 'MENUNGGU',
+          catatan_bakeuda: null 
+        },
       });
 
       await tx.riwayatPelacakan.create({

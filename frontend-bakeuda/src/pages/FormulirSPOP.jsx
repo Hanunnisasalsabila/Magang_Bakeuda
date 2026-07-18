@@ -35,6 +35,9 @@ export default function FormulirSPOP() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const [nopAsalList, setNopAsalList] = useState(['33.03.']);
   const [spptLama, setSpptLama] = useState('');
+  
+  const [isRevisi, setIsRevisi] = useState(false);
+  const [catatanRevisi, setCatatanRevisi] = useState('');
 
   const [formData, setFormData] = useState({
     kategoriTransaksi: '',
@@ -153,7 +156,7 @@ export default function FormulirSPOP() {
     let val = e.target.value;
 
     // Filter angka saja
-    if (['nik', 'npwp', 'noTelp', 'rt', 'rw', 'kodePos', 'rtObjek', 'rwObjek'].includes(field)) {
+    if (['nik', 'npwp', 'noTelp', 'rt', 'rw', 'kodePos', 'rtObjek', 'rwObjek', 'jumlahBangunan'].includes(field)) {
       val = val.replace(/\D/g, '');
     }
 
@@ -206,7 +209,11 @@ export default function FormulirSPOP() {
       api.get(`/transaksi-spop/${id}`)
         .then(res => {
           const data = res.data.data;
-          if (data && data.status_ajuan === 'DRAFT') {
+          if (data && (data.status_ajuan === 'DRAFT' || data.status_ajuan === 'REVISI')) {
+            if (data.status_ajuan === 'REVISI') {
+              setIsRevisi(true);
+              setCatatanRevisi(data.catatan_bakeuda || '');
+            }
             const mapWpRev = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
             const mapPekerjaanRev = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
             
@@ -282,7 +289,11 @@ export default function FormulirSPOP() {
             } else if (isStep2Complete) {
               calculatedStep = 3;
             }
-            setStep(calculatedStep);
+            if (data.status_ajuan === 'REVISI') {
+              setStep(1);
+            } else {
+              setStep(calculatedStep);
+            }
 
             setFormData(prev => ({
               ...prev,
@@ -328,12 +339,19 @@ export default function FormulirSPOP() {
               batasBarat: detailTujuan?.batas_barat || '',
               lampiran: data.lampiran || [],
             }));
+            if (data.status_ajuan === 'DRAFT') {
+              // Kosong
+            }
           }
         })
         .catch(err => {
           console.error("Gagal memuat draf:", err);
           setToast({ show: true, message: 'Gagal memuat draf', type: 'error' });
         });
+    } else {
+      // CLEAR OLD STORAGE FOR NEW TRANSACTION
+      localStorage.removeItem('lspop_id_transaksi');
+      localStorage.removeItem('lspop_draft_bangunan');
     }
   }, [id]);
   useEffect(() => {
@@ -601,7 +619,11 @@ export default function FormulirSPOP() {
     setIsSubmitting(true);
     try {
       const payload = buildPayload(true);
-      await api.post('/transaksi-spop/draft', payload);
+      if (id) {
+        await api.put(`/transaksi-spop/${id}`, payload);
+      } else {
+        await api.post('/transaksi-spop/draft', payload);
+      }
       setToast({ show: true, message: 'Draft berhasil disimpan ke akun Anda.', type: 'success' });
       setTimeout(() => navigate('/dashboard-desa'), 2000);
     } catch (error) {
@@ -611,6 +633,26 @@ export default function FormulirSPOP() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const goToLspop = (currentPayload) => {
+    const nopObj = formData.nop;
+    const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
+    const finalNop = isNew 
+      ? 'Akan digenerate oleh Bakeuda' 
+      : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
+
+    localStorage.setItem('lspop_spop_payload', JSON.stringify(currentPayload));
+    localStorage.setItem('lspop_jenis_transaksi', formData.transaksi);
+    localStorage.setItem('lspop_nop', finalNop);
+    localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
+    if (id) {
+      localStorage.setItem('lspop_id_transaksi', id);
+    } else {
+      localStorage.removeItem('lspop_id_transaksi');
+    }
+
+    navigate('/formulir-lspop');
   };
 
   const handleSubmit = async () => {
@@ -652,19 +694,22 @@ export default function FormulirSPOP() {
     
     // Jika ada bangunan, tunda submit SPOP dan lanjutkan ke form LSPOP
     if (parseInt(formData.jumlahBangunan || '0') > 0) {
-      localStorage.setItem('lspop_spop_payload', JSON.stringify(payload));
-      localStorage.setItem('lspop_jenis_transaksi', formData.transaksi);
+      if (id) {
+        // Hanya lakukan PUT jika id ada (revisi), lalu pindah ke LSPOP
+        setIsSubmitting(true);
+        try {
+          await api.put(`/transaksi-spop/${id}`, payload);
+        } catch (error) {
+          setIsSubmitting(false);
+          const errorMsg = error.response?.data?.message || error.message || 'Gagal menyimpan SPOP';
+          setToast({ show: true, message: typeof errorMsg === 'string' ? errorMsg : 'Gagal menyimpan SPOP', type: 'error' });
+          setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
+          return;
+        }
+        setIsSubmitting(false);
+      }
       
-      const nopObj = formData.nop;
-      const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
-      const finalNop = isNew 
-        ? 'Akan digenerate oleh Bakeuda' 
-        : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
-      
-      localStorage.setItem('lspop_nop', finalNop);
-      localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
-      
-      navigate('/formulir-lspop');
+      goToLspop(payload);
       return;
     }
 
@@ -672,7 +717,18 @@ export default function FormulirSPOP() {
     setSubmitError(null);
 
     try {
-      const response = await api.post('/transaksi-spop', payload);
+      let response;
+      if (id) {
+        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
+        // Tunggu bentar buat ensure transaksi API nya complete kl put sblmnya, tp 
+        // kl di handle submit, sebenarnya PUT sblm patch/ajukan bisa dilakukan:
+        // Wait, since handleSubmit only submits to backend, I should put the payload first then ajukan.
+        await api.put(`/transaksi-spop/${id}`, payload);
+        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
+      } else {
+        response = await api.post('/transaksi-spop', payload);
+      }
+      
       const result = response.data;
       setSubmitResult(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -709,9 +765,9 @@ export default function FormulirSPOP() {
           return (
             <React.Fragment key={s.num}>
               <button
-                onClick={() => isCompleted && setStep(s.num)}
+                onClick={() => (isCompleted || isRevisi) && setStep(s.num)}
                 disabled={step === 5}
-                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${isActive ? 'opacity-100' : isCompleted ? 'opacity-90' : 'opacity-40'
+                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${isActive ? 'opacity-100' : (isCompleted || isRevisi) ? 'opacity-90' : 'opacity-40'
                   }`}
               >
                 <div
@@ -749,6 +805,18 @@ export default function FormulirSPOP() {
       {/* Form Content Canvas */}
       <div className="bg-white border border-outline-variant rounded-xl p-6 md:p-10 shadow-sm">
         <form onSubmit={(e) => e.preventDefault()} className="space-y-section-gap">
+          {isRevisi && catatanRevisi && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 mb-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-amber-600">warning</span>
+                <div>
+                  <h4 className="font-bold text-amber-800">⚠️ Dikembalikan oleh Bakeuda</h4>
+                  <p className="text-amber-700 mt-1 whitespace-pre-wrap">{catatanRevisi}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* STEP 1: INFORMASI UMUM */}
           {step === 1 && (
             <div className="space-y-8 animate-fadeIn">
@@ -1398,11 +1466,9 @@ export default function FormulirSPOP() {
                     <div className="space-y-2">
                       <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         value={formData.jenisTanah !== 'TANAH_BANGUNAN' ? '0' : formData.jumlahBangunan}
                         onChange={(e) => handleTextChange('jumlahBangunan', e)}
-                        onWheel={(e) => e.target.blur()}
                         disabled={formData.jenisTanah !== 'TANAH_BANGUNAN'}
                         className={`w-full h-12 border ${errors.jumlahBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm ${formData.jenisTanah !== 'TANAH_BANGUNAN' ? 'bg-surface-container-lowest cursor-not-allowed opacity-70' : ''}`}
                         placeholder="Contoh: 1"
@@ -1605,6 +1671,13 @@ export default function FormulirSPOP() {
 
                       {/* Upload Button */}
                       <div className="relative overflow-hidden w-full sm:w-auto inline-block sm:mt-6">
+                        {isRevisi && formData.lampiran.length > 0 && (
+                           <div className="absolute -top-6 left-0 right-0 text-center">
+                              <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                                File lama tersimpan
+                              </span>
+                           </div>
+                        )}
                         <button
                           type="button"
                           disabled={isUploading}
@@ -1788,11 +1861,11 @@ export default function FormulirSPOP() {
                 </button>
                 {parseInt(formData.jumlahBangunan) > 0 && (
                   <button
-                    onClick={() => navigate('/formulir-lspop')}
+                    onClick={() => goToLspop(buildPayload(false))}
                     className="px-10 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:bg-primary-dark transition-all flex items-center justify-center gap-2 animate-bounce hover:animate-none"
                   >
-                    <span className="material-symbols-outlined">assignment_add</span>
-                    Lanjut Isi LSPOP Sekarang
+                    <span className="material-symbols-outlined">{isRevisi ? 'edit_document' : 'assignment_add'}</span>
+                    {isRevisi ? 'Lanjut Perbaiki LSPOP' : 'Lanjut Isi LSPOP Sekarang'}
                   </button>
                 )}
               </div>
@@ -1843,7 +1916,7 @@ export default function FormulirSPOP() {
                         : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
                       }`}
                   >
-                    {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
+                    {isSubmitting ? 'Memproses...' : step === 4 ? (isRevisi ? 'Ajukan Ulang ke Bakeuda' : 'Submit SPOP') : `Lanjutkan Ke Tahap ${step + 1}`}
                     {!isSubmitting && (
                       <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
                         arrow_forward

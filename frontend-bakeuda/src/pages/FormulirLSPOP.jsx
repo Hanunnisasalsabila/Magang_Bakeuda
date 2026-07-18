@@ -16,6 +16,9 @@ export default function FormulirLSPOP() {
   const [bangunanList, setBangunanList] = useState([]);
   const [isDraft, setIsDraft] = useState(false);
   const [spopTransaksi, setSpopTransaksi] = useState('');
+  const [isRevisi, setIsRevisi] = useState(false);
+  const [catatanRevisi, setCatatanRevisi] = useState('');
+  const [draftDataList, setDraftDataList] = useState([]);
 
   // State untuk Progressive Disclosure UI
   const [hasAC, setHasAC] = useState(false);
@@ -52,47 +55,97 @@ export default function FormulirLSPOP() {
     </div>
   );
 
+  const applyDataToForm = (data) => {
+    setFormData(prev => ({ ...prev, ...data }));
+    setHasAC(parseFloat(data.acSplit || 0) > 0 || parseFloat(data.acWindow || 0) > 0 || parseFloat(data.acSentral || 0) > 0);
+    setHasKolamRenang(parseFloat(data.kolamRenangLuas || 0) > 0);
+    setHasHalaman(parseFloat(data.halamanRingan || 0) > 0 || parseFloat(data.halamanSedang || 0) > 0 || parseFloat(data.halamanBerat || 0) > 0);
+    setHasPagar(parseFloat(data.panjangPagar || 0) > 0);
+    setHasLapanganTenis(
+      parseFloat(data.lapanganTenisLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisLampuTanah || 0) > 0 ||
+      parseFloat(data.lapanganTenisTanpaLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuTanah || 0) > 0
+    );
+    setHasLiftEskalator(parseFloat(data.liftPenumpang || 0) > 0 || parseFloat(data.liftKapsul || 0) > 0 || parseFloat(data.liftBarang || 0) > 0 || parseFloat(data.tanggaBerjalanKecil || 0) > 0 || parseFloat(data.tanggaBerjalanBesar || 0) > 0);
+    setHasPemadam(parseFloat(data.pemadamHydrant || 0) > 0 || parseFloat(data.pemadamSprinkler || 0) > 0 || parseFloat(data.pemadamFireAl || 0) > 0);
+    setHasPabx(parseFloat(data.saluranPabx || 0) > 0);
+    setHasSumur(parseFloat(data.sumurArtesis || 0) > 0);
+  };
+
   useEffect(() => {
     const savedNop = localStorage.getItem('lspop_nop');
     const savedTotal = localStorage.getItem('lspop_total_bangunan');
     const savedId = localStorage.getItem('lspop_id_transaksi');
     
+    let isRev = false;
     const spopPayloadStr = localStorage.getItem('lspop_spop_payload');
     if (spopPayloadStr) {
       const payload = JSON.parse(spopPayloadStr);
-      if (payload.is_draft) setIsDraft(true);
+      if (payload.is_draft || payload.status_ajuan === 'DRAFT') setIsDraft(true);
     }
     
-    const draftBangunanStr = localStorage.getItem('lspop_draft_bangunan');
-    if (draftBangunanStr) {
-      try {
-        const parsedList = JSON.parse(draftBangunanStr);
-        if (Array.isArray(parsedList) && parsedList.length > 0) {
-          // Extract the last drafted building to be continued in formData
-          const lastBangunan = parsedList.pop();
-          
-          // Convert any 0 values back to empty strings for better UX
-          Object.keys(lastBangunan).forEach(key => {
-            if (lastBangunan[key] === 0) {
-              lastBangunan[key] = '';
+    if (savedId) {
+      setIdTransaksi(savedId);
+      api.get(`/transaksi-spop/${savedId}`)
+        .then(res => {
+          const data = res.data?.data;
+          if (data) {
+            if (data.status_ajuan === 'REVISI') {
+              setIsRevisi(true);
+              isRev = true;
+              setCatatanRevisi(data.catatan_bakeuda || '');
             }
-          });
 
-          setBangunanList(parsedList);
-          setNomorBangunan(parsedList.length + 1);
-          setFormData(prev => ({ ...prev, ...lastBangunan }));
-        }
-      } catch (e) {
-        console.error('Failed to parse draft bangunan', e);
-      }
+            const detailTujuan = data.detail_tujuan && data.detail_tujuan[0];
+            if (detailTujuan?.data_bangunan_json) {
+              try {
+                let parsedList = typeof detailTujuan.data_bangunan_json === 'string' 
+                  ? JSON.parse(detailTujuan.data_bangunan_json) 
+                  : detailTujuan.data_bangunan_json;
+                
+                if (typeof parsedList === 'string') {
+                  parsedList = JSON.parse(parsedList);
+                }
+
+                if (Array.isArray(parsedList) && parsedList.length > 0) {
+                  // Convert any 0 values back to empty strings for better UX
+                  parsedList.forEach(bangunan => {
+                    Object.keys(bangunan).forEach(key => {
+                      if (bangunan[key] === 0) {
+                        bangunan[key] = '';
+                      }
+                    });
+                  });
+
+                  if (isRev || data.status_ajuan === 'DRAFT') {
+                    setDraftDataList(parsedList);
+                    setBangunanList([]);
+                    setNomorBangunan(1);
+                    setTotalBangunan(parsedList.length);
+                    setFormData(prev => ({ ...prev, jumlahBng: parsedList.length.toString() }));
+                    setTimeout(() => applyDataToForm(parsedList[0]), 0);
+                  } else {
+                    const lastBangunan = parsedList.pop();
+                    setBangunanList(parsedList);
+                    setNomorBangunan(parsedList.length + 1);
+                    setTimeout(() => applyDataToForm(lastBangunan), 0);
+                  }
+                }
+              } catch (e) {
+                console.error('Failed to parse draft bangunan dari DB', e);
+              }
+            }
+          }
+        })
+        .catch(err => console.error("Gagal memuat transaksi LSPOP dari DB:", err));
     }
 
+    
+    
     if (savedNop) setNop(savedNop);
     if (savedTotal) {
       setTotalBangunan(parseInt(savedTotal));
       setFormData(prev => ({ ...prev, jumlahBng: savedTotal }));
     }
-    if (savedId) setIdTransaksi(savedId);
 
     const spopTx = localStorage.getItem('lspop_jenis_transaksi');
     if (spopTx) {
@@ -168,6 +221,7 @@ export default function FormulirLSPOP() {
     
     // Constraint khusus jumlah lantai (maksimal 2 digit / 99)
     if (field === 'jumlahLantai') {
+      value = value.replace(/\D/g, '');
       if (value.length > 2) value = value.slice(0, 2);
     }
     
@@ -356,9 +410,15 @@ export default function FormulirLSPOP() {
       setIsSubmitting(false);
       setToast({ show: true, message: `Data Bangunan Ke-${nomorBangunan} berhasil disimpan secara lokal. Lanjut ke bangunan berikutnya.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+      
+      if (isRevisi && draftDataList[nomorBangunan]) {
+        applyDataToForm(draftDataList[nomorBangunan]);
+      } else {
+        resetForm();
+      }
+      
       setNomorBangunan(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      resetForm();
     } else {
       await submitToServer(newBangunanList, false);
     }
@@ -384,8 +444,13 @@ export default function FormulirLSPOP() {
     console.log('PAYLOAD TERPADU (SPOP + LSPOP):', terpaduPayload);
     
     try {
-      const endpoint = isSaveDraft ? '/transaksi-spop/draft' : '/transaksi-spop';
-      await api.post(endpoint, terpaduPayload);
+      if (isRevisi && idTransaksi && !isSaveDraft) {
+        await api.put(`/transaksi-spop/${idTransaksi}`, terpaduPayload);
+        await api.patch(`/transaksi-spop/${idTransaksi}/ajukan`);
+      } else {
+        const endpoint = isSaveDraft ? '/transaksi-spop/draft' : '/transaksi-spop';
+        await api.post(endpoint, terpaduPayload);
+      }
       
       localStorage.removeItem('lspop_spop_payload');
       localStorage.removeItem('lspop_jenis_transaksi');
@@ -469,6 +534,18 @@ export default function FormulirLSPOP() {
           Bangunan Ke: {nomorBangunan} / {totalBangunan}
         </div>
       </div>
+
+      {isRevisi && catatanRevisi && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 mb-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-600">warning</span>
+            <div>
+              <h4 className="font-bold text-amber-800">⚠️ Catatan Revisi dari Bakeuda</h4>
+              <p className="text-amber-700 mt-1 whitespace-pre-wrap">{catatanRevisi}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-surface-container border border-outline-variant p-6 rounded-t-xl shadow-sm">
         <h4 className="font-bold text-on-surface text-lg border-b border-outline-variant/50 pb-3 mb-4">Informasi Induk (SPOP)</h4>
@@ -556,7 +633,7 @@ export default function FormulirLSPOP() {
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">3. Jumlah Lantai</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
+                <input type="text" value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
                 {errors.jumlahLantai && <p className="text-error text-[12px]">{errors.jumlahLantai}</p>}
               </div>
 
@@ -832,7 +909,7 @@ export default function FormulirLSPOP() {
               className={`px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'}`}
             >
               <span className="material-symbols-outlined">{isSubmitting ? 'hourglass_empty' : 'save'}</span>
-              {isSubmitting ? 'Menyimpan...' : nomorBangunan < totalBangunan ? 'Simpan & Lanjut ke Bangunan Berikutnya' : 'Kirim Seluruh Data LSPOP'}
+              {isSubmitting ? 'Menyimpan...' : nomorBangunan < totalBangunan ? 'Simpan & Lanjut ke Bangunan Berikutnya' : isRevisi ? 'Simpan & Ajukan Ulang ke Bakeuda' : 'Kirim Seluruh Data LSPOP'}
             </button>
           </div>
         </form>

@@ -103,12 +103,19 @@ export default function DetailReviewSPOP() {
 
   const [nopBaru, setNopBaru] = useState({ prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' });
 
-  const handleDecision = async (approved) => {
+  const handleDecision = async (status) => {
     try {
+      if ((status === 'REVISI' || status === 'DITOLAK') && !decisionNotes.trim()) {
+        setToastMessage('Catatan / Alasan Verifikasi wajib diisi!');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+        return;
+      }
+
       if (data.status_ajuan === 'PROSES') {
         // VERIFIKASI BAKEUDA
         let finalNopStr = undefined;
-        if (approved && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
+        if (status === 'DISETUJUI' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
           finalNopStr = `${nopBaru.prov}${nopBaru.kab}${nopBaru.kec}${nopBaru.kel}${nopBaru.blok}${nopBaru.nourut}${nopBaru.kode}`;
           if (finalNopStr.length !== 18) {
             setToastMessage('Gagal: Harap lengkapi 18 digit NOP Baru sebelum menyetujui!');
@@ -119,11 +126,11 @@ export default function DetailReviewSPOP() {
         }
         
         await api.patch(`/transaksi-spop/${id}/verifikasi-bakeuda`, {
-          status_ajuan: approved ? 'DISETUJUI' : 'DITOLAK',
+          status_ajuan: status,
           catatan: decisionNotes,
           nop_baru: finalNopStr
         });
-        setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${approved ? 'DISETUJUI' : 'DITOLAK'}`);
+        setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
       }
 
       setShowToast(true);
@@ -464,26 +471,33 @@ export default function DetailReviewSPOP() {
                   value={decisionNotes}
                   onChange={(e) => setDecisionNotes(e.target.value)}
                   className="w-full rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm p-3 bg-white"
-                  placeholder="Contoh: Luas tanah telah dikonfirmasi sesuai dengan sertifikat..."
+                  placeholder={`Contoh:\nBagian Subjek: ...\nBagian Objek: ...\nBagian Lampiran: ...`}
                   rows={3}
                 />
               </div>
             </div>
             
-            <div className="lg:col-span-4 space-y-3">
+            <div className="lg:col-span-4 space-y-3 flex flex-col justify-end">
               <button
-                onClick={() => handleDecision(true)}
+                onClick={() => handleDecision('DISETUJUI')}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
               >
                 <span className="material-symbols-outlined text-[20px]">check_circle</span>
                 Setujui Pengajuan
               </button>
               <button
-                onClick={() => handleDecision(false)}
+                onClick={() => handleDecision('REVISI')}
+                className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold py-3 px-4 rounded-md hover:bg-amber-600 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[20px]">assignment_return</span>
+                Kembalikan untuk Revisi
+              </button>
+              <button
+                onClick={() => handleDecision('DITOLAK')}
                 className="w-full flex items-center justify-center gap-2 bg-white border border-red-300 text-red-600 font-semibold py-3 px-4 rounded-md hover:bg-red-50 transition-colors shadow-sm"
               >
                 <span className="material-symbols-outlined text-[20px]">cancel</span>
-                Tolak / Perlu Revisi
+                Tolak Permanen
               </button>
               <p className="text-xs text-gray-400 text-center px-2 pt-2">
                 Dengan menekan Setujui, Anda bertanggung jawab penuh atas validasi data.
