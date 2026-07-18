@@ -27,6 +27,7 @@ export default function StatusBadge({ status }) {
   } else if (
     normalized.includes("menunggu") ||
     normalized === "proses" ||
+    normalized === "diproses" ||
     normalized === "baru"
   ) {
     bgClass = "bg-amber-100 text-amber-800 border border-amber-200";
