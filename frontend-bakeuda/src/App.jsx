@@ -140,7 +140,7 @@ function AppContent() {
         <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
         <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
-        <Route path="/pelacakan-dokumen" element={<PelacakanDokumen />} />
+        <Route path="/pelacakan-dokumen/:id" element={<PelacakanDokumen />} />
         <Route path="/profil" element={<ProfilPengguna role={role} />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to={role === 'bakeuda' ? '/dashboard-admin' : '/dashboard-desa'} />} />

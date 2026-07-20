@@ -35,7 +35,7 @@ export default function FormulirSPOP() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const [nopAsalList, setNopAsalList] = useState(['33.03.']);
   const [spptLama, setSpptLama] = useState('');
-  
+
   const [isRevisi, setIsRevisi] = useState(false);
   const [catatanRevisi, setCatatanRevisi] = useState('');
 
@@ -118,11 +118,11 @@ export default function FormulirSPOP() {
       try {
         const uploadData = new FormData();
         uploadData.append('file', file);
-        
+
         const res = await api.post('/transaksi-spop/upload', uploadData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        
+
         const fileUrl = res.data.url_file;
 
         setFormData(prev => ({
@@ -140,7 +140,7 @@ export default function FormulirSPOP() {
   };
 
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.latitude && formData.longitude 
+  const currentPosition = formData.latitude && formData.longitude
     ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
     : defaultPosition;
 
@@ -167,13 +167,13 @@ export default function FormulirSPOP() {
 
     setFormData(prev => {
       const nextState = { ...prev, [field]: val };
-      
+
       // Jika ubah jenis tanah bukan TANAH_BANGUNAN, kunci jumlah & luas bangunan jadi 0
       if (field === 'jenisTanah' && val !== 'TANAH_BANGUNAN') {
         nextState.luasBangunan = '0';
         nextState.jumlahBangunan = '0';
       }
-      
+
       return nextState;
     });
   };
@@ -202,7 +202,7 @@ export default function FormulirSPOP() {
 
     setNopAsalList(prev => prev.map((item, i) => i === index ? formatted : item));
   };
-  
+
   useEffect(() => {
     if (id) {
       // Fetch draft data
@@ -216,7 +216,7 @@ export default function FormulirSPOP() {
             }
             const mapWpRev = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
             const mapPekerjaanRev = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
-            
+
             const detailTujuan = data.detail_tujuan && data.detail_tujuan[0];
             const subjekPajak = data.calon_subjek_temp;
 
@@ -228,33 +228,33 @@ export default function FormulirSPOP() {
             if (data.detail_asal && data.detail_asal.length > 0) {
               const nopString = data.detail_asal[0].nop_asal;
               if (nopString && nopString.length === 18) {
-                 nopObj = {
-                   prov: nopString.substring(0, 2),
-                   kab: nopString.substring(2, 4),
-                   kec: nopString.substring(4, 7),
-                   kel: nopString.substring(7, 10),
-                   blok: nopString.substring(10, 13),
-                   nourut: nopString.substring(13, 17),
-                   kode: nopString.substring(17, 18),
-                 };
+                nopObj = {
+                  prov: nopString.substring(0, 2),
+                  kab: nopString.substring(2, 4),
+                  kec: nopString.substring(4, 7),
+                  kel: nopString.substring(7, 10),
+                  blok: nopString.substring(10, 13),
+                  nourut: nopString.substring(13, 17),
+                  kode: nopString.substring(17, 18),
+                };
               }
               if (data.detail_asal.length > 1) {
-                 nopsAsal = data.detail_asal.slice(1).map(d => formatNOPString(d.nop_asal));
+                nopsAsal = data.detail_asal.slice(1).map(d => formatNOPString(d.nop_asal));
               } else if (data.jenis_transaksi === 'PECAH' || data.jenis_transaksi === 'GABUNG') {
-                 nopsAsal = data.detail_asal.map(d => formatNOPString(d.nop_asal));
+                nopsAsal = data.detail_asal.map(d => formatNOPString(d.nop_asal));
               }
             }
 
             if (data.nop_bersama && data.nop_bersama.length === 18) {
-               nopBersamaObj = {
-                   prov: data.nop_bersama.substring(0, 2),
-                   kab: data.nop_bersama.substring(2, 4),
-                   kec: data.nop_bersama.substring(4, 7),
-                   kel: data.nop_bersama.substring(7, 10),
-                   blok: data.nop_bersama.substring(10, 13),
-                   nourut: data.nop_bersama.substring(13, 17),
-                   kode: data.nop_bersama.substring(17, 18),
-               };
+              nopBersamaObj = {
+                prov: data.nop_bersama.substring(0, 2),
+                kab: data.nop_bersama.substring(2, 4),
+                kec: data.nop_bersama.substring(4, 7),
+                kel: data.nop_bersama.substring(7, 10),
+                blok: data.nop_bersama.substring(10, 13),
+                nourut: data.nop_bersama.substring(13, 17),
+                kode: data.nop_bersama.substring(17, 18),
+              };
             }
 
             setSpptLama(spptLamaVal);
@@ -273,7 +273,7 @@ export default function FormulirSPOP() {
             const cleanRw = sanitize(subjekPajak?.rw, ['000', '']);
             const cleanJenisTanah = sanitize(detailTujuan?.jenis_tanah_baru, ['TANAH_KOSONG', '']);
             const cleanPekerjaan = sanitize(subjekPajak?.pekerjaan, ['LAINNYA', '']);
-            
+
             // 2. Extract and store data_bangunan_json for LSPOP
             if (detailTujuan?.data_bangunan_json) {
               localStorage.setItem('lspop_draft_bangunan', JSON.stringify(detailTujuan.data_bangunan_json));
@@ -282,7 +282,7 @@ export default function FormulirSPOP() {
             // 3. Smart Step Jump
             const isStep2Complete = cleanNik?.length === 16 && cleanNama && subjekPajak?.status_wp && subjekPajak?.pekerjaan && cleanAlamat && cleanRt && cleanRw && cleanKel && cleanKec && cleanKab;
             const isStep3Complete = detailTujuan?.jalan_op_baru && detailTujuan?.rt_op_baru && detailTujuan?.rw_op_baru && detailTujuan?.kelurahan_op_baru && detailTujuan?.kecamatan_op_baru && detailTujuan?.luas_tanah_baru > 0 && cleanJenisTanah;
-            
+
             let calculatedStep = 2;
             if (isStep2Complete && isStep3Complete) {
               calculatedStep = 4;
@@ -298,10 +298,10 @@ export default function FormulirSPOP() {
             setFormData(prev => ({
               ...prev,
               transaksi: data.jenis_transaksi,
-              kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) 
-                ? 'baru' 
-                : ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi) 
-                  ? 'update' 
+              kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)
+                ? 'baru'
+                : ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi)
+                  ? 'update'
                   : 'hapus',
               isKuasa: data.menggunakan_kuasa,
               nop: nopObj,
@@ -360,6 +360,29 @@ export default function FormulirSPOP() {
     }
   }, [formData.jenisTanah]);
 
+  useEffect(() => {
+    // Auto-fill Wilayah if user has kode_wilayah
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.kode_wilayah) {
+          api.get('/wilayah').then(res => {
+            const wData = res.data.data;
+            const w = wData.find(item => item.kode_wilayah === user.kode_wilayah);
+            if (w) {
+              setFormData(prev => ({
+                ...prev,
+                kecamatanObjek: w.kecamatan,
+                kelurahanObjek: w.nama_desa
+              }));
+            }
+          }).catch(console.error);
+        }
+      } catch (e) { }
+    }
+  }, []);
+
   const addNopAsal = () => setNopAsalList(prev => [...prev, '33.03.']);
   const removeNopAsal = (index) => setNopAsalList(prev => prev.filter((_, i) => i !== index));
 
@@ -400,7 +423,7 @@ export default function FormulirSPOP() {
     if (currentStep === 1) {
       if (!formData.kategoriTransaksi) newErrors.transaksi = 'Pilih kategori pendaftaran';
       if (!formData.transaksi) newErrors.transaksi = 'Pilih jenis transaksi secara spesifik';
-      
+
       if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi)) {
         const nopObj = formData.nop;
         const nopString = `${nopObj.prov}${nopObj.kab}${nopObj.kec}${nopObj.kel}${nopObj.blok}${nopObj.nourut}${nopObj.kode}`;
@@ -420,19 +443,19 @@ export default function FormulirSPOP() {
       }
     } else if (currentStep === 2) {
       if (!formData.nik || !/^\d{16}$/.test(formData.nik)) newErrors.nik = 'NIK wajib 16 digit angka';
-      
+
       const namaVal = (formData.nama || '').trim();
       if (!namaVal || namaVal.length < 3 || namaVal.length > 100 || !/^[a-zA-Z\s.,']+$/.test(namaVal)) {
         newErrors.nama = 'Nama Wajib Pajak 3-100 karakter, hanya huruf, spasi, titik, koma, petik';
       }
-      
+
       if (!formData.statusWp) newErrors.statusWp = 'Pilih Status WP';
       if (!formData.pekerjaan) newErrors.pekerjaan = 'Pilih Pekerjaan';
-      
+
       if (formData.npwp && !/^(\d{15}|\d{16})$/.test(formData.npwp)) {
         newErrors.npwp = 'NPWP harus 15 atau 16 digit angka';
       }
-      
+
       if (formData.noTelp && !/^(08|62)\d{8,13}$/.test(formData.noTelp)) {
         newErrors.noTelp = 'No. HP harus diawali 08/62, total 10-15 digit angka';
       }
@@ -454,7 +477,7 @@ export default function FormulirSPOP() {
       if (!kecVal || kecVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kecVal)) {
         newErrors.kecamatan = 'Kecamatan maksimal 100 karakter, hanya huruf, angka, spasi';
       }
-      
+
       const kabVal = (formData.kabupaten || '').trim();
       if (!kabVal || kabVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kabVal)) {
         newErrors.kabupaten = 'Kabupaten maksimal 100 karakter, hanya huruf, angka, spasi';
@@ -468,7 +491,7 @@ export default function FormulirSPOP() {
       }
 
       if (formData.kodePos && !/^\d{5}$/.test(formData.kodePos)) newErrors.kodePos = 'Kode Pos harus 5 digit angka';
-      
+
     } else if (currentStep === 3) {
       const jalanOpVal = (formData.alamatObjek || '').trim();
       if (!jalanOpVal || jalanOpVal.length < 5 || jalanOpVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(jalanOpVal)) {
@@ -491,14 +514,14 @@ export default function FormulirSPOP() {
       if (formData.blokKavObjek && (formData.blokKavObjek.length > 50 || !/^[a-zA-Z0-9\s.\-]+$/.test(formData.blokKavObjek))) {
         newErrors.blokKavObjek = 'Maks 50 karakter, hanya huruf, angka, spasi, strip, titik';
       }
-      
+
       if (formData.noPersil && (formData.noPersil.length > 50 || !/^[a-zA-Z0-9\s.\-/]+$/.test(formData.noPersil))) {
         newErrors.noPersil = 'Maks 50 karakter, hanya huruf, angka, spasi, strip, titik, /';
       }
 
       if (!formData.luasTanah || parseFloat(formData.luasTanah) <= 0) newErrors.luasTanah = 'Luas Tanah wajib diisi dengan angka > 0';
       if (!formData.jenisTanah) newErrors.jenisTanah = 'Pilih Jenis Tanah';
-      
+
       const jb = parseInt(formData.jumlahBangunan || '0');
       if (isNaN(jb) || jb < 0 || jb > 99) {
         newErrors.jumlahBangunan = 'Jumlah Bangunan harus 0 - 99';
@@ -512,7 +535,7 @@ export default function FormulirSPOP() {
       if (['BARU', 'PECAH'].includes(formData.transaksi)) {
         if (!formData.latitude) newErrors.latitude = 'Wajib pin koordinat untuk transaksi Baru/Pecah';
         if (!formData.longitude) newErrors.longitude = 'Wajib pin koordinat untuk transaksi Baru/Pecah';
-        
+
         const hasDenah = formData.lampiran.some(l => l.jenis_dokumen === 'DENAH_LOKASI');
         if (!hasDenah) {
           newErrors.denahLokasi = 'Dokumen Denah Lokasi wajib diunggah (Lihat bagian Lampiran Dokumen)';
@@ -554,10 +577,10 @@ export default function FormulirSPOP() {
 
     const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
     const rawNop = nop.replace(/\D/g, '');
-    
+
     const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
     const rawNopBersama = nopBersama.replace(/\D/g, '');
-    
+
     const rawNopAsalList = nopAsalList.map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
 
     const jenis_layanan = formData.transaksi || 'BARU';
@@ -638,8 +661,8 @@ export default function FormulirSPOP() {
   const goToLspop = (currentPayload) => {
     const nopObj = formData.nop;
     const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
-    const finalNop = isNew 
-      ? 'Akan digenerate oleh Bakeuda' 
+    const finalNop = isNew
+      ? 'Akan digenerate oleh Bakeuda'
       : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
 
     localStorage.setItem('lspop_spop_payload', JSON.stringify(currentPayload));
@@ -661,7 +684,7 @@ export default function FormulirSPOP() {
       setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
       return;
     }
-    
+
     if (formData.isKuasa) {
       const hasSuratKuasa = formData.lampiran.some(l => l.jenis_dokumen === 'SURAT_KUASA');
       if (!hasSuratKuasa) {
@@ -691,7 +714,7 @@ export default function FormulirSPOP() {
     }
 
     const payload = buildPayload(false);
-    
+
     // Jika ada bangunan, tunda submit SPOP dan lanjutkan ke form LSPOP
     if (parseInt(formData.jumlahBangunan || '0') > 0) {
       if (id) {
@@ -708,7 +731,7 @@ export default function FormulirSPOP() {
         }
         setIsSubmitting(false);
       }
-      
+
       goToLspop(payload);
       return;
     }
@@ -728,7 +751,7 @@ export default function FormulirSPOP() {
       } else {
         response = await api.post('/transaksi-spop', payload);
       }
-      
+
       const result = response.data;
       setSubmitResult(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -883,9 +906,9 @@ export default function FormulirSPOP() {
                             { val: 'GABUNG', label: 'Hasil Penggabungan' }
                           ].map(opt => (
                             <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
-                              <input 
-                                type="radio" name="transaksi" value={opt.val} 
-                                checked={formData.transaksi === opt.val} 
+                              <input
+                                type="radio" name="transaksi" value={opt.val}
+                                checked={formData.transaksi === opt.val}
                                 onChange={(e) => handleTextChange('transaksi', e)}
                                 className="text-primary focus:ring-primary"
                               />
@@ -904,9 +927,9 @@ export default function FormulirSPOP() {
                             { val: 'PERUBAHAN_DATA', label: 'Ralat Luas / Alamat (Perubahan Data)' }
                           ].map(opt => (
                             <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
-                              <input 
-                                type="radio" name="transaksi" value={opt.val} 
-                                checked={formData.transaksi === opt.val} 
+                              <input
+                                type="radio" name="transaksi" value={opt.val}
+                                checked={formData.transaksi === opt.val}
                                 onChange={(e) => handleTextChange('transaksi', e)}
                                 className="text-primary focus:ring-primary"
                               />
@@ -1116,8 +1139,8 @@ export default function FormulirSPOP() {
                     />
                     {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
                     <label className="flex items-center gap-3 cursor-pointer mt-3 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="w-5 h-5 text-primary focus:ring-primary border-outline-variant rounded"
                         checked={formData.isKuasa}
                         onChange={(e) => setFormData(prev => ({ ...prev, isKuasa: e.target.checked }))}
@@ -1146,7 +1169,7 @@ export default function FormulirSPOP() {
                             onChange={(e) => {
                               handleFileUpload(e, 'SURAT_KUASA');
                               setErrors(prev => {
-                                const next = {...prev};
+                                const next = { ...prev };
                                 delete next.suratKuasa;
                                 return next;
                               });
@@ -1365,29 +1388,25 @@ export default function FormulirSPOP() {
                       placeholder="001"
                     />
                   </div>
-                  <div className="md:col-span-4 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
+                  <div className="md:col-span-8 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">DESA / KELURAHAN</label>
                     <input
                       type="text"
-                      maxLength={100}
                       value={formData.kelurahanObjek}
-                      onChange={(e) => handleTextChange('kelurahanObjek', e)}
-                      className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Purbalingga Lor"
+                      readOnly
+                      className="w-full h-11 border border-outline-variant bg-gray-100 text-gray-500 rounded px-4 font-body-md shadow-sm cursor-not-allowed"
+                      title="Desa otomatis terisi berdasarkan profil akun Anda"
                     />
-                    {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
                   </div>
                   <div className="md:col-span-4 space-y-2">
                     <label className="font-label-sm text-on-surface-variant block">KECAMATAN</label>
                     <input
                       type="text"
-                      maxLength={100}
                       value={formData.kecamatanObjek}
-                      onChange={(e) => handleTextChange('kecamatanObjek', e)}
-                      className={`w-full h-11 border ${errors.kecamatanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Purbalingga"
+                      readOnly
+                      className="w-full h-11 border border-outline-variant bg-gray-100 text-gray-500 rounded px-4 font-body-md shadow-sm cursor-not-allowed"
+                      title="Kecamatan otomatis terisi berdasarkan profil akun Anda"
                     />
-                    {errors.kecamatanObjek && <p className="text-error text-[12px]">{errors.kecamatanObjek}</p>}
                   </div>
                 </div>
               </section>
@@ -1658,7 +1677,7 @@ export default function FormulirSPOP() {
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                       <div className="space-y-1 w-full sm:w-auto">
                         <label className="font-label-sm text-on-surface-variant block">Jenis Dokumen</label>
-                        <select 
+                        <select
                           value={jenisDokumenUpload}
                           onChange={(e) => setJenisDokumenUpload(e.target.value)}
                           className="h-12 border border-outline-variant rounded px-4 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary font-bold text-sm w-full sm:w-auto"
@@ -1672,11 +1691,11 @@ export default function FormulirSPOP() {
                       {/* Upload Button */}
                       <div className="relative overflow-hidden w-full sm:w-auto inline-block sm:mt-6">
                         {isRevisi && formData.lampiran.length > 0 && (
-                           <div className="absolute -top-6 left-0 right-0 text-center">
-                              <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
-                                File lama tersimpan
-                              </span>
-                           </div>
+                          <div className="absolute -top-6 left-0 right-0 text-center">
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                              File lama tersimpan
+                            </span>
+                          </div>
                         )}
                         <button
                           type="button"
@@ -1912,8 +1931,8 @@ export default function FormulirSPOP() {
                     onClick={step === 4 ? handleSubmit : nextStep}
                     disabled={isSubmitting || (step === 4 && !formData.persetujuan)}
                     className={`w-full md:w-auto px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting || (step === 4 && !formData.persetujuan)
-                        ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
-                        : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
+                      ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
+                      : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
                       }`}
                   >
                     {isSubmitting ? 'Memproses...' : step === 4 ? (isRevisi ? 'Ajukan Ulang ke Bakeuda' : 'Submit SPOP') : `Lanjutkan Ke Tahap ${step + 1}`}

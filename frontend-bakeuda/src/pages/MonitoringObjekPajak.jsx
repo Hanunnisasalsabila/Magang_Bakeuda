@@ -6,109 +6,87 @@ import api from '../utils/axios';
 
 export default function MonitoringObjekPajak() {
   const navigate = useNavigate();
-  const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [kecamatanList, setKecamatanList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({ totalDikirim: 0, disetujui: 0, perluPerbaikan: 0 });
+  const [submissions, setSubmissions] = useState([]);
 
   React.useEffect(() => {
-    const fetchKecamatan = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get('/wilayah');
-        const uniqueKec = [...new Set(res.data.data.map(w => w.kecamatan))].filter(Boolean).sort();
-        setKecamatanList(uniqueKec);
+        const [statsRes, listRes] = await Promise.all([
+          api.get('/transaksi-spop/stats'),
+          api.get('/transaksi-spop')
+        ]);
+        
+        setStats(statsRes.data.data);
+
+        const rawList = listRes.data.data;
+        const formattedList = rawList.map(item => {
+          const detail = item.detail_tujuan?.[0];
+          const calonSubjek = item.calon_subjek_temp;
+          
+          let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
+
+          let status = 'Ditolak';
+          if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
+          else if (item.status_ajuan === 'PROSES') status = 'Diproses';
+          else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
+          else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
+          else if (item.status_ajuan === 'DRAFT') status = 'Draft';
+
+          return {
+            id: item.id_transaksi,
+            nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+            name: calonSubjek?.nama_subjek_pajak || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+            address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
+            land: detail?.luas_tanah_baru || 0,
+            building: luasBangunan,
+            status: status,
+            date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+          };
+        });
+
+        setSubmissions(formattedList);
       } catch (err) {
-        console.error("Gagal mengambil data wilayah:", err);
+        console.error("Gagal memuat data monitoring:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchKecamatan();
+    fetchData();
   }, []);
 
-  const [submissions, setSubmissions] = useState([
-    {
-      nop: '33.03.010.001.015.0042.0',
-      name: 'H. Ahmad Dahlan',
-      address: 'Jl. Jend. Sudirman No. 45, Purbalingga Kidul',
-      land: 450,
-      building: 120,
-      status: 'Disetujui',
-      kecamatan: 'Purbalingga',
-    },
-    {
-      nop: '33.03.010.001.015.0043.1',
-      name: 'Siti Aminah',
-      address: 'Perum Griya Abdi Karya Blok C-12, Purbalingga',
-      land: 112,
-      building: 45,
-      status: 'Draft',
-      kecamatan: 'Purbalingga',
-    },
-    {
-      nop: '33.03.020.005.001.0089.0',
-      name: 'PT. Makmur Sentosa',
-      address: 'Kawasan Industri Kalimanah No. 8',
-      land: 2500,
-      building: 1850,
-      status: 'Perlu Revisi',
-      kecamatan: 'Kalimanah',
-    },
-    {
-      nop: '33.03.010.001.015.0045.0',
-      name: 'Bambang Wijaya',
-      address: 'Jl. Letjen Parman No. 2, Bancar',
-      land: 200,
-      building: 180,
-      status: 'Menunggu Verifikasi',
-      kecamatan: 'Purbalingga',
-    },
-    {
-      nop: '33.03.010.001.015.0048.0',
-      name: 'Sri Wahyuni',
-      address: 'Perumahan Bojong Residance, Purbalingga Lor',
-      land: 90,
-      building: 36,
-      status: 'Disetujui',
-      kecamatan: 'Purbalingga',
-    },
-    // Menambahkan data ekstra agar pagination bisa terlihat
-    { nop: '33.03.010.001.015.0051.0', name: 'Budi Santoso', address: 'Jl. Ahmad Yani No. 10, Kandanggampang', land: 150, building: 80, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0052.0', name: 'Sutarjo', address: 'Perum Griya Abdi Karya Blok A-1, Purbalingga', land: 105, building: 45, status: 'Draft', kecamatan: 'Purbalingga' },
-    { nop: '33.03.020.005.001.0090.0', name: 'CV. Bintang Terang', address: 'Kawasan Industri Kalimanah No. 12', land: 1200, building: 800, status: 'Perlu Revisi', kecamatan: 'Kalimanah' },
-    { nop: '33.03.020.005.001.0091.0', name: 'Indah Pertiwi', address: 'Jl. Mayjen Sungkono No. 44, Kalimanah', land: 300, building: 150, status: 'Disetujui', kecamatan: 'Kalimanah' },
-    { nop: '33.03.010.001.015.0053.0', name: 'Agus Setiawan', address: 'Jl. Letjen Parman No. 8, Bancar', land: 250, building: 100, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0054.0', name: 'Rina Herawati', address: 'Perumahan Bojong Residance Blok B-2', land: 90, building: 36, status: 'Disetujui', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0055.0', name: 'PT. Maju Bersama', address: 'Jl. S. Parman No. 99, Kedungmenjangan', land: 5000, building: 3500, status: 'Menunggu Verifikasi', kecamatan: 'Purbalingga' },
-  ]);
-
   const filteredSubmissions = submissions.filter((obj) => {
-    const matchesKec = kecamatan === 'Semua Kecamatan' || obj.kecamatan === kecamatan;
     const matchesStatus =
       statusVerif === 'Semua Status' ||
-      obj.status.toLowerCase().includes(statusVerif.toLowerCase()) ||
-      (statusVerif === 'Menunggu Verifikasi' && obj.status === 'Menunggu Verifikasi');
+      obj.status.toLowerCase() === statusVerif.toLowerCase() ||
+      (statusVerif === 'Draft' && obj.status === 'Draft') ||
+      (statusVerif === 'Disetujui' && obj.status === 'Disetujui') ||
+      (statusVerif === 'Perlu Revisi' && obj.status === 'Perlu Revisi');
+    
+    const searchLower = search.toLowerCase();
     const matchesSearch =
-      obj.name.toLowerCase().includes(search.toLowerCase()) ||
-      obj.nop.includes(search) ||
-      obj.address.toLowerCase().includes(search.toLowerCase());
-    return matchesKec && matchesStatus && matchesSearch;
+      obj.name.toLowerCase().includes(searchLower) ||
+      obj.nop.toLowerCase().includes(searchLower) ||
+      obj.address.toLowerCase().includes(searchLower);
+      
+    return matchesStatus && matchesSearch;
   });
 
   // Pagination Logic
   const totalItems = filteredSubmissions.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex);
-
-  // Jika filter mengubah total halaman sehingga current page kelebihan
-  React.useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    }
-  }, [totalPages, currentPage]);
 
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto w-full space-y-6">
@@ -133,10 +111,12 @@ export default function MonitoringObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">45,920</p>
+          <p className="text-3xl text-on-surface font-black">
+            {loading ? '...' : stats.totalDikirim.toLocaleString()}
+          </p>
           <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">trending_up</span>
-            +12% dari bulan lalu
+            Total SPOP yang pernah diajukan
           </p>
         </div>
         
@@ -149,9 +129,11 @@ export default function MonitoringObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">42,105</p>
+          <p className="text-3xl text-on-surface font-black">
+            {loading ? '...' : stats.disetujui.toLocaleString()}
+          </p>
           <p className="text-xs text-on-surface-variant mt-2">
-            Telah diverifikasi BKD
+            Telah diverifikasi Bakeuda
           </p>
         </div>
 
@@ -164,17 +146,19 @@ export default function MonitoringObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">3,815</p>
+          <p className="text-3xl text-on-surface font-black">
+            {loading ? '...' : stats.perluPerbaikan.toLocaleString()}
+          </p>
           <p className="text-xs text-error font-medium mt-2 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">error</span>
-            Membutuhkan perbaikan
+            Membutuhkan perbaikan segera
           </p>
         </div>
       </div>
 
       {/* Filters & Search Controls */}
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Cari Nama/NOP/Alamat
@@ -182,25 +166,10 @@ export default function MonitoringObjekPajak() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
               placeholder="Masukkan kata kunci..."
             />
-          </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kecamatan
-            </label>
-            <select
-              value={kecamatan}
-              onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="Semua Kecamatan">Semua Kecamatan</option>
-              {kecamatanList.map(kec => (
-                <option key={kec} value={kec}>{kec}</option>
-              ))}
-            </select>
           </div>
           <div className="space-y-1.5">
             <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
@@ -208,22 +177,24 @@ export default function MonitoringObjekPajak() {
             </label>
             <select
               value={statusVerif}
-              onChange={(e) => setStatusVerif(e.target.value)}
+              onChange={(e) => { setStatusVerif(e.target.value); setCurrentPage(1); }}
               className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
             >
-              <option>Semua Status</option>
-              <option>Menunggu Verifikasi</option>
-              <option>Disetujui</option>
-              <option>Perlu Revisi</option>
-              <option>Draft</option>
+              <option value="Semua Status">Semua Status</option>
+              <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+              <option value="Diproses">Diproses</option>
+              <option value="Disetujui">Disetujui</option>
+              <option value="Perlu Revisi">Perlu Revisi</option>
+              <option value="Draft">Draft</option>
+              <option value="Ditolak">Ditolak</option>
             </select>
           </div>
           <div className="space-y-1.5 flex flex-col justify-end">
             <button
               onClick={() => {
                 setSearch('');
-                setKecamatan('Semua Kecamatan');
                 setStatusVerif('Semua Status');
+                setCurrentPage(1);
               }}
               className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
             >
@@ -249,50 +220,34 @@ export default function MonitoringObjekPajak() {
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/30 text-on-surface">
-              {paginatedSubmissions.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="px-4 py-8 text-center text-on-surface-variant">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <span className="material-symbols-outlined animate-spin text-[32px] text-primary">progress_activity</span>
+                      <p className="font-medium text-sm">Memuat data monitoring...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedSubmissions.length > 0 ? (
                 paginatedSubmissions.map((obj, i) => (
-                  <tr
-                    key={i}
-                    className={`hover:bg-surface-container-low transition-colors ${
-                      i % 2 === 1 ? 'bg-surface-container-low/20' : ''
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-data-mono text-primary font-bold whitespace-nowrap text-sm">
-                      {obj.nop}
-                    </td>
-                    <td className="px-4 py-3 font-label-md font-bold text-on-background whitespace-nowrap">{obj.name}</td>
-                    <td className="px-4 py-3 text-sm text-on-surface-variant leading-relaxed whitespace-nowrap">
-                      {obj.address}
-                    </td>
-                    <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
-                      {obj.land.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
-                      {obj.building.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                  <tr key={obj.id} className="hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+                    <td className="px-4 py-3 font-data-mono font-bold text-primary text-xs whitespace-nowrap">{obj.nop}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-on-surface whitespace-nowrap">{obj.name}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant max-w-[200px] truncate" title={obj.address}>{obj.address}</td>
+                    <td className="px-4 py-3 text-sm font-data-mono text-center">{obj.land}</td>
+                    <td className="px-4 py-3 text-sm font-data-mono text-center">{obj.building}</td>
+                    <td className="px-4 py-3 text-center">
                       <StatusBadge status={obj.status} />
                     </td>
-                    <td className="px-4 pl-6 py-3 text-left whitespace-nowrap">
-                      <div className="flex items-center justify-start gap-2">
-                        <button
-                          onClick={() => setSelectedSubmission(obj)}
-                          className="px-3 py-1.5 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">visibility</span>
-                          Detail
-                        </button>
-                        
-                        {(obj.status === 'Draft' || obj.status === 'Perlu Revisi') && (
-                          <button
-                            onClick={() => navigate(`/formulir-spop/${obj.id}`)}
-                            className="px-3 py-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 hover:border-yellow-500 hover:bg-yellow-100 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
-                            Edit
-                          </button>
-                        )}
-                      </div>
+                    <td className="px-4 py-3 text-center whitespace-nowrap flex items-center justify-center gap-2">
+                      <button 
+                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/formulir-spop/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">{(obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? 'edit' : 'visibility'}</span>
+                        {(obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? 'Edit' : 'Detail'}
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -344,26 +299,26 @@ export default function MonitoringObjekPajak() {
           <div className="flex items-center gap-1.5">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1 || totalItems === 0}
+              disabled={safeCurrentPage === 1 || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
             
             {Array.from({ length: Math.min(5, totalPages > 0 ? totalPages : 1) }, (_, i) => {
-              let pageNum = currentPage;
+              let pageNum = safeCurrentPage;
               const safeTotalPages = totalPages > 0 ? totalPages : 1;
               if (safeTotalPages <= 5) pageNum = i + 1;
-              else if (currentPage <= 3) pageNum = i + 1;
-              else if (currentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
-              else pageNum = currentPage - 2 + i;
+              else if (safeCurrentPage <= 3) pageNum = i + 1;
+              else if (safeCurrentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
+              else pageNum = safeCurrentPage - 2 + i;
               
               return (
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
                   className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
-                    currentPage === pageNum 
+                    safeCurrentPage === pageNum 
                       ? 'bg-blue-900 text-white shadow-sm' 
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
@@ -375,7 +330,7 @@ export default function MonitoringObjekPajak() {
 
             <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages || totalItems === 0}
+              disabled={safeCurrentPage === totalPages || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>

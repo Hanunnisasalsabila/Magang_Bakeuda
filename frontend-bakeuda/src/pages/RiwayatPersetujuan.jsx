@@ -47,7 +47,7 @@ export default function RiwayatPersetujuan() {
             namaPengaju: item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
             namaDesa: detail.kelurahan_op_baru || '-',
             kecamatan: detail.kecamatan_op_baru || '-',
-            reviewer: item.reviewer?.nama_lengkap || '-',
+            reviewer: item.verifikator?.nama_lengkap || item.reviewer?.nama_lengkap || '-',
             tanggalDiajukan: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesai: new Date(item.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesaiRaw: new Date(item.updated_at),
