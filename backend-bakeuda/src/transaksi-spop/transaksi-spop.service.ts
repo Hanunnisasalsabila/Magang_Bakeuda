@@ -266,23 +266,23 @@ export class TransaksiSpopService {
           id_transaksi: transaksi.id_transaksi,
           nik_calon_subjek: nik !== '0000000000000000' && nik !== '' ? nik : undefined,
           calon_subjek_json: Object.keys(subjek).length > 0 ? (subjek as any) : undefined,
-          luas_tanah_baru: objek.luas_tanah || 0,
-          luas_bangunan_baru: objek.luas_bangunan || 0,
-          jumlah_bangunan_baru: objek.jumlah_bangunan || 0,
-          jenis_tanah_baru,
-          jalan_op_baru: objek.jalan_op,
-          rt_op_baru: objek.rt_op,
-          rw_op_baru: objek.rw_op,
-          blok_kav_no_baru: objek.blok_kav_no,
-          kelurahan_op_baru: objek.kelurahan_op,
-          kecamatan_op_baru: objek.kecamatan_op,
-          no_persil_baru: objek.no_persil,
-          latitude: objek.latitude,
-          longitude: objek.longitude,
-          batas_utara: objek.batas_utara,
-          batas_selatan: objek.batas_selatan,
-          batas_timur: objek.batas_timur,
-          batas_barat: objek.batas_barat,
+          luas_tanah_baru: typeof objek.luas_tanah === 'number' && !isNaN(objek.luas_tanah) ? objek.luas_tanah : 0,
+          luas_bangunan_baru: typeof objek.luas_bangunan === 'number' && !isNaN(objek.luas_bangunan) ? objek.luas_bangunan : 0,
+          jumlah_bangunan_baru: typeof objek.jumlah_bangunan === 'number' && !isNaN(objek.jumlah_bangunan) ? objek.jumlah_bangunan : 0,
+          jenis_tanah_baru: jenis_tanah_baru,
+          jalan_op_baru: objek.jalan_op || undefined,
+          rt_op_baru: objek.rt_op || undefined,
+          rw_op_baru: objek.rw_op || undefined,
+          blok_kav_no_baru: objek.blok_kav_no || undefined,
+          kelurahan_op_baru: objek.kelurahan_op || undefined,
+          kecamatan_op_baru: objek.kecamatan_op || undefined,
+          no_persil_baru: objek.no_persil || undefined,
+          latitude: objek.latitude || undefined,
+          longitude: objek.longitude || undefined,
+          batas_utara: objek.batas_utara || undefined,
+          batas_selatan: objek.batas_selatan || undefined,
+          batas_timur: objek.batas_timur || undefined,
+          batas_barat: objek.batas_barat || undefined,
           data_bangunan_json: dto.bangunan && dto.bangunan.length > 0 ? (dto.bangunan as any) : undefined,
           nop_generated: ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis_layanan as string) ? dto.nop_utama : undefined,
         }
@@ -303,13 +303,45 @@ export class TransaksiSpopService {
         where: { id_transaksi: transaksi.id_transaksi },
         include: { detail_tujuan: true, detail_asal: true, lampiran: true, riwayat: true }
       });
-    });
+      });
     } catch (error) {
+      console.error('Error saving draft:', error);
       if (error.code === 'P2003') {
-        throw new BadRequestException('Draft gagal disimpan: NOP Asal atau NOP Bersama yang Anda masukkan belum terdaftar di sistem.');
+        throw new BadRequestException('NOP Asal atau NOP Bersama yang dimasukkan belum terdaftar di sistem. Harap periksa kembali.');
       }
-      throw error;
+      throw new BadRequestException('Gagal menyimpan draft: ' + (error.message || 'Kesalahan internal database'));
     }
+  }
+
+  async deleteDraft(id_transaksi: string, id_user: string) {
+    const transaksi = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi }
+    });
+
+    if (!transaksi) {
+      throw new NotFoundException('Draft tidak ditemukan');
+    }
+
+    if (transaksi.id_user !== id_user) {
+      throw new ForbiddenException('Anda tidak berhak menghapus draft ini');
+    }
+
+    if (transaksi.status_ajuan !== StatusAjuan.DRAFT) {
+      throw new BadRequestException('Hanya pengajuan berstatus DRAFT yang dapat dihapus sepenuhnya');
+    }
+
+    // Cascade delete manually
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
+      await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
+      await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
+      await tx.riwayatPelacakan.deleteMany({ where: { id_transaksi } });
+      
+      const deleted = await tx.transaksiSpop.delete({
+        where: { id_transaksi }
+      });
+      return { message: 'Draft berhasil dihapus beserta seluruh data terkaitnya.', id_transaksi: deleted.id_transaksi };
+    });
   }
 
   async updateTransaksi(id_transaksi: string, dto: CreateSpopDto | CreateDraftDto, id_user_request: string) {
@@ -666,7 +698,7 @@ export class TransaksiSpopService {
   async ajukanKeBakeuda(id_transaksi: string, kode_wilayah_user: string) {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
-      include: { pengaju: true },
+      include: { pengaju: true, detail_tujuan: true, lampiran: true, detail_asal: true },
     });
 
     if (!transaksi) {
@@ -679,6 +711,21 @@ export class TransaksiSpopService {
 
     if (transaksi.status_ajuan !== 'DRAFT' && transaksi.status_ajuan !== 'REVISI') {
       throw new BadRequestException('Hanya dokumen berstatus DRAFT atau REVISI yang dapat diajukan.');
+    }
+
+    // Server-side validation for completeness (Step 1-3)
+    const detailTujuan = transaksi.detail_tujuan[0];
+    if (!detailTujuan) {
+      throw new BadRequestException('Data pengajuan belum lengkap. Selesaikan Step 1 - 3 terlebih dahulu.');
+    }
+
+    const subjek = (detailTujuan.calon_subjek_json as any) || {};
+    if (!subjek.nik || !subjek.nama) {
+      throw new BadRequestException('Data Subjek Pajak belum lengkap.');
+    }
+
+    if (!detailTujuan.jalan_op_baru || !detailTujuan.luas_bumi_baru) {
+      throw new BadRequestException('Data Objek Pajak belum lengkap.');
     }
 
     return await this.prisma.$transaction(async (tx) => {
