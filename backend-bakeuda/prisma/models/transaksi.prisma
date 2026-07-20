@@ -83,6 +83,8 @@ model DetailTransaksiTujuan {
   rt_op_baru           String?    @db.VarChar(5)
   rw_op_baru           String?    @db.VarChar(5)
   blok_kav_no_baru     String?    @db.VarChar(50)
+  kode_wilayah_baru    String?    @db.VarChar(10)
+  kode_blok_baru       String?    @db.VarChar(3)
   kelurahan_op_baru    String?    @db.VarChar(100)
   kecamatan_op_baru    String?    @db.VarChar(100)
   no_persil_baru       String?    @db.VarChar(20)
