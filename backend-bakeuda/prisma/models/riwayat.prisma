@@ -1,12 +1,16 @@
 model RiwayatPelacakan {
-  id_riwayat     String      @id @default(uuid())
-  id_transaksi   String // FK -> transaksi_spop
-  status_riwayat StatusAjuan
-  keterangan     String?     @db.VarChar(500)
-  waktu_kejadian DateTime    @default(now())
+  id_riwayat   String      @id @default(uuid())
+  id_transaksi String
+  status_lama  StatusAjuan?
+  status_baru  StatusAjuan
+  id_user      String
+  catatan      String?     @db.VarChar(500)
+  created_at   DateTime    @default(now())
 
   // ── Relasi ──
   transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade)
+  user      User          @relation("RiwayatUser", fields: [id_user], references: [id_user])
 
+  @@index([id_transaksi])
   @@map("riwayat_pelacakan")
 }
