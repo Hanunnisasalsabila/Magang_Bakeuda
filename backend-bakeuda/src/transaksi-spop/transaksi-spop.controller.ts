@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Param, Query, Body, UseGuards, Request, HttpCode, HttpStatus, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, UseGuards, Request, HttpCode, HttpStatus, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -65,7 +65,12 @@ export class TransaksiSpopController {
   @Post('draft')
   @HttpCode(HttpStatus.CREATED)
   async saveDraft(@Body() dto: CreateDraftDto, @Request() req: any) {
-    return this.transaksiSpopService.saveDraft(dto, req.user.id_user);
+    try {
+      return await this.transaksiSpopService.saveDraft(dto, req.user.id_user);
+    } catch (error) {
+      require('fs').writeFileSync('d:\\Kuliah\\magang\\Magang_Bakeuda\\backend-bakeuda\\draft-error.log', error.stack || error.message);
+      throw error;
+    }
   }
 
   @Put(':id')
@@ -75,6 +80,14 @@ export class TransaksiSpopController {
     @Request() req: any
   ) {
     return this.transaksiSpopService.updateTransaksi(id_transaksi, dto, req.user.id_user);
+  }
+
+  @Delete(':id')
+  async deleteDraft(
+    @Param('id') id_transaksi: string,
+    @Request() req: any
+  ) {
+    return this.transaksiSpopService.deleteDraft(id_transaksi, req.user.id_user);
   }
 
   @Patch(':id/ajukan')
