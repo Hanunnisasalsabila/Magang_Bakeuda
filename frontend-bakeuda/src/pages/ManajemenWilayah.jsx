@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 import ToastNotification from '../components/ToastNotification';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -22,11 +21,12 @@ export default function ManajemenWilayah() {
   const [formData, setFormData] = useState({
     kode_wilayah: '',
     nama_desa: '',
-    kode_kel: '',
+    kode_kelurahan: '',
     kecamatan: '',
-    kode_kec: '',
+    kode_kecamatan: '',
     kabupaten: 'Purbalingga',
-    kode_kab: '3303',
+    kode_dati2: '03',
+    kode_propinsi: '33',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -72,8 +72,8 @@ export default function ManajemenWilayah() {
     setModalMode('add');
     setSelectedWilayah(null);
     setFormData({ 
-      kode_wilayah: '', nama_desa: '', kode_kel: '', 
-      kecamatan: '', kode_kec: '', kabupaten: 'Purbalingga', kode_kab: '3303' 
+      kode_wilayah: '', nama_desa: '', kode_kelurahan: '', 
+      kecamatan: '', kode_kecamatan: '', kabupaten: 'Purbalingga', kode_dati2: '03', kode_propinsi: '33' 
     });
     setFormError('');
     setIsModalOpen(true);
@@ -85,11 +85,12 @@ export default function ManajemenWilayah() {
     setFormData({ 
       kode_wilayah: wilayah.kode_wilayah, 
       nama_desa: wilayah.nama_desa, 
-      kode_kel: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(7, 10) : '', 
+      kode_kelurahan: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(7, 10) : '', 
       kecamatan: wilayah.kecamatan, 
-      kode_kec: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(4, 7) : '', 
+      kode_kecamatan: wilayah.kode_wilayah ? wilayah.kode_wilayah.substring(4, 7) : '', 
       kabupaten: 'Purbalingga', 
-      kode_kab: '3303' 
+      kode_dati2: '03',
+      kode_propinsi: '33'
     });
     setFormError('');
     setIsModalOpen(true);
@@ -134,16 +135,16 @@ export default function ManajemenWilayah() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'kode_kel' && value !== '' && !/^\d+$/.test(value)) {
+    if (name === 'kode_kelurahan' && value !== '' && !/^\d+$/.test(value)) {
       return; // Hanya izinkan input angka
     }
 
     setFormData(prev => {
       const updated = { ...prev, [name]: value };
       
-      // Auto-update kode_wilayah based on kode_kab + kode_kec + kode_kel
-      if (name === 'kode_kel' || name === 'kode_kec') {
-        updated.kode_wilayah = `${updated.kode_kab}${updated.kode_kec}${updated.kode_kel}`;
+      // Auto-update kode_wilayah
+      if (name === 'kode_kelurahan' || name === 'kode_kecamatan') {
+        updated.kode_wilayah = `${updated.kode_propinsi}${updated.kode_dati2}${updated.kode_kecamatan}${updated.kode_kelurahan}`;
       }
       
       return updated;
@@ -153,17 +154,13 @@ export default function ManajemenWilayah() {
   const handleKecamatanChange = (e) => {
     const selectedNama = e.target.value;
     const selectedData = KECAMATAN_DATA.find(k => k.nama === selectedNama);
+    const kodeKec = selectedData ? selectedData.kode : '';
     
     setFormData(prev => {
-      const newKodeKec = selectedData ? selectedData.kode : prev.kode_kec;
-      const newKodeWilayah = `${prev.kode_kab}${newKodeKec}${prev.kode_kel}`;
+      const updated = { ...prev, kecamatan: selectedNama, kode_kecamatan: kodeKec || '' };
+      updated.kode_wilayah = `${updated.kode_propinsi}${updated.kode_dati2}${updated.kode_kecamatan}${updated.kode_kelurahan}`;
       
-      return {
-        ...prev,
-        kecamatan: selectedNama,
-        kode_kec: newKodeKec,
-        kode_wilayah: newKodeWilayah
-      };
+      return updated;
     });
   };
 
@@ -441,8 +438,8 @@ export default function ManajemenWilayah() {
                       <input 
                         type="text" 
                         disabled
-                        value="3303" 
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
+                        value={`${formData.kode_propinsi}${formData.kode_dati2}`} 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-900" 
                       />
                     </div>
                   </div>
@@ -473,9 +470,9 @@ export default function ManajemenWilayah() {
                       <input 
                         type="text" 
                         disabled
-                        value={formData.kode_kec || ''} 
+                        value={formData.kode_kecamatan || 'Otomatis'} 
                         placeholder="Otomatis"
-                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-on-surface-variant font-mono" 
+                        className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md sm:text-sm shadow-sm focus:outline-none cursor-not-allowed text-gray-900" 
                       />
                     </div>
                   </div>
@@ -504,13 +501,13 @@ export default function ManajemenWilayah() {
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Desa (3 Digit Angka) <span className="text-red-500">*</span></label>
                       <input 
                         type="text" 
-                        name="kode_kel" 
+                        name="kode_kelurahan" 
                         required 
-                        value={formData.kode_kel} 
+                        value={formData.kode_kelurahan} 
                         onChange={handleChange}
                         maxLength="3"
                         placeholder="Misal: 001"
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md font-mono shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all text-gray-900" 
                       />
                     </div>
                   </div>
@@ -528,7 +525,7 @@ export default function ManajemenWilayah() {
                     disabled
                     value={formData.kode_wilayah || ''} 
                     placeholder="Menunggu data lengkap"
-                    className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 text-primary rounded-md font-mono shadow-sm outline-none cursor-not-allowed font-bold text-center sm:text-lg" 
+                    className="w-full px-4 py-2.5 bg-blue-50 border border-blue-200 text-gray-900 rounded-md shadow-sm outline-none cursor-not-allowed text-center sm:text-lg" 
                   />
                 </div>
               </div>
@@ -547,9 +544,9 @@ export default function ManajemenWilayah() {
                     isSubmitting || 
                     !formData.kecamatan || 
                     !formData.nama_desa || 
-                    !formData.kode_kel || 
-                    formData.kode_kel.length !== 3 ||
-                    (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa && formData.kecamatan === selectedWilayah.kecamatan && formData.kode_kel === (selectedWilayah.kode_wilayah ? selectedWilayah.kode_wilayah.substring(7, 10) : ''))
+                    !formData.kode_kelurahan || 
+                    formData.kode_kelurahan.length !== 3 ||
+                    (modalMode === 'edit' && selectedWilayah && formData.nama_desa === selectedWilayah.nama_desa && formData.kecamatan === selectedWilayah.kecamatan && formData.kode_kelurahan === (selectedWilayah.kode_wilayah ? selectedWilayah.kode_wilayah.substring(7, 10) : ''))
                   }
                   className="px-4 py-2 text-sm font-medium border border-transparent rounded-md transition-colors shadow-sm bg-primary text-white hover:bg-primary/90 flex justify-center items-center gap-2 disabled:bg-gray-300 disabled:text-on-surface-variant disabled:cursor-not-allowed disabled:shadow-none"
                 >

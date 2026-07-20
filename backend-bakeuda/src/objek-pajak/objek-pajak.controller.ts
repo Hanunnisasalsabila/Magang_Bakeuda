@@ -83,6 +83,12 @@ export class ObjekPajakController {
     return { success: true, data: KLASIFIKASI_BANGUNAN_META };
   }
 
+  // GET /objek-pajak/stats
+  @Get('stats')
+  async getStats(@Request() req: any) {
+    return this.objekPajakService.getStats(req.user);
+  }
+
   // GET /objek-pajak?q=keyword
   @Get()
   async search(@Query('q') keyword: string, @Request() req: any) {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, FeatureGroup, Polygon, CircleMarker, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
@@ -16,16 +16,47 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-function LocationPicker({ position, setPosition }) {
-  const map = useMapEvents({
+const dotIcon = L.divIcon({
+  className: 'custom-dot-icon',
+  html: '<div style="width: 12px; height: 12px; background-color: white; border: 2px solid blue; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.5);"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
+
+function MapClickHandler({ koordinatPolygon, setFormData }) {
+  useMapEvents({
     click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
+      setFormData(prev => {
+        const newCoords = [...(prev.koordinat_polygon || []), { lat: e.latlng.lat, lng: e.latlng.lng }];
+        return {
+          ...prev,
+          koordinat_polygon: newCoords,
+          latitude: newCoords.length === 1 ? e.latlng.lat.toString() : prev.latitude,
+          longitude: newCoords.length === 1 ? e.latlng.lng.toString() : prev.longitude
+        };
+      });
     },
   });
+  return null;
+}
 
-  return position === null ? null : (
-    <Marker position={position}></Marker>
-  );
+function MapUpdater({ center, referencePoint, searchBoundary }) {
+  const map = useMap();
+  useEffect(() => {
+    if (searchBoundary) {
+      try {
+        const geojsonLayer = L.geoJSON(searchBoundary);
+        map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
+      } catch (err) {
+        map.setView(center, 15);
+      }
+    } else if (referencePoint && referencePoint.length === 2) {
+      map.setView(referencePoint, 18);
+    } else if (center && center.length === 2) {
+      map.setView(center, 15);
+    }
+  }, [center, referencePoint, searchBoundary, map]);
+  return null;
 }
 
 export default function FormulirSPOP() {
@@ -35,6 +66,9 @@ export default function FormulirSPOP() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'error' });
   const [nopAsalList, setNopAsalList] = useState(['33.03.']);
   const [spptLama, setSpptLama] = useState('');
+
+  const [isRevisi, setIsRevisi] = useState(false);
+  const [catatanRevisi, setCatatanRevisi] = useState('');
 
   const [formData, setFormData] = useState({
     kategoriTransaksi: '',
@@ -92,6 +126,7 @@ export default function FormulirSPOP() {
     jumlahBangunan: '0',
     latitude: '',
     longitude: '',
+    koordinat_polygon: [],
     batasUtara: '',
     batasSelatan: '',
     batasTimur: '',
@@ -115,11 +150,11 @@ export default function FormulirSPOP() {
       try {
         const uploadData = new FormData();
         uploadData.append('file', file);
-        
+
         const res = await api.post('/transaksi-spop/upload', uploadData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        
+
         const fileUrl = res.data.url_file;
 
         setFormData(prev => ({
@@ -136,13 +171,127 @@ export default function FormulirSPOP() {
     }
   };
 
+  const [currentPosition, setCurrentPosition] = useState([-7.388830, 109.363718]);
+  const [referencePoint, setReferencePoint] = useState(null);
+  const [searchBoundary, setSearchBoundary] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    if (val.trim().length > 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const queryText = val.toLowerCase().includes('purbalingga') ? val : `${val} Purbalingga`;
+          const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=5&lat=-7.3888&lon=109.3637`);
+          const data = await res.json();
+          if (data && data.features) {
+            setSuggestions(data.features);
+            setShowSuggestions(true);
+          }
+        } catch (err) {
+          console.error('Autocomplete error', err);
+        }
+      }, 500);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const fetchAndSetBoundary = async (osmType, osmId, queryText, lon, lat) => {
+    try {
+      let url = '';
+      if (osmType && osmId) {
+        const typeChar = String(osmType).charAt(0).toUpperCase();
+        url = `https://nominatim.openstreetmap.org/lookup?osm_ids=${typeChar}${osmId}&format=json&polygon_geojson=1`;
+      } else if (queryText) {
+        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&polygon_geojson=1&limit=1`;
+      }
+
+      if (url) {
+        const res = await fetch(url);
+        const data = await res.json();
+        const result = Array.isArray(data) ? data[0] : (data && data[0] ? data[0] : null);
+        
+        if (result && result.geojson && (result.geojson.type === 'Polygon' || result.geojson.type === 'MultiPolygon')) {
+           setSearchBoundary(result.geojson);
+           setReferencePoint(null);
+           return;
+        }
+      }
+    } catch(err) {
+      console.error('Failed to fetch boundary', err);
+    }
+    
+    // Fallback: Just show the blue dot
+    setSearchBoundary(null);
+    setReferencePoint([parseFloat(lat), parseFloat(lon)]);
+  };
+
+  const handleSelectSuggestion = (feature) => {
+    const [lon, lat] = feature.geometry.coordinates;
+    const name = feature.properties.name || '';
+    const city = feature.properties.city || feature.properties.county || '';
+    
+    setSearchQuery(`${name}${city ? ', ' + city : ''}`);
+    setShowSuggestions(false);
+    
+    const coords = [parseFloat(lat), parseFloat(lon)];
+    setCurrentPosition(coords);
+    
+    fetchAndSetBoundary(feature.properties.osm_type, feature.properties.osm_id, null, lon, lat);
+  };
+
+  const handleSearchLokasi = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setShowSuggestions(false);
+    try {
+      const queryText = searchQuery.toLowerCase().includes('purbalingga') ? searchQuery : `${searchQuery} Purbalingga`;
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1&lat=-7.3888&lon=109.3637`);
+      const data = await response.json();
+      if (data && data.features && data.features.length > 0) {
+        const [lon, lat] = data.features[0].geometry.coordinates;
+        const coords = [parseFloat(lat), parseFloat(lon)];
+        setCurrentPosition(coords);
+        
+        fetchAndSetBoundary(data.features[0].properties.osm_type, data.features[0].properties.osm_id, queryText, lon, lat);
+      } else {
+        alert('Lokasi tidak ditemukan');
+      }
+    } catch (err) {
+      alert('Gagal mencari lokasi');
+    }
+    setIsSearching(false);
+  };
+
+  const handleLokasiSaya = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const coords = [position.coords.latitude, position.coords.longitude];
+        setCurrentPosition(coords);
+        setReferencePoint(coords);
+        setSearchBoundary(null);
+      }, (error) => {
+        alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
+      });
+    } else {
+      alert('Browser Anda tidak mendukung fitur lokasi');
+    }
+  };
+
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.latitude && formData.longitude 
-    ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
-    : defaultPosition;
 
   const handleMapClick = (pos) => {
-    setFormData(prev => ({ ...prev, latitude: pos[0].toString(), longitude: pos[1].toString() }));
+    // Legacy function, replaced by MapClickHandler
   };
 
   const handleNopChange = (nopObj) => {
@@ -153,7 +302,7 @@ export default function FormulirSPOP() {
     let val = e.target.value;
 
     // Filter angka saja
-    if (['nik', 'npwp', 'noTelp', 'rt', 'rw', 'kodePos', 'rtObjek', 'rwObjek'].includes(field)) {
+    if (['nik', 'npwp', 'noTelp', 'rt', 'rw', 'kodePos', 'rtObjek', 'rwObjek', 'jumlahBangunan'].includes(field)) {
       val = val.replace(/\D/g, '');
     }
 
@@ -164,13 +313,13 @@ export default function FormulirSPOP() {
 
     setFormData(prev => {
       const nextState = { ...prev, [field]: val };
-      
+
       // Jika ubah jenis tanah bukan TANAH_BANGUNAN, kunci jumlah & luas bangunan jadi 0
       if (field === 'jenisTanah' && val !== 'TANAH_BANGUNAN') {
         nextState.luasBangunan = '0';
         nextState.jumlahBangunan = '0';
       }
-      
+
       return nextState;
     });
   };
@@ -199,17 +348,21 @@ export default function FormulirSPOP() {
 
     setNopAsalList(prev => prev.map((item, i) => i === index ? formatted : item));
   };
-  
+
   useEffect(() => {
     if (id) {
       // Fetch draft data
       api.get(`/transaksi-spop/${id}`)
         .then(res => {
           const data = res.data.data;
-          if (data && data.status_ajuan === 'DRAFT') {
+          if (data && (data.status_ajuan === 'DRAFT' || data.status_ajuan === 'REVISI')) {
+            if (data.status_ajuan === 'REVISI') {
+              setIsRevisi(true);
+              setCatatanRevisi(data.catatan_bakeuda || '');
+            }
             const mapWpRev = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
             const mapPekerjaanRev = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
-            
+
             const detailTujuan = data.detail_tujuan && data.detail_tujuan[0];
             const subjekPajak = data.calon_subjek_temp;
 
@@ -221,44 +374,44 @@ export default function FormulirSPOP() {
             if (data.detail_asal && data.detail_asal.length > 0) {
               const nopString = data.detail_asal[0].nop_asal;
               if (nopString && nopString.length === 18) {
-                 nopObj = {
-                   prov: nopString.substring(0, 2),
-                   kab: nopString.substring(2, 4),
-                   kec: nopString.substring(4, 7),
-                   kel: nopString.substring(7, 10),
-                   blok: nopString.substring(10, 13),
-                   nourut: nopString.substring(13, 17),
-                   kode: nopString.substring(17, 18),
-                 };
+                nopObj = {
+                  prov: nopString.substring(0, 2),
+                  kab: nopString.substring(2, 4),
+                  kec: nopString.substring(4, 7),
+                  kel: nopString.substring(7, 10),
+                  blok: nopString.substring(10, 13),
+                  nourut: nopString.substring(13, 17),
+                  kode: nopString.substring(17, 18),
+                };
               }
               if (data.detail_asal.length > 1) {
-                 nopsAsal = data.detail_asal.slice(1).map(d => formatNOPString(d.nop_asal));
+                nopsAsal = data.detail_asal.slice(1).map(d => formatNOPString(d.nop_asal));
               } else if (data.jenis_transaksi === 'PECAH' || data.jenis_transaksi === 'GABUNG') {
-                 nopsAsal = data.detail_asal.map(d => formatNOPString(d.nop_asal));
+                nopsAsal = data.detail_asal.map(d => formatNOPString(d.nop_asal));
               }
             }
 
             if (data.nop_bersama && data.nop_bersama.length === 18) {
-               nopBersamaObj = {
-                   prov: data.nop_bersama.substring(0, 2),
-                   kab: data.nop_bersama.substring(2, 4),
-                   kec: data.nop_bersama.substring(4, 7),
-                   kel: data.nop_bersama.substring(7, 10),
-                   blok: data.nop_bersama.substring(10, 13),
-                   nourut: data.nop_bersama.substring(13, 17),
-                   kode: data.nop_bersama.substring(17, 18),
-               };
+              nopBersamaObj = {
+                prov: data.nop_bersama.substring(0, 2),
+                kab: data.nop_bersama.substring(2, 4),
+                kec: data.nop_bersama.substring(4, 7),
+                kel: data.nop_bersama.substring(7, 10),
+                blok: data.nop_bersama.substring(10, 13),
+                nourut: data.nop_bersama.substring(13, 17),
+                kode: data.nop_bersama.substring(17, 18),
+              };
             }
 
             setSpptLama(spptLamaVal);
             if (nopsAsal.length > 0) setNopAsalList(nopsAsal);
 
             // 1. Sanitize dummy values
-            const sanitize = (val, dummyVals) => dummyVals.includes(val) ? '' : val;
+            const sanitize = (val, dummyVals) => (!val || dummyVals.includes(val)) ? '' : val;
 
             const cleanNik = sanitize(detailTujuan?.nik_calon_subjek, ['0000000000000000', '']);
             const cleanNama = sanitize(data.nama_pengaju, ['DRAFT', '']);
-            const cleanAlamat = sanitize(subjekPajak?.alamat_jalan, ['DRAFT', '']);
+            const cleanAlamat = sanitize(subjekPajak?.alamat, ['DRAFT', '']);
             const cleanKel = sanitize(subjekPajak?.kelurahan, ['DRAFT', '']);
             const cleanKec = sanitize(subjekPajak?.kecamatan, ['DRAFT', '']);
             const cleanKab = sanitize(subjekPajak?.kabupaten, ['DRAFT', '']);
@@ -266,28 +419,35 @@ export default function FormulirSPOP() {
             const cleanRw = sanitize(subjekPajak?.rw, ['000', '']);
             const cleanJenisTanah = sanitize(detailTujuan?.jenis_tanah_baru, ['TANAH_KOSONG', '']);
             const cleanPekerjaan = sanitize(subjekPajak?.pekerjaan, ['LAINNYA', '']);
-            
+
             // 2. Extract and store data_bangunan_json for LSPOP
             if (detailTujuan?.data_bangunan_json) {
               localStorage.setItem('lspop_draft_bangunan', JSON.stringify(detailTujuan.data_bangunan_json));
             }
 
             // 3. Smart Step Jump
+            const isStep2Complete = cleanNik?.length === 16 && cleanNama && subjekPajak?.status_wp && subjekPajak?.pekerjaan && cleanAlamat && cleanRt && cleanRw && cleanKel && cleanKec && cleanKab;
+            const isStep3Complete = detailTujuan?.jalan_op_baru && detailTujuan?.rt_op_baru && detailTujuan?.rw_op_baru && detailTujuan?.kelurahan_op_baru && detailTujuan?.kecamatan_op_baru && detailTujuan?.luas_tanah_baru > 0 && cleanJenisTanah;
+
             let calculatedStep = 2;
-            if (detailTujuan && (detailTujuan.luas_tanah_baru > 0 || detailTujuan.jalan_op_baru)) {
+            if (isStep2Complete && isStep3Complete) {
               calculatedStep = 4;
-            } else if (cleanNik || cleanNama || cleanAlamat) {
+            } else if (isStep2Complete) {
               calculatedStep = 3;
             }
-            setStep(calculatedStep);
+            if (data.status_ajuan === 'REVISI') {
+              setStep(1);
+            } else {
+              setStep(calculatedStep);
+            }
 
             setFormData(prev => ({
               ...prev,
               transaksi: data.jenis_transaksi,
-              kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) 
-                ? 'baru' 
-                : ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi) 
-                  ? 'update' 
+              kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)
+                ? 'baru'
+                : ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi)
+                  ? 'update'
                   : 'hapus',
               isKuasa: data.menggunakan_kuasa,
               nop: nopObj,
@@ -319,17 +479,26 @@ export default function FormulirSPOP() {
               blokKavObjek: detailTujuan?.blok_kav_no_baru || '',
               latitude: detailTujuan?.latitude || '',
               longitude: detailTujuan?.longitude || '',
+              koordinat_polygon: detailTujuan?.koordinat_polygon || [],
               batasUtara: detailTujuan?.batas_utara || '',
               batasSelatan: detailTujuan?.batas_selatan || '',
               batasTimur: detailTujuan?.batas_timur || '',
               batasBarat: detailTujuan?.batas_barat || '',
+              lampiran: data.lampiran || [],
             }));
+            if (data.status_ajuan === 'DRAFT') {
+              // Kosong
+            }
           }
         })
         .catch(err => {
           console.error("Gagal memuat draf:", err);
           setToast({ show: true, message: 'Gagal memuat draf', type: 'error' });
         });
+    } else {
+      // CLEAR OLD STORAGE FOR NEW TRANSACTION
+      localStorage.removeItem('lspop_id_transaksi');
+      localStorage.removeItem('lspop_draft_bangunan');
     }
   }, [id]);
   useEffect(() => {
@@ -337,6 +506,29 @@ export default function FormulirSPOP() {
       setFormData(prev => ({ ...prev, jumlahBangunan: '0', luasBangunan: '' }));
     }
   }, [formData.jenisTanah]);
+
+  useEffect(() => {
+    // Auto-fill Wilayah if user has kode_wilayah
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.kode_wilayah) {
+          api.get('/wilayah').then(res => {
+            const wData = res.data.data;
+            const w = wData.find(item => item.kode_wilayah === user.kode_wilayah);
+            if (w) {
+              setFormData(prev => ({
+                ...prev,
+                kecamatanObjek: w.kecamatan,
+                kelurahanObjek: w.nama_desa
+              }));
+            }
+          }).catch(console.error);
+        }
+      } catch (e) { }
+    }
+  }, []);
 
   const addNopAsal = () => setNopAsalList(prev => [...prev, '33.03.']);
   const removeNopAsal = (index) => setNopAsalList(prev => prev.filter((_, i) => i !== index));
@@ -378,7 +570,7 @@ export default function FormulirSPOP() {
     if (currentStep === 1) {
       if (!formData.kategoriTransaksi) newErrors.transaksi = 'Pilih kategori pendaftaran';
       if (!formData.transaksi) newErrors.transaksi = 'Pilih jenis transaksi secara spesifik';
-      
+
       if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi)) {
         const nopObj = formData.nop;
         const nopString = `${nopObj.prov}${nopObj.kab}${nopObj.kec}${nopObj.kel}${nopObj.blok}${nopObj.nourut}${nopObj.kode}`;
@@ -398,24 +590,24 @@ export default function FormulirSPOP() {
       }
     } else if (currentStep === 2) {
       if (!formData.nik || !/^\d{16}$/.test(formData.nik)) newErrors.nik = 'NIK wajib 16 digit angka';
-      
-      const namaVal = formData.nama.trim();
+
+      const namaVal = (formData.nama || '').trim();
       if (!namaVal || namaVal.length < 3 || namaVal.length > 100 || !/^[a-zA-Z\s.,']+$/.test(namaVal)) {
         newErrors.nama = 'Nama Wajib Pajak 3-100 karakter, hanya huruf, spasi, titik, koma, petik';
       }
-      
+
       if (!formData.statusWp) newErrors.statusWp = 'Pilih Status WP';
       if (!formData.pekerjaan) newErrors.pekerjaan = 'Pilih Pekerjaan';
-      
+
       if (formData.npwp && !/^(\d{15}|\d{16})$/.test(formData.npwp)) {
         newErrors.npwp = 'NPWP harus 15 atau 16 digit angka';
       }
-      
+
       if (formData.noTelp && !/^(08|62)\d{8,13}$/.test(formData.noTelp)) {
         newErrors.noTelp = 'No. HP harus diawali 08/62, total 10-15 digit angka';
       }
 
-      const alamatVal = formData.alamat.trim();
+      const alamatVal = (formData.alamat || '').trim();
       if (!alamatVal || alamatVal.length < 5 || alamatVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(alamatVal)) {
         newErrors.alamat = 'Alamat 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
@@ -423,7 +615,7 @@ export default function FormulirSPOP() {
       if (!formData.rt || !/^\d{1,3}$/.test(formData.rt)) newErrors.rt = 'RT wajib 1-3 digit angka';
       if (!formData.rw || !/^\d{1,3}$/.test(formData.rw)) newErrors.rw = 'RW wajib 1-3 digit angka';
 
-      const kelVal = formData.kelurahan.trim();
+      const kelVal = (formData.kelurahan || '').trim();
       if (!kelVal || kelVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kelVal)) {
         newErrors.kelurahan = 'Kelurahan maksimal 100 karakter, hanya huruf, angka, spasi';
       }
@@ -432,8 +624,8 @@ export default function FormulirSPOP() {
       if (!kecVal || kecVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kecVal)) {
         newErrors.kecamatan = 'Kecamatan maksimal 100 karakter, hanya huruf, angka, spasi';
       }
-      
-      const kabVal = formData.kabupaten.trim();
+
+      const kabVal = (formData.kabupaten || '').trim();
       if (!kabVal || kabVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kabVal)) {
         newErrors.kabupaten = 'Kabupaten maksimal 100 karakter, hanya huruf, angka, spasi';
       }
@@ -446,9 +638,9 @@ export default function FormulirSPOP() {
       }
 
       if (formData.kodePos && !/^\d{5}$/.test(formData.kodePos)) newErrors.kodePos = 'Kode Pos harus 5 digit angka';
-      
+
     } else if (currentStep === 3) {
-      const jalanOpVal = formData.alamatObjek.trim();
+      const jalanOpVal = (formData.alamatObjek || '').trim();
       if (!jalanOpVal || jalanOpVal.length < 5 || jalanOpVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(jalanOpVal)) {
         newErrors.alamatObjek = 'Jalan OP 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
@@ -469,14 +661,14 @@ export default function FormulirSPOP() {
       if (formData.blokKavObjek && (formData.blokKavObjek.length > 50 || !/^[a-zA-Z0-9\s.\-]+$/.test(formData.blokKavObjek))) {
         newErrors.blokKavObjek = 'Maks 50 karakter, hanya huruf, angka, spasi, strip, titik';
       }
-      
+
       if (formData.noPersil && (formData.noPersil.length > 50 || !/^[a-zA-Z0-9\s.\-/]+$/.test(formData.noPersil))) {
         newErrors.noPersil = 'Maks 50 karakter, hanya huruf, angka, spasi, strip, titik, /';
       }
 
       if (!formData.luasTanah || parseFloat(formData.luasTanah) <= 0) newErrors.luasTanah = 'Luas Tanah wajib diisi dengan angka > 0';
       if (!formData.jenisTanah) newErrors.jenisTanah = 'Pilih Jenis Tanah';
-      
+
       const jb = parseInt(formData.jumlahBangunan || '0');
       if (isNaN(jb) || jb < 0 || jb > 99) {
         newErrors.jumlahBangunan = 'Jumlah Bangunan harus 0 - 99';
@@ -490,7 +682,7 @@ export default function FormulirSPOP() {
       if (['BARU', 'PECAH'].includes(formData.transaksi)) {
         if (!formData.latitude) newErrors.latitude = 'Wajib pin koordinat untuk transaksi Baru/Pecah';
         if (!formData.longitude) newErrors.longitude = 'Wajib pin koordinat untuk transaksi Baru/Pecah';
-        
+
         const hasDenah = formData.lampiran.some(l => l.jenis_dokumen === 'DENAH_LOKASI');
         if (!hasDenah) {
           newErrors.denahLokasi = 'Dokumen Denah Lokasi wajib diunggah (Lihat bagian Lampiran Dokumen)';
@@ -532,10 +724,10 @@ export default function FormulirSPOP() {
 
     const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
     const rawNop = nop.replace(/\D/g, '');
-    
+
     const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
     const rawNopBersama = nopBersama.replace(/\D/g, '');
-    
+
     const rawNopAsalList = nopAsalList.map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
 
     const jenis_layanan = formData.transaksi || 'BARU';
@@ -581,12 +773,16 @@ export default function FormulirSPOP() {
         jenis_tanah: formData.jenisTanah || undefined,
         latitude: formData.latitude || undefined,
         longitude: formData.longitude || undefined,
+        koordinat_polygon: formData.koordinat_polygon?.length > 0 ? formData.koordinat_polygon : undefined,
         batas_utara_nop: formData.batasUtara || undefined,
         batas_selatan_nop: formData.batasSelatan || undefined,
         batas_timur_nop: formData.batasTimur || undefined,
         batas_barat_nop: formData.batasBarat || undefined
       },
-      lampiran: formData.lampiran.length > 0 ? formData.lampiran : undefined,
+      lampiran: formData.lampiran.length > 0 ? formData.lampiran.map(l => ({
+        jenis_dokumen: l.jenis_dokumen,
+        url_file: l.url_file
+      })) : undefined,
     };
   };
 
@@ -594,7 +790,11 @@ export default function FormulirSPOP() {
     setIsSubmitting(true);
     try {
       const payload = buildPayload(true);
-      await api.post('/transaksi-spop/draft', payload);
+      if (id) {
+        await api.put(`/transaksi-spop/${id}`, payload);
+      } else {
+        await api.post('/transaksi-spop/draft', payload);
+      }
       setToast({ show: true, message: 'Draft berhasil disimpan ke akun Anda.', type: 'success' });
       setTimeout(() => navigate('/dashboard-desa'), 2000);
     } catch (error) {
@@ -606,13 +806,33 @@ export default function FormulirSPOP() {
     }
   };
 
+  const goToLspop = (currentPayload) => {
+    const nopObj = formData.nop;
+    const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
+    const finalNop = isNew
+      ? 'Akan digenerate oleh Bakeuda'
+      : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
+
+    localStorage.setItem('lspop_spop_payload', JSON.stringify(currentPayload));
+    localStorage.setItem('lspop_jenis_transaksi', formData.transaksi);
+    localStorage.setItem('lspop_nop', finalNop);
+    localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
+    if (id) {
+      localStorage.setItem('lspop_id_transaksi', id);
+    } else {
+      localStorage.removeItem('lspop_id_transaksi');
+    }
+
+    navigate('/formulir-lspop');
+  };
+
   const handleSubmit = async () => {
     if (!validateStep(step)) {
       setToast({ show: true, message: 'Pastikan semua data sudah benar sebelum disubmit.', type: 'error' });
       setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
       return;
     }
-    
+
     if (formData.isKuasa) {
       const hasSuratKuasa = formData.lampiran.some(l => l.jenis_dokumen === 'SURAT_KUASA');
       if (!hasSuratKuasa) {
@@ -642,22 +862,25 @@ export default function FormulirSPOP() {
     }
 
     const payload = buildPayload(false);
-    
+
     // Jika ada bangunan, tunda submit SPOP dan lanjutkan ke form LSPOP
     if (parseInt(formData.jumlahBangunan || '0') > 0) {
-      localStorage.setItem('lspop_spop_payload', JSON.stringify(payload));
-      localStorage.setItem('lspop_jenis_transaksi', formData.transaksi);
-      
-      const nopObj = formData.nop;
-      const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
-      const finalNop = isNew 
-        ? 'Akan digenerate oleh Bakeuda' 
-        : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
-      
-      localStorage.setItem('lspop_nop', finalNop);
-      localStorage.setItem('lspop_total_bangunan', formData.jumlahBangunan || '0');
-      
-      navigate('/formulir-lspop');
+      if (id) {
+        // Hanya lakukan PUT jika id ada (revisi), lalu pindah ke LSPOP
+        setIsSubmitting(true);
+        try {
+          await api.put(`/transaksi-spop/${id}`, payload);
+        } catch (error) {
+          setIsSubmitting(false);
+          const errorMsg = error.response?.data?.message || error.message || 'Gagal menyimpan SPOP';
+          setToast({ show: true, message: typeof errorMsg === 'string' ? errorMsg : 'Gagal menyimpan SPOP', type: 'error' });
+          setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 4000);
+          return;
+        }
+        setIsSubmitting(false);
+      }
+
+      goToLspop(payload);
       return;
     }
 
@@ -665,7 +888,18 @@ export default function FormulirSPOP() {
     setSubmitError(null);
 
     try {
-      const response = await api.post('/transaksi-spop', payload);
+      let response;
+      if (id) {
+        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
+        // Tunggu bentar buat ensure transaksi API nya complete kl put sblmnya, tp 
+        // kl di handle submit, sebenarnya PUT sblm patch/ajukan bisa dilakukan:
+        // Wait, since handleSubmit only submits to backend, I should put the payload first then ajukan.
+        await api.put(`/transaksi-spop/${id}`, payload);
+        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
+      } else {
+        response = await api.post('/transaksi-spop', payload);
+      }
+
       const result = response.data;
       setSubmitResult(result);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -702,9 +936,9 @@ export default function FormulirSPOP() {
           return (
             <React.Fragment key={s.num}>
               <button
-                onClick={() => isCompleted && setStep(s.num)}
+                onClick={() => (isCompleted || isRevisi) && setStep(s.num)}
                 disabled={step === 5}
-                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${isActive ? 'opacity-100' : isCompleted ? 'opacity-90' : 'opacity-40'
+                className={`flex flex-col items-center group cursor-pointer focus:outline-none ${isActive ? 'opacity-100' : (isCompleted || isRevisi) ? 'opacity-90' : 'opacity-40'
                   }`}
               >
                 <div
@@ -742,6 +976,18 @@ export default function FormulirSPOP() {
       {/* Form Content Canvas */}
       <div className="bg-white border border-outline-variant rounded-xl p-6 md:p-10 shadow-sm">
         <form onSubmit={(e) => e.preventDefault()} className="space-y-section-gap">
+          {isRevisi && catatanRevisi && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 mb-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-amber-600">warning</span>
+                <div>
+                  <h4 className="font-bold text-amber-800">⚠️ Dikembalikan oleh Bakeuda</h4>
+                  <p className="text-amber-700 mt-1 whitespace-pre-wrap">{catatanRevisi}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* STEP 1: INFORMASI UMUM */}
           {step === 1 && (
             <div className="space-y-8 animate-fadeIn">
@@ -808,9 +1054,9 @@ export default function FormulirSPOP() {
                             { val: 'GABUNG', label: 'Hasil Penggabungan' }
                           ].map(opt => (
                             <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
-                              <input 
-                                type="radio" name="transaksi" value={opt.val} 
-                                checked={formData.transaksi === opt.val} 
+                              <input
+                                type="radio" name="transaksi" value={opt.val}
+                                checked={formData.transaksi === opt.val}
                                 onChange={(e) => handleTextChange('transaksi', e)}
                                 className="text-primary focus:ring-primary"
                               />
@@ -829,9 +1075,9 @@ export default function FormulirSPOP() {
                             { val: 'PERUBAHAN_DATA', label: 'Ralat Luas / Alamat (Perubahan Data)' }
                           ].map(opt => (
                             <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border rounded-lg hover:bg-surface-container-high">
-                              <input 
-                                type="radio" name="transaksi" value={opt.val} 
-                                checked={formData.transaksi === opt.val} 
+                              <input
+                                type="radio" name="transaksi" value={opt.val}
+                                checked={formData.transaksi === opt.val}
                                 onChange={(e) => handleTextChange('transaksi', e)}
                                 className="text-primary focus:ring-primary"
                               />
@@ -1041,8 +1287,8 @@ export default function FormulirSPOP() {
                     />
                     {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
                     <label className="flex items-center gap-3 cursor-pointer mt-3 p-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="w-5 h-5 text-primary focus:ring-primary border-outline-variant rounded"
                         checked={formData.isKuasa}
                         onChange={(e) => setFormData(prev => ({ ...prev, isKuasa: e.target.checked }))}
@@ -1071,7 +1317,7 @@ export default function FormulirSPOP() {
                             onChange={(e) => {
                               handleFileUpload(e, 'SURAT_KUASA');
                               setErrors(prev => {
-                                const next = {...prev};
+                                const next = { ...prev };
                                 delete next.suratKuasa;
                                 return next;
                               });
@@ -1290,29 +1536,25 @@ export default function FormulirSPOP() {
                       placeholder="001"
                     />
                   </div>
-                  <div className="md:col-span-4 space-y-2">
-                    <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
+                  <div className="md:col-span-8 space-y-2">
+                    <label className="font-label-sm text-on-surface-variant block">DESA / KELURAHAN</label>
                     <input
                       type="text"
-                      maxLength={100}
                       value={formData.kelurahanObjek}
-                      onChange={(e) => handleTextChange('kelurahanObjek', e)}
-                      className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Purbalingga Lor"
+                      readOnly
+                      className="w-full h-11 border border-outline-variant bg-gray-100 text-gray-500 rounded px-4 font-body-md shadow-sm cursor-not-allowed"
+                      title="Desa otomatis terisi berdasarkan profil akun Anda"
                     />
-                    {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
                   </div>
                   <div className="md:col-span-4 space-y-2">
                     <label className="font-label-sm text-on-surface-variant block">KECAMATAN</label>
                     <input
                       type="text"
-                      maxLength={100}
                       value={formData.kecamatanObjek}
-                      onChange={(e) => handleTextChange('kecamatanObjek', e)}
-                      className={`w-full h-11 border ${errors.kecamatanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-body-md bg-white shadow-sm`}
-                      placeholder="Contoh: Purbalingga"
+                      readOnly
+                      className="w-full h-11 border border-outline-variant bg-gray-100 text-gray-500 rounded px-4 font-body-md shadow-sm cursor-not-allowed"
+                      title="Kecamatan otomatis terisi berdasarkan profil akun Anda"
                     />
-                    {errors.kecamatanObjek && <p className="text-error text-[12px]">{errors.kecamatanObjek}</p>}
                   </div>
                 </div>
               </section>
@@ -1332,6 +1574,7 @@ export default function FormulirSPOP() {
                       type="number"
                       value={formData.luasTanah}
                       onChange={(e) => handleTextChange('luasTanah', e)}
+                      onWheel={(e) => e.target.blur()}
                       className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
                       placeholder="Contoh: 150"
                     />
@@ -1390,8 +1633,7 @@ export default function FormulirSPOP() {
                     <div className="space-y-2">
                       <label className="font-label-sm text-primary block">JUMLAH BANGUNAN (UNIT)</label>
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
                         value={formData.jenisTanah !== 'TANAH_BANGUNAN' ? '0' : formData.jumlahBangunan}
                         onChange={(e) => handleTextChange('jumlahBangunan', e)}
                         disabled={formData.jenisTanah !== 'TANAH_BANGUNAN'}
@@ -1479,77 +1721,243 @@ export default function FormulirSPOP() {
                   </div>
                   {errors.denahLokasi && <p className="text-error font-bold text-sm">*{errors.denahLokasi}</p>}
                   <div className="space-y-4">
-                    <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Anda dapat menggeser peta di bawah ini lalu klik pada lokasi yang tepat, atau salin koordinat dari Google Maps.</p>
+                    <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Geser peta dan <b>klik pada peta secara berurutan</b> untuk membuat garis batas bangunan (poligon). Jika salah, klik Hapus Poligon.</p>
 
-                    <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative">
-                      <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 mb-2">
+                      <div className="flex-1 relative">
+                        <div className="flex bg-white border border-outline-variant rounded overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm">
+                          <input 
+                            type="text" 
+                            placeholder="Cari nama jalan, desa, atau kecamatan..." 
+                            className="flex-1 h-10 px-3 outline-none text-sm"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchLokasi())}
+                          />
+                          <button 
+                            type="button"
+                            onClick={handleSearchLokasi}
+                            disabled={isSearching}
+                            className="h-10 px-4 bg-surface-variant text-on-surface hover:bg-surface-variant/80 flex items-center gap-1 font-bold text-sm transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">search</span>
+                            {isSearching ? 'Mencari...' : 'Cari'}
+                          </button>
+                        </div>
+                        
+                        {/* Autocomplete Dropdown */}
+                        {showSuggestions && suggestions.length > 0 && (
+                          <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {suggestions.map((item, idx) => (
+                              <li 
+                                key={idx} 
+                                className="px-4 py-2 hover:bg-surface-variant cursor-pointer text-sm border-b border-outline-variant/30 last:border-0 flex flex-col"
+                                onMouseDown={() => handleSelectSuggestion(item)}
+                              >
+                                <span className="font-bold text-on-surface">{item.properties.name}</span>
+                                <span className="text-xs text-on-surface-variant">
+                                  {[item.properties.street, item.properties.city, item.properties.state, item.properties.country].filter(Boolean).join(', ')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={handleLokasiSaya}
+                        className="h-10 px-4 bg-primary text-white hover:bg-primary/90 flex items-center gap-2 font-bold text-sm rounded shadow-sm transition-colors whitespace-nowrap justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">my_location</span>
+                        Lokasi Saya
+                      </button>
+                    </div>
+
+                    <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative cursor-crosshair">
+                      <MapContainer 
+                        center={currentPosition} 
+                        zoom={15} 
+                        maxZoom={22}
+                        scrollWheelZoom={false}
+                        style={{ height: '100%', width: '100%' }}
+                        className="w-full h-full z-0"
+                      >
                         <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                          attribution="&copy; Google Maps"
+                          maxZoom={22}
                         />
-                        <LocationPicker position={currentPosition} setPosition={handleMapClick} />
+                        <MapUpdater center={currentPosition} referencePoint={referencePoint} searchBoundary={searchBoundary} />
+                        <MapClickHandler koordinatPolygon={formData.koordinat_polygon} setFormData={setFormData} />
+                        
+                        {searchBoundary && (
+                          <GeoJSON 
+                            key={JSON.stringify(searchBoundary)} 
+                            data={searchBoundary} 
+                            style={{ 
+                              color: 'blue', 
+                              weight: 2, 
+                              dashArray: '5, 10', 
+                              fillOpacity: 0.1,
+                              fillColor: 'blue'
+                            }} 
+                          />
+                        )}
+
+                        {referencePoint && (
+                          <Marker position={referencePoint} title="Lokasi Anda / Hasil Pencarian" />
+                        )}
+                        
+                        {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
+                          <Polygon positions={formData.koordinat_polygon} color="blue" />
+                        )}
+                        {formData.koordinat_polygon && formData.koordinat_polygon.map((p, idx) => (
+                          <Marker 
+                            key={idx} 
+                            position={[p.lat, p.lng]} 
+                            icon={dotIcon}
+                            draggable={true}
+                            eventHandlers={{
+                              dragend: (e) => {
+                                const marker = e.target;
+                                const position = marker.getLatLng();
+                                setFormData(prev => {
+                                  const newCoords = [...(prev.koordinat_polygon || [])];
+                                  newCoords[idx] = { lat: position.lat, lng: position.lng };
+                                  return { 
+                                    ...prev, 
+                                    koordinat_polygon: newCoords,
+                                    latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '',
+                                    longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : ''
+                                  };
+                                });
+                              }
+                            }}
+                          />
+                        ))}
                       </MapContainer>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 md:w-1/2">
-                      <div className="space-y-2">
-                        <label className="font-label-sm text-primary flex items-center">LATITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
-                        <input
-                          type="text"
-                          value={formData.latitude}
-                          onChange={(e) => handleTextChange('latitude', e)}
-                          className={`w-full h-12 border ${errors.latitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                          placeholder="-7.3878"
-                        />
-                        {errors.latitude && <p className="text-error text-[12px]">{errors.latitude}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="font-label-sm text-primary flex items-center">LONGITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
-                        <input
-                          type="text"
-                          value={formData.longitude}
-                          onChange={(e) => handleTextChange('longitude', e)}
-                          className={`w-full h-12 border ${errors.longitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                          placeholder="109.3639"
-                        />
-                        {errors.longitude && <p className="text-error text-[12px]">{errors.longitude}</p>}
-                      </div>
+                    <div className="flex flex-wrap gap-4 mt-2">
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => {
+                          const newCoords = [...(prev.koordinat_polygon || [])];
+                          newCoords.pop();
+                          return { 
+                            ...prev, 
+                            koordinat_polygon: newCoords, 
+                            latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '', 
+                            longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : '' 
+                          };
+                        })}
+                        disabled={!formData.koordinat_polygon || formData.koordinat_polygon.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-warning/10 text-warning border border-warning/20 rounded hover:bg-warning/20 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">undo</span>
+                        Batal Titik Terakhir
+                      </button>
+
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, koordinat_polygon: [], latitude: '', longitude: '' }))}
+                        className="flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-error/20 rounded hover:bg-error/20 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!formData.koordinat_polygon || formData.koordinat_polygon.length === 0}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        Hapus Semua
+                      </button>
+                      
+                      {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
+                        <>
+                          <a 
+                            href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded hover:bg-surface-variant transition-colors text-sm text-primary font-bold"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">map</span>
+                            Lihat di Google Maps
+                          </a>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const centerLat = formData.koordinat_polygon.reduce((sum, p) => sum + p.lat, 0) / formData.koordinat_polygon.length;
+                              const centerLng = formData.koordinat_polygon.reduce((sum, p) => sum + p.lng, 0) / formData.koordinat_polygon.length;
+                              const coordString = `${centerLat}, ${centerLng}`;
+                              navigator.clipboard.writeText(coordString).then(() => {
+                                alert(`Koordinat ${coordString} berhasil disalin!\n\nSilakan 'Paste' (Tempel) di kolom pencarian pada website BHUMI ATR/BPN untuk langsung menuju ke lokasi.`);
+                                window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                              }).catch(() => {
+                                window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                              });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded hover:bg-surface-variant transition-colors text-sm text-primary font-bold"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">public</span>
+                            Lihat di BHUMI ATR/BPN
+                          </button>
+                        </>
+                      )}
                     </div>
 
-                    {['BARU', 'PECAH'].includes(formData.transaksi) && (
-                      <div className="mt-4 p-4 border border-outline-variant bg-surface-container-lowest rounded flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div>
-                          <p className="font-bold text-on-surface text-sm">Unggah Denah Lokasi</p>
-                          <p className="text-xs text-on-surface-variant">Lampirkan foto/gambar sketsa denah lokasi (Wajib untuk transaksi ini).</p>
+                    {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
+                      <div className="mt-4">
+                        <label className="font-label-sm text-primary mb-2 block">DAFTAR TITIK KOORDINAT POLIGON</label>
+                        <div className="border border-outline-variant rounded overflow-hidden">
+                          <table className="w-full text-sm text-left">
+                            <thead className="bg-surface-variant text-on-surface">
+                              <tr>
+                                <th className="px-4 py-2 w-16 text-center">Titik</th>
+                                <th className="px-4 py-2 border-l border-outline-variant">Latitude</th>
+                                <th className="px-4 py-2 border-l border-outline-variant">Longitude</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {formData.koordinat_polygon.map((p, idx) => (
+                                <tr key={idx} className="border-t border-outline-variant bg-white">
+                                  <td className="px-4 py-2 text-center font-bold text-primary">{idx + 1}</td>
+                                  <td className="px-4 py-2 border-l border-outline-variant font-data-mono">{p.lat}</td>
+                                  <td className="px-4 py-2 border-l border-outline-variant font-data-mono">{p.lng}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                        <div className="relative overflow-hidden inline-block w-full md:w-auto">
-                          <button
-                            type="button"
-                            disabled={isUploading}
-                            className={`flex items-center justify-center w-full md:w-auto gap-2 px-4 py-2 rounded bg-primary text-on-primary font-bold hover:bg-primary/90 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
-                          >
-                            <span className="material-symbols-outlined text-sm">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
-                            {isUploading ? 'Mengunggah...' : 'Unggah Denah Lokasi'}
-                          </button>
+                        <p className="text-xs text-on-surface-variant mt-2">*Titik pertama akan digunakan sebagai titik utama (centroid) di database.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 md:w-1/2 mt-4">
+                        <div className="space-y-2">
+                          <label className="font-label-sm text-primary flex items-center">LATITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
                           <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={(e) => handleFileUpload(e, 'DENAH_LOKASI')}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            disabled={isUploading}
+                            type="text"
+                            value={formData.latitude}
+                            onChange={(e) => handleTextChange('latitude', e)}
+                            className={`w-full h-12 border ${errors.latitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                            placeholder="-7.3878"
                           />
+                          {errors.latitude && <p className="text-error text-[12px]">{errors.latitude}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-label-sm text-primary flex items-center">LONGITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
+                          <input
+                            type="text"
+                            value={formData.longitude}
+                            onChange={(e) => handleTextChange('longitude', e)}
+                            className={`w-full h-12 border ${errors.longitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                            placeholder="109.3639"
+                          />
+                          {errors.longitude && <p className="text-error text-[12px]">{errors.longitude}</p>}
                         </div>
                       </div>
                     )}
 
-                    {/* Google Street View Placeholder */}
-                    <div className="mt-4 p-4 border border-outline-variant border-dashed rounded-lg bg-surface-container-lowest flex flex-col items-center justify-center text-center">
-                      <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">streetview</span>
-                      <h5 className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</h5>
-                      <p className="text-sm text-on-surface-variant mt-1 max-w-md">
-                        Fitur Street View Google Maps dapat diintegrasikan di sini untuk melihat kondisi jalan dan bangunan secara real-time. (Memerlukan Google Maps API Key khusus).
-                      </p>
-                    </div>
+
+
+
                   </div>
                 </div>
 
@@ -1583,7 +1991,7 @@ export default function FormulirSPOP() {
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                       <div className="space-y-1 w-full sm:w-auto">
                         <label className="font-label-sm text-on-surface-variant block">Jenis Dokumen</label>
-                        <select 
+                        <select
                           value={jenisDokumenUpload}
                           onChange={(e) => setJenisDokumenUpload(e.target.value)}
                           className="h-12 border border-outline-variant rounded px-4 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary font-bold text-sm w-full sm:w-auto"
@@ -1596,6 +2004,13 @@ export default function FormulirSPOP() {
 
                       {/* Upload Button */}
                       <div className="relative overflow-hidden w-full sm:w-auto inline-block sm:mt-6">
+                        {isRevisi && formData.lampiran.length > 0 && (
+                          <div className="absolute -top-6 left-0 right-0 text-center">
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">
+                              File lama tersimpan
+                            </span>
+                          </div>
+                        )}
                         <button
                           type="button"
                           disabled={isUploading}
@@ -1779,11 +2194,11 @@ export default function FormulirSPOP() {
                 </button>
                 {parseInt(formData.jumlahBangunan) > 0 && (
                   <button
-                    onClick={() => navigate('/formulir-lspop')}
+                    onClick={() => goToLspop(buildPayload(false))}
                     className="px-10 py-3 rounded-full bg-primary text-on-primary font-bold hover:shadow-lg hover:bg-primary-dark transition-all flex items-center justify-center gap-2 animate-bounce hover:animate-none"
                   >
-                    <span className="material-symbols-outlined">assignment_add</span>
-                    Lanjut Isi LSPOP Sekarang
+                    <span className="material-symbols-outlined">{isRevisi ? 'edit_document' : 'assignment_add'}</span>
+                    {isRevisi ? 'Lanjut Perbaiki LSPOP' : 'Lanjut Isi LSPOP Sekarang'}
                   </button>
                 )}
               </div>
@@ -1830,11 +2245,11 @@ export default function FormulirSPOP() {
                     onClick={step === 4 ? handleSubmit : nextStep}
                     disabled={isSubmitting || (step === 4 && !formData.persetujuan)}
                     className={`w-full md:w-auto px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting || (step === 4 && !formData.persetujuan)
-                        ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
-                        : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
+                      ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70'
+                      : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'
                       }`}
                   >
-                    {isSubmitting ? 'Memproses...' : step === 4 ? 'Submit SPOP' : `Lanjutkan Ke Tahap ${step + 1}`}
+                    {isSubmitting ? 'Memproses...' : step === 4 ? (isRevisi ? 'Ajukan Ulang ke Bakeuda' : 'Submit SPOP') : `Lanjutkan Ke Tahap ${step + 1}`}
                     {!isSubmitting && (
                       <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
                         arrow_forward

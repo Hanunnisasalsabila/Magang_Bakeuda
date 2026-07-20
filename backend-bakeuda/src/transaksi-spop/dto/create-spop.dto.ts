@@ -55,6 +55,7 @@ export class ObjekPajakTempDto {
 
   @IsOptional() @IsString() @MaxLength(50) latitude?: string;
   @IsOptional() @IsString() @MaxLength(50) longitude?: string;
+  @IsOptional() koordinat_polygon?: any;
   @IsOptional() @IsString() @MaxLength(50) batas_utara?: string;
   @IsOptional() @IsString() @MaxLength(50) batas_selatan?: string;
   @IsOptional() @IsString() @MaxLength(50) batas_timur?: string;
@@ -67,6 +68,7 @@ export class LampiranDto {
 }
 
 export class CreateSpopDto {
+  @IsOptional() @IsString() id_transaksi?: string;
   @IsOptional() @IsBoolean() is_draft?: boolean;
   @IsOptional() @IsBoolean() is_kuasa?: boolean;
 

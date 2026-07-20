@@ -35,6 +35,7 @@ export class ObjekPajakDraftDto {
   @IsOptional() @IsString() kecamatan_op?: string;
   @IsOptional() @IsString() @MaxLength(50) latitude?: string;
   @IsOptional() @IsString() @MaxLength(50) longitude?: string;
+  @IsOptional() koordinat_polygon?: any;
   @IsOptional() @IsString() @MaxLength(50) batas_utara?: string;
   @IsOptional() @IsString() @MaxLength(50) batas_selatan?: string;
   @IsOptional() @IsString() @MaxLength(50) batas_timur?: string;

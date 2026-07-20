@@ -180,7 +180,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
                   value={nipBkd} 
                   onChange={(e) => setNipBkd(formatNIP(e.target.value))}
                   placeholder="Format: 18 Digit Angka"
-                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono tracking-wide" 
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900" 
                 />
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
                   placeholder="Format: 18 Digit Angka"
                   value={nipCamat} 
                   onChange={(e) => setNipCamat(formatNIP(e.target.value))}
-                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono tracking-wide" 
+                  className="w-full px-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900" 
                 />
               </div>
             </div>

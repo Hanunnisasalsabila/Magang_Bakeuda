@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../../services/dashboard_service.dart';
-import '../../widgets/custom_card.dart';
 
 class AdminDashboardTab extends StatefulWidget {
   const AdminDashboardTab({super.key});
@@ -16,7 +14,6 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
   
   Map<String, dynamic>? _stats;
   List<dynamic> _recentTransactions = [];
-  List<dynamic> _verifiers = [];
 
   @override
   void initState() {
@@ -37,20 +34,11 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
       setState(() {
         _stats = results[0] as Map<String, dynamic>?;
         _recentTransactions = results[1] as List<dynamic>? ?? [];
-        _verifiers = results[2] as List<dynamic>? ?? [];
         _isLoading = false;
       });
     }
   }
 
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return 'U';
-    final parts = name.split(' ');
-    if (parts.length > 1) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return parts[0][0].toUpperCase();
-  }
 
   Color _getStatusColor(String status, ColorScheme colorScheme) {
     if (status.contains('MENUNGGU')) return Colors.blue;
@@ -79,7 +67,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     }
 
     return Container(
-      color: theme.colorScheme.background,
+      color: theme.colorScheme.surface,
       child: RefreshIndicator(
         onRefresh: _fetchData,
         color: theme.colorScheme.primary,
@@ -137,7 +125,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha: 0.03),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -189,7 +177,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFFDC2626).withOpacity(0.05),
+                  color: const Color(0xFFDC2626).withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
@@ -264,7 +252,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -378,7 +366,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -389,7 +377,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -429,7 +417,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
+                            color: statusColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -446,7 +434,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                           'Baru saja', // placeholder time
                           style: TextStyle(
                             fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                           ),
                         ),
                       ],

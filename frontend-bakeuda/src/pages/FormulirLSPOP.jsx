@@ -15,6 +15,10 @@ export default function FormulirLSPOP() {
   const [idTransaksi, setIdTransaksi] = useState(null);
   const [bangunanList, setBangunanList] = useState([]);
   const [isDraft, setIsDraft] = useState(false);
+  const [spopTransaksi, setSpopTransaksi] = useState('');
+  const [isRevisi, setIsRevisi] = useState(false);
+  const [catatanRevisi, setCatatanRevisi] = useState('');
+  const [draftDataList, setDraftDataList] = useState([]);
 
   // State untuk Progressive Disclosure UI
   const [hasAC, setHasAC] = useState(false);
@@ -51,36 +55,107 @@ export default function FormulirLSPOP() {
     </div>
   );
 
+  const applyDataToForm = (data) => {
+    setFormData(prev => ({ ...prev, ...data }));
+    setHasAC(parseFloat(data.acSplit || 0) > 0 || parseFloat(data.acWindow || 0) > 0 || parseFloat(data.acSentral || 0) > 0);
+    setHasKolamRenang(parseFloat(data.kolamRenangLuas || 0) > 0);
+    setHasHalaman(parseFloat(data.halamanRingan || 0) > 0 || parseFloat(data.halamanSedang || 0) > 0 || parseFloat(data.halamanBerat || 0) > 0);
+    setHasPagar(parseFloat(data.panjangPagar || 0) > 0);
+    setHasLapanganTenis(
+      parseFloat(data.lapanganTenisLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisLampuTanah || 0) > 0 ||
+      parseFloat(data.lapanganTenisTanpaLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuTanah || 0) > 0
+    );
+    setHasLiftEskalator(parseFloat(data.liftPenumpang || 0) > 0 || parseFloat(data.liftKapsul || 0) > 0 || parseFloat(data.liftBarang || 0) > 0 || parseFloat(data.tanggaBerjalanKecil || 0) > 0 || parseFloat(data.tanggaBerjalanBesar || 0) > 0);
+    setHasPemadam(parseFloat(data.pemadamHydrant || 0) > 0 || parseFloat(data.pemadamSprinkler || 0) > 0 || parseFloat(data.pemadamFireAl || 0) > 0);
+    setHasPabx(parseFloat(data.saluranPabx || 0) > 0);
+    setHasSumur(parseFloat(data.sumurArtesis || 0) > 0);
+  };
+
   useEffect(() => {
     const savedNop = localStorage.getItem('lspop_nop');
     const savedTotal = localStorage.getItem('lspop_total_bangunan');
     const savedId = localStorage.getItem('lspop_id_transaksi');
     
+    let isRev = false;
     const spopPayloadStr = localStorage.getItem('lspop_spop_payload');
     if (spopPayloadStr) {
       const payload = JSON.parse(spopPayloadStr);
-      if (payload.is_draft) setIsDraft(true);
+      if (payload.is_draft || payload.status_ajuan === 'DRAFT') setIsDraft(true);
     }
     
-    const draftBangunanStr = localStorage.getItem('lspop_draft_bangunan');
-    if (draftBangunanStr) {
-      try {
-        const parsedList = JSON.parse(draftBangunanStr);
-        if (Array.isArray(parsedList) && parsedList.length > 0) {
-          setBangunanList(parsedList);
-          setNomorBangunan(parsedList.length + 1);
-        }
-      } catch (e) {
-        console.error('Failed to parse draft bangunan', e);
-      }
+    if (savedId) {
+      setIdTransaksi(savedId);
+      api.get(`/transaksi-spop/${savedId}`)
+        .then(res => {
+          const data = res.data?.data;
+          if (data) {
+            if (data.status_ajuan === 'REVISI') {
+              setIsRevisi(true);
+              isRev = true;
+              setCatatanRevisi(data.catatan_bakeuda || '');
+            }
+
+            const detailTujuan = data.detail_tujuan && data.detail_tujuan[0];
+            if (detailTujuan?.data_bangunan_json) {
+              try {
+                let parsedList = typeof detailTujuan.data_bangunan_json === 'string' 
+                  ? JSON.parse(detailTujuan.data_bangunan_json) 
+                  : detailTujuan.data_bangunan_json;
+                
+                if (typeof parsedList === 'string') {
+                  parsedList = JSON.parse(parsedList);
+                }
+
+                if (Array.isArray(parsedList) && parsedList.length > 0) {
+                  // Convert any 0 values back to empty strings for better UX
+                  parsedList.forEach(bangunan => {
+                    Object.keys(bangunan).forEach(key => {
+                      if (bangunan[key] === 0) {
+                        bangunan[key] = '';
+                      }
+                    });
+                  });
+
+                  if (isRev || data.status_ajuan === 'DRAFT') {
+                    setDraftDataList(parsedList);
+                    setBangunanList([]);
+                    setNomorBangunan(1);
+                    setTotalBangunan(parsedList.length);
+                    setFormData(prev => ({ ...prev, jumlahBng: parsedList.length.toString() }));
+                    setTimeout(() => applyDataToForm(parsedList[0]), 0);
+                  } else {
+                    const lastBangunan = parsedList.pop();
+                    setBangunanList(parsedList);
+                    setNomorBangunan(parsedList.length + 1);
+                    setTimeout(() => applyDataToForm(lastBangunan), 0);
+                  }
+                }
+              } catch (e) {
+                console.error('Failed to parse draft bangunan dari DB', e);
+              }
+            }
+          }
+        })
+        .catch(err => console.error("Gagal memuat transaksi LSPOP dari DB:", err));
     }
 
+    
+    
     if (savedNop) setNop(savedNop);
     if (savedTotal) {
       setTotalBangunan(parseInt(savedTotal));
       setFormData(prev => ({ ...prev, jumlahBng: savedTotal }));
     }
-    if (savedId) setIdTransaksi(savedId);
+
+    const spopTx = localStorage.getItem('lspop_jenis_transaksi');
+    if (spopTx) {
+      setSpopTransaksi(spopTx);
+      if (['BARU', 'PECAH', 'GABUNG'].includes(spopTx)) {
+        setFormData(prev => ({ ...prev, jenisTransaksi: 'Perekaman Data' }));
+      } else if (spopTx === 'PENGHAPUSAN') {
+        setFormData(prev => ({ ...prev, jenisTransaksi: 'Penghapusan Data' }));
+      }
+    }
   }, []);
 
   const [formData, setFormData] = useState({
@@ -146,6 +221,7 @@ export default function FormulirLSPOP() {
     
     // Constraint khusus jumlah lantai (maksimal 2 digit / 99)
     if (field === 'jumlahLantai') {
+      value = value.replace(/\D/g, '');
       if (value.length > 2) value = value.slice(0, 2);
     }
     
@@ -334,9 +410,15 @@ export default function FormulirLSPOP() {
       setIsSubmitting(false);
       setToast({ show: true, message: `Data Bangunan Ke-${nomorBangunan} berhasil disimpan secara lokal. Lanjut ke bangunan berikutnya.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
+      
+      if (isRevisi && draftDataList[nomorBangunan]) {
+        applyDataToForm(draftDataList[nomorBangunan]);
+      } else {
+        resetForm();
+      }
+      
       setNomorBangunan(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      resetForm();
     } else {
       await submitToServer(newBangunanList, false);
     }
@@ -362,8 +444,13 @@ export default function FormulirLSPOP() {
     console.log('PAYLOAD TERPADU (SPOP + LSPOP):', terpaduPayload);
     
     try {
-      const endpoint = isSaveDraft ? '/transaksi-spop/draft' : '/transaksi-spop';
-      await api.post(endpoint, terpaduPayload);
+      if (isRevisi && idTransaksi && !isSaveDraft) {
+        await api.put(`/transaksi-spop/${idTransaksi}`, terpaduPayload);
+        await api.patch(`/transaksi-spop/${idTransaksi}/ajukan`);
+      } else {
+        const endpoint = isSaveDraft ? '/transaksi-spop/draft' : '/transaksi-spop';
+        await api.post(endpoint, terpaduPayload);
+      }
       
       localStorage.removeItem('lspop_spop_payload');
       localStorage.removeItem('lspop_jenis_transaksi');
@@ -448,6 +535,18 @@ export default function FormulirLSPOP() {
         </div>
       </div>
 
+      {isRevisi && catatanRevisi && (
+        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 mb-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-600">warning</span>
+            <div>
+              <h4 className="font-bold text-amber-800">⚠️ Catatan Revisi dari Bakeuda</h4>
+              <p className="text-amber-700 mt-1 whitespace-pre-wrap">{catatanRevisi}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface-container border border-outline-variant p-6 rounded-t-xl shadow-sm">
         <h4 className="font-bold text-on-surface text-lg border-b border-outline-variant/50 pb-3 mb-4">Informasi Induk (SPOP)</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -457,11 +556,32 @@ export default function FormulirLSPOP() {
           </div>
           <div className="space-y-2">
             <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">Jenis Transaksi</label>
-            <select value={formData.jenisTransaksi} onChange={(e) => handleTextChange('jenisTransaksi', e)} className="w-full h-10 border border-outline-variant rounded px-3 text-sm">
-              <option value="Perekaman Data">Perekaman Data</option>
-              <option value="Pemutakhiran Data">Pemutakhiran Data</option>
-              <option value="Penghapusan Data">Penghapusan Data</option>
-              <option value="Penilaian Individual">Penilaian Individual</option>
+            <select 
+              value={formData.jenisTransaksi} 
+              onChange={(e) => handleTextChange('jenisTransaksi', e)} 
+              disabled={['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(spopTransaksi)}
+              className={`w-full h-10 border border-outline-variant rounded px-3 text-sm ${['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(spopTransaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : ''}`}
+            >
+              {['BARU', 'PECAH', 'GABUNG'].includes(spopTransaksi) && (
+                <option value="Perekaman Data">Perekaman Data</option>
+              )}
+              {['MUTASI', 'PERUBAHAN'].includes(spopTransaksi) && (
+                <>
+                  <option value="Perekaman Data">Perekaman Data</option>
+                  <option value="Pemutakhiran Data">Pemutakhiran Data</option>
+                  <option value="Penghapusan Data">Penghapusan Data</option>
+                </>
+              )}
+              {spopTransaksi === 'PENGHAPUSAN' && (
+                <option value="Penghapusan Data">Penghapusan Data</option>
+              )}
+              {!spopTransaksi && (
+                <>
+                  <option value="Perekaman Data">Perekaman Data</option>
+                  <option value="Pemutakhiran Data">Pemutakhiran Data</option>
+                  <option value="Penghapusan Data">Penghapusan Data</option>
+                </>
+              )}
             </select>
           </div>
           <div className="space-y-2">
@@ -471,11 +591,11 @@ export default function FormulirLSPOP() {
           <div className="flex gap-4">
             <div className="space-y-2 flex-1">
               <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Jml Bng</label>
-              <input type="number" value={totalBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" />
+              <input type="number" onWheel={(e) => e.target.blur()} value={totalBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" />
             </div>
             <div className="space-y-2 flex-1">
               <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Bng M²</label>
-              <input type="number" value={formData.luasBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" placeholder="M²" />
+              <input type="number" onWheel={(e) => e.target.blur()} value={formData.luasBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" placeholder="M²" />
             </div>
           </div>
         </div>
@@ -508,29 +628,29 @@ export default function FormulirLSPOP() {
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">2. Luas Bangunan (M²)</label>
-                <input type="number" value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
+                <input type="number" onWheel={(e) => e.target.blur()} value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
                 {errors.luasBangunan && <p className="text-error text-[12px]">{errors.luasBangunan}</p>}
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">3. Jumlah Lantai</label>
-                <input type="number" value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
+                <input type="text" value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
                 {errors.jumlahLantai && <p className="text-error text-[12px]">{errors.jumlahLantai}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">4. Tahun Dibangun</label>
-                <input type="number" value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 2010" />
+                <input type="number" onWheel={(e) => e.target.blur()} value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 2010" />
                 {errors.tahunDibangun && <p className="text-error text-[12px]">{errors.tahunDibangun}</p>}
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">5. Tahun Direnovasi (Opsional)</label>
-                <input type="number" value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
+                <input type="number" onWheel={(e) => e.target.blur()} value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
                 {errors.tahunDirenovasi && <p className="text-error text-[12px]">{errors.tahunDirenovasi}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">6. Daya Listrik Terpasang (WATT)</label>
-                <input type="number" value={formData.dayaListrik} onChange={(e) => handleTextChange('dayaListrik', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1300" />
+                <input type="number" onWheel={(e) => e.target.blur()} value={formData.dayaListrik} onChange={(e) => handleTextChange('dayaListrik', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1300" />
                 {errors.dayaListrik && <p className="text-error text-[12px]">{errors.dayaListrik}</p>}
               </div>
               <div className="space-y-2"></div>
@@ -568,11 +688,11 @@ export default function FormulirLSPOP() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Jumlah AC Split</label>
-                      <input type="number" value={formData.acSplit} onChange={e => handleTextChange('acSplit', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.acSplit} onChange={e => handleTextChange('acSplit', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Jumlah AC Window</label>
-                      <input type="number" value={formData.acWindow} onChange={e => handleTextChange('acWindow', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.acWindow} onChange={e => handleTextChange('acWindow', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">AC Sentral</label>
@@ -596,7 +716,7 @@ export default function FormulirLSPOP() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Luas Kolam (M²)</label>
-                      <input type="number" value={formData.kolamRenangLuas} onChange={e => handleTextChange('kolamRenangLuas', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 50" />
+                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.kolamRenangLuas} onChange={e => handleTextChange('kolamRenangLuas', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 50" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Finishing / Pelapis</label>
@@ -620,7 +740,7 @@ export default function FormulirLSPOP() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Panjang Pagar (M)</label>
-                      <input type="number" value={formData.panjangPagar} onChange={e => handleTextChange('panjangPagar', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 15" />
+                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.panjangPagar} onChange={e => handleTextChange('panjangPagar', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 15" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Bahan Pagar</label>
@@ -646,10 +766,10 @@ export default function FormulirLSPOP() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <h6 className="font-bold text-sm mb-4">Luas Perkerasan Berdasarkan Jenis (M²)</h6>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Ringan</label><input type="number" value={formData.halamanRingan} onChange={e=>handleTextChange('halamanRingan',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Sedang</label><input type="number" value={formData.halamanSedang} onChange={e=>handleTextChange('halamanSedang',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Berat</label><input type="number" value={formData.halamanBerat} onChange={e=>handleTextChange('halamanBerat',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Penutup Lantai</label><input type="number" value={formData.halamanPenutupLantai} onChange={e=>handleTextChange('halamanPenutupLantai',e)} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Ringan</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanRingan} onChange={e=>handleTextChange('halamanRingan',e)} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Sedang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanSedang} onChange={e=>handleTextChange('halamanSedang',e)} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Berat</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanBerat} onChange={e=>handleTextChange('halamanBerat',e)} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Penutup Lantai</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanPenutupLantai} onChange={e=>handleTextChange('halamanPenutupLantai',e)} className="w-full p-2.5 border rounded-lg" /></div>
                     </div>
                   </div>
                 )}
@@ -670,17 +790,17 @@ export default function FormulirLSPOP() {
                       <div>
                         <p className="text-xs font-bold text-primary mb-3 uppercase tracking-widest border-b pb-2">Dengan Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" value={formData.lapanganTenisLampuBeton} onChange={e=>handleTextChange('lapanganTenisLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" value={formData.lapanganTenisLampuAspal} onChange={e=>handleTextChange('lapanganTenisLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" value={formData.lapanganTenisLampuTanah} onChange={e=>handleTextChange('lapanganTenisLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuBeton} onChange={e=>handleTextChange('lapanganTenisLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuAspal} onChange={e=>handleTextChange('lapanganTenisLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuTanah} onChange={e=>handleTextChange('lapanganTenisLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
                         </div>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-outline mb-3 uppercase tracking-widest border-b pb-2">Tanpa Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" value={formData.lapanganTenisTanpaLampuBeton} onChange={e=>handleTextChange('lapanganTenisTanpaLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" value={formData.lapanganTenisTanpaLampuAspal} onChange={e=>handleTextChange('lapanganTenisTanpaLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" value={formData.lapanganTenisTanpaLampuTanah} onChange={e=>handleTextChange('lapanganTenisTanpaLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuBeton} onChange={e=>handleTextChange('lapanganTenisTanpaLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuAspal} onChange={e=>handleTextChange('lapanganTenisTanpaLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuTanah} onChange={e=>handleTextChange('lapanganTenisTanpaLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
                         </div>
                       </div>
                     </div>
@@ -699,14 +819,14 @@ export default function FormulirLSPOP() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Lift (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Penumpang</label><input type="number" value={formData.liftPenumpang} onChange={e=>handleTextChange('liftPenumpang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Kapsul</label><input type="number" value={formData.liftKapsul} onChange={e=>handleTextChange('liftKapsul', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Barang</label><input type="number" value={formData.liftBarang} onChange={e=>handleTextChange('liftBarang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Penumpang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftPenumpang} onChange={e=>handleTextChange('liftPenumpang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Kapsul</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftKapsul} onChange={e=>handleTextChange('liftKapsul', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Barang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftBarang} onChange={e=>handleTextChange('liftBarang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
                     </div>
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Eskalator (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &lt; 0.80 M</label><input type="number" value={formData.tanggaBerjalanKecil} onChange={e=>handleTextChange('tanggaBerjalanKecil', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &gt; 0.80 M</label><input type="number" value={formData.tanggaBerjalanBesar} onChange={e=>handleTextChange('tanggaBerjalanBesar', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &lt; 0.80 M</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.tanggaBerjalanKecil} onChange={e=>handleTextChange('tanggaBerjalanKecil', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &gt; 0.80 M</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.tanggaBerjalanBesar} onChange={e=>handleTextChange('tanggaBerjalanBesar', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
                     </div>
                   </div>
                 )}
@@ -750,7 +870,7 @@ export default function FormulirLSPOP() {
                 {hasPabx && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <label className="text-xs font-bold text-on-surface-variant block mb-2 uppercase tracking-wider">Jumlah Saluran</label>
-                    <input type="number" value={formData.saluranPabx} onChange={e => handleTextChange('saluranPabx', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                    <input type="number" onWheel={(e) => e.target.blur()} value={formData.saluranPabx} onChange={e => handleTextChange('saluranPabx', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                   </div>
                 )}
               </div>
@@ -764,7 +884,7 @@ export default function FormulirLSPOP() {
                 {hasSumur && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <label className="text-xs font-bold text-on-surface-variant block mb-2 uppercase tracking-wider">Kedalaman (Meter)</label>
-                    <input type="number" value={formData.sumurArtesis} onChange={e => handleTextChange('sumurArtesis', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Kedalaman" />
+                    <input type="number" onWheel={(e) => e.target.blur()} value={formData.sumurArtesis} onChange={e => handleTextChange('sumurArtesis', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Kedalaman" />
                   </div>
                 )}
               </div>
@@ -789,7 +909,7 @@ export default function FormulirLSPOP() {
               className={`px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'}`}
             >
               <span className="material-symbols-outlined">{isSubmitting ? 'hourglass_empty' : 'save'}</span>
-              {isSubmitting ? 'Menyimpan...' : nomorBangunan < totalBangunan ? 'Simpan & Lanjut ke Bangunan Berikutnya' : 'Kirim Seluruh Data LSPOP'}
+              {isSubmitting ? 'Menyimpan...' : nomorBangunan < totalBangunan ? 'Simpan & Lanjut ke Bangunan Berikutnya' : isRevisi ? 'Simpan & Ajukan Ulang ke Bakeuda' : 'Kirim Seluruh Data LSPOP'}
             </button>
           </div>
         </form>

@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); prisma.transaksiSpop.findMany({ include: { detail_tujuan: true } }).then(data => console.log(JSON.stringify(data, null, 2))).finally(() => prisma.$disconnect());

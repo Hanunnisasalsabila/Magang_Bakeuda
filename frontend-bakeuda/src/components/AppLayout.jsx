@@ -26,6 +26,7 @@ export default function AppLayout({ role, onRoleChange, handleLogout, activePage
         { path: '/manajemen-akun-desa', label: 'Akun Desa', icon: 'manage_accounts' },
         { path: '/antrean-verifikasi', label: 'Antrean', icon: 'fact_check' },
         { path: '/detail-review', label: 'Review', icon: 'rate_review' },
+        { path: '/riwayat-persetujuan', label: 'Riwayat', icon: 'task_alt' },
         { path: '/profil', label: 'Profil', icon: 'person' },
       ];
 

@@ -85,10 +85,11 @@ model ObjekPajak {
   njop_total      Decimal? @db.Decimal(15, 2)
   tahun_penilaian Int?
 
-  status_aktif  Boolean   @default(true)
-  nonaktif_oleh String?
-  nonaktif_at   DateTime?
-  created_at    DateTime  @default(now())
+  status_aktif      Boolean   @default(true)
+  nonaktif_oleh     String?
+  nonaktif_at       DateTime?
+  created_at        DateTime  @default(now())
+  koordinat_polygon Json?
 
   // ── Relasi ──
   wilayah       Wilayah               @relation(fields: [kode_wilayah], references: [kode_wilayah])

@@ -1,47 +1,28 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL!;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const passwordHash = await bcrypt.hash('123456', 10);
-
-  // Admin A
-  const adminA = await prisma.user.upsert({
-    where: { username: 'admin.a' },
-    update: {},
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: { password_hash: adminPassword },
     create: {
-      username: 'admin.a',
-      password_hash: passwordHash,
-      nama_lengkap: 'Admin A (Bakeuda)',
+      id_user: 'admin-12345',
+      nama_lengkap: 'Super Admin Bakeuda',
+      username: 'admin',
+      password_hash: adminPassword,
       role: 'BAKEUDA',
-      is_active: true,
     },
   });
-
-  // Admin B
-  const adminB = await prisma.user.upsert({
-    where: { username: 'admin.b' },
-    update: {},
-    create: {
-      username: 'admin.b',
-      password_hash: passwordHash,
-      nama_lengkap: 'Admin B (Bakeuda)',
-      role: 'BAKEUDA',
-      is_active: true,
-    },
-  });
-
-  console.log('✅ Berhasil membuat 2 admin penguji:');
-  console.log('1. Username: admin.a | Password: 123456');
-  console.log('2. Username: admin.b | Password: 123456');
+  console.log("Admin user created!");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().catch(console.error).finally(() => prisma.$disconnect());

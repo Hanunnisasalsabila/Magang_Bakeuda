@@ -20,24 +20,42 @@ class AppTheme {
         onError: AppColors.onError,
         errorContainer: AppColors.errorContainer,
         onErrorContainer: AppColors.onErrorContainer,
-        background: AppColors.background,
-        onBackground: AppColors.onBackground,
-        surface: AppColors.surface,
-        onSurface: AppColors.onSurface,
-        surfaceVariant: AppColors.surfaceContainer,
+        surface: Colors.white,
+        onSurface: Color(0xFF1E293B),
+        surfaceContainerHighest: Color(0xFFF1F5F9),
+
         onSurfaceVariant: AppColors.onSurfaceVariant,
         outline: AppColors.outline,
         outlineVariant: AppColors.outlineVariant,
       ),
       scaffoldBackgroundColor: AppColors.background,
       textTheme: GoogleFonts.interTextTheme().copyWith(
-        displayLarge: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.64),
-        headlineMedium: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600),
-        titleLarge: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600),
+        displayLarge: GoogleFonts.inter(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.64,
+        ),
+        headlineMedium: GoogleFonts.inter(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+        ),
+        titleLarge: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
         bodyLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400),
-        bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400),
-        labelLarge: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-        labelSmall: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500),
+        bodyMedium: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+        labelLarge: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        labelSmall: GoogleFonts.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
@@ -55,9 +73,7 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
           textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(

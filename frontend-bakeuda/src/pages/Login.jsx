@@ -14,6 +14,20 @@ export default function Login({ onLoginSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (username.length < 4) {
+      setError('Username harus terdiri dari minimal 4 karakter.');
+      return;
+    }
+    if (/\s/.test(username)) {
+      setError('Username tidak boleh mengandung spasi.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password harus terdiri dari minimal 6 karakter.');
+      return;
+    }
+
     setLoading(true);
 
     try {

@@ -17,6 +17,11 @@ async function main() {
   const wilayahDataRaw = fs.readFileSync(wilayahDataPath, 'utf8');
   const wilayahData = JSON.parse(wilayahDataRaw);
 
+  console.log(`🗺️ Menghapus data lama...`);
+  await prisma.user.deleteMany({});
+  await prisma.pejabatDesa.deleteMany({});
+  await prisma.wilayah.deleteMany({});
+
   console.log(`🗺️ Menyimpan ${wilayahData.length} data wilayah...`);
   for (const w of wilayahData) {
     await prisma.wilayah.upsert({
@@ -24,12 +29,13 @@ async function main() {
       update: {},
       create: {
         kode_wilayah: w.kode_wilayah,
-        nama_desa: w.nama_desa,
-        kode_kel: w.kode_kel,
-        kecamatan: w.kecamatan,
-        kode_kec: w.kode_kec,
+        kode_propinsi: w.kode_wilayah.substring(0, 2),
+        kode_dati2: w.kode_wilayah.substring(2, 4),
         kabupaten: w.kabupaten,
-        kode_kab: w.kode_kab,
+        kode_kecamatan: w.kode_wilayah.substring(4, 7),
+        kecamatan: w.kecamatan,
+        kode_kelurahan: w.kode_wilayah.substring(7, 10),
+        nama_desa: w.nama_desa,
       },
     });
   }

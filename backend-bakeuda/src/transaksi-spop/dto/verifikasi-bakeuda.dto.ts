@@ -11,5 +11,13 @@ export class VerifikasiBakeudaDto {
 
   @IsString()
   @IsOptional()
-  nop_baru?: string;
+  kode_wilayah?: string;
+
+  @IsString()
+  @IsOptional()
+  kode_blok?: string;
+
+  @IsString()
+  @IsOptional()
+  kode_jenis_op?: string;
 }

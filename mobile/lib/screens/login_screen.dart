@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Modern Mesh Gradient Background
           Positioned.fill(
             child: Container(
-              color: theme.colorScheme.background,
+              color: theme.colorScheme.surface,
             ),
           ),
           Positioned(
@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 400,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.2),
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.15),
+                color: theme.colorScheme.secondary.withValues(alpha: 0.15),
               ),
             ),
           ),
@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 250,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF6E2C00).withOpacity(0.1), // tertiary container
+                color: const Color(0xFF6E2C00).withValues(alpha: 0.1), // tertiary container
               ),
             ),
           ),
@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: theme.colorScheme.errorContainer,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: theme.colorScheme.errorContainer.withOpacity(0.5),
+                                color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
                               ),
                             ),
                             child: Row(
@@ -241,6 +241,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Username tidak boleh kosong';
                             }
+                            if (value.length < 4) {
+                              return 'Minimal 4 karakter';
+                            }
+                            if (value.contains(' ')) {
+                              return 'Tidak boleh ada spasi';
+                            }
                             return null;
                           },
                         ),
@@ -254,6 +260,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Password tidak boleh kosong';
+                            }
+                            if (value.length < 6) {
+                              return 'Minimal 6 karakter';
                             }
                             return null;
                           },

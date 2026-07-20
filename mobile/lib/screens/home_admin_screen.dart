@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'tabs/admin_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/verifikasi_spop_tab.dart';
+import 'tabs/monitoring_pajak_tab.dart';
 import 'akun_desa_screen.dart';
+import 'daftar_objek_pajak_screen.dart';
+import 'manajemen_wilayah_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 
@@ -19,6 +22,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
   final List<Widget> _pages = [
     const AdminDashboardTab(),
     const VerifikasiSpopTab(),
+    const MonitoringPajakTab(),
     const ProfileTab(
       name: 'Admin BKD',
       email: 'admin@purbalingga.go.id',
@@ -26,11 +30,6 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     ),
   ];
 
-  final List<String> _titles = [
-    'SPOP Digital',
-    'Verifikasi',
-    'Profil',
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -69,13 +68,13 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         ),
         centerTitle: false,
         elevation: 0,
-        backgroundColor: theme.colorScheme.background,
-        foregroundColor: theme.colorScheme.onBackground,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         actions: [
           IconButton(
             icon: Icon(Icons.notifications_none_rounded, color: theme.colorScheme.primary),
             onPressed: () {
-              // TODO: Notifikasi
+              
             },
           )
         ],
@@ -100,8 +99,8 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.primary.withOpacity(0.9),
-                      theme.colorScheme.primary.withOpacity(0.4),
+                      theme.colorScheme.primary.withValues(alpha: 0.9),
+                      theme.colorScheme.primary.withValues(alpha: 0.4),
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -136,7 +135,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                               Text(
                                 'admin@purbalingga.go.id',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
@@ -162,9 +161,31 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
               title: const Text('Antrean SPOP'),
               onTap: () {
                 Navigator.pop(context);
-                setState(() {
-                  _currentIndex = 1; // Switch to Verifikasi Tab
-                });
+                setState(() => _currentIndex = 1);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics_outlined),
+              title: const Text('Monitoring Objek Pajak'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 2);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.search_outlined),
+              title: const Text('Daftar Objek Pajak'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const DaftarObjekPajakScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.map_outlined),
+              title: const Text('Manajemen Wilayah'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ManajemenWilayahScreen()));
               },
             ),
             const Divider(),
@@ -191,7 +212,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.onSurface.withOpacity(0.1),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -220,6 +241,11 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
               icon: Icon(Icons.verified_user_outlined),
               activeIcon: Icon(Icons.verified_user),
               label: 'Verifikasi',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined),
+              activeIcon: Icon(Icons.analytics),
+              label: 'Monitoring',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),

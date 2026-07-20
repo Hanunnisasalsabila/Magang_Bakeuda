@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axios';
-import wilayahData from '../utils/wilayahData.json';
 import ToastNotification from '../components/ToastNotification';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CetakKredensialModal from '../components/CetakKredensialModal';
@@ -9,17 +8,17 @@ export default function ManajemenAkunDesa() {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterWilayah, setFilterWilayah] = useState('');
-  const [wilayahList, setWilayahList] = useState(wilayahData);
-  
+  const [wilayahList, setWilayahList] = useState([]);
+
   // Pagination & Sorting state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState({ key: 'nama_lengkap', direction: 'asc' });
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -35,9 +34,9 @@ export default function ManajemenAkunDesa() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
 
-  
+
+
   // Custom Alerts & Confirms
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null, username: '' });
@@ -58,6 +57,16 @@ export default function ManajemenAkunDesa() {
 
   useEffect(() => {
     fetchUsers();
+
+    const fetchWilayah = async () => {
+      try {
+        const res = await api.get('/wilayah');
+        setWilayahList(res.data.data);
+      } catch (err) {
+        console.error("Gagal memuat wilayah", err);
+      }
+    };
+    fetchWilayah();
   }, []);
 
   const openAddModal = () => {
@@ -71,12 +80,12 @@ export default function ManajemenAkunDesa() {
   const openEditModal = (user) => {
     setModalMode('edit');
     setSelectedUser(user);
-    setFormData({ 
-      nama_lengkap: user.nama_lengkap, 
-      username: user.username, 
+    setFormData({
+      nama_lengkap: user.nama_lengkap,
+      username: user.username,
       password: '', // Kosongkan password saat edit
       kode_wilayah: user.kode_wilayah || '',
-      nip: user.nip || ''
+      nip: formatNIP(user.nip || '')
     });
     setFormError('');
     setIsModalOpen(true);
@@ -110,16 +119,22 @@ export default function ManajemenAkunDesa() {
         return;
       }
 
+      // NIP diformat dengan spasi hanya untuk tampilan di form.
+      // Sebelum dikirim ke API, spasi harus dihapus (backend hanya menerima angka murni),
+      // dan jika kosong dikirim sebagai null karena field ini opsional.
+      const cleanedNip = formData.nip ? formData.nip.replace(/\s/g, '') : null;
+      const payload = { ...formData, nip: cleanedNip };
+
       if (modalMode === 'add') {
         if (!formData.password) {
           setFormError('Password wajib diisi untuk akun baru');
           setIsSubmitting(false);
           return;
         }
-        await api.post('/users', formData);
+        await api.post('/users', payload);
         setToast({ show: true, message: `Akun baru berhasil ditambahkan`, type: 'success' });
       } else {
-        const updateData = { ...formData };
+        const updateData = { ...payload };
         if (!updateData.password) {
           delete updateData.password;
         }
@@ -135,8 +150,25 @@ export default function ManajemenAkunDesa() {
     }
   };
 
+  const formatNIP = (value) => {
+    if (!value) return '';
+    let val = value.replace(/\D/g, '');
+    val = val.substring(0, 18);
+    let formatted = '';
+    if (val.length > 0) formatted += val.substring(0, 8);
+    if (val.length > 8) formatted += ' ' + val.substring(8, 14);
+    if (val.length > 14) formatted += ' ' + val.substring(14, 15);
+    if (val.length > 15) formatted += ' ' + val.substring(15, 18);
+    return formatted;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'nip') {
+      setFormData({ ...formData, [name]: formatNIP(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSort = (key) => {
@@ -150,8 +182,8 @@ export default function ManajemenAkunDesa() {
   // Filtered and Sorted users for rendering
   const filteredUsers = users.filter(user => {
     const searchLower = searchQuery.toLowerCase();
-    const matchSearch = user.username.toLowerCase().includes(searchLower) || 
-                        user.nama_lengkap.toLowerCase().includes(searchLower);
+    const matchSearch = user.username.toLowerCase().includes(searchLower) ||
+      user.nama_lengkap.toLowerCase().includes(searchLower);
     const matchWilayah = filterWilayah ? user.kode_wilayah === filterWilayah : true;
     return matchSearch && matchWilayah;
   }).sort((a, b) => {
@@ -179,14 +211,14 @@ export default function ManajemenAkunDesa() {
           </p>
         </div>
         <div className="shrink-0 flex gap-3">
-          <button 
+          <button
             onClick={() => setIsPrintModalOpen(true)}
             className="bg-white text-primary border border-primary hover:bg-primary/5 px-5 py-2.5 rounded shadow-sm font-semibold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             <span className="material-symbols-outlined text-[18px]">print</span>
             Cetak Kredensial
           </button>
-          <button 
+          <button
             onClick={openAddModal}
             className="bg-primary text-white hover:bg-primary/90 px-5 py-2.5 rounded shadow-sm font-semibold text-sm transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
           >
@@ -204,9 +236,9 @@ export default function ManajemenAkunDesa() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors text-[20px]">
               search
             </span>
-            <input 
-              type="text" 
-              placeholder="Cari nama atau username..." 
+            <input
+              type="text"
+              placeholder="Cari nama atau username..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -243,7 +275,7 @@ export default function ManajemenAkunDesa() {
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
               <tr className="bg-surface-container-low/30 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                <th 
+                <th
                   className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/3 cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('nama_lengkap')}
                 >
@@ -256,7 +288,7 @@ export default function ManajemenAkunDesa() {
                     )}
                   </div>
                 </th>
-                <th 
+                <th
                   className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/4 cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('username')}
                 >
@@ -269,7 +301,7 @@ export default function ManajemenAkunDesa() {
                     )}
                   </div>
                 </th>
-                <th 
+                <th
                   className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/4 cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('kode_wilayah')}
                 >
@@ -361,14 +393,14 @@ export default function ManajemenAkunDesa() {
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <button 
+                        <button
                           onClick={() => openEditModal(user)}
                           className="flex items-center justify-center w-8 h-8 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all shadow-sm group/btn"
                           title="Edit Akun"
                         >
                           <span className="material-symbols-outlined text-[18px] group-hover/btn:scale-110 transition-transform">edit</span>
                         </button>
-                        <button 
+                        <button
                           onClick={() => triggerDelete(user.id_user, user.username)}
                           className="flex items-center justify-center w-8 h-8 bg-white text-error border border-outline-variant hover:border-error hover:bg-error/5 rounded-lg transition-all shadow-sm group/btn"
                           title="Hapus Akun"
@@ -391,7 +423,7 @@ export default function ManajemenAkunDesa() {
               <div className="flex items-center gap-2 border-r border-outline-variant/60 pr-4">
                 <label className="font-semibold whitespace-nowrap">Tampilkan:</label>
                 <div className="relative">
-                  <select 
+                  <select
                     value={itemsPerPage}
                     onChange={(e) => {
                       setItemsPerPage(Number(e.target.value));
@@ -415,7 +447,7 @@ export default function ManajemenAkunDesa() {
                 Menampilkan <span className="font-bold text-on-surface">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-on-surface">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> dari <span className="font-bold text-on-surface">{filteredUsers.length}</span> pengguna
               </div>
             </div>
-            
+
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -425,29 +457,28 @@ export default function ManajemenAkunDesa() {
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               </button>
-              
+
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum = currentPage;
                 if (totalPages <= 5) pageNum = i + 1;
                 else if (currentPage <= 3) pageNum = i + 1;
                 else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
                 else pageNum = currentPage - 2 + i;
-                
+
                 return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
-                      currentPage === pageNum 
-                        ? 'bg-primary text-white border-primary shadow-sm' 
+                    className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${currentPage === pageNum
+                        ? 'bg-primary text-white border-primary shadow-sm'
                         : 'border border-outline-variant text-on-surface hover:bg-surface-container-high hover:border-on-surface/30'
-                    }`}
+                      }`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
-              
+
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages || totalPages === 0}
@@ -476,14 +507,14 @@ export default function ManajemenAkunDesa() {
                   {modalMode === 'add' ? 'Lengkapi data untuk membuat akses login.' : 'Ubah informasi atau reset password pengguna.'}
                 </p>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)} 
+              <button
+                onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            
+
             <form onSubmit={handleFormSubmit} className="p-6">
               {formError && (
                 <div className="mb-6 p-4 bg-error/10 text-error rounded-xl flex items-start gap-3 border border-error/20">
@@ -491,31 +522,31 @@ export default function ManajemenAkunDesa() {
                   <p className="text-sm font-bold">{formError}</p>
                 </div>
               )}
-              
+
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap</label>
-                    <input 
-                      type="text" 
-                      name="nama_lengkap" 
-                      required 
-                      value={formData.nama_lengkap} 
+                    <input
+                      type="text"
+                      name="nama_lengkap"
+                      required
+                      value={formData.nama_lengkap}
                       onChange={handleChange}
                       placeholder="Contoh: Budi Santoso"
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
-                    <input 
-                      type="text" 
-                      name="username" 
-                      required 
-                      value={formData.username} 
+                    <input
+                      type="text"
+                      name="username"
+                      required
+                      value={formData.username}
                       onChange={handleChange}
                       placeholder="Contoh: budi.santoso"
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all"
                     />
                   </div>
                 </div>
@@ -523,13 +554,14 @@ export default function ManajemenAkunDesa() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP <span className="opacity-70 text-xs">(Opsional)</span></label>
-                    <input 
-                      type="text" 
-                      name="nip" 
-                      value={formData.nip} 
+                    <input
+                      type="text"
+                      name="nip"
+                      value={formData.nip}
                       onChange={handleChange}
-                      placeholder="Contoh: 198501012010011001"
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all font-mono" 
+                      placeholder="Contoh: 19850101 201001 1 001"
+                      maxLength={21}
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all text-gray-900"
                     />
                   </div>
                   <div>
@@ -537,18 +569,18 @@ export default function ManajemenAkunDesa() {
                       Kata Sandi (Password)
                     </label>
                     <div className="relative">
-                      <input 
+                      <input
                         type={showPassword ? "text" : "password"}
-                        name="password" 
-                        required={modalMode === 'add'} 
-                        value={formData.password} 
+                        name="password"
+                        required={modalMode === 'add'}
+                        value={formData.password}
                         onChange={handleChange}
                         placeholder="Masukkan password..."
-                        className="w-full pl-3 pr-10 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" 
+                        className="w-full pl-3 pr-10 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all"
                       />
                       {formData.password.length > 0 && (
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center rounded"
                         >
@@ -565,16 +597,16 @@ export default function ManajemenAkunDesa() {
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Area / Wilayah Tugas</label>
                   <div className="relative">
-                    <select 
-                      name="kode_wilayah" 
-                      required 
-                      value={formData.kode_wilayah} 
+                    <select
+                      name="kode_wilayah"
+                      required
+                      value={formData.kode_wilayah}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all cursor-pointer" 
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all cursor-pointer"
                     >
                       <option value="">Pilih Kode Wilayah</option>
                       {wilayahList.map((w) => (
@@ -588,20 +620,20 @@ export default function ManajemenAkunDesa() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col-reverse sm:flex-row justify-end gap-3 bg-gray-50 -mx-6 px-6 -mb-6 pb-6 pt-5">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 >
                   Batal
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={
-                    isSubmitting || 
-                    !formData.nama_lengkap || 
-                    !formData.username || 
-                    !formData.kode_wilayah || 
+                    isSubmitting ||
+                    !formData.nama_lengkap ||
+                    !formData.username ||
+                    !formData.kode_wilayah ||
                     (modalMode === 'add' && !formData.password) ||
                     (modalMode === 'edit' && selectedUser && (
                       formData.nama_lengkap === selectedUser.nama_lengkap &&
@@ -625,11 +657,11 @@ export default function ManajemenAkunDesa() {
 
 
       {/* Reusable Toast & Confirm */}
-      <ToastNotification 
-        show={toast.show} 
-        message={toast.message} 
-        type={toast.type} 
-        onClose={() => setToast({ ...toast, show: false })} 
+      <ToastNotification
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
       />
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}

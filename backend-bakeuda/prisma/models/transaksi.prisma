@@ -91,6 +91,7 @@ model DetailTransaksiTujuan {
   nop_generated        String?    @db.VarChar(18)
   latitude             String?    @db.VarChar(50)
   longitude            String?    @db.VarChar(50)
+  koordinat_polygon    Json?
   batas_utara          String?    @db.VarChar(50)
   batas_selatan        String?    @db.VarChar(50)
   batas_timur          String?    @db.VarChar(50)

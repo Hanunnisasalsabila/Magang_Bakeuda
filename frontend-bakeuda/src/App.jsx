@@ -6,6 +6,14 @@ import Login from './pages/Login';
 import DashboardDesa from './pages/DashboardDesa';
 import DashboardAdmin from './pages/DashboardAdmin';
 import FormulirSPOP from './pages/FormulirSPOP';
+import SpopLayout from './pages/Spop/SpopLayout';
+import SpopDetail from './pages/Spop/SpopDetail';
+import Step1InformasiUmum from './pages/Spop/Step1InformasiUmum';
+import Step2SubjekPajak from './pages/Spop/Step2SubjekPajak';
+import Step3ObjekPajak from './pages/Spop/Step3ObjekPajak';
+import Step4Konfirmasi from './pages/Spop/Step4Konfirmasi';
+import Step5Status from './pages/Spop/Step5Status';
+import { SpopProvider } from './context/SpopContext';
 import AntreanVerifikasi from './pages/AntreanVerifikasi';
 import DetailReviewSPOP from './pages/DetailReviewSPOP';
 import DaftarObjekPajak from './pages/DaftarObjekPajak';
@@ -15,6 +23,9 @@ import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
 import ManajemenWilayah from './pages/ManajemenWilayah';
 import PelacakanDokumen from './pages/PelacakanDokumen';
 import FormulirLSPOP from './pages/FormulirLSPOP';
+import RiwayatPersetujuan from './pages/RiwayatPersetujuan';
+import DraftSPOP from './pages/DraftSPOP';
+import RiwayatSPOP from './pages/RiwayatSPOP';
 
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
@@ -25,6 +36,8 @@ const pageTitles = {
   '/manajemen-akun-desa': 'Manajemen Akun Desa',
   '/manajemen-wilayah': 'Manajemen Wilayah',
   '/formulir-spop': 'Formulir SPOP Digital',
+  '/draft-spop': 'Draft SPOP',
+  '/riwayat-spop': 'Riwayat SPOP',
   '/formulir-lspop': 'Formulir LSPOP - Data Bangunan',
   '/antrean-verifikasi': 'Antrean Verifikasi SPOP',
   '/detail-review': 'Review Verifikasi SPOP',
@@ -32,6 +45,7 @@ const pageTitles = {
   '/monitoring-pajak': 'Monitoring Objek Pajak',
   '/pelacakan-dokumen': 'Pelacakan Dokumen',
   '/profil': 'Profil Pengguna',
+  '/riwayat-persetujuan': 'Riwayat Persetujuan',
   '/help': 'Pusat Bantuan'
 };
 
@@ -117,32 +131,48 @@ function AppContent() {
   }
 
   return (
-    <AppLayout
-      role={role}
-      onRoleChange={(newRole) => {
-        setRole(newRole);
-        navigate(newRole === 'bakeuda' ? '/dashboard-admin' : '/dashboard-desa');
-      }}
-      handleLogout={handleLogout}
-      activePageTitle={activePageTitle}
-    >
-      <Routes>
-        <Route path="/dashboard-desa" element={<DashboardDesa />} />
-        <Route path="/dashboard-admin" element={<DashboardAdmin />} />
-        <Route path="/manajemen-akun-desa" element={<ManajemenAkunDesa />} />
-        <Route path="/manajemen-wilayah" element={<ManajemenWilayah />} />
-        <Route path="/formulir-spop/:id?" element={<FormulirSPOP />} />
+    <SpopProvider>
+      <AppLayout
+        role={role}
+        onRoleChange={(newRole) => {
+          setRole(newRole);
+          navigate(newRole === 'bakeuda' ? '/dashboard-admin' : '/dashboard-desa');
+        }}
+        handleLogout={handleLogout}
+        activePageTitle={activePageTitle}
+      >
+        <Routes>
+          <Route path="/dashboard-desa" element={<DashboardDesa />} />
+          <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+          <Route path="/manajemen-akun-desa" element={<ManajemenAkunDesa />} />
+          <Route path="/manajemen-wilayah" element={<ManajemenWilayah />} />
+          
+          {/* NEW MODULAR SPOP ROUTES */}
+          <Route path="/spop" element={<SpopLayout />}>
+          <Route index element={<Navigate to="informasi-umum" />} />
+          <Route path="detail/:id_transaksi?" element={<SpopDetail />} />
+          <Route path="informasi-umum/:id_transaksi?" element={<Step1InformasiUmum />} />
+          <Route path="subjek-pajak/:id_transaksi?" element={<Step2SubjekPajak />} />
+          <Route path="objek-pajak/:id_transaksi?" element={<Step3ObjekPajak />} />
+          <Route path="konfirmasi/:id_transaksi?" element={<Step4Konfirmasi />} />
+          <Route path="status/:id_transaksi?" element={<Step5Status />} />
+        </Route>
+        
+        <Route path="/draft-spop" element={<DraftSPOP />} />
+        <Route path="/riwayat-spop" element={<RiwayatSPOP />} />
         <Route path="/formulir-lspop" element={<FormulirLSPOP />} />
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
+        <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
         <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
-        <Route path="/pelacakan-dokumen" element={<PelacakanDokumen />} />
+        <Route path="/pelacakan-dokumen/:id" element={<PelacakanDokumen />} />
         <Route path="/profil" element={<ProfilPengguna role={role} />} />
         <Route path="/help" element={<HelpPage />} />
         <Route path="*" element={<Navigate to={role === 'bakeuda' ? '/dashboard-admin' : '/dashboard-desa'} />} />
       </Routes>
-    </AppLayout>
+      </AppLayout>
+    </SpopProvider>
   );
 }
 
