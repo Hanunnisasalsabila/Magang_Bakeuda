@@ -89,8 +89,10 @@ export class ObjekPajakController {
     return this.objekPajakService.search(keyword ?? '', req.user);
   }
 
-  // POST /objek-pajak — semua role
+  // POST /objek-pajak — hanya BAKEUDA (koreksi darurat)
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles('BAKEUDA')
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateObjekPajakDto, @Request() req: any) {
     return this.objekPajakService.create(dto, req.user);

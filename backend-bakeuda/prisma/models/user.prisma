@@ -25,6 +25,7 @@ model User {
   lampiran_diupload      LampiranDokumen[] @relation("UploadedByUser")
   sppt_digenerate        Sppt[]            @relation("GeneratedByUser")
   aktivitas_user         UserActivity[]
+  riwayat_pelacakan      RiwayatPelacakan[] @relation("RiwayatUser")
 
   @@map("users")
 }
