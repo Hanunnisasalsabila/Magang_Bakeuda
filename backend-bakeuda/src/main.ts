@@ -17,6 +17,12 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors) => {
+        const fs = require('fs');
+        fs.writeFileSync('validation_errors.log', JSON.stringify(errors, null, 2));
+        const { BadRequestException } = require('@nestjs/common');
+        return new BadRequestException(errors);
+      }
     }),
   );
 

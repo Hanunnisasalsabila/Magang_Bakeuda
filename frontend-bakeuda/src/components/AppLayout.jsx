@@ -18,7 +18,7 @@ export default function AppLayout({ role, onRoleChange, handleLogout, activePage
     ? [
         { path: '/dashboard-desa', label: 'Dashboard', icon: 'dashboard' },
         { path: '/monitoring-pajak', label: 'Monitoring', icon: 'analytics' },
-        { path: '/formulir-spop', label: 'Formulir', icon: 'description' },
+        { path: '/spop', label: 'Formulir', icon: 'description' },
         { path: '/profil', label: 'Profil', icon: 'person' },
       ]
     : [

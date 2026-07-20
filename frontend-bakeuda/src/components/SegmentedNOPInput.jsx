@@ -10,7 +10,7 @@ const charMap = [
   { seg: 'kode', len: 1 }
 ];
 
-export default function SegmentedNOPInput({ value, onChange, label, showHeaders, optional }) {
+export default function SegmentedNOPInput({ value, onChange, label, showHeaders, optional, readOnlyKecKel }) {
   const [chars, setChars] = useState(Array(18).fill(''));
   const refs = useRef([]);
 
@@ -58,7 +58,8 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
   };
 
   const updateChar = (index, char) => {
-    if (index < 4) return; // prov and kab are read-only
+    if (readOnlyKecKel && index < 10) return; // prov, kab, kec, kel are read-only
+    if (!readOnlyKecKel && index < 4) return; // prov and kab are read-only
     const newChars = [...chars];
     newChars[index] = char;
 
@@ -110,7 +111,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
             <div className="flex gap-1">
               {Array.from({ length: g.count }).map((_, i) => {
                 const currentIndex = boxIndex++;
-                const isReadOnly = currentIndex < 4;
+                const isReadOnly = (readOnlyKecKel && currentIndex < 10) || (!readOnlyKecKel && currentIndex < 4);
                 return (
                   <input
                     key={currentIndex}

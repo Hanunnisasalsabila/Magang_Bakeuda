@@ -55,66 +55,11 @@ export class TransaksiSpopService {
 
     const statusAjuan = asDraft ? 'DRAFT' : 'MENUNGGU';
 
-    const transaksi = await this.prisma.transaksiSpop.create({
-      data: {
-        id_user: currentUser.id_user,
-        tahun_pajak: dto.tahun_pajak,
-        jenis_transaksi: dto.jenis_transaksi,
-        no_sppt_lama: dto.no_sppt_lama,
-        nama_pengaju: dto.nama_pengaju,
-        no_formulir: dto.no_formulir,
-        nop_bersama: dto.nop_bersama,
-        menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-        tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
-        status_ajuan: statusAjuan,
-        detail_asal: dto.detail_asal ? {
-          create: dto.detail_asal.map((a) => ({
-            nop_asal: a.nop_asal,
-            nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
-          }))
-        } : undefined,
-        detail_tujuan: dto.detail_tujuan ? {
-          create: dto.detail_tujuan.map((t) => ({
-            ...t,
-            calon_subjek_json: t.calon_subjek_json as any,
-            data_bangunan_json: t.data_bangunan_json as any
-          }))
-        } : undefined,
-        lampiran: dto.lampiran ? {
-          create: dto.lampiran.map((l) => ({
-            ...l,
-            uploaded_by: currentUser.id_user
-          }))
-        } : undefined
-      },
-      include: { detail_asal: true, detail_tujuan: true },
-    });
-
-    await this.catatRiwayat(transaksi.id_transaksi, null, transaksi.status_ajuan, currentUser.id_user, 'Pengajuan dibuat');
-
-    return { success: true, message: 'Pengajuan berhasil dibuat', data: transaksi };
-  }
-
-  async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
-    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi }});
-    if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
-    if (existing.id_user !== currentUser.id_user && currentUser.role !== 'BAKEUDA') {
-       throw new ForbiddenException('Akses ditolak');
-    }
-    if (existing.status_ajuan !== 'DRAFT' && existing.status_ajuan !== 'REVISI') {
-       throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
-    }
-
-    this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
-      await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
-      await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
-
-      await tx.transaksiSpop.update({
-        where: { id_transaksi },
+    let transaksi;
+    try {
+      transaksi = await this.prisma.transaksiSpop.create({
         data: {
+          id_user: currentUser.id_user,
           tahun_pajak: dto.tahun_pajak,
           jenis_transaksi: dto.jenis_transaksi,
           no_sppt_lama: dto.no_sppt_lama,
@@ -123,6 +68,7 @@ export class TransaksiSpopService {
           nop_bersama: dto.nop_bersama,
           menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
           tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+          status_ajuan: statusAjuan,
           detail_asal: dto.detail_asal ? {
             create: dto.detail_asal.map((a) => ({
               nop_asal: a.nop_asal,
@@ -142,9 +88,72 @@ export class TransaksiSpopService {
               uploaded_by: currentUser.id_user
             }))
           } : undefined
-        }
+        },
+        include: { detail_asal: true, detail_tujuan: true },
       });
-    });
+    } catch (error) {
+      throw new BadRequestException('PRISMA ERROR: ' + error.message);
+    }
+
+    await this.catatRiwayat(transaksi.id_transaksi, null, transaksi.status_ajuan, currentUser.id_user, 'Pengajuan dibuat');
+
+    return { success: true, message: 'Pengajuan berhasil dibuat', data: transaksi };
+  }
+
+  async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
+    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi }});
+    if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
+    if (existing.id_user !== currentUser.id_user && currentUser.role !== 'BAKEUDA') {
+       throw new ForbiddenException('Akses ditolak');
+    }
+    if (existing.status_ajuan !== 'DRAFT' && existing.status_ajuan !== 'REVISI') {
+       throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
+    }
+
+    this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
+        await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
+        await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
+
+        await tx.transaksiSpop.update({
+          where: { id_transaksi },
+          data: {
+            tahun_pajak: dto.tahun_pajak,
+            jenis_transaksi: dto.jenis_transaksi,
+            no_sppt_lama: dto.no_sppt_lama,
+            nama_pengaju: dto.nama_pengaju,
+            no_formulir: dto.no_formulir,
+            nop_bersama: dto.nop_bersama,
+            menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
+            tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+            detail_asal: dto.detail_asal ? {
+              create: dto.detail_asal.map((a) => ({
+                nop_asal: a.nop_asal,
+                nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
+              }))
+            } : undefined,
+            detail_tujuan: dto.detail_tujuan ? {
+              create: dto.detail_tujuan.map((t) => ({
+                ...t,
+                calon_subjek_json: t.calon_subjek_json as any,
+                data_bangunan_json: t.data_bangunan_json as any
+              }))
+            } : undefined,
+            lampiran: dto.lampiran ? {
+              create: dto.lampiran.map((l) => ({
+                ...l,
+                uploaded_by: currentUser.id_user
+              }))
+            } : undefined
+          }
+        });
+      });
+    } catch (error) {
+      throw new BadRequestException('PRISMA ERROR: ' + error.message);
+    }
 
     const updated = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi },
@@ -371,7 +380,8 @@ export class TransaksiSpopService {
     if (t.locked_by !== currentUser.id_user) throw new ForbiddenException('Hanya verifikator yang mengunci yang bisa memproses');
   }
 
-  private validateJumlahDetail(jenis: JenisTransaksi, asal?: any[], tujuan?: any[]) {
+  private validateJumlahDetail(jenis?: JenisTransaksi, asal?: any[], tujuan?: any[]) {
+    if (!jenis) return; // Allow empty jenis_transaksi during early DRAFT creation
     const rules: Record<JenisTransaksi, { asal: [number, number]; tujuan: [number, number] }> = {
       BARU: { asal: [0, 0], tujuan: [1, 1] },
       MUTASI: { asal: [1, 1], tujuan: [1, 1] },

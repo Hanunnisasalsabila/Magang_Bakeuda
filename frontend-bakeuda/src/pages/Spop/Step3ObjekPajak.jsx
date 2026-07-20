@@ -53,13 +53,27 @@ export default function Step3ObjekPajak() {
   };
 
   const handleSave = async () => {
+    // Validasi Frontend
+    const newErrors = {};
+    if (!formData.rtObjek) newErrors.rtObjek = 'RT wajib diisi';
+    if (!formData.rwObjek) newErrors.rwObjek = 'RW wajib diisi';
+    if (!formData.kecamatanObjek) newErrors.kecamatanObjek = 'Kecamatan wajib dipilih';
+    if (!formData.kelurahanObjek) newErrors.kelurahanObjek = 'Kelurahan wajib dipilih';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setToast({ show: true, message: 'Mohon lengkapi semua isian wajib (bergaris merah)', type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      setErrors({});
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/detail/${savedId}`);
+        navigate(`/spop/konfirmasi/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -132,9 +146,10 @@ export default function Step3ObjekPajak() {
               maxLength={3}
               value={formData.rwObjek}
               onChange={(e) => handleTextChange('rwObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
-              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
+              className={`w-full h-11 border ${errors.rwObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
               placeholder="000"
             />
+            {errors.rwObjek && <p className="text-error text-[12px]">{errors.rwObjek}</p>}
           </div>
           <div className="space-y-1">
             <label className="text-sm text-on-surface-variant font-bold">RT</label>
@@ -143,9 +158,10 @@ export default function Step3ObjekPajak() {
               maxLength={3}
               value={formData.rtObjek}
               onChange={(e) => handleTextChange('rtObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
-              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
+              className={`w-full h-11 border ${errors.rtObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
               placeholder="000"
             />
+            {errors.rtObjek && <p className="text-error text-[12px]">{errors.rtObjek}</p>}
           </div>
         </div>
 
@@ -429,7 +445,7 @@ export default function Step3ObjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">

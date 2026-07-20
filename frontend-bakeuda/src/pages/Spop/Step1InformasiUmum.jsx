@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 import SegmentedNOPInput from '../../components/SegmentedNOPInput';
 import ToastNotification from '../../components/ToastNotification';
+import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
 export default function Step1InformasiUmum() {
@@ -64,13 +65,20 @@ export default function Step1InformasiUmum() {
   };
 
   const handleSave = async () => {
+    // Validasi Frontend
+    if (!formData.transaksi) {
+      setErrors({ transaksi: 'Anda wajib memilih detail kondisi pendaftaran/pemutakhiran' });
+      setToast({ show: true, message: 'Mohon pilih detail kondisi pendaftaran/pemutakhiran terlebih dahulu.', type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 1 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/subjek-pajak/${savedId}`);
+        navigate(`/spop/objek-pajak/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -194,12 +202,36 @@ export default function Step1InformasiUmum() {
               <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
                 <div className="space-y-4">
                   {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
-                    <SegmentedNOPInput
-                      value={formData.nop}
-                      onChange={(val) => { setFormData(prev => ({ ...prev, nop: val })); setNopData(null); setNopError(''); }}
-                      label="NOP"
-                      showHeaders={true}
-                    />
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <WilayahDropdown
+                          selectedKecamatan={formData.kecamatanObjek}
+                          selectedKelurahan={formData.kelurahanObjek}
+                          onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              kecamatanObjek: namaKec,
+                              kelurahanObjek: namaKel,
+                              kodeWilayahObjek: kodeKel || kodeKec || prev.kodeWilayahObjek,
+                              nop: {
+                                ...prev.nop,
+                                kec: kodeKec ? kodeKec.substring(4, 7) : '',
+                                kel: kodeKel ? kodeKel.substring(7, 10) : ''
+                              }
+                            }));
+                            setNopData(null);
+                            setNopError('');
+                          }}
+                        />
+                      </div>
+                      <SegmentedNOPInput
+                        value={formData.nop}
+                        onChange={(val) => { setFormData(prev => ({ ...prev, nop: val })); setNopData(null); setNopError(''); }}
+                        label="NOP"
+                        showHeaders={true}
+                        readOnlyKecKel={true}
+                      />
+                    </>
                   )}
                   <SegmentedNOPInput
                     value={formData.nopBersama}
@@ -386,7 +418,10 @@ export default function Step1InformasiUmum() {
         </div>
       </section>
 
-      <div className="flex justify-end pt-8 border-t border-outline-variant">
+      <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
+        <button type="button" onClick={() => navigate(`/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+          Kembali
+        </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
           {isSubmitting ? (
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>

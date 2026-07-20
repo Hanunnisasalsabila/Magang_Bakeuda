@@ -29,7 +29,7 @@ export default function Step2SubjekPajak() {
     formUpload.append('file', file);
     
     try {
-      const uploadRes = await api.post('/upload', formUpload, {
+      const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const fileUrl = uploadRes.data.url;
@@ -52,18 +52,36 @@ export default function Step2SubjekPajak() {
   };
 
   const handleSave = async () => {
+    // Validasi Frontend
+    const newErrors = {};
+    if (!formData.nik || formData.nik.length < 16) newErrors.nik = 'NIK harus 16 digit';
+    if (!formData.nama) newErrors.nama = 'Nama Wajib Pajak wajib diisi';
+    if (!formData.alamat) newErrors.alamat = 'Alamat wajib diisi';
+    if (!formData.rt) newErrors.rt = 'RT wajib diisi';
+    if (!formData.rw) newErrors.rw = 'RW wajib diisi';
+    if (!formData.kecamatan) newErrors.kecamatan = 'Kecamatan wajib dipilih';
+    if (!formData.kelurahan) newErrors.kelurahan = 'Kelurahan wajib dipilih';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setToast({ show: true, message: 'Mohon lengkapi semua isian wajib (bergaris merah)', type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      setErrors({});
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 2 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/objek-pajak/${savedId}`);
+        navigate(`/spop/informasi-umum/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
-      const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
-      setToast({ show: true, message: errorMsg, type: 'error' });
+      const errorMsg = error.response?.data?.message || error.response?.data || error.message;
+      alert("VALIDATION ERROR: " + JSON.stringify(errorMsg, null, 2));
+      setToast({ show: true, message: "Gagal menyimpan", type: 'error' });
       setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
     } finally {
       setIsSubmitting(false);
@@ -181,21 +199,15 @@ export default function Step2SubjekPajak() {
             </label>
             
             {formData.isKuasa && (
-              <div className={`mt-3 p-4 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fadeIn ${errors.suratKuasa ? 'border-error bg-error/10 ring-1 ring-error' : 'border-primary/20 bg-surface-container'}`}>
-                <div className="text-sm text-on-surface-variant">
-                  <span className={`font-bold block mb-1 ${errors.suratKuasa ? 'text-error' : 'text-on-surface'}`}>Wajib Lampirkan Surat Kuasa</span>
-                  Karena Anda bertindak selaku kuasa, silakan unggah dokumen surat kuasa di sini.
-                  {errors.suratKuasa && <span className="block text-error font-bold mt-1">*{errors.suratKuasa}</span>}
-                </div>
-                <div className="relative overflow-hidden inline-block w-full sm:w-auto">
-                  <button
-                    type="button"
-                    disabled={isUploading}
-                    className={`flex justify-center items-center w-full sm:w-auto gap-2 px-4 py-2 text-sm rounded-lg text-white font-bold transition-colors ${errors.suratKuasa ? 'bg-error/100 hover:bg-red-600' : 'bg-primary hover:bg-primary/90'} ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    <span className="material-symbols-outlined text-sm">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
-                    {isUploading ? 'Mengunggah...' : 'Unggah File'}
-                  </button>
+              <div className="flex flex-col gap-2">
+                <div className={`mt-3 p-4 border rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-fadeIn ${errors.suratKuasa ? 'border-error bg-error/10 ring-1 ring-error' : 'border-primary/20 bg-surface-container'}`}>
+                  <div className="text-sm text-on-surface-variant w-full">
+                    <span className={`font-bold block mb-1 ${errors.suratKuasa ? 'text-error' : 'text-on-surface'}`}>Wajib Lampirkan Surat Kuasa</span>
+                    Karena Anda bertindak selaku kuasa, silakan unggah dokumen surat kuasa di sini (Maks 2MB).
+                    {errors.suratKuasa && <span className="block text-error font-bold mt-1">*{errors.suratKuasa}</span>}
+                  </div>
+                
+                <div className="relative border-2 border-dashed border-outline-variant rounded-lg p-6 flex flex-col items-center justify-center mt-3 cursor-pointer hover:border-primary transition-colors">
                   <input
                     type="file"
                     accept="image/*,.pdf"
@@ -210,10 +222,58 @@ export default function Step2SubjekPajak() {
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     disabled={isUploading}
                   />
+                  <span className="material-symbols-outlined text-4xl text-primary/60 mb-2">upload_file</span>
+                  <p className="text-sm font-medium text-on-surface">Klik untuk unggah Surat Kuasa</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Format: JPG, PNG, PDF (Max 2MB)</p>
                 </div>
+
+                </div>
+
+                {(() => {
+                  const suratKuasa = formData.lampiran.find(l => l.jenis_dokumen === 'SURAT_KUASA');
+                  if (suratKuasa) {
+                    return (
+                      <div className="flex justify-end w-full animate-fadeIn">
+                        <div className="flex items-center gap-4 bg-white p-2 px-4 border border-outline-variant rounded-lg shadow-sm w-fit z-10 relative">
+                          <span className="text-sm text-primary font-bold flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                            File terpilih
+                          </span>
+                          <a 
+                            href={suratKuasa.url_file} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-sm text-secondary hover:underline flex items-center gap-1 bg-secondary/10 px-2 py-1 rounded-md z-20"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">visibility</span>
+                            Lihat Preview
+                          </a>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setFormData(prev => ({
+                                ...prev,
+                                lampiran: prev.lampiran.filter(l => l.jenis_dokumen !== 'SURAT_KUASA')
+                              }));
+                            }}
+                            className="material-symbols-outlined text-error hover:bg-error/10 rounded-full p-1 transition-colors cursor-pointer z-20"
+                            title="Hapus Surat Kuasa"
+                          >
+                            close
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>
+
 
           <div className="space-y-2">
             <label className="text-sm text-primary flex items-center font-bold">NPWP <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
@@ -235,7 +295,7 @@ export default function Step2SubjekPajak() {
               </div>
               <input
                 type="text"
-                maxLength={13}
+                maxLength={11}
                 value={formData.noTelp.startsWith('08') ? formData.noTelp.substring(2) : formData.noTelp.startsWith('62') ? formData.noTelp.substring(2) : formData.noTelp}
                 onChange={(e) => {
                   let val = e.target.value.replace(/\D/g, '');
@@ -293,9 +353,10 @@ export default function Step2SubjekPajak() {
                 maxLength={3}
                 value={formData.rw}
                 onChange={(e) => handleTextChange('rw', { target: { value: e.target.value.replace(/\D/g, '') } })}
-                className="w-full h-11 border border-outline-variant rounded-md px-4 text-center font-data-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full h-11 border ${errors.rw ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 text-center font-data-mono outline-none`}
                 placeholder="000"
               />
+              {errors.rw && <p className="text-error text-[12px]">{errors.rw}</p>}
             </div>
             <div className="space-y-1">
               <label className="text-sm text-on-surface-variant font-bold">RT</label>
@@ -304,9 +365,10 @@ export default function Step2SubjekPajak() {
                 maxLength={3}
                 value={formData.rt}
                 onChange={(e) => handleTextChange('rt', { target: { value: e.target.value.replace(/\D/g, '') } })}
-                className="w-full h-11 border border-outline-variant rounded-md px-4 text-center font-data-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className={`w-full h-11 border ${errors.rt ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 text-center font-data-mono outline-none`}
                 placeholder="000"
               />
+              {errors.rt && <p className="text-error text-[12px]">{errors.rt}</p>}
             </div>
             <WilayahDropdown
               selectedKecamatan={formData.kecamatan}
@@ -354,7 +416,7 @@ export default function Step2SubjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(idTransaksi ? `/spop/detail/${idTransaksi}` : '/spop/detail')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">

@@ -27,16 +27,16 @@ export class DetailAsalInputDto {
 
 export class DetailTujuanInputDto {
   @IsOptional() @IsString() nik_calon_subjek?: string;
-  
-  @IsOptional() 
-  @ValidateNested() 
-  @Type(() => CalonSubjekDto) 
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CalonSubjekDto)
   calon_subjek_json?: CalonSubjekDto;
 
   @IsNumber() luas_tanah_baru: number;
   @IsOptional() @IsNumber() luas_bangunan_baru?: number;
   @IsEnum(JenisTanah) jenis_tanah_baru: JenisTanah;
-  
+
   @IsOptional() @IsString() jalan_op_baru?: string;
   @IsOptional() @IsString() kode_wilayah_baru?: string;
   @IsOptional() @IsString() kode_blok_baru?: string;
@@ -57,28 +57,28 @@ export class DetailTujuanInputDto {
 }
 
 export class SubmitTransaksiDto {
-  @IsEnum(JenisTransaksi) jenis_transaksi: JenisTransaksi;
+  @IsOptional() @IsEnum(JenisTransaksi) jenis_transaksi?: JenisTransaksi;
   @IsOptional() @IsString() no_formulir?: string;
-  @IsNumber() tahun_pajak: number;
+  @IsOptional() @IsNumber() tahun_pajak?: number;
   @IsOptional() @IsString() no_sppt_lama?: string;
   @IsOptional() @IsString() nama_pengaju?: string;
   @IsOptional() @IsBoolean() menggunakan_kuasa?: boolean;
-  @IsDateString() tanggal_pengajuan: string;
+  @IsOptional() @IsDateString() tanggal_pengajuan?: string;
   @IsOptional() @IsString() nop_bersama?: string;
 
-  @IsOptional() 
-  @IsArray() 
-  @ValidateNested({ each: true }) 
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => DetailAsalInputDto)
   detail_asal?: DetailAsalInputDto[];
 
-  @IsOptional() 
-  @IsArray() 
-  @ValidateNested({ each: true }) 
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => DetailTujuanInputDto)
   detail_tujuan?: DetailTujuanInputDto[];
 
-  @IsOptional() 
-  @IsArray() 
+  @IsOptional()
+  @IsArray()
   lampiran?: { jenis_dokumen: string; url_file: string }[];
 }

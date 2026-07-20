@@ -25,7 +25,7 @@ export default function Step4Konfirmasi() {
     formUpload.append('file', file);
     
     try {
-      const uploadRes = await api.post('/upload', formUpload, {
+      const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const fileUrl = uploadRes.data.url;
@@ -49,6 +49,8 @@ export default function Step4Konfirmasi() {
     }
   };
 
+  const [showSuccessModal, setShowSuccessModal] = useState({ show: false, id: null });
+
   const handleSave = async () => {
     setIsSubmitting(true);
     try {
@@ -59,10 +61,7 @@ export default function Step4Konfirmasi() {
         await api.patch(`/transaksi-spop/${newId}/ajukan`);
       }
 
-      setToast({ show: true, message: 'SPOP berhasil diajukan.', type: 'success' });
-      setTimeout(() => {
-        navigate(`/spop/status/${newId}`);
-      }, 1500);
+      setShowSuccessModal({ show: true, id: newId });
     } catch (error) {
       console.error('Error saving step:', error);
       const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
@@ -77,6 +76,26 @@ export default function Step4Konfirmasi() {
     <div className="space-y-8 animate-fadeIn">
       {toast.show && (
         <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} />
+      )}
+
+      {showSuccessModal.show && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center text-center animate-scaleIn">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Berhasil Disimpan!</h3>
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              Data SPOP Anda telah berhasil disimpan dan diajukan. Silakan cek status pengajuan Anda.
+            </p>
+            <button
+              onClick={() => navigate(`/spop/status/${showSuccessModal.id}`)}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-xl transition-colors"
+            >
+              Lihat Status Pengajuan
+            </button>
+          </div>
+        </div>
       )}
       
       <section className="space-y-6">
