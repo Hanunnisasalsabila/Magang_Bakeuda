@@ -24,7 +24,7 @@ export default function SpopLayout() {
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-none shadow-sm border border-outline-variant overflow-hidden">
+        <div className="bg-white rounded-none shadow-sm border border-outline-variant overflow-hidden p-4 md:p-8">
           <Outlet />
         </div>
       )}

@@ -65,7 +65,7 @@ export default function SpopDetail() {
   const isDraft = spopData?.status_ajuan === 'DRAFT';
 
   return (
-    <div className="space-y-6 animate-fadeIn p-2 md:p-6">
+    <div className="space-y-6 animate-fadeIn">
       {toast.show && (
         <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} />
       )}

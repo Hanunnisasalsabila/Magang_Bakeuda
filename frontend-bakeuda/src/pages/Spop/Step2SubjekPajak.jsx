@@ -55,8 +55,9 @@ export default function Step2SubjekPajak() {
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 2 berhasil disimpan.', type: 'success' });
-      if (!idTransaksi && newId) {
-        navigate(`/spop/subjek-pajak/${newId}`, { replace: true });
+      const savedId = idTransaksi || newId;
+      if (savedId) {
+        navigate(`/spop/objek-pajak/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -163,8 +164,8 @@ export default function Step2SubjekPajak() {
               maxLength={100}
               value={formData.nama}
               onChange={(e) => handleTextChange('nama', e)}
-              className={`w-full h-12 border ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-bold uppercase tracking-wide bg-white transition-all shadow-sm outline-none`}
-              placeholder="Sesuai Sertifikat / KTP"
+              className={`w-full h-12 border ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-on-surface bg-white transition-all shadow-sm outline-none`}
+              placeholder="Masukkan nama sesuai KTP / Sertifikat"
             />
             {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
             

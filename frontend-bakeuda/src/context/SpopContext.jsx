@@ -22,7 +22,7 @@ export const SpopProvider = ({ children }) => {
     nop: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
     nopBersama: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
     isKuasa: false,
-    nik: '', nama: '', npwp: '', noTelp: '', statusWp: 'PEMILIK', pekerjaan: 'LAINNYA', email: '',
+    nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
     alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
     alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
     noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '0', jenisTanah: 'TANAH_BANGUNAN',
@@ -46,13 +46,14 @@ export const SpopProvider = ({ children }) => {
         nop: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
         nopBersama: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
         isKuasa: false,
-        nik: '', nama: '', npwp: '', noTelp: '', statusWp: 'PEMILIK', pekerjaan: 'LAINNYA', email: '',
+        nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
         alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
         alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
         noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '0', jenisTanah: 'TANAH_BANGUNAN',
         lampiran: [],
         latitude: '', longitude: '', koordinat_polygon: [],
-        batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: ''
+        batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
+        nopAsalList: [''], spptLama: ''
       });
       return;
     }
@@ -101,8 +102,8 @@ export const SpopProvider = ({ children }) => {
           nama: subjek.nama || '',
           npwp: subjek.npwp || '',
           noTelp: subjek.no_hp || '',
-          statusWp: subjek.status_wp || 'PEMILIK',
-          pekerjaan: subjek.pekerjaan || 'LAINNYA',
+          statusWp: subjek.status_wp || '',
+          pekerjaan: subjek.pekerjaan || '',
           email: subjek.email || '',
           alamat: subjek.alamat || '',
           blokKav: subjek.blok_kav_no || '',
@@ -233,7 +234,7 @@ export const SpopProvider = ({ children }) => {
       return idTransaksi;
     } else {
       const res = await api.post('/transaksi-spop/draft', payload);
-      const newId = res.data?.data?.id_transaksi;
+      const newId = res.data?.data?.id_transaksi || res.data?.id_transaksi;
       if (newId) {
         await loadDraft(newId);
         return newId;

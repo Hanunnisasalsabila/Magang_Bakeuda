@@ -56,8 +56,9 @@ export default function Step3ObjekPajak() {
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
-      if (!idTransaksi && newId) {
-        navigate(`/spop/objek-pajak/${newId}`, { replace: true });
+      const savedId = idTransaksi || newId;
+      if (savedId) {
+        navigate(`/spop/detail/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);

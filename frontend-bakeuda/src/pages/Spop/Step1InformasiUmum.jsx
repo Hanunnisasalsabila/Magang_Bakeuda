@@ -19,9 +19,9 @@ export default function Step1InformasiUmum() {
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 1 berhasil disimpan.', type: 'success' });
-      // Update URL if new draft
-      if (!idTransaksi && newId) {
-        navigate(`/spop/informasi-umum/${newId}`, { replace: true });
+      const savedId = idTransaksi || newId;
+      if (savedId) {
+        navigate(`/spop/subjek-pajak/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
