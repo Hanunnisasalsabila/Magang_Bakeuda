@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
@@ -37,6 +41,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _nikController = TextEditingController();
   final _npwpController = TextEditingController();
   final _noHpController = TextEditingController();
+  List<LatLng> _polygonPoints = [];
+  
   String _statusWp = 'PEMILIK';
   String _pekerjaan = 'PNS';
   final _alamatWpController = TextEditingController();
@@ -156,6 +162,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         if (_batasBaratController.text.isNotEmpty) 'batas_barat': _batasBaratController.text,
         if (_latController.text.isNotEmpty) 'latitude': _latController.text,
         if (_lngController.text.isNotEmpty) 'longitude': _lngController.text,
+        if (_polygonPoints.isNotEmpty) 'koordinat_polygon': _polygonPoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
       },
       if (_lampiran.isNotEmpty) 'lampiran': _lampiran,
     };
@@ -351,11 +358,175 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
               Expanded(child: CustomTextField(controller: _batasBaratController, label: 'Barat')),
             ]),
             const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _latController, label: 'Latitude')),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _lngController, label: 'Longitude')),
-            ]),
+            const SizedBox(height: 12),
+            const Text('Gambar Titik Koordinat (Poligon):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 8),
+            Container(
+              height: 300,
+              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300)),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
+                  initialZoom: 13.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      _polygonPoints.add(point);
+                      if (_polygonPoints.length == 1) {
+                        _latController.text = point.latitude.toString();
+                        _lngController.text = point.longitude.toString();
+                      }
+                    });
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.bakeuda.mobile',
+                  ),
+                  if (_polygonPoints.isNotEmpty)
+                    PolygonLayer(
+                      polygons: [
+                        Polygon(
+                          points: _polygonPoints,
+                          color: Colors.blue.withOpacity(0.3),
+                          borderColor: Colors.blue,
+                          borderStrokeWidth: 2,
+                        )
+                      ],
+                    ),
+                  if (_polygonPoints.isNotEmpty)
+                    MarkerLayer(
+                      markers: _polygonPoints.map((p) => Marker(
+                        point: p,
+                        width: 12,
+                        height: 12,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.blue, width: 2),
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
+                    _polygonPoints.removeLast();
+                    if (_polygonPoints.isNotEmpty) {
+                      _latController.text = _polygonPoints.first.latitude.toString();
+                      _lngController.text = _polygonPoints.first.longitude.toString();
+                    } else {
+                      _latController.text = '';
+                      _lngController.text = '';
+                    }
+                  }),
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: const Text('Batal Titik Terakhir'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade50, 
+                    foregroundColor: Colors.orange.shade800,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
+                    _polygonPoints.clear();
+                    _latController.text = '';
+                    _lngController.text = '';
+                  }),
+                  icon: const Icon(Icons.delete, size: 18),
+                  label: const Text('Hapus Semua'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade50, 
+                    foregroundColor: Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_polygonPoints.isNotEmpty) ...[
+              const Text('Lihat di Peta Eksternal:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse('https://www.google.com/maps?q=${_latController.text},${_lngController.text}');
+                      if (await canLaunchUrl(url)) await launchUrl(url);
+                    },
+                    icon: const Icon(Icons.map, size: 18),
+                    label: const Text('Google Maps'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final lats = _polygonPoints.map((p) => p.latitude).toList();
+                      final lngs = _polygonPoints.map((p) => p.longitude).toList();
+                      final centerLat = lats.reduce((a, b) => a + b) / lats.length;
+                      final centerLng = lngs.reduce((a, b) => a + b) / lngs.length;
+                      
+                      final coordStr = '$centerLat, $centerLng';
+                      await Clipboard.setData(ClipboardData(text: coordStr));
+                      
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Koordinat $coordStr disalin! Paste di pencarian BHUMI.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+
+                      final url = Uri.parse('https://bhumi.atrbpn.go.id/peta');
+                      if (await canLaunchUrl(url)) await launchUrl(url);
+                    },
+                    icon: const Icon(Icons.public, size: 18),
+                    label: const Text('BHUMI ATR/BPN'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('Daftar Titik Koordinat Poligon:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _polygonPoints.length,
+                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final point = _polygonPoints[index];
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                        child: Text('${index + 1}', style: TextStyle(fontSize: 12, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                      ),
+                      title: Text('${point.latitude}, ${point.longitude}', style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
+                    );
+                  },
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: CustomTextField(controller: _latController, label: 'Latitude')),
+                const SizedBox(width: 12),
+                Expanded(child: CustomTextField(controller: _lngController, label: 'Longitude')),
+              ]),
+            ],
           ],
         ),
       ),

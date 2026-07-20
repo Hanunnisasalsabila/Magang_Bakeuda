@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, FeatureGroup, Polygon, CircleMarker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
@@ -16,16 +16,28 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-function LocationPicker({ position, setPosition }) {
-  const map = useMapEvents({
+const dotIcon = L.divIcon({
+  className: 'custom-dot-icon',
+  html: '<div style="width: 12px; height: 12px; background-color: white; border: 2px solid blue; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.5);"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
+
+function MapClickHandler({ koordinatPolygon, setFormData }) {
+  useMapEvents({
     click(e) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
+      setFormData(prev => {
+        const newCoords = [...(prev.koordinat_polygon || []), { lat: e.latlng.lat, lng: e.latlng.lng }];
+        return {
+          ...prev,
+          koordinat_polygon: newCoords,
+          latitude: newCoords.length === 1 ? e.latlng.lat.toString() : prev.latitude,
+          longitude: newCoords.length === 1 ? e.latlng.lng.toString() : prev.longitude
+        };
+      });
     },
   });
-
-  return position === null ? null : (
-    <Marker position={position}></Marker>
-  );
+  return null;
 }
 
 export default function FormulirSPOP() {
@@ -95,6 +107,7 @@ export default function FormulirSPOP() {
     jumlahBangunan: '0',
     latitude: '',
     longitude: '',
+    koordinat_polygon: [],
     batasUtara: '',
     batasSelatan: '',
     batasTimur: '',
@@ -145,7 +158,7 @@ export default function FormulirSPOP() {
     : defaultPosition;
 
   const handleMapClick = (pos) => {
-    setFormData(prev => ({ ...prev, latitude: pos[0].toString(), longitude: pos[1].toString() }));
+    // Legacy function, replaced by MapClickHandler
   };
 
   const handleNopChange = (nopObj) => {
@@ -333,6 +346,7 @@ export default function FormulirSPOP() {
               blokKavObjek: detailTujuan?.blok_kav_no_baru || '',
               latitude: detailTujuan?.latitude || '',
               longitude: detailTujuan?.longitude || '',
+              koordinat_polygon: detailTujuan?.koordinat_polygon || [],
               batasUtara: detailTujuan?.batas_utara || '',
               batasSelatan: detailTujuan?.batas_selatan || '',
               batasTimur: detailTujuan?.batas_timur || '',
@@ -603,6 +617,7 @@ export default function FormulirSPOP() {
         jenis_tanah: formData.jenisTanah || undefined,
         latitude: formData.latitude || undefined,
         longitude: formData.longitude || undefined,
+        koordinat_polygon: formData.koordinat_polygon?.length > 0 ? formData.koordinat_polygon : undefined,
         batas_utara_nop: formData.batasUtara || undefined,
         batas_selatan_nop: formData.batasSelatan || undefined,
         batas_timur_nop: formData.batasTimur || undefined,
@@ -1554,42 +1569,160 @@ export default function FormulirSPOP() {
                   </div>
                   {errors.denahLokasi && <p className="text-error font-bold text-sm">*{errors.denahLokasi}</p>}
                   <div className="space-y-4">
-                    <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Anda dapat menggeser peta di bawah ini lalu klik pada lokasi yang tepat, atau salin koordinat dari Google Maps.</p>
+                    <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Geser peta dan <b>klik pada peta secara berurutan</b> untuk membuat garis batas bangunan (poligon). Jika salah, klik Hapus Poligon.</p>
 
-                    <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative">
+                    <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative cursor-crosshair">
                       <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                         <TileLayer
                           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
-                        <LocationPicker position={currentPosition} setPosition={handleMapClick} />
+                        <MapClickHandler koordinatPolygon={formData.koordinat_polygon} setFormData={setFormData} />
+                        
+                        {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
+                          <Polygon positions={formData.koordinat_polygon} color="blue" />
+                        )}
+                        {formData.koordinat_polygon && formData.koordinat_polygon.map((p, idx) => (
+                          <Marker 
+                            key={idx} 
+                            position={[p.lat, p.lng]} 
+                            icon={dotIcon}
+                            draggable={true}
+                            eventHandlers={{
+                              dragend: (e) => {
+                                const marker = e.target;
+                                const position = marker.getLatLng();
+                                setFormData(prev => {
+                                  const newCoords = [...(prev.koordinat_polygon || [])];
+                                  newCoords[idx] = { lat: position.lat, lng: position.lng };
+                                  return { 
+                                    ...prev, 
+                                    koordinat_polygon: newCoords,
+                                    latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '',
+                                    longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : ''
+                                  };
+                                });
+                              }
+                            }}
+                          />
+                        ))}
                       </MapContainer>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 md:w-1/2">
-                      <div className="space-y-2">
-                        <label className="font-label-sm text-primary flex items-center">LATITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
-                        <input
-                          type="text"
-                          value={formData.latitude}
-                          onChange={(e) => handleTextChange('latitude', e)}
-                          className={`w-full h-12 border ${errors.latitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                          placeholder="-7.3878"
-                        />
-                        {errors.latitude && <p className="text-error text-[12px]">{errors.latitude}</p>}
-                      </div>
-                      <div className="space-y-2">
-                        <label className="font-label-sm text-primary flex items-center">LONGITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
-                        <input
-                          type="text"
-                          value={formData.longitude}
-                          onChange={(e) => handleTextChange('longitude', e)}
-                          className={`w-full h-12 border ${errors.longitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
-                          placeholder="109.3639"
-                        />
-                        {errors.longitude && <p className="text-error text-[12px]">{errors.longitude}</p>}
-                      </div>
+                    <div className="flex flex-wrap gap-4 mt-2">
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => {
+                          const newCoords = [...(prev.koordinat_polygon || [])];
+                          newCoords.pop();
+                          return { 
+                            ...prev, 
+                            koordinat_polygon: newCoords, 
+                            latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '', 
+                            longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : '' 
+                          };
+                        })}
+                        disabled={!formData.koordinat_polygon || formData.koordinat_polygon.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-warning/10 text-warning border border-warning/20 rounded hover:bg-warning/20 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">undo</span>
+                        Batal Titik Terakhir
+                      </button>
+
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, koordinat_polygon: [], latitude: '', longitude: '' }))}
+                        className="flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-error/20 rounded hover:bg-error/20 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!formData.koordinat_polygon || formData.koordinat_polygon.length === 0}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                        Hapus Semua
+                      </button>
+                      
+                      {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
+                        <>
+                          <a 
+                            href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded hover:bg-surface-variant transition-colors text-sm text-primary font-bold"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">map</span>
+                            Lihat di Google Maps
+                          </a>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              const centerLat = formData.koordinat_polygon.reduce((sum, p) => sum + p.lat, 0) / formData.koordinat_polygon.length;
+                              const centerLng = formData.koordinat_polygon.reduce((sum, p) => sum + p.lng, 0) / formData.koordinat_polygon.length;
+                              const coordString = `${centerLat}, ${centerLng}`;
+                              navigator.clipboard.writeText(coordString).then(() => {
+                                alert(`Koordinat ${coordString} berhasil disalin!\n\nSilakan 'Paste' (Tempel) di kolom pencarian pada website BHUMI ATR/BPN untuk langsung menuju ke lokasi.`);
+                                window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                              }).catch(() => {
+                                window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                              });
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded hover:bg-surface-variant transition-colors text-sm text-primary font-bold"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">public</span>
+                            Lihat di BHUMI ATR/BPN
+                          </button>
+                        </>
+                      )}
                     </div>
+
+                    {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
+                      <div className="mt-4">
+                        <label className="font-label-sm text-primary mb-2 block">DAFTAR TITIK KOORDINAT POLIGON</label>
+                        <div className="border border-outline-variant rounded overflow-hidden">
+                          <table className="w-full text-sm text-left">
+                            <thead className="bg-surface-variant text-on-surface">
+                              <tr>
+                                <th className="px-4 py-2 w-16 text-center">Titik</th>
+                                <th className="px-4 py-2 border-l border-outline-variant">Latitude</th>
+                                <th className="px-4 py-2 border-l border-outline-variant">Longitude</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {formData.koordinat_polygon.map((p, idx) => (
+                                <tr key={idx} className="border-t border-outline-variant bg-white">
+                                  <td className="px-4 py-2 text-center font-bold text-primary">{idx + 1}</td>
+                                  <td className="px-4 py-2 border-l border-outline-variant font-data-mono">{p.lat}</td>
+                                  <td className="px-4 py-2 border-l border-outline-variant font-data-mono">{p.lng}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-2">*Titik pertama akan digunakan sebagai titik utama (centroid) di database.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 md:w-1/2 mt-4">
+                        <div className="space-y-2">
+                          <label className="font-label-sm text-primary flex items-center">LATITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
+                          <input
+                            type="text"
+                            value={formData.latitude}
+                            onChange={(e) => handleTextChange('latitude', e)}
+                            className={`w-full h-12 border ${errors.latitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                            placeholder="-7.3878"
+                          />
+                          {errors.latitude && <p className="text-error text-[12px]">{errors.latitude}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <label className="font-label-sm text-primary flex items-center">LONGITUDE <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">{['BARU', 'PECAH'].includes(formData.transaksi) ? '(Wajib)' : '(Opsional)'}</span></label>
+                          <input
+                            type="text"
+                            value={formData.longitude}
+                            onChange={(e) => handleTextChange('longitude', e)}
+                            className={`w-full h-12 border ${errors.longitude ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
+                            placeholder="109.3639"
+                          />
+                          {errors.longitude && <p className="text-error text-[12px]">{errors.longitude}</p>}
+                        </div>
+                      </div>
+                    )}
 
                     {['BARU', 'PECAH'].includes(formData.transaksi) && (
                       <div className="mt-4 p-4 border border-outline-variant bg-surface-container-lowest rounded flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -1617,13 +1750,30 @@ export default function FormulirSPOP() {
                       </div>
                     )}
 
-                    {/* Google Street View Placeholder */}
-                    <div className="mt-4 p-4 border border-outline-variant border-dashed rounded-lg bg-surface-container-lowest flex flex-col items-center justify-center text-center">
-                      <span className="material-symbols-outlined text-4xl text-outline-variant mb-2">streetview</span>
-                      <h5 className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</h5>
-                      <p className="text-sm text-on-surface-variant mt-1 max-w-md">
-                        Fitur Street View Google Maps dapat diintegrasikan di sini untuk melihat kondisi jalan dan bangunan secara real-time. (Memerlukan Google Maps API Key khusus).
-                      </p>
+                    <div className="mt-8 p-6 bg-surface-container-lowest border border-outline-variant rounded flex flex-col items-center justify-center text-center">
+                      <span className="material-symbols-outlined text-4xl text-outline mb-2">streetview</span>
+                      <p className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</p>
+                      
+                      {formData.latitude && formData.longitude ? (
+                        <>
+                          <p className="text-sm text-on-surface-variant max-w-md mb-4">
+                            Lihat kondisi jalan dan bangunan secara 3D (Street View) berdasarkan titik koordinat yang Anda tandai.
+                          </p>
+                          <a 
+                            href={`https://www.google.com/maps?layer=c&cbll=${formData.latitude},${formData.longitude}`}
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-sm font-bold"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">explore</span>
+                            Buka Street View di Tab Baru
+                          </a>
+                        </>
+                      ) : (
+                        <p className="text-sm text-on-surface-variant max-w-md">
+                          Tentukan titik koordinat di peta atas terlebih dahulu untuk melihat foto jalan (Street View) dari lokasi tersebut.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
