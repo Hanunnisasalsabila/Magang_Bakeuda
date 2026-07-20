@@ -4,6 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
@@ -28,6 +31,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _nopUtamaController = TextEditingController();
   final _nopAsalController = TextEditingController();
   final _noSpptLamaController = TextEditingController();
+
+  // Map States
+  final MapController _mapController = MapController();
+  final TextEditingController _mapSearchController = TextEditingController();
+  bool _isMapSearching = false;
+  List<LatLng> _searchBoundary = [];
+  LatLng? _searchReferencePoint;
 
   final List<Map<String, String>> _jenisOptions = [
     {'label': 'Pendaftaran Baru', 'value': 'BARU'},
@@ -123,7 +133,115 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     _batasBaratController.dispose();
     _latController.dispose();
     _lngController.dispose();
+    _mapSearchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _searchLocation() async {
+    final val = _mapSearchController.text.trim();
+    if (val.length < 3) return;
+    
+    setState(() => _isMapSearching = true);
+    try {
+      final queryText = val.toLowerCase().contains('purbalingga') ? val : '$val Purbalingga';
+      final dio = Dio();
+      
+      // Check Photon
+      final res = await dio.get('https://photon.komoot.io/api/', queryParameters: {
+        'q': queryText,
+        'lat': -7.3888,
+        'lon': 109.3637,
+        'limit': 1
+      });
+      
+      final features = res.data['features'] as List;
+      if (features.isNotEmpty) {
+        final props = features[0]['properties'];
+        final geom = features[0]['geometry'];
+        final lat = (geom['coordinates'][1] as num).toDouble();
+        final lon = (geom['coordinates'][0] as num).toDouble();
+        
+        final isArea = props['osm_type'] == 'R'; // Relation (boundary)
+        
+        List<LatLng> bounds = [];
+        if (isArea) {
+          final nomRes = await dio.get('https://nominatim.openstreetmap.org/lookup', queryParameters: {
+            'osm_ids': 'R${props['osm_id']}',
+            'format': 'json',
+            'polygon_geojson': 1
+          });
+          if (nomRes.data is List && nomRes.data.isNotEmpty) {
+            final geojson = nomRes.data[0]['geojson'];
+            if (geojson != null && (geojson['type'] == 'Polygon' || geojson['type'] == 'MultiPolygon')) {
+              // Parse GeoJSON coordinates
+              List coords = geojson['type'] == 'MultiPolygon' 
+                  ? geojson['coordinates'][0][0] 
+                  : geojson['coordinates'][0];
+                  
+              bounds = coords.map<LatLng>((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble())).toList();
+            }
+          }
+        }
+        
+        setState(() {
+          if (bounds.isNotEmpty) {
+            _searchBoundary = bounds;
+            _searchReferencePoint = null;
+            // Calculate center
+            double centerLat = bounds.map((e) => e.latitude).reduce((a, b) => a + b) / bounds.length;
+            double centerLng = bounds.map((e) => e.longitude).reduce((a, b) => a + b) / bounds.length;
+            _mapController.move(LatLng(centerLat, centerLng), 14.0);
+          } else {
+            _searchBoundary = [];
+            _searchReferencePoint = LatLng(lat, lon);
+            _mapController.move(LatLng(lat, lon), 18.0);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    } finally {
+      setState(() => _isMapSearching = false);
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Layanan lokasi tidak aktif.')));
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak.')));
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak permanen.')));
+      return;
+    } 
+
+    setState(() => _isMapSearching = true);
+    try {
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _searchBoundary = [];
+        _searchReferencePoint = LatLng(position.latitude, position.longitude);
+        _mapController.move(LatLng(position.latitude, position.longitude), 18.0);
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    } finally {
+      setState(() => _isMapSearching = false);
+    }
   }
 
   Map<String, dynamic> _buildPayload() {
@@ -359,15 +477,56 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
             ]),
             const SizedBox(height: 12),
             const SizedBox(height: 12),
+            const Text('Cari Lokasi / Nama Jalan:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _mapSearchController,
+                    decoration: InputDecoration(
+                      hintText: 'Misal: Purbalingga Lor',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    onSubmitted: (_) => _searchLocation(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _isMapSearching ? null : _searchLocation,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: _isMapSearching ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Cari'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _isMapSearching ? null : _getCurrentLocation,
+                icon: const Icon(Icons.my_location, size: 18),
+                label: const Text('Lokasi Saya'),
+              ),
+            ),
+            const SizedBox(height: 12),
             const Text('Gambar Titik Koordinat (Poligon):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 8),
             Container(
               height: 300,
               decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300)),
               child: FlutterMap(
+                mapController: _mapController,
                 options: MapOptions(
                   initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
-                  initialZoom: 13.0,
+                  initialZoom: 15.0,
+                  maxZoom: 22.0,
                   onTap: (tapPosition, point) {
                     setState(() {
                       _polygonPoints.add(point);
@@ -380,9 +539,32 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.bakeuda.mobile',
+                    urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                    userAgentPackageName: 'com.example.magang_bakeuda',
+                    maxZoom: 22,
                   ),
+                  if (_searchBoundary.isNotEmpty)
+                    PolygonLayer(
+                      polygons: [
+                        Polygon(
+                          points: _searchBoundary,
+                          color: Colors.blue.withOpacity(0.1),
+                          borderColor: Colors.blue,
+                          borderStrokeWidth: 2,
+                        )
+                      ],
+                    ),
+                  if (_searchReferencePoint != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _searchReferencePoint!,
+                          width: 40,
+                          height: 40,
+                          child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                        )
+                      ],
+                    ),
                   if (_polygonPoints.isNotEmpty)
                     PolygonLayer(
                       polygons: [

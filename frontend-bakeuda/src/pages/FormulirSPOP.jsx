@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents, FeatureGroup, Polygon, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, FeatureGroup, Polygon, CircleMarker, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
@@ -37,6 +37,25 @@ function MapClickHandler({ koordinatPolygon, setFormData }) {
       });
     },
   });
+  return null;
+}
+
+function MapUpdater({ center, referencePoint, searchBoundary }) {
+  const map = useMap();
+  useEffect(() => {
+    if (searchBoundary) {
+      try {
+        const geojsonLayer = L.geoJSON(searchBoundary);
+        map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
+      } catch (err) {
+        map.setView(center, 15);
+      }
+    } else if (referencePoint && referencePoint.length === 2) {
+      map.setView(referencePoint, 18);
+    } else if (center && center.length === 2) {
+      map.setView(center, 15);
+    }
+  }, [center, referencePoint, searchBoundary, map]);
   return null;
 }
 
@@ -152,10 +171,124 @@ export default function FormulirSPOP() {
     }
   };
 
+  const [currentPosition, setCurrentPosition] = useState([-7.388830, 109.363718]);
+  const [referencePoint, setReferencePoint] = useState(null);
+  const [searchBoundary, setSearchBoundary] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    if (val.trim().length > 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const queryText = val.toLowerCase().includes('purbalingga') ? val : `${val} Purbalingga`;
+          const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=5&lat=-7.3888&lon=109.3637`);
+          const data = await res.json();
+          if (data && data.features) {
+            setSuggestions(data.features);
+            setShowSuggestions(true);
+          }
+        } catch (err) {
+          console.error('Autocomplete error', err);
+        }
+      }, 500);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const fetchAndSetBoundary = async (osmType, osmId, queryText, lon, lat) => {
+    try {
+      let url = '';
+      if (osmType && osmId) {
+        const typeChar = String(osmType).charAt(0).toUpperCase();
+        url = `https://nominatim.openstreetmap.org/lookup?osm_ids=${typeChar}${osmId}&format=json&polygon_geojson=1`;
+      } else if (queryText) {
+        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&polygon_geojson=1&limit=1`;
+      }
+
+      if (url) {
+        const res = await fetch(url);
+        const data = await res.json();
+        const result = Array.isArray(data) ? data[0] : (data && data[0] ? data[0] : null);
+        
+        if (result && result.geojson && (result.geojson.type === 'Polygon' || result.geojson.type === 'MultiPolygon')) {
+           setSearchBoundary(result.geojson);
+           setReferencePoint(null);
+           return;
+        }
+      }
+    } catch(err) {
+      console.error('Failed to fetch boundary', err);
+    }
+    
+    // Fallback: Just show the blue dot
+    setSearchBoundary(null);
+    setReferencePoint([parseFloat(lat), parseFloat(lon)]);
+  };
+
+  const handleSelectSuggestion = (feature) => {
+    const [lon, lat] = feature.geometry.coordinates;
+    const name = feature.properties.name || '';
+    const city = feature.properties.city || feature.properties.county || '';
+    
+    setSearchQuery(`${name}${city ? ', ' + city : ''}`);
+    setShowSuggestions(false);
+    
+    const coords = [parseFloat(lat), parseFloat(lon)];
+    setCurrentPosition(coords);
+    
+    fetchAndSetBoundary(feature.properties.osm_type, feature.properties.osm_id, null, lon, lat);
+  };
+
+  const handleSearchLokasi = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setShowSuggestions(false);
+    try {
+      const queryText = searchQuery.toLowerCase().includes('purbalingga') ? searchQuery : `${searchQuery} Purbalingga`;
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1&lat=-7.3888&lon=109.3637`);
+      const data = await response.json();
+      if (data && data.features && data.features.length > 0) {
+        const [lon, lat] = data.features[0].geometry.coordinates;
+        const coords = [parseFloat(lat), parseFloat(lon)];
+        setCurrentPosition(coords);
+        
+        fetchAndSetBoundary(data.features[0].properties.osm_type, data.features[0].properties.osm_id, queryText, lon, lat);
+      } else {
+        alert('Lokasi tidak ditemukan');
+      }
+    } catch (err) {
+      alert('Gagal mencari lokasi');
+    }
+    setIsSearching(false);
+  };
+
+  const handleLokasiSaya = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const coords = [position.coords.latitude, position.coords.longitude];
+        setCurrentPosition(coords);
+        setReferencePoint(coords);
+        setSearchBoundary(null);
+      }, (error) => {
+        alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
+      });
+    } else {
+      alert('Browser Anda tidak mendukung fitur lokasi');
+    }
+  };
+
   const defaultPosition = [-7.3878, 109.3639]; // Purbalingga
-  const currentPosition = formData.latitude && formData.longitude
-    ? [parseFloat(formData.latitude), parseFloat(formData.longitude)]
-    : defaultPosition;
 
   const handleMapClick = (pos) => {
     // Legacy function, replaced by MapClickHandler
@@ -1590,13 +1723,92 @@ export default function FormulirSPOP() {
                   <div className="space-y-4">
                     <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Geser peta dan <b>klik pada peta secara berurutan</b> untuk membuat garis batas bangunan (poligon). Jika salah, klik Hapus Poligon.</p>
 
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 mb-2">
+                      <div className="flex-1 relative">
+                        <div className="flex bg-white border border-outline-variant rounded overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm">
+                          <input 
+                            type="text" 
+                            placeholder="Cari nama jalan, desa, atau kecamatan..." 
+                            className="flex-1 h-10 px-3 outline-none text-sm"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchLokasi())}
+                          />
+                          <button 
+                            type="button"
+                            onClick={handleSearchLokasi}
+                            disabled={isSearching}
+                            className="h-10 px-4 bg-surface-variant text-on-surface hover:bg-surface-variant/80 flex items-center gap-1 font-bold text-sm transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">search</span>
+                            {isSearching ? 'Mencari...' : 'Cari'}
+                          </button>
+                        </div>
+                        
+                        {/* Autocomplete Dropdown */}
+                        {showSuggestions && suggestions.length > 0 && (
+                          <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {suggestions.map((item, idx) => (
+                              <li 
+                                key={idx} 
+                                className="px-4 py-2 hover:bg-surface-variant cursor-pointer text-sm border-b border-outline-variant/30 last:border-0 flex flex-col"
+                                onMouseDown={() => handleSelectSuggestion(item)}
+                              >
+                                <span className="font-bold text-on-surface">{item.properties.name}</span>
+                                <span className="text-xs text-on-surface-variant">
+                                  {[item.properties.street, item.properties.city, item.properties.state, item.properties.country].filter(Boolean).join(', ')}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={handleLokasiSaya}
+                        className="h-10 px-4 bg-primary text-white hover:bg-primary/90 flex items-center gap-2 font-bold text-sm rounded shadow-sm transition-colors whitespace-nowrap justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">my_location</span>
+                        Lokasi Saya
+                      </button>
+                    </div>
+
                     <div className="w-full h-[300px] border border-outline-variant rounded overflow-hidden z-0 relative cursor-crosshair">
-                      <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+                      <MapContainer 
+                        center={currentPosition} 
+                        zoom={15} 
+                        maxZoom={22}
+                        scrollWheelZoom={false}
+                        style={{ height: '100%', width: '100%' }}
+                        className="w-full h-full z-0"
+                      >
                         <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                          attribution="&copy; Google Maps"
+                          maxZoom={22}
                         />
+                        <MapUpdater center={currentPosition} referencePoint={referencePoint} searchBoundary={searchBoundary} />
                         <MapClickHandler koordinatPolygon={formData.koordinat_polygon} setFormData={setFormData} />
+                        
+                        {searchBoundary && (
+                          <GeoJSON 
+                            key={JSON.stringify(searchBoundary)} 
+                            data={searchBoundary} 
+                            style={{ 
+                              color: 'blue', 
+                              weight: 2, 
+                              dashArray: '5, 10', 
+                              fillOpacity: 0.1,
+                              fillColor: 'blue'
+                            }} 
+                          />
+                        )}
+
+                        {referencePoint && (
+                          <Marker position={referencePoint} title="Lokasi Anda / Hasil Pencarian" />
+                        )}
                         
                         {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
                           <Polygon positions={formData.koordinat_polygon} color="blue" />
@@ -1743,57 +1955,9 @@ export default function FormulirSPOP() {
                       </div>
                     )}
 
-                    {['BARU', 'PECAH'].includes(formData.transaksi) && (
-                      <div className="mt-4 p-4 border border-outline-variant bg-surface-container-lowest rounded flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div>
-                          <p className="font-bold text-on-surface text-sm">Unggah Denah Lokasi</p>
-                          <p className="text-xs text-on-surface-variant">Lampirkan foto/gambar sketsa denah lokasi (Wajib untuk transaksi ini).</p>
-                        </div>
-                        <div className="relative overflow-hidden inline-block w-full md:w-auto">
-                          <button
-                            type="button"
-                            disabled={isUploading}
-                            className={`flex items-center justify-center w-full md:w-auto gap-2 px-4 py-2 rounded bg-primary text-on-primary font-bold hover:bg-primary/90 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
-                          >
-                            <span className="material-symbols-outlined text-sm">{isUploading ? 'hourglass_empty' : 'upload_file'}</span>
-                            {isUploading ? 'Mengunggah...' : 'Unggah Denah Lokasi'}
-                          </button>
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={(e) => handleFileUpload(e, 'DENAH_LOKASI')}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            disabled={isUploading}
-                          />
-                        </div>
-                      </div>
-                    )}
 
-                    <div className="mt-8 p-6 bg-surface-container-lowest border border-outline-variant rounded flex flex-col items-center justify-center text-center">
-                      <span className="material-symbols-outlined text-4xl text-outline mb-2">streetview</span>
-                      <p className="font-bold text-on-surface">Pratinjau Foto Jalan (Street View)</p>
-                      
-                      {formData.latitude && formData.longitude ? (
-                        <>
-                          <p className="text-sm text-on-surface-variant max-w-md mb-4">
-                            Lihat kondisi jalan dan bangunan secara 3D (Street View) berdasarkan titik koordinat yang Anda tandai.
-                          </p>
-                          <a 
-                            href={`https://www.google.com/maps?layer=c&cbll=${formData.latitude},${formData.longitude}`}
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-sm font-bold"
-                          >
-                            <span className="material-symbols-outlined text-[20px]">explore</span>
-                            Buka Street View di Tab Baru
-                          </a>
-                        </>
-                      ) : (
-                        <p className="text-sm text-on-surface-variant max-w-md">
-                          Tentukan titik koordinat di peta atas terlebih dahulu untuk melihat foto jalan (Street View) dari lokasi tersebut.
-                        </p>
-                      )}
-                    </div>
+
+
                   </div>
                 </div>
 

@@ -119,6 +119,58 @@ export default function ManajemenAkunDesa() {
         return;
       }
 
+      // Validasi Frontend
+      if (formData.nama_lengkap.trim().length < 2) {
+        setFormError('Nama lengkap minimal 2 karakter');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!formData.username || !formData.nama_lengkap || !formData.kode_wilayah) {
+        setFormError('Semua field wajib diisi');
+        setIsSubmitting(false);
+        return;
+      }
+      if (formData.username.includes(' ')) {
+        setFormError('Username tidak boleh mengandung spasi');
+        setIsSubmitting(false);
+        return;
+      }
+      if (formData.username.length < 4) {
+        setFormError('Username minimal 4 karakter');
+        setIsSubmitting(false);
+        return;
+      }
+      if (formData.nama_lengkap.length < 3) {
+        setFormError('Nama Pengguna minimal 3 karakter');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        setFormError('Username hanya boleh huruf, angka, dan underscore tanpa spasi');
+        setIsSubmitting(false);
+        return;
+      }
+      if (modalMode === 'add' && formData.password.length < 8) {
+        setFormError('Password minimal 8 karakter');
+        setIsSubmitting(false);
+        return;
+      }
+      if (modalMode === 'add' && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(formData.password)) {
+        setFormError('Password harus mengandung huruf besar, huruf kecil, angka, dan simbol');
+        setIsSubmitting(false);
+        return;
+      }
+      if (modalMode === 'edit' && formData.password && formData.password.length < 8) {
+        setFormError('Password baru minimal 8 karakter');
+        setIsSubmitting(false);
+        return;
+      }
+      if (modalMode === 'edit' && formData.password && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(formData.password)) {
+        setFormError('Password baru harus mengandung huruf besar, huruf kecil, angka, dan simbol');
+        setIsSubmitting(false);
+        return;
+      }
+
       // NIP diformat dengan spasi hanya untuk tampilan di form.
       // Sebelum dikirim ke API, spasi harus dihapus (backend hanya menerima angka murni),
       // dan jika kosong dikirim sebagai null karena field ini opsional.
@@ -144,7 +196,11 @@ export default function ManajemenAkunDesa() {
       setIsModalOpen(false);
       fetchUsers();
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data');
+      if (err.response?.data?.message && Array.isArray(err.response.data.message)) {
+        setFormError(err.response.data.message[0]);
+      } else {
+        setFormError(err.response?.data?.message || 'Terjadi kesalahan saat menyimpan data');
+      }
     } finally {
       setIsSubmitting(false);
     }

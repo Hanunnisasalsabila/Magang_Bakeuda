@@ -413,43 +413,10 @@ export default function ProfilPengguna({ role }) {
           </div>
         </div>
 
-        {/* Aktivitas Terakhir / Riwayat Login - both roles. For Desa, the "dikelola admin" note lives as a compact footer inside this same card so the page doesn't feel like disconnected empty blocks. */}
-        <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-[20px]">history</span>
-              </div>
-              <h3 className="text-base font-semibold text-on-surface">Aktivitas Terakhir</h3>
-            </div>
-          </div>
-          {/* Activities List */}
-          <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
-            {activities.length > 0 ? activities.map((activity) => {
-              const { icon, color, bg } = getActivityIcon(activity.type);
-              return (
-                <div key={activity.id_activity} className="flex items-start gap-3 p-3 rounded-xl hover:bg-surface-container/50 transition-colors border border-transparent hover:border-outline-variant/40">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${bg}`}>
-                    <span className={`material-symbols-outlined text-[20px] ${color}`}>
-                      {icon}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-on-surface">{activity.title}</p>
-                    <p className="text-[11px] text-on-surface-variant mt-0.5">{formatTime(activity.created_at)}</p>
-                  </div>
-                </div>
-              );
-            }) : (
-              <div className="flex flex-col items-center text-center gap-1.5 py-6">
-                <span className="material-symbols-outlined text-2xl text-on-surface-variant/40">manage_history</span>
-                <p className="text-sm text-on-surface-variant">Belum ada riwayat aktivitas.</p>
-              </div>
-            )}
-          </div>
+          {/* Aktivitas Terakhir dihapus sesuai permintaan */}
 
           {isDesa && (
-            <div className="mt-5 pt-4 border-t border-outline-variant/40 bg-surface-container/30 rounded-lg p-3">
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm mt-0">
               <div className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">info</span>
                 <p className="text-sm text-on-surface-variant leading-relaxed">
@@ -458,7 +425,6 @@ export default function ProfilPengguna({ role }) {
               </div>
             </div>
           )}
-        </section>
       </div>
 
       {/* Password Modal - Admin only */}

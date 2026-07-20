@@ -139,8 +139,33 @@ export default function DaftarObjekPajak() {
       styles: { fontSize: 9 },
     });
 
-    doc.save('Laporan_Daftar_Objek_Pajak.pdf');
-    setShowExportMenu(false);
+    doc.save('Daftar_Objek_Pajak_Bakeuda.pdf');
+    showToast('Berhasil mengekspor PDF');
+  };
+
+  const handleCetakSPPT = (obj) => {
+    if (!obj) return;
+    showToast('Sedang mencetak Salinan SPPT...');
+    const doc = new jsPDF('portrait');
+    doc.setFontSize(16);
+    doc.text('SURAT PEMBERITAHUAN PAJAK TERHUTANG', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('PAJAK BUMI DAN BANGUNAN', 105, 28, { align: 'center' });
+    doc.text('KABUPATEN PURBALINGGA', 105, 34, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.text(`NOP: ${obj.nop}`, 20, 50);
+    doc.text(`NAMA WAJIB PAJAK: ${obj.name}`, 20, 60);
+    doc.text(`ALAMAT WAJIB PAJAK: ${obj.address}`, 20, 70);
+    doc.text(`LETAK OBJEK PAJAK: ${obj.address}`, 20, 80);
+    doc.text(`LUAS BUMI: ${obj.land} m2`, 20, 90);
+    doc.text(`LUAS BANGUNAN: ${obj.building} m2`, 20, 100);
+
+    doc.text(`TANGGAL CETAK: ${new Date().toLocaleDateString('id-ID')}`, 20, 120);
+    
+    doc.save(`SPPT_${obj.nop}.pdf`);
+    showToast('SPPT berhasil diunduh');
+    setSelectedObject(null);
   };
 
   React.useEffect(() => {
@@ -525,10 +550,7 @@ export default function DaftarObjekPajak() {
             <div className="p-5 border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => {
-                    showToast('Sedang mencetak Salinan SPPT...');
-                    setSelectedObject(null);
-                  }}
+                  onClick={() => handleCetakSPPT(selectedObject)}
                   disabled={selectedObject.status === 'Nonaktif'}
                   className="px-4 py-2 bg-surface-container-high border border-outline-variant text-primary font-bold rounded-lg hover:bg-surface-container-highest transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   title={selectedObject.status === 'Nonaktif' ? "Objek Nonaktif tidak bisa dicetak SPPT" : "Cetak Tagihan Pajak"}
