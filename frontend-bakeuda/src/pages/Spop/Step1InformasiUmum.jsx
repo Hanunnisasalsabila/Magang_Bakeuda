@@ -3,12 +3,47 @@ import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 import SegmentedNOPInput from '../../components/SegmentedNOPInput';
 import ToastNotification from '../../components/ToastNotification';
+import api from '../../utils/axios';
 
 export default function Step1InformasiUmum() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [nopData, setNopData] = useState(null);
+  const [nopLoading, setNopLoading] = useState(false);
+  const [nopError, setNopError] = useState('');
   const navigate = useNavigate();
+
+  // Build full NOP string from segmented input
+  const buildNopString = (nopObj) => {
+    const raw = `${nopObj.prov||''}${nopObj.kab||''}${nopObj.kec||''}${nopObj.kel||''}${nopObj.blok||''}${nopObj.nourut||''}${nopObj.kode||''}`;
+    return raw.replace(/\D/g, '');
+  };
+
+  // Look up NOP from backend
+  const handleCariNOP = async () => {
+    const rawNop = buildNopString(formData.nop);
+    if (rawNop.length < 18) {
+      setNopError('NOP harus 18 digit. Pastikan semua kolom terisi.');
+      return;
+    }
+    setNopLoading(true);
+    setNopError('');
+    setNopData(null);
+    try {
+      const res = await api.get(`/objek-pajak/${rawNop}`);
+      const obj = res.data?.data;
+      if (obj) {
+        setNopData(obj);
+      } else {
+        setNopError('Data objek pajak tidak ditemukan untuk NOP ini.');
+      }
+    } catch (e) {
+      setNopError('Data objek pajak tidak ditemukan untuk NOP ini.');
+    } finally {
+      setNopLoading(false);
+    }
+  };
 
   const handleTextChange = (field, e) => {
     const val = e.target.value;
@@ -56,7 +91,7 @@ export default function Step1InformasiUmum() {
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
           <h4 className="font-headline-md text-headline-md font-bold text-on-surface">
-            1. JENIS TRANSAKSI &amp; NOP
+            JENIS TRANSAKSI &amp; NOP
           </h4>
         </div>
         
@@ -140,7 +175,7 @@ export default function Step1InformasiUmum() {
                       <input 
                         type="radio" name="transaksi" value={opt.val} 
                         checked={formData.transaksi === opt.val} 
-                        onChange={(e) => handleTextChange('transaksi', e)}
+                        onChange={(e) => { handleTextChange('transaksi', e); setNopData(null); setNopError(''); }}
                         className="text-primary focus:ring-primary"
                       />
                       <span className="text-sm font-medium">{opt.label}</span>
@@ -151,7 +186,8 @@ export default function Step1InformasiUmum() {
             )}
           </div>
 
-          {/* NOP Section */}
+          {/* NOP Section - hanya tampil jika kategori memerlukan NOP */}
+          {(formData.kategoriTransaksi === 'update' || formData.kategoriTransaksi === 'hapus') && (
           <div className="space-y-4">
             <div className="overflow-x-auto pb-4 custom-scrollbar">
               <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
@@ -159,7 +195,7 @@ export default function Step1InformasiUmum() {
                   {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
                     <SegmentedNOPInput
                       value={formData.nop}
-                      onChange={(val) => setFormData(prev => ({ ...prev, nop: val }))}
+                      onChange={(val) => { setFormData(prev => ({ ...prev, nop: val })); setNopData(null); setNopError(''); }}
                       label="NOP"
                       showHeaders={true}
                     />
@@ -176,20 +212,113 @@ export default function Step1InformasiUmum() {
               </div>
             </div>
 
+            {/* Tombol Cari Data NOP */}
             {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
-              <div className="p-4 bg-yellow-50 rounded border border-yellow-200 max-w-3xl">
-                <div className="flex gap-2 items-start">
-                  <span className="material-symbols-outlined text-yellow-600">info</span>
-                  <div>
-                    <p className="text-sm font-bold text-yellow-800">Peringatan</p>
-                    <p className="text-xs text-yellow-700 leading-tight">
-                      Pastikan NOP sesuai dengan SPPT tahun pajak berjalan untuk mempermudah proses verifikasi otomatis.
-                    </p>
-                  </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCariNOP}
+                    disabled={nopLoading}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
+                  >
+                    {nopLoading
+                      ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /><span>Mencari...</span></>
+                      : <><span className="material-symbols-outlined text-[18px]">search</span><span>Cari Data Objek Pajak</span></>
+                    }
+                  </button>
+                  {nopError && <p className="text-error text-sm font-medium">{nopError}</p>}
                 </div>
+
+                {/* Hasil Pencarian NOP */}
+                {nopData && (
+                  <div className="border border-green-200 bg-green-50 rounded-xl p-5 space-y-3">
+                    <div className="flex items-center gap-2 text-green-800 font-bold">
+                      <span className="material-symbols-outlined text-[20px] text-green-600">check_circle</span>
+                      Data Objek Pajak Ditemukan
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-on-surface-variant text-xs">NOP</p>
+                        <p className="font-bold text-on-surface font-mono">{nopData.nop}</p>
+                      </div>
+                      <div>
+                        <p className="text-on-surface-variant text-xs">Subjek Pajak (NIK)</p>
+                        <p className="font-bold text-on-surface">{nopData.nik_subjek || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-on-surface-variant text-xs">Alamat Objek Pajak</p>
+                        <p className="font-bold text-on-surface">{nopData.jalan_op || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-on-surface-variant text-xs">Luas Tanah / Bangunan</p>
+                        <p className="font-bold text-on-surface">{nopData.luas_tanah} m² / {nopData.luas_bangunan || 0} m²</p>
+                      </div>
+                      <div>
+                        <p className="text-on-surface-variant text-xs">Status</p>
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
+                          nopData.status_aktif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>{nopData.status_aktif ? 'Aktif' : 'Nonaktif'}</span>
+                      </div>
+                      <div>
+                        <p className="text-on-surface-variant text-xs">Jenis Tanah</p>
+                        <p className="font-bold text-on-surface">{nopData.jenis_tanah || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Aksi berdasarkan jenis transaksi */}
+                    {formData.kategoriTransaksi === 'update' && (
+                      <div className="border-t border-green-200 pt-3 flex flex-wrap gap-2">
+                        <p className="w-full text-xs text-green-700 font-bold mb-1">Lanjutkan ke formulir:</p>
+                        <button
+                          type="button"
+                          onClick={async () => { await handleSave(); }}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                          Isi Formulir Pemutakhiran
+                        </button>
+                      </div>
+                    )}
+                    {formData.kategoriTransaksi === 'hapus' && (
+                      <div className="border-t border-green-200 pt-3 flex flex-wrap gap-2">
+                        <p className="w-full text-xs text-red-700 font-bold mb-1">Tindakan penghapusan:</p>
+                        <button
+                          type="button"
+                          onClick={async () => { await handleSave(); }}
+                          className="flex items-center gap-2 px-4 py-2 bg-error text-white rounded-lg text-sm font-bold hover:bg-error/90 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">delete_forever</span>
+                          Ajukan Penghapusan
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
+          )}
+
+          {/* NOP Section untuk BARU/PECAH/GABUNG (NOP Bersama) */}
+          {formData.kategoriTransaksi === 'baru' && (
+          <div className="space-y-4">
+            <div className="overflow-x-auto pb-4 custom-scrollbar">
+              <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                <div className="space-y-4">
+                  <SegmentedNOPInput
+                    value={formData.nopBersama}
+                    onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                    label="NOP BERSAMA"
+                    showHeaders={true}
+                    optional={true}
+                  />
+                </div>
+                {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
+              </div>
+            </div>
+          </div>
+          )}
         </div>
       </section>
 
@@ -198,7 +327,7 @@ export default function Step1InformasiUmum() {
       <section className="bg-surface-container-low p-6 rounded-lg">
         <div className="flex items-center gap-3 mb-6">
           <h4 className="text-on-surface font-bold uppercase">
-            A. INFORMASI TAMBAHAN UNTUK DATA BARU
+            INFORMASI TAMBAHAN UNTUK DATA BARU
           </h4>
         </div>
         <div className="grid grid-cols-2 gap-4">

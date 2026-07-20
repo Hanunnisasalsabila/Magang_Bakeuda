@@ -211,13 +211,13 @@ export class TransaksiSpopService {
         detail_asal: true,
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         lampiran: true,
-        riwayat: { orderBy: { created_at: 'asc' }, include: { user: { select: { nama_lengkap: true } } } },
+        riwayat: { orderBy: { created_at: 'asc' } },
         reviewer: { select: { nama_lengkap: true } }
       },
     });
 
     if (!transaksi) throw new NotFoundException('Detail transaksi tidak ditemukan');
-    if (currentUser.role === 'DESA' && transaksi.pengaju.kode_wilayah !== currentUser.kode_wilayah) {
+    if (currentUser.role === 'DESA' && (transaksi as any).pengaju?.kode_wilayah !== currentUser.kode_wilayah) {
       throw new ForbiddenException('Akses ditolak');
     }
 
@@ -290,7 +290,7 @@ export class TransaksiSpopService {
       });
       for (const id of ids) {
         await tx.riwayatPelacakan.create({
-          data: { id_transaksi: id, status_lama: 'PROSES', status_baru: 'MENUNGGU', id_user: 'system', catatan: 'Kunci dilepas otomatis (timeout 30 menit)' }
+          data: { id_transaksi: id, status_lama: StatusAjuan.PROSES, status_baru: StatusAjuan.MENUNGGU, id_user: 'system', catatan: 'Kunci dilepas otomatis (timeout 30 menit)' }
         });
       }
     });
@@ -358,9 +358,9 @@ export class TransaksiSpopService {
     return { success: true, data: updated };
   }
 
-  private async catatRiwayat(id_transaksi: string, status_lama: StatusAjuan | null, status_baru: StatusAjuan, id_user: string, catatan: string) {
+  private async catatRiwayat(id_transaksi: string, status_lama: StatusAjuan | string | null, status_baru: StatusAjuan | string, id_user: string, catatan: string) {
     await this.prisma.riwayatPelacakan.create({
-      data: { id_transaksi, status_lama, status_baru, id_user, catatan }
+      data: { id_transaksi, status_lama: status_lama as StatusAjuan, status_baru: status_baru as StatusAjuan, id_user, catatan }
     });
   }
 
@@ -505,16 +505,16 @@ export class TransaksiSpopService {
     const t = transaksi.detail_tujuan[0];
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
-    const kodeWilayah = t.kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
+    const kodeWilayah = (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
     
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: t.kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: (t as any).kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
 
     const objek = await tx.objekPajak.create({
       data: {
         nop,
         kode_wilayah: kodeWilayah,
-        kode_blok: t.kode_blok_baru || '001',
+        kode_blok: (t as any).kode_blok_baru || '001',
         no_urut: nop.substring(13, 17),
         kode_jenis_op: '1',
         nik_subjek: nikSubjek,
@@ -582,15 +582,15 @@ export class TransaksiSpopService {
     for (const t of transaksi.detail_tujuan) {
       const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
       
-      const kodeWilayah = t.kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
+      const kodeWilayah = (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
       if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
       
-      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: t.kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
+      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: (t as any).kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
       await tx.objekPajak.create({
         data: {
           nop,
           kode_wilayah: kodeWilayah,
-          kode_blok: t.kode_blok_baru || '001',
+          kode_blok: (t as any).kode_blok_baru || '001',
           no_urut: nop.substring(13, 17),
           kode_jenis_op: '1',
           nik_subjek: nikSubjek,
@@ -620,15 +620,15 @@ export class TransaksiSpopService {
     const t = transaksi.detail_tujuan[0];
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
     
-    const kodeWilayah = t.kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
+    const kodeWilayah = (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
       
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: t.kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: (t as any).kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
     await tx.objekPajak.create({
       data: {
         nop,
         kode_wilayah: kodeWilayah,
-        kode_blok: t.kode_blok_baru || '001',
+        kode_blok: (t as any).kode_blok_baru || '001',
         no_urut: nop.substring(13, 17),
         kode_jenis_op: '1',
         nik_subjek: nikSubjek,
