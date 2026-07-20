@@ -11,7 +11,21 @@ export default function Step1InformasiUmum() {
   const navigate = useNavigate();
 
   const handleTextChange = (field, e) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    const val = e.target.value;
+    setFormData(prev => {
+      const updates = { [field]: val };
+      if (field === 'transaksi') {
+        let currentList = prev.nopAsalList || [''];
+        if (val === 'GABUNG') {
+          if (currentList.length < 2) {
+            updates.nopAsalList = [...currentList, ''];
+          }
+        } else if (val === 'PECAH') {
+          updates.nopAsalList = [currentList[0] || ''];
+        }
+      }
+      return { ...prev, ...updates };
+    });
   };
 
   const handleSave = async () => {
@@ -19,10 +33,9 @@ export default function Step1InformasiUmum() {
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 1 berhasil disimpan.', type: 'success' });
-      // Update URL if new draft
-      if (!idTransaksi && newId) {
-        navigate(`/spop/informasi-umum/${newId}`, { replace: true });
-      }
+      setTimeout(() => {
+        navigate(`/spop/detail/${idTransaksi || newId}`);
+      }, 1000);
     } catch (error) {
       console.error('Error saving step:', error);
       const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
@@ -195,28 +208,28 @@ export default function Step1InformasiUmum() {
               <div className="flex items-center justify-between">
                 <label className="text-xs text-on-surface-variant font-bold uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
                 {formData.transaksi === 'GABUNG' && (
-                  <button type="button" onClick={() => setFormData(prev => ({...prev, nopAsalList: [...prev.nopAsalList, '']}))} className="text-xs bg-blue-100 text-primary px-3 py-1 rounded-full font-bold hover:bg-blue-200">
+                  <button type="button" onClick={() => setFormData(prev => ({...prev, nopAsalList: [...(prev.nopAsalList || ['']), '']}))} className="text-xs bg-blue-100 text-primary px-3 py-1 rounded-full font-bold hover:bg-blue-200">
                     + Tambah NOP Asal
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {formData.nopAsalList.map((nop, idx) => (
+                {(formData.nopAsalList || ['']).map((nop, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={nop}
                       onChange={(e) => {
-                        const newNopAsal = [...formData.nopAsalList];
+                        const newNopAsal = [...(formData.nopAsalList || [''])];
                         newNopAsal[idx] = e.target.value.replace(/[^0-9.]/g, '');
                         setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
                       }}
                       placeholder="33.03.XXX.XXX.XXX-XXXX.X"
                       className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
-                    {formData.transaksi === 'GABUNG' && formData.nopAsalList.length > 1 && (
+                    {formData.transaksi === 'GABUNG' && (formData.nopAsalList || ['']).length > 2 && (
                       <button type="button" onClick={() => {
-                        const newNopAsal = formData.nopAsalList.filter((_, i) => i !== idx);
+                        const newNopAsal = (formData.nopAsalList || ['']).filter((_, i) => i !== idx);
                         setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
                       }} className="text-error bg-red-100 p-3 rounded-md hover:bg-red-200">
                         <span className="material-symbols-outlined text-[20px]">delete</span>

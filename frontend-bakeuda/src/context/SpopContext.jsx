@@ -52,7 +52,8 @@ export const SpopProvider = ({ children }) => {
         noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '0', jenisTanah: 'TANAH_BANGUNAN',
         lampiran: [],
         latitude: '', longitude: '', koordinat_polygon: [],
-        batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: ''
+        batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
+        nopAsalList: [''], spptLama: ''
       });
       return;
     }
