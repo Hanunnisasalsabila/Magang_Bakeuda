@@ -367,7 +367,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
               child: FlutterMap(
                 options: MapOptions(
                   initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
-                  initialZoom: 13.0,
+                  initialZoom: 15.0,
+                  maxZoom: 22.0,
                   onTap: (tapPosition, point) {
                     setState(() {
                       _polygonPoints.add(point);
@@ -380,8 +381,9 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.bakeuda.mobile',
+                    urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                    userAgentPackageName: 'com.example.magang_bakeuda',
+                    maxZoom: 22,
                   ),
                   if (_polygonPoints.isNotEmpty)
                     PolygonLayer(
