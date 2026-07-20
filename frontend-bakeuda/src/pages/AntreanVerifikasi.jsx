@@ -96,8 +96,8 @@ export default function AntreanVerifikasi() {
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
             address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
             rtRw: '',
-            kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || 'Purbalingga',
-            kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || 'Purbalingga',
+            kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || '-',
+            kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || '-',
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
             status: badgeStatus,
@@ -142,8 +142,8 @@ export default function AntreanVerifikasi() {
   const handleSearchChange = (e) => setSearch(e.target.value);
 
   const filteredData = queueData.filter((item) => {
-    const matchesKec = kecamatan === 'Semua Kecamatan' || item.kecamatan === kecamatan;
-    const matchesKel = kelurahan === 'Semua Desa' || item.kelurahan === kelurahan;
+    const matchesKec = kecamatan === 'Semua Kecamatan' || (item.kecamatan || '').trim().toLowerCase() === kecamatan.trim().toLowerCase();
+    const matchesKel = kelurahan === 'Semua Desa' || (item.kelurahan || '').trim().toLowerCase() === kelurahan.trim().toLowerCase();
     const matchesSearch =
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.address.toLowerCase().includes(search.toLowerCase());

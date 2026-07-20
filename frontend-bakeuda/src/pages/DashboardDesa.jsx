@@ -166,6 +166,13 @@ export default function DashboardDesa() {
                       <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                         <div className="flex items-center justify-end">
                           <button
+                            onClick={() => navigate(`/pelacakan-dokumen/${sub.id}`)}
+                            title="Lacak Status Dokumen"
+                            className="px-2 py-2 mr-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-primary/10 rounded-lg transition-all shadow-sm focus:outline-none"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">timeline</span>
+                          </button>
+                          <button
                             onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/formulir-spop/${sub.id}` : `/detail-review/${sub.id}`)}
                             className="px-4 py-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-surface-container-lowest active:bg-primary/10 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
                           >

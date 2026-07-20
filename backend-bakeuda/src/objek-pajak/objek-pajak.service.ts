@@ -158,6 +158,21 @@ export class ObjekPajakService {
     return { success: true, total: results.length, data: results };
   }
 
+  async getStats(currentUser: CurrentUser) {
+    const scope = buildWilayahScope(currentUser);
+
+    const [total, aktif, nonaktif] = await Promise.all([
+      this.prisma.objekPajak.count({ where: scope }),
+      this.prisma.objekPajak.count({ where: { ...scope, status_aktif: true } }),
+      this.prisma.objekPajak.count({ where: { ...scope, status_aktif: false } })
+    ]);
+
+    return {
+      success: true,
+      data: { total, aktif, nonaktif }
+    };
+  }
+
   // ─────────────────────────────────────────
   // UPDATE HEADER OBJEK PAJAK (NJOP, alamat, dll)
   // ─────────────────────────────────────────

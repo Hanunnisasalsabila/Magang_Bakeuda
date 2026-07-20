@@ -1,59 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import api from '../utils/axios';
 
 export default function PelacakanDokumen() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [dataTransaksi, setDataTransaksi] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Simulasi Fetch API GET /transaksi-spop/:id
-    // Untuk demo ini, kita beri delay 1 detik agar animasi loading terlihat
-    const fetchDummyData = () => {
-      setTimeout(() => {
-        setDataTransaksi({
-          id_transaksi: 'TRX-9821-PBG',
-          no_formulir: 'SPOP-A01-2024',
-          nama_pengaju: 'BUDI SANTOSO, S.T.',
-          tanggal_pengajuan: '2023-10-14T10:45:00Z',
-          status_ajuan: 'PROSES', // atau MENUNGGU
-          riwayat: [
-            {
-              id_riwayat: 1,
-              status_lama: null,
-              status_baru: 'DRAFT',
-              keterangan: 'Pengajuan Berkas Berhasil Dibuat',
-              waktu_kejadian: '2023-10-14T10:45:00Z',
-              nama_pelaku: 'Sistem',
-            },
-            {
-              id_riwayat: 2,
-              status_lama: 'DRAFT',
-              status_baru: 'MENUNGGU',
-              keterangan: 'Menunggu Persetujuan Kelurahan',
-              waktu_kejadian: '2023-10-14T11:00:00Z',
-              nama_pelaku: 'Operator Desa',
-            },
-            {
-              id_riwayat: 3,
-              status_lama: 'MENUNGGU',
-              status_baru: 'PROSES',
-              keterangan: 'Telah Disetujui Desa, Dikirim ke Bakeuda (NIP Kades: 198001012010011001)',
-              waktu_kejadian: '2023-10-14T15:30:00Z',
-              nama_pelaku: 'Kades Purbalingga',
-            }
-          ]
-        });
+    if (!id) return;
+    const fetchData = async () => {
+      try {
+        const res = await api.get(`/transaksi-spop/${id}`);
+        setDataTransaksi(res.data.data);
+      } catch (err) {
+        console.error(err);
+        setError('Gagal memuat data pelacakan.');
+      } finally {
         setIsLoading(false);
-      }, 1000);
+      }
     };
-
-    fetchDummyData();
-  }, []);
+    fetchData();
+  }, [id]);
 
   if (isLoading) {
     return (
-      <main className="p-gutter max-w-screen-md mx-auto w-full relative flex items-center justify-center min-h-[60vh]">
+      <main className="p-gutter max-w-screen-lg mx-auto w-full relative flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
           <span className="material-symbols-outlined animate-spin text-[48px] text-primary">autorenew</span>
           <p className="font-bold text-primary font-label-sm">Memuat Data Riwayat...</p>
@@ -62,68 +36,258 @@ export default function PelacakanDokumen() {
     );
   }
 
+  if (error || !dataTransaksi) {
+    return (
+      <main className="p-gutter max-w-screen-lg mx-auto w-full">
+        <div className="bg-error/10 text-error p-6 rounded-2xl flex items-center gap-3">
+          <span className="material-symbols-outlined text-[24px]">error</span>
+          <span className="font-medium">{error || 'Data tidak ditemukan'}</span>
+        </div>
+      </main>
+    );
+  }
+
+  const detailTujuan = dataTransaksi.detail_tujuan?.[0] || {};
+  const nop = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'DRAFT': return 'bg-surface-container text-on-surface-variant';
+      case 'MENUNGGU': return 'bg-blue-100 text-blue-700';
+      case 'PROSES': return 'bg-orange-100 text-orange-700';
+      case 'REVISI': return 'bg-yellow-100 text-yellow-800';
+      case 'DISETUJUI': return 'bg-green-100 text-green-700';
+      case 'DITOLAK': return 'bg-red-100 text-red-700';
+      default: return 'bg-blue-100 text-blue-700';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'DRAFT': return 'edit_document';
+      case 'MENUNGGU': return 'forward_to_inbox';
+      case 'PROSES': return 'cycle';
+      case 'REVISI': return 'assignment_return';
+      case 'DISETUJUI': return 'check_circle';
+      case 'DITOLAK': return 'cancel';
+      default: return 'mark_email_read';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const formatDateTime = (dateString) => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('id-ID', { 
+      day: 'numeric', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) + ' WIB';
+  };
+
+  const formatStatus = (status) => {
+    if (status === 'DRAFT') return 'Draft Pengajuan';
+    if (status === 'MENUNGGU') return 'Pengajuan Berkas';
+    if (status === 'PROSES') return 'Persetujuan Desa/Kelurahan';
+    if (status === 'REVISI') return 'Menunggu Revisi';
+    if (status === 'DISETUJUI') return 'Disetujui Bakeuda';
+    if (status === 'DITOLAK') return 'Ditolak';
+    return status;
+  };
+
   return (
-    <main className="p-gutter max-w-screen-md mx-auto w-full relative">
-      <div className="mb-8 flex items-center gap-4">
-        <button 
-          onClick={() => navigate('/dashboard-desa')}
-          className="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-          <h2 className="text-primary font-bold">Pelacakan Dokumen</h2>
-          <p className="text-on-surface-variant font-label-sm">ID: {dataTransaksi.id_transaksi} | {dataTransaksi.no_formulir}</p>
+    <main className="p-gutter max-w-screen-lg mx-auto w-full relative">
+      {/* Top Header & Back Button */}
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate('/monitoring-pajak')}
+            className="w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            <span className="material-symbols-outlined">arrow_back</span>
+          </button>
+          <div>
+            <h2 className="text-on-surface font-black text-2xl tracking-tight">Pelacakan Dokumen</h2>
+            <p className="text-on-surface-variant text-sm mt-1 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">tag</span>
+              {dataTransaksi.id_transaksi}
+            </p>
+          </div>
+        </div>
+        
+        {/* Status Badge */}
+        <div className={`px-4 py-2 rounded-full flex items-center gap-2 border shadow-sm font-bold text-sm tracking-wide ${
+          dataTransaksi.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200 text-green-700' :
+          dataTransaksi.status_ajuan === 'DITOLAK' ? 'bg-red-50 border-red-200 text-red-700' :
+          dataTransaksi.status_ajuan === 'REVISI' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+          'bg-blue-50 border-blue-200 text-blue-700'
+        }`}>
+           <span className="material-symbols-outlined text-[18px]">
+             {dataTransaksi.status_ajuan === 'DISETUJUI' ? 'verified' : 
+              dataTransaksi.status_ajuan === 'DITOLAK' ? 'cancel' : 
+              dataTransaksi.status_ajuan === 'REVISI' ? 'error' : 'pending'}
+           </span>
+           {dataTransaksi.status_ajuan}
         </div>
       </div>
 
-      <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-xl shadow-sm mb-section-gap">
-        <div className="flex justify-between items-start mb-8 pb-6 border-b border-outline-variant">
-          <div>
-            <h3 className="font-headline-md font-bold text-on-surface">{dataTransaksi.nama_pengaju}</h3>
-            <p className="font-label-sm text-on-surface-variant mt-1">Diajukan: {new Date(dataTransaksi.tanggal_pengajuan).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        {/* Left Column (Details) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          
+          {/* Card: Detail Pelayanan */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">description</span>
+              </div>
+              <h3 className="font-bold text-on-surface tracking-wide">Detail Pelayanan</h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-on-surface-variant text-xs font-semibold mb-1 uppercase tracking-wider">Tanggal Permohonan</p>
+                  <p className="font-bold text-on-surface text-base">{formatDate(dataTransaksi.tanggal_pengajuan)}</p>
+                </div>
+                <div>
+                  <p className="text-on-surface-variant text-xs font-semibold mb-1 uppercase tracking-wider">No. Pelayanan</p>
+                  <p className="font-data-mono font-medium text-on-surface text-sm bg-surface-container-low px-2 py-1 rounded inline-block">{dataTransaksi.id_transaksi}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-[140px_1fr] items-start">
+                   <p className="text-on-surface-variant text-sm font-medium">Jenis Pajak</p>
+                   <p className="font-bold text-on-surface text-sm">PBB-P2</p>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start">
+                   <p className="text-on-surface-variant text-sm font-medium">Jenis Pelayanan</p>
+                   <p className="font-bold text-on-surface text-sm bg-primary/10 text-primary px-2 py-0.5 rounded inline-flex w-fit">{dataTransaksi.jenis_transaksi}</p>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start">
+                   <p className="text-on-surface-variant text-sm font-medium">Tgl Perkiraan Selesai</p>
+                   <p className="font-bold text-on-surface text-sm">-</p>
+                </div>
+                <div className="grid grid-cols-[140px_1fr] items-start">
+                   <p className="text-on-surface-variant text-sm font-medium">NOP</p>
+                   <p className="font-data-mono font-bold text-on-surface text-sm">{nop}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded font-bold text-xs uppercase shadow-sm">
-            STATUS: {dataTransaksi.status_ajuan}
+
+          {/* Card: Detail Pemohon */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">person</span>
+              </div>
+              <h3 className="font-bold text-on-surface tracking-wide">Detail Pemohon</h3>
+            </div>
+            <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
+               <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
+               <p className="font-bold text-on-surface">{dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
+               
+               <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
+               <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
+            </div>
           </div>
+
+          {/* Card: Syarat Pengajuan */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-tertiary/10 text-tertiary flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">folder_open</span>
+              </div>
+              <h3 className="font-bold text-on-surface tracking-wide">Dokumen Persyaratan</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low/30 text-on-surface-variant text-[11px] uppercase tracking-wider font-bold">
+                    <th className="px-6 py-3 border-b border-outline-variant/50 w-12 text-center">No</th>
+                    <th className="px-6 py-3 border-b border-outline-variant/50">Jenis Persyaratan</th>
+                    <th className="px-6 py-3 border-b border-outline-variant/50 text-center w-28">Berkas</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/30 text-sm">
+                  {dataTransaksi.lampiran?.length > 0 ? (
+                    dataTransaksi.lampiran.map((lampiran, index) => (
+                      <tr key={lampiran.id_lampiran} className="hover:bg-surface-container-lowest transition-colors">
+                        <td className="px-6 py-3 text-center text-on-surface-variant font-medium">{index + 1}</td>
+                        <td className="px-6 py-3 font-semibold text-on-surface capitalize">
+                          {lampiran.jenis_dokumen.replace(/_/g, ' ').toLowerCase()}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <a 
+                            href={lampiran.url_file} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-colors rounded-lg font-bold text-xs"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">download</span>
+                            Unduh
+                          </a>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="px-6 py-8 text-center text-on-surface-variant italic">
+                        Tidak ada lampiran dokumen.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
 
-        <div className="relative">
-          {/* Vertical Line */}
-          <div className="absolute left-[19px] top-4 bottom-4 w-[2px] bg-outline-variant/60"></div>
-          
-          <div className="space-y-8">
-            {dataTransaksi.riwayat.map((item, index) => {
-              const isLast = index === dataTransaksi.riwayat.length - 1;
-              return (
-                <div key={item.id_riwayat} className="relative flex gap-6">
-                  {/* Circle Marker */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 z-10 ${isLast ? 'bg-primary text-white shadow-md' : 'bg-surface-container-high border-2 border-surface-container text-outline'}`}>
-                    <span className="material-symbols-outlined text-[20px]">
-                      {item.status_baru === 'DRAFT' ? 'draft' : item.status_baru === 'MENUNGGU' ? 'pending_actions' : 'check_circle'}
-                    </span>
-                  </div>
-                  
-                  {/* Content */}
-                  <div className="pt-2 pb-1">
-                    <p className="text-xs text-on-surface-variant font-data-mono mb-1">
-                      {new Date(item.waktu_kejadian).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'medium' })}
-                    </p>
-                    <h4 className={`font-bold text-base ${isLast ? 'text-primary' : 'text-on-surface'}`}>
-                      {item.keterangan}
-                    </h4>
-                    <p className="font-label-sm text-on-surface-variant mt-1 italic">Oleh: {item.nama_pelaku}</p>
-                    
-                    {/* Status Badge Tag */}
-                    <div className="mt-3 inline-flex items-center gap-2 text-xs border border-outline-variant px-2 py-1 rounded bg-surface-container-low">
-                      <span className="font-semibold text-outline line-through">{item.status_lama || 'NONE'}</span>
-                      <span className="material-symbols-outlined text-[14px] text-outline">arrow_forward</span>
-                      <span className="font-bold text-secondary">{item.status_baru}</span>
+        {/* Right Column (Timeline) */}
+        <div className="lg:col-span-1">
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden sticky top-6">
+            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3 bg-surface-container-low/30">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">history</span>
+              </div>
+              <h3 className="font-bold text-on-surface tracking-wide">Riwayat Pelacakan</h3>
+            </div>
+            
+            <div className="p-6 relative">
+              {/* Vertical Line */}
+              <div className="absolute left-[39px] top-10 bottom-10 w-[2px] bg-outline-variant/40 rounded-full"></div>
+
+              <div className="space-y-6">
+                {dataTransaksi.riwayat?.map((item, index) => {
+                  const isLast = index === dataTransaksi.riwayat.length - 1;
+                  return (
+                    <div key={item.id_riwayat} className="relative flex items-start gap-4">
+                      {/* Timeline Icon */}
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ring-4 ring-surface-container-lowest shadow-sm ${getStatusColor(item.status_riwayat)}`}>
+                        <span className="material-symbols-outlined text-[18px]">{getStatusIcon(item.status_riwayat)}</span>
+                      </div>
+
+                      {/* Content */}
+                      <div className="pt-1 pb-2">
+                        <h4 className="font-bold text-on-surface text-sm mb-1">{formatStatus(item.status_riwayat)}</h4>
+                        <div className="flex items-center gap-1.5 text-on-surface-variant text-xs font-medium mb-1.5 opacity-80">
+                          <span className="material-symbols-outlined text-[14px]">schedule</span>
+                          {formatDateTime(item.waktu_kejadian)}
+                        </div>
+                        {item.keterangan && (
+                          <div className="bg-surface-container-low/50 px-3 py-2 rounded-lg text-xs text-on-surface-variant border border-outline-variant/50 mt-1">
+                            {item.keterangan}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )
-            })}
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>

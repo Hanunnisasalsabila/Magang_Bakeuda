@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
-import SegmentedNOPInput from '../components/SegmentedNOPInput';
 
 export default function DetailReviewSPOP() {
   const navigate = useNavigate();
@@ -101,7 +100,56 @@ export default function DetailReviewSPOP() {
     }
   };
 
-  const [nopBaru, setNopBaru] = useState({ prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' });
+  const [kodeBlok, setKodeBlok] = useState('');
+  const [kodeJenisOp, setKodeJenisOp] = useState('0');
+  const [allWilayah, setAllWilayah] = useState([]);
+  const [kecamatanList, setKecamatanList] = useState([]);
+  const [kelurahanList, setKelurahanList] = useState([]);
+  const [selectedKecamatan, setSelectedKecamatan] = useState('');
+  const [selectedKelurahan, setSelectedKelurahan] = useState('');
+
+  // Fetch Wilayah
+  useEffect(() => {
+    const fetchKecamatan = async () => {
+      try {
+        const res = await api.get('/wilayah');
+        const wilayahData = res.data.data;
+        setAllWilayah(wilayahData);
+        const uniqueKec = [...new Set(wilayahData.map(w => w.kecamatan))].filter(Boolean).sort();
+        setKecamatanList(uniqueKec);
+      } catch (err) {
+        console.error("Gagal mengambil data wilayah:", err);
+      }
+    };
+    if (isBakeuda) {
+      fetchKecamatan();
+    }
+  }, [isBakeuda]);
+
+  // Update kelurahan list whenever kecamatan changes
+  useEffect(() => {
+    if (allWilayah.length === 0) return;
+    if (selectedKecamatan) {
+      const filteredKel = allWilayah
+        .filter(w => w.kecamatan === selectedKecamatan)
+        .map(w => w.nama_desa)
+        .filter(Boolean)
+        .sort();
+      setKelurahanList(filteredKel);
+    } else {
+      setKelurahanList([]);
+    }
+  }, [selectedKecamatan, allWilayah]);
+
+  // Set default wilayah from data
+  useEffect(() => {
+    if (data?.detail_tujuan?.[0] && allWilayah.length > 0) {
+      const kec = data.detail_tujuan[0].kecamatan_op_baru;
+      const kel = data.detail_tujuan[0].kelurahan_op_baru;
+      if (kec && !selectedKecamatan) setSelectedKecamatan(kec);
+      if (kel && !selectedKelurahan) setSelectedKelurahan(kel);
+    }
+  }, [data, allWilayah]);
 
   const handleDecision = async (status) => {
     try {
@@ -114,21 +162,30 @@ export default function DetailReviewSPOP() {
 
       if (data.status_ajuan === 'PROSES') {
         // VERIFIKASI BAKEUDA
-        let finalNopStr = undefined;
         if (status === 'DISETUJUI' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
-          finalNopStr = `${nopBaru.prov}${nopBaru.kab}${nopBaru.kec}${nopBaru.kel}${nopBaru.blok}${nopBaru.nourut}${nopBaru.kode}`;
-          if (finalNopStr.length !== 18) {
-            setToastMessage('Gagal: Harap lengkapi 18 digit NOP Baru sebelum menyetujui!');
+          if (!selectedKecamatan || !selectedKelurahan) {
+            setToastMessage('Gagal: Kecamatan dan Kelurahan/Desa wajib dipilih!');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+          }
+          if (kodeBlok.length !== 3) {
+            setToastMessage('Gagal: Kode Blok wajib diisi (3 digit angka)!');
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
             return;
           }
         }
         
+        const wilayahObj = allWilayah.find(w => w.nama_desa === selectedKelurahan && w.kecamatan === selectedKecamatan);
+        const kodeWilayah = wilayahObj ? wilayahObj.kode_wilayah : undefined;
+
         await api.patch(`/transaksi-spop/${id}/verifikasi-bakeuda`, {
           status_ajuan: status,
           catatan: decisionNotes,
-          nop_baru: finalNopStr
+          kode_wilayah: status === 'DISETUJUI' ? kodeWilayah : undefined,
+          kode_blok: status === 'DISETUJUI' ? kodeBlok : undefined,
+          kode_jenis_op: status === 'DISETUJUI' ? kodeJenisOp : undefined,
         });
         setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
       }
@@ -414,9 +471,77 @@ export default function DetailReviewSPOP() {
               {/* Render untuk Bakeuda */}
               {isBakeuda && data.status_ajuan === 'PROSES' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
                 <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg mb-4">
-                  <h4 className="font-bold text-blue-900 mb-2">Penetapan NOP Baru</h4>
-                  <p className="text-sm text-blue-700 mb-4">Silakan masukkan Kode Blok dan Nomor Urut sesuai Peta Blok Bakeuda untuk menginjeksi NOP Baru.</p>
-                  <SegmentedNOPInput value={nopBaru} onChange={setNopBaru} />
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px]">pin</span>
+                    Penetapan NOP Baru
+                  </h4>
+                  <p className="text-sm text-blue-700 mb-4">
+                    Pastikan Kecamatan dan Desa sudah benar. Anda hanya perlu mengisi <b>Kode Blok</b>. Nomor Urut akan dihitung otomatis oleh sistem.
+                  </p>
+                  
+                  {/* Wilayah Input (Dropdown) */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kecamatan *</label>
+                      <select
+                        value={selectedKecamatan}
+                        onChange={(e) => {
+                          setSelectedKecamatan(e.target.value);
+                          setSelectedKelurahan(''); // Reset kelurahan when kecamatan changes
+                        }}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
+                      >
+                        <option value="">-- Pilih Kecamatan --</option>
+                        {kecamatanList.map(kec => <option key={kec} value={kec}>{kec}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Desa/Kel *</label>
+                      <select
+                        value={selectedKelurahan}
+                        onChange={(e) => setSelectedKelurahan(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
+                        disabled={!selectedKecamatan}
+                      >
+                        <option value="">-- Pilih Desa --</option>
+                        {kelurahanList.map(kel => <option key={kel} value={kel}>{kel}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Input Manual: Blok + Kode Jenis */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kode Blok (3 digit) *</label>
+                      <input
+                        type="text" inputMode="numeric" maxLength={3}
+                        value={kodeBlok}
+                        onChange={(e) => setKodeBlok(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-center font-mono font-bold text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="001"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kode Jenis OP</label>
+                      <select
+                        value={kodeJenisOp}
+                        onChange={(e) => setKodeJenisOp(e.target.value)}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
+                      >
+                        <option value="0">0 — Bumi</option>
+                        <option value="1">1 — Bangunan</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  <div className="mt-3 bg-white border border-dashed border-blue-300 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1">
+                    <span className="text-[11px] font-bold text-blue-500 uppercase">Preview NOP:</span>
+                    <span className="font-mono font-bold text-blue-900 ml-0 sm:ml-2">
+                      33.03.XXX.XXX.{kodeBlok || '___'}.AUTO.{kodeJenisOp}
+                    </span>
+                    <span className="text-[11px] text-gray-400 ml-0 sm:ml-2">(No. Urut otomatis)</span>
+                  </div>
                 </div>
               )}
 

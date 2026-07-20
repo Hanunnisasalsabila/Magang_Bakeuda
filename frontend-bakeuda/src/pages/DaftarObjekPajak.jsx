@@ -9,7 +9,6 @@ import api from '../utils/axios';
 
 export default function DaftarObjekPajak() {
   const navigate = useNavigate();
-  const [kecamatan, setKecamatan] = useState('Semua Kecamatan');
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -26,38 +25,41 @@ export default function DaftarObjekPajak() {
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const [kecamatanList, setKecamatanList] = useState([]);
+  const [stats, setStats] = useState({ total: 0, aktif: 0, nonaktif: 0 });
+  const [objects, setObjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchKecamatan = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await api.get('/wilayah');
-        const uniqueKec = [...new Set(res.data.data.map(w => w.kecamatan))].filter(Boolean).sort();
-        setKecamatanList(uniqueKec);
+        const [statsRes, listRes] = await Promise.all([
+          api.get('/objek-pajak/stats'),
+          api.get('/objek-pajak')
+        ]);
+        
+        setStats(statsRes.data.data);
+        
+        const formattedList = listRes.data.data.map(item => ({
+          nop: item.nop,
+          name: item.subjek_pajak?.nama_subjek || 'Tanpa Nama',
+          address: item.jalan_op || '-',
+          land: Number(item.luas_tanah || 0),
+          building: Number(item.luas_bangunan || 0),
+          status: item.status_aktif ? 'Aktif' : 'Nonaktif'
+        }));
+
+        setObjects(formattedList);
       } catch (err) {
-        console.error("Gagal mengambil data wilayah:", err);
+        console.error("Gagal memuat data objek pajak:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchKecamatan();
+    fetchData();
   }, []);
 
-  const [objects, setObjects] = useState([
-    { nop: '33.03.010.001.015.0042.0', name: 'H. Ahmad Dahlan', address: 'Jl. Jend. Sudirman No. 45, Purbalingga Kidul', land: 450, building: 120, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0043.1', name: 'Siti Aminah', address: 'Perum Griya Abdi Karya Blok C-12, Purbalingga', land: 112, building: 45, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.020.005.001.0089.0', name: 'PT. Makmur Sentosa', address: 'Kawasan Industri Kalimanah No. 8', land: 2500, building: 1850, status: 'Aktif', kecamatan: 'Kalimanah' },
-    { nop: '33.03.010.001.015.0045.0', name: 'Bambang Wijaya', address: 'Jl. Letjen Parman No. 2, Bancar', land: 200, building: 180, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0048.0', name: 'Sri Wahyuni', address: 'Perumahan Bojong Residance, Purbalingga Lor', land: 90, building: 36, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0051.0', name: 'Budi Santoso', address: 'Jl. Ahmad Yani No. 10, Kandanggampang', land: 150, building: 80, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0052.0', name: 'Sutarjo', address: 'Perum Griya Abdi Karya Blok A-1, Purbalingga', land: 105, building: 45, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.020.005.001.0090.0', name: 'CV. Bintang Terang', address: 'Kawasan Industri Kalimanah No. 12', land: 1200, building: 800, status: 'Aktif', kecamatan: 'Kalimanah' },
-    { nop: '33.03.020.005.001.0091.0', name: 'Indah Pertiwi', address: 'Jl. Mayjen Sungkono No. 44, Kalimanah', land: 300, building: 150, status: 'Aktif', kecamatan: 'Kalimanah' },
-    { nop: '33.03.010.001.015.0053.0', name: 'Agus Setiawan', address: 'Jl. Letjen Parman No. 8, Bancar', land: 250, building: 100, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0054.0', name: 'Rina Herawati', address: 'Perumahan Bojong Residance Blok B-2', land: 90, building: 36, status: 'Aktif', kecamatan: 'Purbalingga' },
-    { nop: '33.03.010.001.015.0055.0', name: 'PT. Maju Bersama', address: 'Jl. S. Parman No. 99, Kedungmenjangan', land: 5000, building: 3500, status: 'Aktif', kecamatan: 'Purbalingga' },
-  ]);
-
   const filteredObjects = objects.filter((obj) => {
-    const matchesKec = kecamatan === 'Semua Kecamatan' || obj.kecamatan === kecamatan;
     const matchesStatus =
       statusVerif === 'Semua Status' ||
       (statusVerif === 'Aktif' && obj.status === 'Aktif') ||
@@ -66,7 +68,7 @@ export default function DaftarObjekPajak() {
       obj.name.toLowerCase().includes(search.toLowerCase()) ||
       obj.nop.includes(search) ||
       obj.address.toLowerCase().includes(search.toLowerCase());
-    return matchesKec && matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch;
   });
 
   // Pagination Logic
@@ -84,7 +86,6 @@ export default function DaftarObjekPajak() {
       'NOP': obj.nop,
       'Subjek Pajak (Pemilik)': obj.name,
       'Alamat Objek Pajak': obj.address,
-      'Kecamatan': obj.kecamatan,
       'Luas Tanah (m²)': obj.land,
       'Luas Bangunan (m²)': obj.building,
       'Status': obj.status
@@ -211,10 +212,11 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl  text-on-surface font-black">45,920</p>
+          <p className="text-3xl text-on-surface font-black">
+            {stats.total.toLocaleString('id-ID')}
+          </p>
           <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">trending_up</span>
-            Bertambah +123 dari bulan lalu
+            Total tercatat di sistem
           </p>
         </div>
         
@@ -227,7 +229,9 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl  text-on-surface font-black">45,105</p>
+          <p className="text-3xl text-on-surface font-black">
+            {stats.aktif.toLocaleString('id-ID')}
+          </p>
           <p className="text-xs text-on-surface-variant mt-2">
             Objek pajak tertagih
           </p>
@@ -242,16 +246,18 @@ export default function DaftarObjekPajak() {
               </span>
             </div>
           </div>
-          <p className="text-3xl  text-on-surface font-black">815</p>
+          <p className="text-3xl text-on-surface font-black">
+            {stats.nonaktif.toLocaleString('id-ID')}
+          </p>
           <p className="text-xs text-on-surface-variant mt-2">
-            Dalam proses pemecahan/penggabungan
+            Objek pajak dinonaktifkan
           </p>
         </div>
       </div>
 
       {/* Filters & Search Controls */}
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Cari Nama/NOP/Alamat
@@ -263,21 +269,6 @@ export default function DaftarObjekPajak() {
               className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
               placeholder="Ketik kata kunci..."
             />
-          </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kecamatan
-            </label>
-            <select
-              value={kecamatan}
-              onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full bg-background border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="Semua Kecamatan">Semua Kecamatan</option>
-              {kecamatanList.map(kec => (
-                <option key={kec} value={kec}>{kec}</option>
-              ))}
-            </select>
           </div>
           <div className="space-y-1.5">
             <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
@@ -297,7 +288,6 @@ export default function DaftarObjekPajak() {
             <button
               onClick={() => {
                 setSearch('');
-                setKecamatan('Semua Kecamatan');
                 setStatusVerif('Semua Status');
               }}
               className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
@@ -323,8 +313,17 @@ export default function DaftarObjekPajak() {
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant text-on-surface">
-              {paginatedObjects.length > 0 ? (
+            <tbody className="divide-y divide-outline-variant/30 text-on-surface">
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="px-4 py-8 text-center text-on-surface-variant">
+                    <div className="flex justify-center items-center gap-2">
+                      <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                      Memuat data...
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedObjects.length > 0 ? (
                 paginatedObjects.map((obj, i) => (
                   <tr
                     key={i}

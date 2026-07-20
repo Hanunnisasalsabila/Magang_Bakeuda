@@ -4,10 +4,14 @@ import { StatusAjuan, Pekerjaan, StatusWp, KondisiBangunan, JenisKonstruksi, Jen
 import { CreateSpopDto } from './dto/create-spop.dto.js';
 import { CreateDraftDto } from './dto/create-draft.dto.js';
 import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
+import { NopGeneratorService } from '../lib/nop-generator.js';
 
 @Injectable()
 export class TransaksiSpopService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly nopGenerator: NopGeneratorService,
+  ) {}
 
   async createDraft(dto: CreateSpopDto, id_user: string) {
     const jenis_transaksi = dto.jenis_layanan;
@@ -636,6 +640,11 @@ export class TransaksiSpopService {
             select: {
               nama_lengkap: true,
             }
+          },
+          verifikator: {
+            select: {
+              nama_lengkap: true,
+            }
           }
         },
         orderBy: {
@@ -750,7 +759,27 @@ export class TransaksiSpopService {
       // === FASE 3: MASTERING (EKSEKUSI PENANAMAN DATA MASTER) ===
       if (dto.status_ajuan === 'DISETUJUI' && transaksi.detail_tujuan.length > 0) {
         const tujuan = transaksi.detail_tujuan[0];
-        const finalNop = dto.nop_baru || tujuan.nop_generated;
+        let finalNop: string;
+
+        if (['BARU', 'PECAH', 'GABUNG'].includes(transaksi.jenis_transaksi)) {
+          // Validasi input dari Admin Bakeuda
+          if (!dto.kode_wilayah || dto.kode_wilayah.length !== 10) {
+            throw new BadRequestException('Kode Wilayah wajib dipilih.');
+          }
+          if (!dto.kode_blok || dto.kode_blok.length !== 3) {
+            throw new BadRequestException('Kode Blok wajib diisi (3 digit).');
+          }
+          const kode_jenis_op = dto.kode_jenis_op || '0';
+
+          finalNop = await this.nopGenerator.generateNop({
+            kode_wilayah: dto.kode_wilayah,
+            kode_blok: dto.kode_blok,
+            kode_jenis_op,
+          }, tx as any);
+        } else {
+          // MUTASI / PERUBAHAN_DATA / HAPUS → pakai NOP yang sudah ada
+          finalNop = tujuan.nop_generated || '';
+        }
 
         if (!finalNop || finalNop.length !== 18) {
           throw new BadRequestException('NOP tidak valid atau belum diisi (harus 18 digit).');
@@ -772,11 +801,11 @@ export class TransaksiSpopService {
           }
         }
 
-        // 2. Update nop_generated di detail_tujuan jika diinput manual
-        if (dto.nop_baru && dto.nop_baru !== tujuan.nop_generated) {
+        // 2. Update nop_generated di detail_tujuan dengan finalNop yang baru/dipilih
+        if (finalNop !== tujuan.nop_generated) {
           await tx.detailTransaksiTujuan.update({
             where: { id_detail_tujuan: tujuan.id_detail_tujuan },
-            data: { nop_generated: dto.nop_baru }
+            data: { nop_generated: finalNop }
           });
         }
 
@@ -800,6 +829,27 @@ export class TransaksiSpopService {
 
           const nikToSave = subjekTemp.nik || tujuan.nik_calon_subjek || '0000000000000000';
 
+          let validKodeWilayah = subjekTemp.kode_wilayah;
+          if (!validKodeWilayah) {
+            // Try to find matching wilayah by desa & kecamatan
+            const matchedWilayah = await tx.wilayah.findFirst({
+              where: { 
+                nama_desa: subjekTemp.kelurahan || '',
+                kecamatan: subjekTemp.kecamatan || ''
+              }
+            });
+            if (matchedWilayah) {
+              validKodeWilayah = matchedWilayah.kode_wilayah;
+            } else {
+              // Fallback to dto.kode_wilayah, or just any valid wilayah
+              validKodeWilayah = dto.kode_wilayah;
+              if (!validKodeWilayah) {
+                const firstWilayah = await tx.wilayah.findFirst();
+                validKodeWilayah = firstWilayah?.kode_wilayah || '3303000000';
+              }
+            }
+          }
+
           await tx.subjekPajak.upsert({
             where: { nik: nikToSave },
             update: {
@@ -813,7 +863,7 @@ export class TransaksiSpopService {
               blok_kav_no_subjek: subjekTemp.blok_kav_no,
               rt: subjekTemp.rt,
               rw: subjekTemp.rw,
-              kode_wilayah: subjekTemp.kode_wilayah || '3303000000',
+              kode_wilayah: validKodeWilayah,
               kode_pos: subjekTemp.kode_pos,
             },
             create: {
@@ -828,7 +878,7 @@ export class TransaksiSpopService {
               blok_kav_no_subjek: subjekTemp.blok_kav_no,
               rt: subjekTemp.rt,
               rw: subjekTemp.rw,
-              kode_wilayah: subjekTemp.kode_wilayah || '3303000000',
+              kode_wilayah: validKodeWilayah,
               kode_pos: subjekTemp.kode_pos,
               created_by: idVerifikator,
             }
@@ -913,6 +963,22 @@ export class TransaksiSpopService {
             else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
             else if (bng.jenisPenggunaan === 'Toko/Apotik/Pasar/Ruko') kode_jpb = '04';
 
+            // Cek apakah JPB eksis di database untuk menghindari error FK
+            const existingJpb = await tx.referensiJenisPenggunaanBangunan.findUnique({ where: { kode_jpb } });
+            if (!existingJpb) {
+              const firstJpb = await tx.referensiJenisPenggunaanBangunan.findFirst();
+              if (firstJpb) {
+                kode_jpb = firstJpb.kode_jpb;
+              } else {
+                await tx.referensiJenisPenggunaanBangunan.create({
+                  data: {
+                    kode_jpb,
+                    nama_jpb: bng.jenisPenggunaan || 'Perumahan'
+                  }
+                });
+              }
+            }
+
             const createdBng = await tx.objekBangunan.create({
               data: {
                 nop: finalNop,
@@ -977,6 +1043,11 @@ export class TransaksiSpopService {
           select: {
             nama_lengkap: true,
           }
+        },
+        verifikator: {
+          select: {
+            nama_lengkap: true,
+          }
         }
       },
     });
@@ -999,6 +1070,7 @@ export class TransaksiSpopService {
       locked_by: transaksi.locked_by,
       locked_at: transaksi.locked_at,
       reviewer_nama: transaksi.reviewer?.nama_lengkap || null,
+      verifikator_nama: transaksi.verifikator?.nama_lengkap || null,
     };
 
     return {
