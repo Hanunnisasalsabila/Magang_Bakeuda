@@ -25,11 +25,12 @@ export const SpopProvider = ({ children }) => {
     nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
     alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
     alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
-    noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '0', jenisTanah: 'TANAH_BANGUNAN',
+    noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '', jenisTanah: '',
     lampiran: [],
     latitude: '', longitude: '', koordinat_polygon: [],
     batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
-    nopAsalList: [''], spptLama: ''
+    nopAsalList: [''], spptLama: '',
+    kodeWilayah: '', kodeWilayahObjek: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -49,11 +50,12 @@ export const SpopProvider = ({ children }) => {
         nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
         alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
         alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
-        noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '0', jenisTanah: 'TANAH_BANGUNAN',
+        noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '', jenisTanah: '',
         lampiran: [],
         latitude: '', longitude: '', koordinat_polygon: [],
         batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
-        nopAsalList: [''], spptLama: ''
+        nopAsalList: [''], spptLama: '',
+        kodeWilayah: '', kodeWilayahObjek: ''
       });
       return;
     }
@@ -217,7 +219,9 @@ export const SpopProvider = ({ children }) => {
         batas_utara_nop: formData.batasUtara || undefined,
         batas_selatan_nop: formData.batasSelatan || undefined,
         batas_timur_nop: formData.batasTimur || undefined,
-        batas_barat_nop: formData.batasBarat || undefined
+        batas_barat_nop: formData.batasBarat || undefined,
+        // Kode wilayah dari dropdown untuk generate NOP
+        kode_wilayah_baru: formData.kodeWilayahObjek || undefined,
       },
       lampiran: formData.lampiran.length > 0 ? formData.lampiran.map(l => ({
         jenis_dokumen: l.jenis_dokumen,

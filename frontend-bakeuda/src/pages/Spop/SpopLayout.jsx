@@ -7,14 +7,14 @@ export default function SpopLayout() {
   const { loadDraft, loading, idTransaksi } = useSpop();
 
   useEffect(() => {
-    // Prevent reloading the same id if already loaded
     if (id_transaksi && id_transaksi !== idTransaksi) {
+      // Load an existing draft by ID
       loadDraft(id_transaksi);
-    } else if (!id_transaksi) {
-      // If we land on /spop/informasi-umum with no ID, clear draft
+    } else if (!id_transaksi && idTransaksi !== null) {
+      // Navigating to a new entry (no ID), always clear
       loadDraft(null);
     }
-  }, [id_transaksi, idTransaksi]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id_transaksi]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="w-full h-full animate-fadeIn pb-16 md:pb-0">

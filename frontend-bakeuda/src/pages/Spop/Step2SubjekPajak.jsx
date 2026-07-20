@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
+import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
 export default function Step2SubjekPajak() {
@@ -79,7 +80,7 @@ export default function Step2SubjekPajak() {
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
           <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-            B. DATA SUBJEK PAJAK
+            DATA SUBJEK PAJAK
           </h4>
         </div>
 
@@ -255,97 +256,101 @@ export default function Step2SubjekPajak() {
           <h5 className="text-lg font-bold text-on-surface pb-2 border-b border-outline-variant">
             ALAMAT LENGKAP SUBJEK PAJAK
           </h5>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-8 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold block">Alamat Subjek Pajak (Jalan)</label>
+
+          {/* Baris 1: Alamat + Blok/Kav */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold block">Alamat (Jalan)</label>
               <input
                 type="text"
                 maxLength={255}
                 value={formData.alamat}
                 onChange={(e) => handleTextChange('alamat', e)}
                 className={`w-full h-11 border ${errors.alamat ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none`}
-                placeholder="Jl. Raya Utama No. 123"
+                placeholder="Nama jalan dan nomor rumah"
               />
               {errors.alamat && <p className="text-error text-[12px]">{errors.alamat}</p>}
             </div>
-            <div className="md:col-span-4 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">Blok/Kav/Nomor <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">Blok/Kav/No <span className="text-gray-400 font-normal text-[11px]">(Opsional)</span></label>
               <input
                 type="text"
                 maxLength={50}
                 value={formData.blokKav}
                 onChange={(e) => handleTextChange('blokKav', e)}
                 className="w-full h-11 border border-outline-variant rounded-md px-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                placeholder="Contoh: Blok A No. 1"
+                placeholder="Blok A / No. 1"
               />
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">RW</label>
+          </div>
+
+          {/* Baris 2: RW + RT + Kecamatan + Kelurahan (satu baris) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold">RW</label>
               <input
                 type="text"
                 maxLength={3}
                 value={formData.rw}
                 onChange={(e) => handleTextChange('rw', { target: { value: e.target.value.replace(/\D/g, '') } })}
                 className="w-full h-11 border border-outline-variant rounded-md px-4 text-center font-data-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                placeholder="002"
+                placeholder="000"
               />
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">RT</label>
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold">RT</label>
               <input
                 type="text"
                 maxLength={3}
                 value={formData.rt}
                 onChange={(e) => handleTextChange('rt', { target: { value: e.target.value.replace(/\D/g, '') } })}
                 className="w-full h-11 border border-outline-variant rounded-md px-4 text-center font-data-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                placeholder="001"
+                placeholder="000"
               />
             </div>
-            <div className="md:col-span-8 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold block">Kelurahan / Desa</label>
-              <input
-                type="text"
-                maxLength={100}
-                value={formData.kelurahan}
-                onChange={(e) => handleTextChange('kelurahan', e)}
-                className={`w-full h-11 border ${errors.kelurahan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none`}
-                placeholder="Contoh: Purbalingga Lor"
-              />
-            </div>
-            <div className="md:col-span-8 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold block">Kecamatan</label>
-              <input
-                type="text"
-                maxLength={100}
-                value={formData.kecamatan}
-                onChange={(e) => handleTextChange('kecamatan', e)}
-                className={`w-full h-11 border ${errors.kecamatan ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none`}
-                placeholder="Contoh: Purbalingga"
-              />
-            </div>
-            <div className="md:col-span-8 space-y-2">
+            <WilayahDropdown
+              selectedKecamatan={formData.kecamatan}
+              selectedKelurahan={formData.kelurahan}
+              onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
+                setFormData(prev => ({
+                  ...prev,
+                  kecamatan: namaKec,
+                  kelurahan: namaKel,
+                  kabupaten: namaKel ? 'Purbalingga' : prev.kabupaten,
+                  kodeWilayah: kodeKel || kodeKec || prev.kodeWilayah,
+                }));
+              }}
+              errorKecamatan={errors.kecamatan}
+              errorKelurahan={errors.kelurahan}
+              required={true}
+            />
+          </div>
+
+          {/* Baris 3: Kabupaten (readonly) + Kode Pos */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="md:col-span-3 space-y-1">
               <label className="text-sm text-on-surface-variant font-bold block">Kabupaten / Kota</label>
               <input
                 type="text"
-                maxLength={100}
-                value={formData.kabupaten}
-                onChange={(e) => handleTextChange('kabupaten', e)}
-                className={`w-full h-11 border ${errors.kabupaten ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none`}
+                readOnly
+                value="Purbalingga"
+                className="w-full h-11 border border-outline-variant rounded-md px-4 outline-none bg-surface-container-low text-on-surface-variant cursor-not-allowed"
               />
             </div>
-            <div className="md:col-span-4 space-y-2">
-              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">Kode Pos <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">Kode Pos <span className="text-gray-400 font-normal text-[11px]">(Opsional)</span></label>
               <input
                 type="text"
                 maxLength={5}
                 value={formData.kodePos}
                 onChange={(e) => handleTextChange('kodePos', { target: { value: e.target.value.replace(/\D/g, '') } })}
-                className={`w-full h-11 border ${errors.kodePos ? 'border-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 font-data-mono outline-none`}
+                className="w-full h-11 border border-outline-variant rounded-md px-4 font-data-mono outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 placeholder="53311"
               />
             </div>
           </div>
         </div>
+
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
