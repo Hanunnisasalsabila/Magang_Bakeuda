@@ -186,9 +186,12 @@ export default function Step2SubjekPajak() {
               type="text"
               maxLength={100}
               value={formData.nama}
-              onChange={(e) => handleTextChange('nama', e)}
-              className={`w-full h-12 border ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-on-surface bg-white transition-all shadow-sm outline-none`}
-              placeholder="Masukkan nama sesuai KTP / Sertifikat"
+              onChange={(e) => {
+                const val = e.target.value.toUpperCase();
+                setFormData(prev => ({ ...prev, nama: val }));
+              }}
+              className={`w-full h-12 border uppercase font-bold ${errors.nama ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-on-surface bg-white transition-all shadow-sm outline-none`}
+              placeholder="MASUKKAN NAMA SESUAI KTP / SERTIFIKAT"
             />
             {errors.nama && <p className="text-error text-[12px]">{errors.nama}</p>}
             
