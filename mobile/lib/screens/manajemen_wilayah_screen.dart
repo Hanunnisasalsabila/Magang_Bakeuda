@@ -111,7 +111,7 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
               try {
                 if (isEdit) {
                   await _wilayahService.updateWilayah(
-                    existing!['kode_wilayah'],
+                    existing['kode_wilayah'],
                     {
                       'nama_desa': namDesaCtrl.text,
                       'kecamatan': kecamatanCtrl.text,
