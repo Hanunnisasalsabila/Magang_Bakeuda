@@ -188,6 +188,13 @@ export default function DetailReviewSPOP() {
           kode_jenis_op: status === 'DISETUJUI' ? kodeJenisOp : undefined,
         });
         setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
+        
+        setData(prev => ({
+          ...prev,
+          status_ajuan: status,
+          catatan_bakeuda: decisionNotes,
+          verified_at: new Date().toISOString()
+        }));
       }
 
       setShowToast(true);
@@ -453,10 +460,49 @@ export default function DetailReviewSPOP() {
         </div>
       </div>
 
-      {/* Verification Action Card */}
-      <div className="mt-8 mb-12">
-        <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
-          <div className="mb-6 border-b border-gray-200 pb-4">
+      {/* Verification Action Card or Final Decision */}
+      {['DISETUJUI', 'DITOLAK', 'REVISI'].includes(data.status_ajuan) ? (
+        <div className="mt-8 mb-12">
+          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : (data.status_ajuan === 'REVISI' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')}`}>
+            <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
+              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : (data.status_ajuan === 'REVISI' ? 'text-amber-600' : 'text-red-600')}`}>
+                {data.status_ajuan === 'DISETUJUI' ? 'verified' : (data.status_ajuan === 'REVISI' ? 'assignment_return' : 'cancel')}
+              </span>
+              <div>
+                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : (data.status_ajuan === 'REVISI' ? 'text-amber-800' : 'text-red-800')}`}>
+                  Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : (data.status_ajuan === 'REVISI' ? 'Dikembalikan untuk Revisi' : 'Ditolak Permanen')}
+                </h3>
+                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : (data.status_ajuan === 'REVISI' ? 'text-amber-700' : 'text-red-700')}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
+              </div>
+            </div>
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : (data.status_ajuan === 'REVISI' ? 'text-amber-900' : 'text-red-900')}`}>
+              <div>
+                <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Diverifikasi Oleh</p>
+                <p className="font-semibold text-sm flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] opacity-70">person</span>
+                  {data.verifikator?.nama_lengkap || 'Admin Bakeuda'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Waktu Keputusan</p>
+                <p className="font-semibold text-sm flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] opacity-70">schedule</span>
+                  {data.verified_at ? new Date(data.verified_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WIB' : '-'}
+                </p>
+              </div>
+              <div className="md:col-span-2 mt-2">
+                <p className="text-[11px] font-bold uppercase mb-2 opacity-70 tracking-wider">Catatan Tambahan</p>
+                <div className="bg-white/60 p-4 rounded-md border border-black/5 shadow-inner">
+                  <p className="text-sm whitespace-pre-wrap font-medium">{data.catatan_bakeuda || 'Tidak ada catatan dari verifikator.'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8 mb-12">
+          <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
+            <div className="mb-6 border-b border-gray-200 pb-4">
             <h3 className="text-lg text-gray-900 flex items-center gap-2 font-bold">
               <span className="material-symbols-outlined text-blue-600">assignment_turned_in</span>
               Keputusan Verifikasi
@@ -631,6 +677,7 @@ export default function DetailReviewSPOP() {
             </div>
           </div>
         </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-surface-container-high px-gutter py-8 text-on-surface-variant border-t border-outline-variant rounded-t-xl">

@@ -214,8 +214,9 @@ export default function FormulirLSPOP() {
   const handleTextChange = (field, event) => {
     let value = event.target.value;
     
-    // Constraint khusus tahun (maksimal 4 digit)
+    // Constraint khusus tahun (maksimal 4 digit, hanya angka, tidak boleh minus)
     if (field === 'tahunDibangun' || field === 'tahunDirenovasi') {
+      value = value.replace(/\D/g, '');
       if (value.length > 4) value = value.slice(0, 4);
     }
     
@@ -639,12 +640,12 @@ export default function FormulirLSPOP() {
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">4. Tahun Dibangun</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 2010" />
+                <input type="text" value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', e)} className={`w-full h-12 border ${errors.tahunDibangun ? 'border-error' : 'border-outline-variant'} rounded px-4 font-data-mono`} placeholder="Contoh: 2010" />
                 {errors.tahunDibangun && <p className="text-error text-[12px]">{errors.tahunDibangun}</p>}
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">5. Tahun Direnovasi (Opsional)</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
+                <input type="text" value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
                 {errors.tahunDirenovasi && <p className="text-error text-[12px]">{errors.tahunDirenovasi}</p>}
               </div>
 

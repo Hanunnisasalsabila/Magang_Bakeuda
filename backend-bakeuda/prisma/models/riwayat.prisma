@@ -1,11 +1,11 @@
 model RiwayatPelacakan {
-  id_riwayat   String      @id @default(uuid())
+  id_riwayat   String       @id @default(uuid())
   id_transaksi String
   status_lama  StatusAjuan?
   status_baru  StatusAjuan
   id_user      String
-  catatan      String?     @db.VarChar(500)
-  created_at   DateTime    @default(now())
+  catatan      String?      @db.VarChar(500)
+  created_at   DateTime     @default(now())
 
   // ── Relasi ──
   transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade)

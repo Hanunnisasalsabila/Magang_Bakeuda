@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
+import WilayahDropdown from '../../components/WilayahDropdown';
 
 // Fix leaflet icon issues in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -44,6 +45,16 @@ export default function Step3ObjekPajak() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (formData.transaksi === 'MUTASI' || formData.transaksi === 'HAPUS') {
+      if (idTransaksi) {
+        navigate(`/spop/konfirmasi/${idTransaksi}`, { replace: true });
+      } else {
+        navigate('/spop/informasi-umum', { replace: true });
+      }
+    }
+  }, [formData.transaksi, idTransaksi, navigate]);
+
   // Purbalingga Default Coordinates
   const currentPosition = [formData.latitude || -7.38883, formData.longitude || 109.36647];
 
@@ -52,12 +63,27 @@ export default function Step3ObjekPajak() {
   };
 
   const handleSave = async () => {
+    // Validasi Frontend
+    const newErrors = {};
+    if (!formData.rtObjek) newErrors.rtObjek = 'RT wajib diisi';
+    if (!formData.rwObjek) newErrors.rwObjek = 'RW wajib diisi';
+    if (!formData.kecamatanObjek) newErrors.kecamatanObjek = 'Kecamatan wajib dipilih';
+    if (!formData.kelurahanObjek) newErrors.kelurahanObjek = 'Kelurahan wajib dipilih';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setToast({ show: true, message: 'Mohon lengkapi semua isian wajib (bergaris merah)', type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      setErrors({});
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
-      if (!idTransaksi && newId) {
-        navigate(`/spop/objek-pajak/${newId}`, { replace: true });
+      const savedId = idTransaksi || newId;
+      if (savedId) {
+        navigate(`/spop/konfirmasi/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -79,11 +105,13 @@ export default function Step3ObjekPajak() {
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
           <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-            C. DATA LETAK OBJEK PAJAK
+            DATA LETAK OBJEK PAJAK
           </h4>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-4 space-y-2">
+
+        {/* Baris 1: No.Persil + Alamat */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-1">
             <label className="font-label-sm text-primary block">No. PERSIL</label>
             <input
               type="text"
@@ -91,9 +119,10 @@ export default function Step3ObjekPajak() {
               value={formData.noPersil}
               onChange={(e) => handleTextChange('noPersil', e)}
               className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
+              placeholder="No. persil"
             />
           </div>
-          <div className="md:col-span-8 space-y-2">
+          <div className="md:col-span-3 space-y-1">
             <label className="font-label-sm text-primary block">JALAN (ALAMAT OBJEK PAJAK)</label>
             <input
               type="text"
@@ -101,74 +130,85 @@ export default function Step3ObjekPajak() {
               value={formData.alamatObjek}
               onChange={(e) => handleTextChange('alamatObjek', e)}
               className={`w-full h-11 border ${errors.alamatObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 bg-white shadow-sm outline-none`}
-              placeholder="Contoh: Jl. Merdeka No. 45"
+              placeholder="Nama jalan dan nomor objek pajak"
             />
             {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
           </div>
-          <div className="md:col-span-4 space-y-2">
-            <label className="text-sm text-on-surface-variant flex items-center gap-1 font-bold">BLOK/KAV/NOMOR <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
+        </div>
+
+        {/* Baris 2: Blok/Kav + RW + RT */}
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2 space-y-1">
+            <label className="text-sm text-on-surface-variant font-bold">BLOK/KAV/NOMOR <span className="text-gray-400 font-normal text-[11px]">(Opsional)</span></label>
             <input
               type="text"
               maxLength={50}
               value={formData.blokKavObjek}
               onChange={(e) => handleTextChange('blokKavObjek', e)}
               className="w-full h-11 border border-outline-variant rounded px-4 bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
+              placeholder="Blok A / No. 1"
             />
           </div>
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-sm text-on-surface-variant flex items-center gap-1 font-bold">RW</label>
+          <div className="space-y-1">
+            <label className="text-sm text-on-surface-variant font-bold">RW</label>
             <input
               type="text"
               maxLength={3}
               value={formData.rwObjek}
               onChange={(e) => handleTextChange('rwObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
-              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
-              placeholder="002"
+              className={`w-full h-11 border ${errors.rwObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
+              placeholder="000"
             />
+            {errors.rwObjek && <p className="text-error text-[12px]">{errors.rwObjek}</p>}
           </div>
-          <div className="md:col-span-2 space-y-2">
-            <label className="text-sm text-on-surface-variant flex items-center gap-1 font-bold">RT</label>
+          <div className="space-y-1">
+            <label className="text-sm text-on-surface-variant font-bold">RT</label>
             <input
               type="text"
               maxLength={3}
               value={formData.rtObjek}
               onChange={(e) => handleTextChange('rtObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
-              className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
-              placeholder="001"
+              className={`w-full h-11 border ${errors.rtObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
+              placeholder="000"
             />
-          </div>
-          <div className="md:col-span-4 space-y-2">
-            <label className="font-label-sm text-on-surface-variant block">KELURAHAN/DESA</label>
-            <input
-              type="text"
-              maxLength={100}
-              value={formData.kelurahanObjek}
-              onChange={(e) => handleTextChange('kelurahanObjek', e)}
-              className={`w-full h-11 border ${errors.kelurahanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 bg-white shadow-sm outline-none`}
-              placeholder="Contoh: Purbalingga Lor"
-            />
-            {errors.kelurahanObjek && <p className="text-error text-[12px]">{errors.kelurahanObjek}</p>}
-          </div>
-          <div className="md:col-span-4 space-y-2">
-            <label className="font-label-sm text-on-surface-variant block">KECAMATAN</label>
-            <input
-              type="text"
-              maxLength={100}
-              value={formData.kecamatanObjek}
-              onChange={(e) => handleTextChange('kecamatanObjek', e)}
-              className={`w-full h-11 border ${errors.kecamatanObjek ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 bg-white shadow-sm outline-none`}
-              placeholder="Contoh: Purbalingga"
-            />
-            {errors.kecamatanObjek && <p className="text-error text-[12px]">{errors.kecamatanObjek}</p>}
+            {errors.rtObjek && <p className="text-error text-[12px]">{errors.rtObjek}</p>}
           </div>
         </div>
+
+        {/* Baris 3: Kecamatan + Kelurahan — satu baris */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <WilayahDropdown
+            selectedKecamatan={formData.kecamatanObjek}
+            selectedKelurahan={formData.kelurahanObjek}
+            labelKecamatan="KECAMATAN"
+            labelKelurahan="KELURAHAN/DESA"
+            onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
+              setFormData(prev => {
+                const kecKode = kodeKec ? kodeKec.substring(4, 7) : '';
+                const kelKode = kodeKel ? kodeKel.substring(7, 10) : '';
+                const isBaruJenis = ['BARU', 'PECAH', 'GABUNG'].includes(prev.transaksi);
+                return {
+                  ...prev,
+                  kecamatanObjek: namaKec,
+                  kelurahanObjek: namaKel,
+                  kodeWilayahObjek: kodeKel || kodeKec || prev.kodeWilayahObjek,
+                  nop: isBaruJenis ? { ...prev.nop, kec: kecKode, kel: kelKode } : prev.nop,
+                };
+              });
+            }}
+            errorKecamatan={errors.kecamatanObjek}
+            errorKelurahan={errors.kelurahanObjek}
+            required={true}
+          />
+        </div>
       </section>
+
 
       <section className="space-y-6 pt-8 border-t border-outline-variant">
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
           <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-            D. DATA TANAH
+            DATA TANAH
           </h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -228,7 +268,7 @@ export default function Step3ObjekPajak() {
           <div className="flex items-center gap-3">
             <div className="w-1 bg-primary h-8 rounded-full"></div>
             <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-              E. DATA BANGUNAN
+              DATA BANGUNAN
             </h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -415,7 +455,7 @@ export default function Step3ObjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
