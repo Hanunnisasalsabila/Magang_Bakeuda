@@ -56,6 +56,11 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsArray() data_bangunan_json?: any[];
 }
 
+export class LampiranInputDto {
+  @IsString() jenis_dokumen: string;
+  @IsString() url_file: string;
+}
+
 export class SubmitTransaksiDto {
   @IsOptional() @IsEnum(JenisTransaksi) jenis_transaksi?: JenisTransaksi;
   @IsOptional() @IsString() no_formulir?: string;
@@ -81,5 +86,7 @@ export class SubmitTransaksiDto {
 
   @IsOptional()
   @IsArray()
-  lampiran?: { jenis_dokumen: string; url_file: string }[];
+  @ValidateNested({ each: true })
+  @Type(() => LampiranInputDto)
+  lampiran?: LampiranInputDto[];
 }
