@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
-=======
-import React, { useState, useEffect } from 'react';
->>>>>>> 935a441d2d352d2eec5fc15dd2878b8154500c15
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
