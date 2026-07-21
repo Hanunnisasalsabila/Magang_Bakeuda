@@ -17,6 +17,7 @@ export class CalonSubjekDto {
   @IsOptional() @IsString() kelurahan?: string;
   @IsOptional() @IsString() kecamatan?: string;
   @IsOptional() @IsString() kabupaten?: string;
+  @IsOptional() @IsString() kode_wilayah?: string;
   @IsOptional() @IsString() kode_pos?: string;
 }
 
