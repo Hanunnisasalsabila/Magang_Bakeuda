@@ -5,8 +5,8 @@ import { JenisTransaksi, JenisTanah, StatusWp, Pekerjaan } from '@prisma/client'
 export class CalonSubjekDto {
   @IsString() nik: string;
   @IsString() nama_subjek: string;
-  @IsEnum(StatusWp) status_wp: StatusWp;
-  @IsEnum(Pekerjaan) pekerjaan: Pekerjaan;
+  @IsOptional() @IsEnum(StatusWp) status_wp?: StatusWp;
+  @IsOptional() @IsEnum(Pekerjaan) pekerjaan?: Pekerjaan;
   @IsOptional() @IsString() npwp?: string;
   @IsOptional() @IsString() no_hp?: string;
   @IsOptional() @IsString() email?: string;
