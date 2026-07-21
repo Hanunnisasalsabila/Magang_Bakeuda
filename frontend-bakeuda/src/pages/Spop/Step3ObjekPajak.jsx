@@ -524,7 +524,7 @@ export default function Step3ObjekPajak() {
                 onFocus={() => { if (!formData.batasUtara) handleTextChange('batasUtara', { target: { value: '33.03.' } }); }}
                 onBlur={() => { if (formData.batasUtara === '33.03.') handleTextChange('batasUtara', { target: { value: '' } }); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
-                placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
@@ -536,7 +536,7 @@ export default function Step3ObjekPajak() {
                 onFocus={() => { if (!formData.batasSelatan) handleTextChange('batasSelatan', { target: { value: '33.03.' } }); }}
                 onBlur={() => { if (formData.batasSelatan === '33.03.') handleTextChange('batasSelatan', { target: { value: '' } }); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
-                placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
@@ -548,7 +548,7 @@ export default function Step3ObjekPajak() {
                 onFocus={() => { if (!formData.batasTimur) handleTextChange('batasTimur', { target: { value: '33.03.' } }); }}
                 onBlur={() => { if (formData.batasTimur === '33.03.') handleTextChange('batasTimur', { target: { value: '' } }); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
-                placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
@@ -560,7 +560,7 @@ export default function Step3ObjekPajak() {
                 onFocus={() => { if (!formData.batasBarat) handleTextChange('batasBarat', { target: { value: '33.03.' } }); }}
                 onBlur={() => { if (formData.batasBarat === '33.03.') handleTextChange('batasBarat', { target: { value: '' } }); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
-                placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
           </div>
