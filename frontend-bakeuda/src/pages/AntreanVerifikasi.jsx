@@ -92,7 +92,7 @@ export default function AntreanVerifikasi() {
           return {
             id: item.id_transaksi,
             nop: nopFormatted,
-            name: item.calon_subjek_temp?.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+            name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
             address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
             rtRw: '',
