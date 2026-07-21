@@ -131,7 +131,7 @@ export const SpopProvider = ({ children }) => {
           luasTanah: (detailTujuan.luas_tanah_baru !== null && detailTujuan.luas_tanah_baru !== undefined) ? detailTujuan.luas_tanah_baru.toString() : '',
           luasBangunan: (detailTujuan.luas_bangunan_baru !== null && detailTujuan.luas_bangunan_baru !== undefined) ? detailTujuan.luas_bangunan_baru.toString() : '',
           jumlahBangunan: detailTujuan.jumlah_bangunan_baru || '0',
-          jenisTanah: detailTujuan.jenis_tanah_baru || 'TANAH_BANGUNAN',
+          jenisTanah: detailTujuan.jenis_tanah_baru || '',
           
           latitude: detailTujuan.latitude || '',
           longitude: detailTujuan.longitude || '',
@@ -240,7 +240,7 @@ export const SpopProvider = ({ children }) => {
         nik_calon_subjek: formData.nik || undefined,
         calon_subjek_json,
         luas_tanah_baru: 0,
-        jenis_tanah_baru: 'TANAH_BANGUNAN' // placeholder, backend ignores it
+        jenis_tanah_baru: undefined
       }];
     } else {
       detail_tujuan = [{
@@ -249,7 +249,7 @@ export const SpopProvider = ({ children }) => {
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: mergedData.luasBangunan ? Number(mergedData.luasBangunan) : 0,
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
-        jenis_tanah_baru: mergedData.jenisTanah || 'TANAH_BANGUNAN',
+        jenis_tanah_baru: mergedData.jenisTanah || undefined,
         jalan_op_baru: mergedData.alamatObjek || '',
         kode_wilayah_baru: mergedData.kodeWilayahObjek || undefined,
         blok_kav_no_baru: mergedData.blokKavObjek || undefined,
