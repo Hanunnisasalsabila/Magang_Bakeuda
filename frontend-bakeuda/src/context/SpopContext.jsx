@@ -105,14 +105,14 @@ export const SpopProvider = ({ children }) => {
           isKuasa: data.menggunakan_kuasa || false,
           nopAsalList: nopAsalArray,
           
-          nik: subjek.nik || '',
-          nama: subjek.nama_subjek || '',
+          nik: (subjek.nik && subjek.nik !== '0000000000000000') ? subjek.nik : '',
+          nama: (subjek.nama_subjek && subjek.nama_subjek !== 'TANPA NAMA') ? subjek.nama_subjek : '',
           npwp: subjek.npwp || '',
           noTelp: subjek.no_hp || '',
           statusWp: subjek.status_wp || '',
           pekerjaan: subjek.pekerjaan || '',
           email: subjek.email || '',
-          alamat: subjek.alamat_jalan || '',
+          alamat: (subjek.alamat_jalan && subjek.alamat_jalan !== 'TANPA ALAMAT') ? subjek.alamat_jalan : '',
           blokKav: subjek.blok_kav_no_subjek || '',
           rt: subjek.rt || '',
           rw: subjek.rw || '',
@@ -147,20 +147,22 @@ export const SpopProvider = ({ children }) => {
 
         // Basic check for completion
         const isStep1Complete = !!(data.jenis_transaksi);
-        const isStep2Complete = !!(subjek.nama_subjek && subjek.nik && subjek.alamat_jalan);
+        const isStep2Complete = !!(subjek.nama_subjek && subjek.nama_subjek !== 'TANPA NAMA' && subjek.nik && subjek.nik !== '0000000000000000' && subjek.alamat_jalan && subjek.alamat_jalan !== 'TANPA ALAMAT');
         const isStep3Complete = !!(detailTujuan.luas_tanah_baru > 0 && detailTujuan.jenis_tanah_baru);
         
         let isStep4Complete = false;
-        const numBng = detailTujuan.jumlah_bangunan_baru || 0;
-        if (numBng === 0) {
-          isStep4Complete = true; // skipped
-        } else if (detailTujuan.data_bangunan_json) {
-          try {
-            const parsed = typeof detailTujuan.data_bangunan_json === 'string' ? JSON.parse(detailTujuan.data_bangunan_json) : detailTujuan.data_bangunan_json;
-            if (Array.isArray(parsed) && parsed.length >= numBng) {
-              isStep4Complete = true;
-            }
-          } catch(e) {}
+        if (isStep3Complete) {
+          const numBng = detailTujuan.jumlah_bangunan_baru || 0;
+          if (numBng === 0) {
+            isStep4Complete = true; // skipped
+          } else if (detailTujuan.data_bangunan_json) {
+            try {
+              const parsed = typeof detailTujuan.data_bangunan_json === 'string' ? JSON.parse(detailTujuan.data_bangunan_json) : detailTujuan.data_bangunan_json;
+              if (Array.isArray(parsed) && parsed.length >= numBng) {
+                isStep4Complete = true;
+              }
+            } catch(e) {}
+          }
         }
         
         const isStep5Complete = data.status_ajuan !== 'DRAFT';
