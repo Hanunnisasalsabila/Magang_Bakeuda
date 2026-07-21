@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
 import StatusBadge from '../components/StatusBadge';
 
 export default function DraftSPOP() {
   const navigate = useNavigate();
+  const { loadDraft } = useSpop();
   const [drafts, setDrafts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -45,7 +47,7 @@ export default function DraftSPOP() {
   };
 
   const handleEdit = (id) => {
-    navigate(`/formulir-spop/${id}`);
+    navigate(`/spop/informasi-umum/${id}`);
   };
 
   return (
@@ -71,8 +73,11 @@ export default function DraftSPOP() {
         <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
           <h2 className="font-bold text-on-surface">Daftar Draft Saya</h2>
           <button 
-            onClick={() => navigate('/formulir-spop')}
-            className="bg-primary text-on-primary hover:bg-primary/90 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors flex items-center gap-2"
+            onClick={() => {
+              loadDraft(null);
+              navigate('/spop');
+            }}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm active:scale-95"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             Buat Baru

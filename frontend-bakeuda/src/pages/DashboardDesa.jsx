@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
+import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
 
 export default function DashboardDesa() {
   const navigate = useNavigate();
+  const { loadDraft } = useSpop();
   const [stats, setStats] = useState([
     { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
     { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Lihat yang menunggu →', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500', link: '/monitoring-pajak' },
@@ -37,7 +39,7 @@ export default function DashboardDesa() {
         const formattedList = rawList.slice(0, 5).map(item => ({
           id: item.id_transaksi,
           nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
-          name: item.nama_pengaju || 'Tanpa Nama',
+          name: item.calon_subjek_temp?.nama_subjek || item.nama_pengaju || 'Tanpa Nama',
           type: item.jenis_transaksi,
           date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
           status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'PROSES' ? 'Diproses' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak'
@@ -68,7 +70,10 @@ export default function DashboardDesa() {
           <p className="text-sm text-gray-500">Ringkasan status pengajuan SPOP Anda</p>
         </div>
         <button
-          onClick={() => navigate('/formulir-spop')}
+          onClick={() => {
+            loadDraft(null);
+            navigate('/spop');
+          }}
           className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
@@ -173,7 +178,7 @@ export default function DashboardDesa() {
                             <span className="material-symbols-outlined text-[16px]">timeline</span>
                           </button>
                           <button
-                            onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/formulir-spop/${sub.id}` : `/detail-review/${sub.id}`)}
+                            onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/spop/informasi-umum/${sub.id}` : `/detail-review/${sub.id}`)}
                             className="px-4 py-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-surface-container-lowest active:bg-primary/10 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
                           >
                             <span className="material-symbols-outlined text-[16px]">

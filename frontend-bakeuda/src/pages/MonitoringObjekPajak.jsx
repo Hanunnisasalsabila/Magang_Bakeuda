@@ -43,7 +43,7 @@ export default function MonitoringObjekPajak() {
           return {
             id: item.id_transaksi,
             nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
-            name: calonSubjek?.nama_subjek_pajak || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+            name: calonSubjek?.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
             address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
             land: detail?.luas_tanah_baru || 0,
             building: luasBangunan,
@@ -242,7 +242,7 @@ export default function MonitoringObjekPajak() {
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/formulir-spop/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
+                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/spop/informasi-umum/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
                       >
                         <span className="material-symbols-outlined text-[14px]">{(obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? 'edit' : 'visibility'}</span>

@@ -28,7 +28,7 @@ export default function Step4Konfirmasi() {
       const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const fileUrl = uploadRes.data.url;
+      const fileUrl = uploadRes.data.url_file || uploadRes.data.url;
       
       setFormData(prev => {
         // Find existing for this type unless it's general
@@ -58,15 +58,16 @@ export default function Step4Konfirmasi() {
       
       // Jika disetujui, ajukan
       if (formData.persetujuan) {
-        await api.patch(`/transaksi-spop/${newId}/ajukan`);
+        await api.post(`/transaksi-spop/${newId}/submit`);
       }
 
       setShowSuccessModal({ show: true, id: newId });
     } catch (error) {
-      console.error('Error saving step:', error);
+      console.error('SAVE DRAFT/SUBMIT ERROR:', error.response?.data?.message || error.message);
       const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
-      setToast({ show: true, message: errorMsg, type: 'error' });
-      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+      let displayMsg = Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg;
+      setToast({ show: true, message: displayMsg, type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 8000);
     } finally {
       setIsSubmitting(false);
     }

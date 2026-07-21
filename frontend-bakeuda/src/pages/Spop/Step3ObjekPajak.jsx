@@ -40,7 +40,7 @@ function MapClickHandler({ koordinatPolygon, setFormData }) {
 }
 
 export default function Step3ObjekPajak() {
-  const { formData, setFormData, errors, saveDraft, idTransaksi } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
@@ -83,7 +83,13 @@ export default function Step3ObjekPajak() {
       setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/konfirmasi/${savedId}`);
+        const jumBng = parseInt(formData.jumlahBangunan, 10);
+        if (!isNaN(jumBng) && jumBng > 0) {
+          navigate(`/spop/data-bangunan/${savedId}`);
+        } else {
+          setCompletionStatus(prev => ({ ...prev, 4: true }));
+          navigate(`/spop/konfirmasi/${savedId}`);
+        }
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -182,6 +188,7 @@ export default function Step3ObjekPajak() {
             selectedKelurahan={formData.kelurahanObjek}
             labelKecamatan="KECAMATAN"
             labelKelurahan="KELURAHAN/DESA"
+            autoLockByRole={true}
             onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
               setFormData(prev => {
                 const kecKode = kodeKec ? kodeKec.substring(4, 7) : '';

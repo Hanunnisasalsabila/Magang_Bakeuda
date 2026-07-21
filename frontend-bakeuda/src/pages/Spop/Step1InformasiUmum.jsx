@@ -217,6 +217,7 @@ export default function Step1InformasiUmum() {
                         <WilayahDropdown
                           selectedKecamatan={formData.kecamatanObjek}
                           selectedKelurahan={formData.kelurahanObjek}
+                          autoLockByRole={true}
                           onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
                             setFormData(prev => ({
                               ...prev,

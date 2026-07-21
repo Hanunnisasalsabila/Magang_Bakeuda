@@ -31,12 +31,13 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
     { path: `/spop/informasi-umum${currentId ? `/${currentId}` : ''}`, label: 'Informasi Umum', step: 1 },
     { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
     { path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 },
-    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 4 },
-    { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 5 },
+    { path: `/spop/data-bangunan${currentId ? `/${currentId}` : ''}`, label: 'Data Bangunan', step: 4 },
+    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 5 },
+    { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 6 },
   ];
   
-  const isSpopComplete = completionStatus[1] && completionStatus[2] && completionStatus[3];
-  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, 4);
+  const isSpopComplete = completionStatus[1] && completionStatus[2] && completionStatus[3] && completionStatus[4];
+  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, 5);
 
   const menuItems = isDesa
     ? [

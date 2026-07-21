@@ -35,6 +35,7 @@ export class DetailTujuanInputDto {
 
   @IsOptional() @IsNumber() luas_tanah_baru?: number;
   @IsOptional() @IsNumber() luas_bangunan_baru?: number;
+  @IsOptional() @IsNumber() jumlah_bangunan_baru?: number;
   @IsOptional() @IsEnum(JenisTanah) jenis_tanah_baru?: JenisTanah;
 
   @IsOptional() @IsString() jalan_op_baru?: string;
@@ -48,6 +49,7 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsString() kecamatan_op_baru?: string;
   @IsOptional() @IsString() latitude?: string;
   @IsOptional() @IsString() longitude?: string;
+  @IsOptional() @IsArray() koordinat_polygon?: any[];
   @IsOptional() @IsString() batas_utara?: string;
   @IsOptional() @IsString() batas_selatan?: string;
   @IsOptional() @IsString() batas_timur?: string;

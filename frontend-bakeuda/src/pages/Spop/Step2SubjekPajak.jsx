@@ -32,7 +32,7 @@ export default function Step2SubjekPajak() {
       const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const fileUrl = uploadRes.data.url;
+      const fileUrl = uploadRes.data.url_file || uploadRes.data.url;
       
       setFormData(prev => {
         const exist = prev.lampiran.find(l => l.jenis_dokumen === jenis_dokumen);
