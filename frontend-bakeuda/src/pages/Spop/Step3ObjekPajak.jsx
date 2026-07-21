@@ -117,7 +117,7 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
 });
 
 export default function Step3ObjekPajak() {
-  const { formData, setFormData, errors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
