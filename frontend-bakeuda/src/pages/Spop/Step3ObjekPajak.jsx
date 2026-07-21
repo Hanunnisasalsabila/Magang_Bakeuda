@@ -22,6 +22,23 @@ const dotIcon = L.divIcon({
   iconAnchor: [6, 6]
 });
 
+const formatNopString = (val) => {
+  if (!val) return '';
+  let v = val.replace(/\D/g, ''); // keep only numbers
+  if (v.length > 18) v = v.substring(0, 18);
+  
+  let formatted = '';
+  if (v.length > 0) formatted += v.substring(0, 2);
+  if (v.length > 2) formatted += '.' + v.substring(2, 4);
+  if (v.length > 4) formatted += '.' + v.substring(4, 7);
+  if (v.length > 7) formatted += '.' + v.substring(7, 10);
+  if (v.length > 10) formatted += '.' + v.substring(10, 13);
+  if (v.length > 13) formatted += '-' + v.substring(13, 17);
+  if (v.length > 17) formatted += '.' + v.substring(17, 18);
+  
+  return formatted;
+};
+
 function MapClickHandler({ koordinatPolygon, setFormData }) {
   useMapEvents({
     click(e) {
@@ -503,7 +520,7 @@ export default function Step3ObjekPajak() {
               <input
                 type="text"
                 value={formData.batasUtara}
-                onChange={(e) => handleTextChange('batasUtara', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })}
+                onChange={(e) => handleTextChange('batasUtara', { target: { value: formatNopString(e.target.value) } })}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX-XXXX.X"
               />
@@ -513,7 +530,7 @@ export default function Step3ObjekPajak() {
               <input
                 type="text"
                 value={formData.batasSelatan}
-                onChange={(e) => handleTextChange('batasSelatan', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })}
+                onChange={(e) => handleTextChange('batasSelatan', { target: { value: formatNopString(e.target.value) } })}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX-XXXX.X"
               />
@@ -523,7 +540,7 @@ export default function Step3ObjekPajak() {
               <input
                 type="text"
                 value={formData.batasTimur}
-                onChange={(e) => handleTextChange('batasTimur', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })}
+                onChange={(e) => handleTextChange('batasTimur', { target: { value: formatNopString(e.target.value) } })}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX-XXXX.X"
               />
@@ -533,7 +550,7 @@ export default function Step3ObjekPajak() {
               <input
                 type="text"
                 value={formData.batasBarat}
-                onChange={(e) => handleTextChange('batasBarat', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })}
+                onChange={(e) => handleTextChange('batasBarat', { target: { value: formatNopString(e.target.value) } })}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX-XXXX.X"
               />
