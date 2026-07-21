@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, Polygon, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
@@ -39,14 +39,205 @@ function MapClickHandler({ koordinatPolygon, setFormData }) {
   return null;
 }
 
+function MapUpdater({ center, referencePoint, searchBoundary }) {
+  const map = useMap();
+  useEffect(() => {
+    if (searchBoundary) {
+      try {
+        const geojsonLayer = L.geoJSON(searchBoundary);
+        map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20], maxZoom: 18 });
+      } catch (err) {
+        map.setView(center, 15);
+      }
+    } else if (referencePoint && referencePoint.length === 2) {
+      map.setView(referencePoint, 18);
+    } else if (center && center.length === 2) {
+      map.setView(center, 15);
+    }
+  }, [center, referencePoint, searchBoundary, map]);
+  return null;
+}
+
+const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referencePoint, searchBoundary }) => {
+  return (
+    <MapContainer center={center} zoom={15} maxZoom={22} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
+      <TileLayer
+        attribution='&copy; Google Maps'
+        url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+        maxZoom={22}
+      />
+      <MapUpdater center={center} referencePoint={referencePoint} searchBoundary={searchBoundary} />
+      <MapClickHandler koordinatPolygon={koordinatPolygon} setFormData={setFormData} />
+
+      {searchBoundary && (
+        <GeoJSON
+          key={JSON.stringify(searchBoundary)}
+          data={searchBoundary}
+          style={{ color: 'blue', weight: 2, opacity: 0.3, fillOpacity: 0.1 }}
+        />
+      )}
+      {referencePoint && !searchBoundary && (
+        <Marker position={referencePoint} title="Lokasi Anda / Hasil Pencarian" />
+      )}
+      {koordinatPolygon && koordinatPolygon.length > 0 && (
+        <Polygon positions={koordinatPolygon} color="blue" />
+      )}
+      {koordinatPolygon && koordinatPolygon.map((p, idx) => (
+        <Marker
+          key={idx}
+          position={[p.lat, p.lng]}
+          icon={dotIcon}
+          draggable={true}
+          eventHandlers={{
+            dragend: (e) => {
+              const marker = e.target;
+              const position = marker.getLatLng();
+              setFormData(prev => {
+                const newCoords = [...(prev.koordinat_polygon || [])];
+                newCoords[idx] = { lat: position.lat, lng: position.lng };
+                return {
+                  ...prev,
+                  koordinat_polygon: newCoords,
+                  latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '',
+                  longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : ''
+                };
+              });
+            }
+          }}
+        />
+      ))}
+    </MapContainer>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.koordinatPolygon === nextProps.koordinatPolygon &&
+    prevProps.center[0] === nextProps.center[0] &&
+    prevProps.center[1] === nextProps.center[1] &&
+    prevProps.referencePoint === nextProps.referencePoint &&
+    prevProps.searchBoundary === nextProps.searchBoundary;
+});
+
 export default function Step3ObjekPajak() {
   const { formData, setFormData, errors, saveDraft, idTransaksi } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
-  // Purbalingga Default Coordinates
-  const currentPosition = [formData.latitude || -7.38883, formData.longitude || 109.36647];
+  // Map state
+  const initialLat = formData.latitude ? parseFloat(formData.latitude) : -7.38883;
+  const initialLng = formData.longitude ? parseFloat(formData.longitude) : 109.36647;
+  const [currentPosition, setCurrentPosition] = useState([initialLat, initialLng]);
+  const [referencePoint, setReferencePoint] = useState(null);
+  const [searchBoundary, setSearchBoundary] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (val.trim().length > 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const queryText = val.toLowerCase().includes('purbalingga') ? val : `${val} Purbalingga`;
+          const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=5&lat=-7.3888&lon=109.3637`);
+          const data = await res.json();
+          if (data && data.features) {
+            setSuggestions(data.features);
+            setShowSuggestions(true);
+          }
+        } catch (err) {
+          console.error('Autocomplete error', err);
+        }
+      }, 500);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const fetchAndSetBoundary = async (osmType, osmId, queryText, lon, lat) => {
+    try {
+      let url = '';
+      if (osmType && osmId) {
+        const typeChar = String(osmType).charAt(0).toUpperCase();
+        url = `https://nominatim.openstreetmap.org/lookup?osm_ids=${typeChar}${osmId}&format=json&polygon_geojson=1`;
+      } else if (queryText) {
+        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryText)}&format=json&polygon_geojson=1&limit=1`;
+      }
+
+      if (url) {
+        const res = await fetch(url);
+        const data = await res.json();
+        const result = Array.isArray(data) ? data[0] : (data && data[0] ? data[0] : null);
+
+        if (result && result.geojson && (result.geojson.type === 'Polygon' || result.geojson.type === 'MultiPolygon')) {
+          setSearchBoundary(result.geojson);
+          setReferencePoint(null);
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch boundary', err);
+    }
+
+    setSearchBoundary(null);
+    setReferencePoint([parseFloat(lat), parseFloat(lon)]);
+  };
+
+  const handleSelectSuggestion = (feature) => {
+    const [lon, lat] = feature.geometry.coordinates;
+    const name = feature.properties.name || '';
+    const city = feature.properties.city || feature.properties.county || '';
+
+    setSearchQuery(`${name}${city ? ', ' + city : ''}`);
+    setShowSuggestions(false);
+
+    const coords = [parseFloat(lat), parseFloat(lon)];
+    setCurrentPosition(coords);
+    fetchAndSetBoundary(feature.properties.osm_type, feature.properties.osm_id, null, lon, lat);
+  };
+
+  const handleSearchLokasi = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setShowSuggestions(false);
+    try {
+      const queryText = searchQuery.toLowerCase().includes('purbalingga') ? searchQuery : `${searchQuery} Purbalingga`;
+      const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1&lat=-7.3888&lon=109.3637`);
+      const data = await response.json();
+      if (data && data.features && data.features.length > 0) {
+        const [lon, lat] = data.features[0].geometry.coordinates;
+        const coords = [parseFloat(lat), parseFloat(lon)];
+        setCurrentPosition(coords);
+        fetchAndSetBoundary(data.features[0].properties.osm_type, data.features[0].properties.osm_id, queryText, lon, lat);
+      } else {
+        alert('Lokasi tidak ditemukan');
+      }
+    } catch (err) {
+      alert('Gagal mencari lokasi');
+    }
+    setIsSearching(false);
+  };
+
+  const handleLokasiSaya = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        const coords = [position.coords.latitude, position.coords.longitude];
+        setCurrentPosition(coords);
+        setReferencePoint(coords);
+        setSearchBoundary(null);
+      }, (error) => {
+        alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
+      });
+    } else {
+      alert('Browser Anda tidak mendukung fitur lokasi');
+    }
+  };
 
   const handleTextChange = (field, e) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
@@ -90,7 +281,7 @@ export default function Step3ObjekPajak() {
       {toast.show && (
         <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} />
       )}
-      
+
       <section className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
@@ -344,55 +535,79 @@ export default function Step3ObjekPajak() {
           <div className="space-y-4">
             <p className="text-sm text-on-surface-variant">Tentukan titik koordinat lokasi objek pajak. Geser peta dan <b>klik pada peta secara berurutan</b> untuk membuat garis batas bangunan (poligon). Jika salah, klik Hapus Poligon.</p>
 
-            <div className="w-full h-[300px] border border-outline-variant rounded-xl overflow-hidden z-0 relative cursor-crosshair">
-              <MapContainer center={currentPosition} zoom={15} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <MapClickHandler koordinatPolygon={formData.koordinat_polygon} setFormData={setFormData} />
-                
-                {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
-                  <Polygon positions={formData.koordinat_polygon} color="blue" />
-                )}
-                {formData.koordinat_polygon && formData.koordinat_polygon.map((p, idx) => (
-                  <Marker 
-                    key={idx} 
-                    position={[p.lat, p.lng]} 
-                    icon={dotIcon}
-                    draggable={true}
-                    eventHandlers={{
-                      dragend: (e) => {
-                        const marker = e.target;
-                        const position = marker.getLatLng();
-                        setFormData(prev => {
-                          const newCoords = [...(prev.koordinat_polygon || [])];
-                          newCoords[idx] = { lat: position.lat, lng: position.lng };
-                          return { 
-                            ...prev, 
-                            koordinat_polygon: newCoords,
-                            latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '',
-                            longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : ''
-                          };
-                        });
-                      }
-                    }}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 mb-2">
+              <div className="flex-1 relative">
+                <div className="flex bg-white border border-outline-variant rounded overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-sm">
+                  <input
+                    type="text"
+                    placeholder="Cari nama jalan, desa, atau kecamatan..."
+                    className="flex-1 h-10 px-3 outline-none text-sm"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleSearchLokasi())}
                   />
-                ))}
-              </MapContainer>
+                  <button
+                    type="button"
+                    onClick={handleSearchLokasi}
+                    disabled={isSearching}
+                    className="h-10 px-4 bg-surface-variant text-on-surface hover:bg-surface-variant/80 flex items-center gap-1 font-bold text-sm transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">search</span>
+                    {isSearching ? 'Mencari...' : 'Cari'}
+                  </button>
+                </div>
+
+                {/* Autocomplete Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-outline-variant rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    {suggestions.map((item, idx) => (
+                      <li
+                        key={idx}
+                        className="px-4 py-2 hover:bg-surface-variant cursor-pointer text-sm border-b border-outline-variant/30 last:border-0 flex flex-col"
+                        onMouseDown={() => handleSelectSuggestion(item)}
+                      >
+                        <span className="font-bold text-on-surface">{item.properties.name}</span>
+                        <span className="text-xs text-on-surface-variant">
+                          {[item.properties.street, item.properties.city, item.properties.state, item.properties.country].filter(Boolean).join(', ')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleLokasiSaya}
+                className="h-10 px-4 bg-primary text-white hover:bg-primary/90 flex items-center gap-2 font-bold text-sm rounded shadow-sm transition-colors whitespace-nowrap justify-center"
+              >
+                <span className="material-symbols-outlined text-[18px]">my_location</span>
+                Lokasi Saya
+              </button>
+            </div>
+
+            <div className="w-full h-[300px] border border-outline-variant rounded-xl overflow-hidden z-0 relative cursor-crosshair">
+              <MemoizedMap
+                center={currentPosition}
+                koordinatPolygon={formData.koordinat_polygon}
+                setFormData={setFormData}
+                referencePoint={referencePoint}
+                searchBoundary={searchBoundary}
+              />
             </div>
 
             <div className="flex flex-wrap gap-4 mt-2">
-              <button 
+              <button
                 type="button"
                 onClick={() => setFormData(prev => {
                   const newCoords = [...(prev.koordinat_polygon || [])];
                   newCoords.pop();
-                  return { 
-                    ...prev, 
-                    koordinat_polygon: newCoords, 
-                    latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '', 
-                    longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : '' 
+                  return {
+                    ...prev,
+                    koordinat_polygon: newCoords,
+                    latitude: newCoords.length > 0 ? newCoords[0].lat.toString() : '',
+                    longitude: newCoords.length > 0 ? newCoords[0].lng.toString() : ''
                   };
                 })}
                 disabled={!formData.koordinat_polygon || formData.koordinat_polygon.length === 0}
@@ -402,7 +617,7 @@ export default function Step3ObjekPajak() {
                 Batal Titik Terakhir
               </button>
 
-              <button 
+              <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, koordinat_polygon: [], latitude: '', longitude: '' }))}
                 className="flex items-center gap-2 px-4 py-2 bg-error/10 text-error border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
@@ -411,6 +626,43 @@ export default function Step3ObjekPajak() {
                 <span className="material-symbols-outlined text-[18px]">delete</span>
                 Hapus Semua
               </button>
+
+              {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 && (
+                <>
+                  <a
+                    href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-lg hover:bg-surface-variant transition-colors text-sm text-primary font-bold"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">map</span>
+                    Lihat di Google Maps
+                  </a>
+                  <button
+                    type="button"
+                    title="Salin koordinat ke clipboard lalu buka website BHUMI ATR/BPN untuk dicari secara manual"
+                    onClick={() => {
+                      const centerLat = formData.koordinat_polygon.reduce((sum, p) => sum + p.lat, 0) / formData.koordinat_polygon.length;
+                      const centerLng = formData.koordinat_polygon.reduce((sum, p) => sum + p.lng, 0) / formData.koordinat_polygon.length;
+                      const coordString = `${centerLat}, ${centerLng}`;
+                      navigator.clipboard.writeText(coordString).then(() => {
+                        setToast({ show: true, message: `Koordinat ${coordString} disalin! Silakan 'Paste' (Tempel) di kolom pencarian web BHUMI.`, type: 'success' });
+                        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 5000);
+                        window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                      }).catch(() => {
+                        window.open('https://bhumi.atrbpn.go.id/peta', '_blank');
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-outline-variant rounded-lg hover:bg-surface-variant transition-colors text-sm text-primary font-bold group"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">public</span>
+                    <div className="flex flex-col items-start leading-tight">
+                      <span>Cari di BHUMI ATR/BPN</span>
+                      <span className="text-[10px] text-on-surface-variant font-normal hidden sm:block">Salin koordinat & buka web</span>
+                    </div>
+                  </button>
+                </>
+              )}
             </div>
 
             {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (

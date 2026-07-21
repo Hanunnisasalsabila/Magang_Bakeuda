@@ -60,14 +60,14 @@ export class TransaksiSpopService {
       transaksi = await this.prisma.transaksiSpop.create({
         data: {
           id_user: currentUser.id_user,
-          tahun_pajak: dto.tahun_pajak,
-          jenis_transaksi: dto.jenis_transaksi,
+          tahun_pajak: dto.tahun_pajak || new Date().getFullYear(),
+          jenis_transaksi: dto.jenis_transaksi || JenisTransaksi.BARU,
           no_sppt_lama: dto.no_sppt_lama,
           nama_pengaju: dto.nama_pengaju,
           no_formulir: dto.no_formulir,
           nop_bersama: dto.nop_bersama,
           menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-          tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+          tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan) : new Date(),
           status_ajuan: statusAjuan,
           detail_asal: dto.detail_asal ? {
             create: dto.detail_asal.map((a) => ({
@@ -128,7 +128,7 @@ export class TransaksiSpopService {
             no_formulir: dto.no_formulir,
             nop_bersama: dto.nop_bersama,
             menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-            tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+            tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan) : undefined,
             detail_asal: dto.detail_asal ? {
               create: dto.detail_asal.map((a) => ({
                 nop_asal: a.nop_asal,

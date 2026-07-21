@@ -10,7 +10,7 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @Controller('transaksi-spop')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TransaksiSpopController {
   constructor(private readonly service: TransaksiSpopService) {}
 

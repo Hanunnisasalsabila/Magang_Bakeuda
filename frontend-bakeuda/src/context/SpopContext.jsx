@@ -32,7 +32,7 @@ export const SpopProvider = ({ children }) => {
     nopAsalList: [''], spptLama: '',
     kodeWilayah: '', kodeWilayahObjek: ''
   });
-  
+
   const [errors, setErrors] = useState({});
 
   const loadDraft = async (id) => {
@@ -59,7 +59,7 @@ export const SpopProvider = ({ children }) => {
       });
       return;
     }
-    
+
     setLoading(true);
     try {
       const res = await api.get(`/transaksi-spop/${id}`);
@@ -67,14 +67,14 @@ export const SpopProvider = ({ children }) => {
       if (data) {
         setIdTransaksi(id);
         setSpopData(data);
-        
+
         // Parse NOP
         const detailTujuan = data.detail_tujuan?.[0] || {};
         const detailAsalList = data.detail_asal || [];
         const detailAsal = detailAsalList[0]?.nop_asal || '';
         const nopAsalArray = detailAsalList.map(a => a.nop_asal);
         if (nopAsalArray.length === 0) nopAsalArray.push('');
-        
+
         const parseNop = (nopStr) => {
           if (!nopStr || nopStr.length < 18) return { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' };
           return {
@@ -89,17 +89,17 @@ export const SpopProvider = ({ children }) => {
         };
 
         const subjek = detailTujuan.calon_subjek_json || {};
-        
+
         setFormData(prev => ({
           ...prev,
-          kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'baru' : 
-                             ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi) ? 'update' : 'hapus',
+          kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'baru' :
+            ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi) ? 'update' : 'hapus',
           transaksi: data.jenis_transaksi || 'BARU',
           nop: parseNop(detailAsal || detailTujuan.nop_generated), // NOP Utama
           nopBersama: parseNop(data.nop_bersama),
           isKuasa: data.menggunakan_kuasa || false,
           nopAsalList: nopAsalArray,
-          
+
           nik: subjek.nik || '',
           nama: subjek.nama || '',
           npwp: subjek.npwp || '',
@@ -115,7 +115,7 @@ export const SpopProvider = ({ children }) => {
           kecamatan: subjek.kecamatan || '',
           kabupaten: subjek.kabupaten || 'Purbalingga',
           kodePos: subjek.kode_pos || '',
-          
+
           alamatObjek: detailTujuan.jalan_op_baru || '',
           blokKavObjek: detailTujuan.blok_kav_no_baru || '',
           rtObjek: detailTujuan.rt_op_baru || '',
@@ -127,7 +127,7 @@ export const SpopProvider = ({ children }) => {
           luasBangunan: detailTujuan.luas_bangunan_baru || '',
           jumlahBangunan: detailTujuan.jumlah_bangunan_baru || '0',
           jenisTanah: detailTujuan.jenis_tanah_baru || 'TANAH_BANGUNAN',
-          
+
           latitude: detailTujuan.latitude || '',
           longitude: detailTujuan.longitude || '',
           koordinat_polygon: detailTujuan.koordinat_polygon || [],
@@ -135,7 +135,7 @@ export const SpopProvider = ({ children }) => {
           batasSelatan: detailTujuan.batas_selatan || '',
           batasTimur: detailTujuan.batas_timur || '',
           batasBarat: detailTujuan.batas_barat || '',
-          
+
           lampiran: data.lampiran || []
         }));
 
@@ -169,7 +169,7 @@ export const SpopProvider = ({ children }) => {
 
     const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
     const rawNop = nop.replace(/\D/g, '');
-    
+
     const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
     const rawNopBersama = nopBersama.replace(/\D/g, '');
     const rawNopAsalList = formData.nopAsalList.map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
