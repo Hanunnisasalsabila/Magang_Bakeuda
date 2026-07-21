@@ -5,10 +5,12 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StatusBadge from '../components/StatusBadge';
+import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
 
 export default function DaftarObjekPajak() {
   const navigate = useNavigate();
+  const { loadDraft } = useSpop();
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -217,7 +219,10 @@ export default function DaftarObjekPajak() {
           </div>
           
           <button
-            onClick={() => navigate('/formulir-spop')}
+            onClick={() => {
+              loadDraft(null);
+              navigate('/spop');
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -560,7 +565,8 @@ export default function DaftarObjekPajak() {
                 </button>
                 <button 
                   onClick={() => {
-                    navigate('/formulir-spop');
+                    loadDraft(null);
+                    navigate('/spop');
                     setSelectedObject(null);
                   }}
                   disabled={selectedObject.status === 'Nonaktif'}

@@ -49,7 +49,10 @@ export default function Step5Status() {
 
       <div className="mt-12 flex justify-center gap-4">
         <button
-          onClick={() => navigate('/spop')}
+          onClick={() => {
+            loadDraft(null);
+            navigate('/spop');
+          }}
           className="px-6 py-3 border border-outline-variant text-on-surface font-bold rounded-full hover:bg-surface-container transition-colors flex items-center gap-2"
         >
           <span className="material-symbols-outlined">add_circle</span>

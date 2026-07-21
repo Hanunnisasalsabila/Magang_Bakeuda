@@ -45,7 +45,7 @@ export default function DashboardAdmin() {
         const formattedList = listRes.data.data.slice(0, 5).map(item => ({
           id: item.id_transaksi,
           nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
-          name: item.nama_pengaju || 'Tanpa Nama',
+          name: item.calon_subjek_temp?.nama_subjek || item.nama_pengaju || 'Tanpa Nama',
           district: item.pengaju?.nama_lengkap || 'Admin Desa',
           status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak',
           time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })

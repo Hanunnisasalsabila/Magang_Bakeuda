@@ -10,9 +10,6 @@ export default function SpopLayout() {
     if (id_transaksi && id_transaksi !== idTransaksi) {
       // Load an existing draft by ID
       loadDraft(id_transaksi);
-    } else if (!id_transaksi && idTransaksi !== null) {
-      // Navigating to a new entry (no ID), always clear
-      loadDraft(null);
     }
   }, [id_transaksi]); // eslint-disable-line react-hooks/exhaustive-deps
 

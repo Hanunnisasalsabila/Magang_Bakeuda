@@ -39,7 +39,7 @@ export default function DetailReviewSPOP() {
         let res;
         if (bakeudaFlag) {
           try {
-            res = await api.patch(`/transaksi-spop/${id}/lock`);
+            res = await api.post(`/transaksi-spop/${id}/lock`);
           } catch (err) {
             res = await api.get(`/transaksi-spop/${id}`);
             if (res.data.data.status_ajuan === 'PROSES') {
@@ -91,7 +91,7 @@ export default function DetailReviewSPOP() {
 
   const handleCancelReview = async () => {
     try {
-      await api.patch(`/transaksi-spop/${id}/unlock`);
+      await api.post(`/transaksi-spop/${id}/unlock`);
       navigate(-1);
     } catch (error) {
       setToastMessage('Gagal melepas kunci');
@@ -143,11 +143,19 @@ export default function DetailReviewSPOP() {
 
   // Set default wilayah from data
   useEffect(() => {
-    if (data?.detail_tujuan?.[0] && allWilayah.length > 0) {
-      const kec = data.detail_tujuan[0].kecamatan_op_baru;
-      const kel = data.detail_tujuan[0].kelurahan_op_baru;
-      if (kec && !selectedKecamatan) setSelectedKecamatan(kec);
-      if (kel && !selectedKelurahan) setSelectedKelurahan(kel);
+    if (data && allWilayah.length > 0) {
+      let targetKode = data.pengaju?.kode_wilayah;
+      if (data.detail_tujuan?.[0]?.kode_wilayah_baru) {
+        targetKode = data.detail_tujuan[0].kode_wilayah_baru;
+      }
+      
+      if (targetKode) {
+        const matched = allWilayah.find(w => w.kode_wilayah === targetKode);
+        if (matched) {
+          if (!selectedKecamatan) setSelectedKecamatan(matched.kecamatan);
+          if (!selectedKelurahan) setSelectedKelurahan(matched.nama_desa);
+        }
+      }
     }
   }, [data, allWilayah]);
 
@@ -180,14 +188,31 @@ export default function DetailReviewSPOP() {
         const wilayahObj = allWilayah.find(w => w.nama_desa === selectedKelurahan && w.kecamatan === selectedKecamatan);
         const kodeWilayah = wilayahObj ? wilayahObj.kode_wilayah : undefined;
 
-        await api.patch(`/transaksi-spop/${id}/verifikasi-bakeuda`, {
-          status_ajuan: status,
-          catatan: decisionNotes,
-          kode_wilayah: status === 'DISETUJUI' ? kodeWilayah : undefined,
-          kode_blok: status === 'DISETUJUI' ? kodeBlok : undefined,
-          kode_jenis_op: status === 'DISETUJUI' ? kodeJenisOp : undefined,
-        });
+        let endpoint = '';
+        const payload = { catatan: decisionNotes, status_ajuan: status };
+
+        if (status === 'DISETUJUI') {
+          endpoint = `/transaksi-spop/${id}/approve`;
+          Object.assign(payload, {
+            kode_wilayah: kodeWilayah,
+            kode_blok: kodeBlok,
+            kode_jenis_op: kodeJenisOp,
+          });
+        } else if (status === 'DITOLAK') {
+          endpoint = `/transaksi-spop/${id}/tolak`;
+        } else if (status === 'REVISI') {
+          endpoint = `/transaksi-spop/${id}/revisi`;
+        }
+
+        await api.post(endpoint, payload);
         setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
+        
+        setData(prev => ({
+          ...prev,
+          status_ajuan: status,
+          catatan_bakeuda: decisionNotes,
+          verified_at: new Date().toISOString()
+        }));
       }
 
       setShowToast(true);
@@ -454,21 +479,21 @@ export default function DetailReviewSPOP() {
       </div>
 
       {/* Verification Action Card or Final Decision */}
-      {['DISETUJUI', 'DITOLAK'].includes(data.status_ajuan) ? (
+      {['DISETUJUI', 'DITOLAK', 'REVISI'].includes(data.status_ajuan) ? (
         <div className="mt-8 mb-12">
-          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : (data.status_ajuan === 'REVISI' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')}`}>
             <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
-              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : 'text-red-600'}`}>
-                {data.status_ajuan === 'DISETUJUI' ? 'verified' : 'cancel'}
+              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : (data.status_ajuan === 'REVISI' ? 'text-amber-600' : 'text-red-600')}`}>
+                {data.status_ajuan === 'DISETUJUI' ? 'verified' : (data.status_ajuan === 'REVISI' ? 'assignment_return' : 'cancel')}
               </span>
               <div>
-                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : 'text-red-800'}`}>
-                  Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : 'Ditolak Permanen'}
+                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : (data.status_ajuan === 'REVISI' ? 'text-amber-800' : 'text-red-800')}`}>
+                  Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : (data.status_ajuan === 'REVISI' ? 'Dikembalikan untuk Revisi' : 'Ditolak Permanen')}
                 </h3>
-                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : 'text-red-700'}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
+                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : (data.status_ajuan === 'REVISI' ? 'text-amber-700' : 'text-red-700')}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
               </div>
             </div>
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : 'text-red-900'}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : (data.status_ajuan === 'REVISI' ? 'text-amber-900' : 'text-red-900')}`}>
               <div>
                 <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Diverifikasi Oleh</p>
                 <p className="font-semibold text-sm flex items-center gap-2">
@@ -518,33 +543,25 @@ export default function DetailReviewSPOP() {
                     Pastikan Kecamatan dan Desa sudah benar. Anda hanya perlu mengisi <b>Kode Blok</b>. Nomor Urut akan dihitung otomatis oleh sistem.
                   </p>
                   
-                  {/* Wilayah Input (Dropdown) */}
+                  {/* Wilayah Input (Auto) */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kecamatan *</label>
-                      <select
-                        value={selectedKecamatan}
-                        onChange={(e) => {
-                          setSelectedKecamatan(e.target.value);
-                          setSelectedKelurahan(''); // Reset kelurahan when kecamatan changes
-                        }}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
-                      >
-                        <option value="">-- Pilih Kecamatan --</option>
-                        {kecamatanList.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                      </select>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kecamatan</label>
+                      <input
+                        type="text"
+                        value={selectedKecamatan || 'Mendeteksi...'}
+                        disabled
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-medium bg-gray-50 text-gray-600"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Desa/Kel *</label>
-                      <select
-                        value={selectedKelurahan}
-                        onChange={(e) => setSelectedKelurahan(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
-                        disabled={!selectedKecamatan}
-                      >
-                        <option value="">-- Pilih Desa --</option>
-                        {kelurahanList.map(kel => <option key={kel} value={kel}>{kel}</option>)}
-                      </select>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Desa/Kel</label>
+                      <input
+                        type="text"
+                        value={selectedKelurahan || 'Mendeteksi...'}
+                        disabled
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-medium bg-gray-50 text-gray-600"
+                      />
                     </div>
                   </div>
 
@@ -577,7 +594,12 @@ export default function DetailReviewSPOP() {
                   <div className="mt-3 bg-white border border-dashed border-blue-300 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1">
                     <span className="text-[11px] font-bold text-blue-500 uppercase">Preview NOP:</span>
                     <span className="font-mono font-bold text-blue-900 ml-0 sm:ml-2">
-                      33.03.XXX.XXX.{kodeBlok || '___'}.AUTO.{kodeJenisOp}
+                      {(() => {
+                        const matched = allWilayah.find(w => w.nama_desa === selectedKelurahan && w.kecamatan === selectedKecamatan);
+                        const kw = matched?.kode_wilayah || '3303XXXXXX';
+                        const fw = `${kw.substring(0,2)}.${kw.substring(2,4)}.${kw.substring(4,7)}.${kw.substring(7,10)}`;
+                        return `${fw}.${kodeBlok || '___'}.AUTO.${kodeJenisOp}`;
+                      })()}
                     </span>
                     <span className="text-[11px] text-gray-400 ml-0 sm:ml-2">(No. Urut otomatis)</span>
                   </div>

@@ -11,6 +11,7 @@ import SpopDetail from './pages/Spop/SpopDetail';
 import Step1InformasiUmum from './pages/Spop/Step1InformasiUmum';
 import Step2SubjekPajak from './pages/Spop/Step2SubjekPajak';
 import Step3ObjekPajak from './pages/Spop/Step3ObjekPajak';
+import Step4DataBangunan from './pages/Spop/Step4DataBangunan';
 import Step4Konfirmasi from './pages/Spop/Step4Konfirmasi';
 import Step5Status from './pages/Spop/Step5Status';
 import { SpopProvider } from './context/SpopContext';
@@ -154,13 +155,13 @@ function AppContent() {
           <Route path="informasi-umum/:id_transaksi?" element={<Step1InformasiUmum />} />
           <Route path="subjek-pajak/:id_transaksi?" element={<Step2SubjekPajak />} />
           <Route path="objek-pajak/:id_transaksi?" element={<Step3ObjekPajak />} />
+          <Route path="data-bangunan/:id_transaksi?" element={<Step4DataBangunan />} />
           <Route path="konfirmasi/:id_transaksi?" element={<Step4Konfirmasi />} />
           <Route path="status/:id_transaksi?" element={<Step5Status />} />
         </Route>
         
         <Route path="/draft-spop" element={<DraftSPOP />} />
         <Route path="/riwayat-spop" element={<RiwayatSPOP />} />
-        <Route path="/formulir-lspop" element={<FormulirLSPOP />} />
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
         <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />

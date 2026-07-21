@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
+=======
+import React, { useState, useEffect } from 'react';
+>>>>>>> 935a441d2d352d2eec5fc15dd2878b8154500c15
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -117,10 +121,20 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
 });
 
 export default function Step3ObjekPajak() {
-  const { formData, setFormData, errors, saveDraft, idTransaksi } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (formData.transaksi === 'MUTASI' || formData.transaksi === 'HAPUS') {
+      if (idTransaksi) {
+        navigate(`/spop/konfirmasi/${idTransaksi}`, { replace: true });
+      } else {
+        navigate('/spop/informasi-umum', { replace: true });
+      }
+    }
+  }, [formData.transaksi, idTransaksi, navigate]);
 
   // Map state
   const initialLat = formData.latitude ? parseFloat(formData.latitude) : -7.38883;
@@ -264,7 +278,13 @@ export default function Step3ObjekPajak() {
       setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/konfirmasi/${savedId}`);
+        const jumBng = parseInt(formData.jumlahBangunan, 10);
+        if (!isNaN(jumBng) && jumBng > 0) {
+          navigate(`/spop/data-bangunan/${savedId}`);
+        } else {
+          setCompletionStatus(prev => ({ ...prev, 4: true }));
+          navigate(`/spop/konfirmasi/${savedId}`);
+        }
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -363,6 +383,7 @@ export default function Step3ObjekPajak() {
             selectedKelurahan={formData.kelurahanObjek}
             labelKecamatan="KECAMATAN"
             labelKelurahan="KELURAHAN/DESA"
+            autoLockByRole={true}
             onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
               setFormData(prev => {
                 const kecKode = kodeKec ? kodeKec.substring(4, 7) : '';

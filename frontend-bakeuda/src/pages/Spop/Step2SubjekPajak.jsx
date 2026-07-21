@@ -32,7 +32,7 @@ export default function Step2SubjekPajak() {
       const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const fileUrl = uploadRes.data.url;
+      const fileUrl = uploadRes.data.url_file || uploadRes.data.url;
       
       setFormData(prev => {
         const exist = prev.lampiran.find(l => l.jenis_dokumen === jenis_dokumen);
@@ -75,7 +75,11 @@ export default function Step2SubjekPajak() {
       setToast({ show: true, message: 'Langkah 2 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/informasi-umum/${savedId}`);
+        if (formData.transaksi === 'MUTASI') {
+          navigate(`/spop/konfirmasi/${savedId}`);
+        } else {
+          navigate(`/spop/objek-pajak/${savedId}`);
+        }
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -233,38 +237,32 @@ export default function Step2SubjekPajak() {
                   const suratKuasa = formData.lampiran.find(l => l.jenis_dokumen === 'SURAT_KUASA');
                   if (suratKuasa) {
                     return (
-                      <div className="flex justify-end w-full animate-fadeIn">
-                        <div className="flex items-center gap-4 bg-white p-2 px-4 border border-outline-variant rounded-lg shadow-sm w-fit z-10 relative">
-                          <span className="text-sm text-primary font-bold flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                            File terpilih
-                          </span>
-                          <a 
-                            href={suratKuasa.url_file} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-sm text-secondary hover:underline flex items-center gap-1 bg-secondary/10 px-2 py-1 rounded-md z-20"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span className="material-symbols-outlined text-[18px]">visibility</span>
-                            Lihat Preview
-                          </a>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setFormData(prev => ({
-                                ...prev,
-                                lampiran: prev.lampiran.filter(l => l.jenis_dokumen !== 'SURAT_KUASA')
-                              }));
-                            }}
-                            className="material-symbols-outlined text-error hover:bg-error/10 rounded-full p-1 transition-colors cursor-pointer z-20"
-                            title="Hapus Surat Kuasa"
-                          >
-                            close
-                          </button>
+                      <div className="flex justify-between items-center p-4 border border-outline-variant rounded-lg bg-surface-container-low mt-4 animate-fadeIn">
+                        <div className="flex items-center gap-3">
+                          <span className="material-symbols-outlined text-primary">description</span>
+                          <div>
+                            <p className="font-bold text-sm text-on-surface">Surat Kuasa</p>
+                            <a href={suratKuasa.url_file} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px]">visibility</span>
+                              Lihat Pratinjau Dokumen
+                            </a>
+                          </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setFormData(prev => ({
+                              ...prev,
+                              lampiran: prev.lampiran.filter(l => l.jenis_dokumen !== 'SURAT_KUASA')
+                            }));
+                          }}
+                          className="material-symbols-outlined text-error hover:bg-error/10 rounded-full p-2 transition-colors cursor-pointer"
+                          title="Hapus Surat Kuasa"
+                        >
+                          delete
+                        </button>
                       </div>
                     );
                   }
@@ -416,7 +414,7 @@ export default function Step2SubjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(idTransaksi ? `/spop/detail/${idTransaksi}` : '/spop/detail')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">

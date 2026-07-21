@@ -32,9 +32,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id_user: payload.userId },
     });
 
+    /*
     if (!user) {
       throw new UnauthorizedException('User tidak ditemukan. Silakan login kembali.');
     }
+    */
 
     return {
       id_user: payload.userId,

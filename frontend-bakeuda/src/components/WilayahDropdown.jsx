@@ -18,16 +18,32 @@ export default function WilayahDropdown({
   labelKecamatan = 'Kecamatan',
   labelKelurahan = 'Kelurahan / Desa',
   required = false,
+  autoLockByRole = false,
 }) {
   const [allWilayah, setAllWilayah] = useState([]);
   const [kecamatanList, setKecamatanList] = useState([]);
   const [kelurahanList, setKelurahanList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lockedRegion, setLockedRegion] = useState(null);
   const fetched = useRef(false);
 
   useEffect(() => {
     if (fetched.current) return;
     fetched.current = true;
+
+    let lockedRegionStr = null;
+    if (autoLockByRole) {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (user.role === 'DESA' && user.kode_wilayah) {
+            lockedRegionStr = user.kode_wilayah;
+            setLockedRegion(lockedRegionStr);
+          }
+        }
+      } catch(e) {}
+    }
 
     api.get('/wilayah')
       .then(res => {
@@ -47,6 +63,15 @@ export default function WilayahDropdown({
           }
         });
         setKecamatanList(Object.values(kecMap).sort((a, b) => a.nama.localeCompare(b.nama)));
+
+        // If locked by role, force the selection on load
+        if (lockedRegionStr) {
+          const found = data.find(w => w.kode_wilayah === lockedRegionStr);
+          if (found) {
+            const kodeKec = found.kode_wilayah.substring(0, 7);
+            onSelect(found.kecamatan, found.nama_desa, kodeKec, found.kode_wilayah);
+          }
+        }
       })
       .catch(err => console.error('Gagal memuat data wilayah:', err))
       .finally(() => setLoading(false));
@@ -78,12 +103,14 @@ export default function WilayahDropdown({
     onSelect(found.kecamatan, found.nama_desa, kodeKec, found.kode_wilayah);
   };
 
-  const baseSelect = (hasError) =>
+  const baseSelect = (hasError, isDisabled) =>
     `w-full h-11 border ${
       hasError
         ? 'border-error ring-1 ring-error'
-        : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'
-    } rounded-md px-3 outline-none bg-white text-sm transition-colors`;
+        : isDisabled
+          ? 'border-outline-variant bg-surface-container-low text-on-surface-variant cursor-not-allowed'
+          : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary bg-white text-on-surface'
+    } rounded-md px-3 outline-none text-sm transition-colors`;
 
   if (loading) {
     return (
@@ -104,7 +131,8 @@ export default function WilayahDropdown({
         <select
           value={selectedKecamatan}
           onChange={handleKecamatanChange}
-          className={baseSelect(!!errorKecamatan)}
+          disabled={!!lockedRegion}
+          className={baseSelect(!!errorKecamatan, !!lockedRegion)}
         >
           <option value="">-- Pilih Kecamatan --</option>
           {kecamatanList.map(k => (
@@ -125,8 +153,8 @@ export default function WilayahDropdown({
             allWilayah.find(w => w.kecamatan === selectedKecamatan && w.nama_desa === selectedKelurahan)?.kode_wilayah || ''
           }
           onChange={handleKelurahanChange}
-          disabled={!selectedKecamatan || kelurahanList.length === 0}
-          className={baseSelect(!!errorKelurahan)}
+          disabled={!!lockedRegion || !selectedKecamatan || kelurahanList.length === 0}
+          className={baseSelect(!!errorKelurahan, !!lockedRegion || !selectedKecamatan || kelurahanList.length === 0)}
         >
           <option value="">-- Pilih Desa/Kelurahan --</option>
           {kelurahanList.map(k => (

@@ -1,6 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import * as fs from 'fs';
+import { BadRequestException } from '@nestjs/common';
+
 // Trigger restart for Prisma schema sync
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,13 +19,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,
-      exceptionFactory: (errors) => {
-        const fs = require('fs');
-        fs.writeFileSync('validation_errors.log', JSON.stringify(errors, null, 2));
-        const { BadRequestException } = require('@nestjs/common');
-        return new BadRequestException(errors);
-      }
+      transform: true
     }),
   );
 

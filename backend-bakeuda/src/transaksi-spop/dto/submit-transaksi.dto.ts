@@ -17,6 +17,7 @@ export class CalonSubjekDto {
   @IsOptional() @IsString() kelurahan?: string;
   @IsOptional() @IsString() kecamatan?: string;
   @IsOptional() @IsString() kabupaten?: string;
+  @IsOptional() @IsString() kode_wilayah?: string;
   @IsOptional() @IsString() kode_pos?: string;
 }
 
@@ -33,9 +34,10 @@ export class DetailTujuanInputDto {
   @Type(() => CalonSubjekDto)
   calon_subjek_json?: CalonSubjekDto;
 
-  @IsNumber() luas_tanah_baru: number;
+  @IsOptional() @IsNumber() luas_tanah_baru?: number;
   @IsOptional() @IsNumber() luas_bangunan_baru?: number;
-  @IsEnum(JenisTanah) jenis_tanah_baru: JenisTanah;
+  @IsOptional() @IsNumber() jumlah_bangunan_baru?: number;
+  @IsOptional() @IsEnum(JenisTanah) jenis_tanah_baru?: JenisTanah;
 
   @IsOptional() @IsString() jalan_op_baru?: string;
   @IsOptional() @IsString() kode_wilayah_baru?: string;
@@ -48,6 +50,7 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsString() kecamatan_op_baru?: string;
   @IsOptional() @IsString() latitude?: string;
   @IsOptional() @IsString() longitude?: string;
+  @IsOptional() @IsArray() koordinat_polygon?: any[];
   @IsOptional() @IsString() batas_utara?: string;
   @IsOptional() @IsString() batas_selatan?: string;
   @IsOptional() @IsString() batas_timur?: string;
@@ -56,9 +59,15 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsArray() data_bangunan_json?: any[];
 }
 
+export class LampiranInputDto {
+  @IsString() jenis_dokumen: string;
+  @IsString() url_file: string;
+}
+
 export class SubmitTransaksiDto {
   @IsOptional() @IsEnum(JenisTransaksi) jenis_transaksi?: JenisTransaksi;
   @IsOptional() @IsString() no_formulir?: string;
+  @IsOptional() @IsString() catatan_pengaju?: string;
   @IsOptional() @IsNumber() tahun_pajak?: number;
   @IsOptional() @IsString() no_sppt_lama?: string;
   @IsOptional() @IsString() nama_pengaju?: string;
@@ -80,5 +89,7 @@ export class SubmitTransaksiDto {
 
   @IsOptional()
   @IsArray()
-  lampiran?: { jenis_dokumen: string; url_file: string }[];
+  @ValidateNested({ each: true })
+  @Type(() => LampiranInputDto)
+  lampiran?: LampiranInputDto[];
 }

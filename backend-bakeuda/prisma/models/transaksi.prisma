@@ -35,6 +35,8 @@ model TransaksiSpop {
   id_verifikator     String? // FK → users.id_user (verifikator BAKEUDA)
   verified_at        DateTime?
   catatan_bakeuda    String? // TEXT
+  peringatan_validasi String? @db.VarChar(500) // Warning otomatis dari sistem (khusus PECAH), terpisah dari catatan_bakeuda
+  catatan_pengaju    String?        @db.VarChar(500)
   locked_by          String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
   locked_at          DateTime?
   created_at         DateTime       @default(now())
@@ -60,7 +62,7 @@ model DetailTransaksiAsal {
   id_detail_asal             String  @id @default(uuid())
   id_transaksi               String // FK → transaksi_spop
   nop_asal                   String? @db.VarChar(18)
-  nonaktifkan_saat_disetujui Boolean @default(true)
+  nonaktifkan_saat_disetujui Boolean @default(false)
 
   // ── Relasi ──
   transaksi  TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
@@ -96,11 +98,11 @@ model DetailTransaksiTujuan {
   batas_selatan        String?    @db.VarChar(50)
   batas_timur          String?    @db.VarChar(50)
   batas_barat          String?    @db.VarChar(50)
-  data_bangunan_json   Json?      // Menampung array data LSPOP sementara sebelum verifikasi Bakeuda
-  calon_subjek_json    Json?      // Menampung draf Subjek Pajak sebelum disetujui
+  data_bangunan_json   Json? // Menampung array data LSPOP sementara sebelum verifikasi Bakeuda
+  calon_subjek_json    Json? // Menampung draf Subjek Pajak sebelum disetujui
 
   // ── Relasi ──
-  transaksi    TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
+  transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi])
 
   @@map("detail_transaksi_tujuan")
 }

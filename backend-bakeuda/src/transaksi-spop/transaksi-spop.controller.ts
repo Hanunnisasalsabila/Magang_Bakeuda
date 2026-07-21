@@ -5,6 +5,7 @@ import { extname } from 'path';
 import { randomUUID } from 'crypto';
 import { TransaksiSpopService } from './transaksi-spop.service.js';
 import { SubmitTransaksiDto } from './dto/submit-transaksi.dto.js';
+import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -17,8 +18,7 @@ export class TransaksiSpopController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async submitDraft(@Body() dto: SubmitTransaksiDto, @Request() req: any) {
-    const user = req.user || { id_user: 'dummy', role: 'DESA', desa_id: 1 };
-    return this.service.submitPengajuan(dto, user, true); // DRAFT
+    return this.service.submitPengajuan(dto, req.user, true); // DRAFT
   }
 
   @Post('draft/:id')
@@ -62,8 +62,8 @@ export class TransaksiSpopController {
 
   @Post(':id/approve')
   @Roles('BAKEUDA')
-  async approve(@Param('id') id: string, @Request() req: any) {
-    return this.service.approve(id, req.user);
+  async approve(@Param('id') id: string, @Body() dto: VerifikasiBakeudaDto, @Request() req: any) {
+    return this.service.approve(id, dto, req.user);
   }
 
   @Post(':id/tolak')

@@ -35,9 +35,9 @@ model SubjekPajak {
   created_by         String // FK → users.id_user
 
   // ── Relasi ──
-  wilayah       Wilayah                 @relation(fields: [kode_wilayah], references: [kode_wilayah])
-  user          User                    @relation("CreatedByUser", fields: [created_by], references: [id_user])
-  objek_pajak   ObjekPajak[]
+  wilayah     Wilayah      @relation(fields: [kode_wilayah], references: [kode_wilayah])
+  user        User         @relation("CreatedByUser", fields: [created_by], references: [id_user])
+  objek_pajak ObjekPajak[]
 
   @@index([nama_subjek])
   @@map("subjek_pajak")

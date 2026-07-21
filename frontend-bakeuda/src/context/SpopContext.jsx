@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/axios';
 
 const SpopContext = createContext();
@@ -6,6 +7,8 @@ const SpopContext = createContext();
 export const useSpop = () => useContext(SpopContext);
 
 export const SpopProvider = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [idTransaksi, setIdTransaksi] = useState(null);
   const [spopData, setSpopData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,7 +16,9 @@ export const SpopProvider = ({ children }) => {
     1: false,
     2: false,
     3: false,
-    4: false
+    4: false,
+    5: false,
+    6: false
   });
 
   const [formData, setFormData] = useState({
@@ -35,7 +40,7 @@ export const SpopProvider = ({ children }) => {
 
   const [errors, setErrors] = useState({});
 
-  const loadDraft = async (id) => {
+  const loadDraft = async (id, isBackground = false) => {
     if (!id) {
       setIdTransaksi(null);
       setSpopData(null);
@@ -55,12 +60,11 @@ export const SpopProvider = ({ children }) => {
         latitude: '', longitude: '', koordinat_polygon: [],
         batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
         nopAsalList: [''], spptLama: '',
-        kodeWilayah: '', kodeWilayahObjek: ''
+        kodeWilayah: '', kodeWilayahObjek: '', catatanPengaju: ''
       });
       return;
     }
-
-    setLoading(true);
+    if (!isBackground) setLoading(true);
     try {
       const res = await api.get(`/transaksi-spop/${id}`);
       const data = res.data?.data;
@@ -101,14 +105,14 @@ export const SpopProvider = ({ children }) => {
           nopAsalList: nopAsalArray,
 
           nik: subjek.nik || '',
-          nama: subjek.nama || '',
+          nama: subjek.nama_subjek || '',
           npwp: subjek.npwp || '',
           noTelp: subjek.no_hp || '',
           statusWp: subjek.status_wp || '',
           pekerjaan: subjek.pekerjaan || '',
           email: subjek.email || '',
-          alamat: subjek.alamat || '',
-          blokKav: subjek.blok_kav_no || '',
+          alamat: subjek.alamat_jalan || '',
+          blokKav: subjek.blok_kav_no_subjek || '',
           rt: subjek.rt || '',
           rw: subjek.rw || '',
           kelurahan: subjek.kelurahan || '',
@@ -123,8 +127,8 @@ export const SpopProvider = ({ children }) => {
           kelurahanObjek: detailTujuan.kelurahan_op_baru || '',
           kecamatanObjek: detailTujuan.kecamatan_op_baru || '',
           noPersil: detailTujuan.no_persil_baru || '',
-          luasTanah: detailTujuan.luas_tanah_baru || '',
-          luasBangunan: detailTujuan.luas_bangunan_baru || '',
+          luasTanah: (detailTujuan.luas_tanah_baru !== null && detailTujuan.luas_tanah_baru !== undefined) ? detailTujuan.luas_tanah_baru.toString() : '',
+          luasBangunan: (detailTujuan.luas_bangunan_baru !== null && detailTujuan.luas_bangunan_baru !== undefined) ? detailTujuan.luas_bangunan_baru.toString() : '',
           jumlahBangunan: detailTujuan.jumlah_bangunan_baru || '0',
           jenisTanah: detailTujuan.jenis_tanah_baru || 'TANAH_BANGUNAN',
 
@@ -135,21 +139,37 @@ export const SpopProvider = ({ children }) => {
           batasSelatan: detailTujuan.batas_selatan || '',
           batasTimur: detailTujuan.batas_timur || '',
           batasBarat: detailTujuan.batas_barat || '',
-
-          lampiran: data.lampiran || []
+          lampiran: data.lampiran || [],
+          catatanPengaju: data.catatan_pengaju || ''
         }));
 
         // Basic check for completion
         const isStep1Complete = !!(data.jenis_transaksi);
         const isStep2Complete = !!(subjek.nama_subjek && subjek.nik && subjek.alamat_jalan);
         const isStep3Complete = !!(detailTujuan.luas_tanah_baru > 0 && detailTujuan.jenis_tanah_baru);
-        const isStep4Complete = data.status_ajuan !== 'DRAFT';
+        
+        let isStep4Complete = false;
+        const numBng = detailTujuan.jumlah_bangunan_baru || 0;
+        if (numBng === 0) {
+          isStep4Complete = true; // skipped
+        } else if (detailTujuan.data_bangunan_json) {
+          try {
+            const parsed = typeof detailTujuan.data_bangunan_json === 'string' ? JSON.parse(detailTujuan.data_bangunan_json) : detailTujuan.data_bangunan_json;
+            if (Array.isArray(parsed) && parsed.length >= numBng) {
+              isStep4Complete = true;
+            }
+          } catch(e) {}
+        }
+        
+        const isStep5Complete = data.status_ajuan !== 'DRAFT';
 
         setCompletionStatus({
           1: isStep1Complete,
           2: isStep2Complete,
           3: isStep3Complete,
-          4: isStep4Complete
+          4: isStep4Complete,
+          5: isStep5Complete,
+          6: false
         });
       }
     } catch (error) {
@@ -163,92 +183,120 @@ export const SpopProvider = ({ children }) => {
     setCompletionStatus(prev => ({ ...prev, [step]: isComplete }));
   };
 
-  const buildPayload = () => {
-    const nopObj = formData.nop;
-    const nopBersamaObj = formData.nopBersama;
+  const buildPayload = (overrideData = {}) => {
+    const mergedData = { ...formData, ...overrideData };
+    const nopObj = mergedData.nop;
+    const nopBersamaObj = mergedData.nopBersama;
 
     const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
     const rawNop = nop.replace(/\D/g, '');
 
     const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
     const rawNopBersama = nopBersama.replace(/\D/g, '');
-    const rawNopAsalList = formData.nopAsalList.map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
+    const rawNopAsalList = (mergedData.nopAsalList || []).map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
 
     const mapStatusWp = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
     const mapPekerjaan = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
 
+    const jenis = mergedData.transaksi;
+    const isMutasi = jenis === 'MUTASI';
+    const isHapus = jenis === 'HAPUS';
+    const isPerubahanData = jenis === 'PERUBAHAN_DATA';
+
     const detail_asal = rawNopAsalList.map(n => ({ nop_asal: n, nonaktifkan_saat_disetujui: true }));
-    if (formData.transaksi === 'PEMUTAKHIRAN' && rawNop.length >= 18 && detail_asal.length === 0) {
-      detail_asal.push({ nop_asal: rawNop, nonaktifkan_saat_disetujui: true });
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis) && rawNop.length >= 18 && detail_asal.length === 0) {
+      const shouldDeactivate = ['PECAH', 'GABUNG', 'HAPUS'].includes(jenis);
+      detail_asal.push({ nop_asal: rawNop, nonaktifkan_saat_disetujui: shouldDeactivate });
     }
 
     const calon_subjek_json = {
-      nik: formData.nik || '0000000000000000',
-      nama_subjek: formData.nama || 'TANPA NAMA',
-      npwp: formData.npwp || undefined,
-      no_hp: formData.noTelp || undefined,
-      status_wp: mapStatusWp[formData.statusWp] || 'PEMILIK',
-      pekerjaan: mapPekerjaan[formData.pekerjaan] || 'LAINNYA',
-      email: formData.email || undefined,
-      alamat_jalan: formData.alamat || 'TANPA ALAMAT',
-      blok_kav_no_subjek: formData.blokKav || undefined,
-      rt: formData.rt || '',
-      rw: formData.rw || '',
-      kode_pos: formData.kodePos || undefined,
-      kelurahan: formData.kelurahan || '',
-      kecamatan: formData.kecamatan || undefined,
-      kabupaten: formData.kabupaten || 'Purbalingga'
+      nik: mergedData.nik || '0000000000000000',
+      nama_subjek: mergedData.nama || 'TANPA NAMA',
+      npwp: mergedData.npwp || undefined,
+      no_hp: mergedData.noTelp || undefined,
+      status_wp: mapStatusWp[mergedData.statusWp] || 'PEMILIK',
+      pekerjaan: mapPekerjaan[mergedData.pekerjaan] || 'LAINNYA',
+      email: mergedData.email || undefined,
+      alamat_jalan: mergedData.alamat || 'TANPA ALAMAT',
+      blok_kav_no_subjek: mergedData.blokKav || undefined,
+      rt: mergedData.rt || '',
+      rw: mergedData.rw || '',
+      kode_pos: mergedData.kodePos || undefined,
+      kelurahan: mergedData.kelurahan || '',
+      kecamatan: mergedData.kecamatan || undefined,
+      kabupaten: mergedData.kabupaten || 'Purbalingga',
+      kode_wilayah: mergedData.kodeWilayah || undefined
     };
 
-    const detail_tujuan = [{
-      nik_calon_subjek: formData.nik || undefined,
-      calon_subjek_json,
-      luas_tanah_baru: formData.luasTanah ? Number(formData.luasTanah) : 0,
-      luas_bangunan_baru: formData.luasBangunan ? Number(formData.luasBangunan) : 0,
-      jenis_tanah_baru: formData.jenisTanah || 'TANAH_BANGUNAN',
-      jalan_op_baru: formData.alamatObjek || '',
-      kode_wilayah_baru: formData.kodeWilayahObjek || undefined,
-      kode_blok_baru: formData.blokKavObjek || undefined,
-      rt_op_baru: formData.rtObjek || undefined,
-      rw_op_baru: formData.rwObjek || undefined,
-      blok_kav_no_baru: formData.blokKavObjek || undefined,
-      kelurahan_op_baru: formData.kelurahanObjek || formData.kelurahan || '',
-      kecamatan_op_baru: formData.kecamatanObjek || formData.kecamatan || '',
-      latitude: formData.latitude || undefined,
-      longitude: formData.longitude || undefined,
-      batas_utara: formData.batasUtara || undefined,
-      batas_selatan: formData.batasSelatan || undefined,
-      batas_timur: formData.batasTimur || undefined,
-      batas_barat: formData.batasBarat || undefined,
-      data_bangunan_json: formData.jenisTanah === 'TANAH_BANGUNAN' ? [] : undefined
-    }];
+    let detail_tujuan;
+    if (isHapus) {
+      detail_tujuan = undefined;
+    } else if (isMutasi) {
+      detail_tujuan = [{
+        nik_calon_subjek: formData.nik || undefined,
+        calon_subjek_json,
+        luas_tanah_baru: 0,
+        jenis_tanah_baru: 'TANAH_BANGUNAN' // placeholder, backend ignores it
+      }];
+    } else {
+      detail_tujuan = [{
+        nik_calon_subjek: mergedData.nik || undefined,
+        calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
+        luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
+        luas_bangunan_baru: mergedData.luasBangunan ? Number(mergedData.luasBangunan) : 0,
+        jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
+        jenis_tanah_baru: mergedData.jenisTanah || 'TANAH_BANGUNAN',
+        jalan_op_baru: mergedData.alamatObjek || '',
+        kode_wilayah_baru: mergedData.kodeWilayahObjek || undefined,
+        blok_kav_no_baru: mergedData.blokKavObjek || undefined,
+        no_persil_baru: mergedData.noPersil || undefined,
+        rt_op_baru: mergedData.rtObjek || undefined,
+        rw_op_baru: mergedData.rwObjek || undefined,
+        kelurahan_op_baru: mergedData.kelurahanObjek || mergedData.kelurahan || '',
+        kecamatan_op_baru: mergedData.kecamatanObjek || mergedData.kecamatan || '',
+        latitude: mergedData.latitude ? String(mergedData.latitude) : undefined,
+        longitude: mergedData.longitude ? String(mergedData.longitude) : undefined,
+        koordinat_polygon: mergedData.koordinat_polygon || undefined,
+        batas_utara: mergedData.batasUtara || undefined,
+        batas_selatan: mergedData.batasSelatan || undefined,
+        batas_timur: mergedData.batasTimur || undefined,
+        batas_barat: mergedData.batasBarat || undefined,
+        data_bangunan_json: mergedData.data_bangunan_json || undefined
+      }];
+    }
 
     return {
       jenis_transaksi: formData.transaksi || 'BARU',
       tahun_pajak: new Date().getFullYear(),
       tanggal_pengajuan: new Date().toISOString(),
-      menggunakan_kuasa: formData.isKuasa,
+      catatan_pengaju: mergedData.catatanPengaju || undefined,
+      menggunakan_kuasa: mergedData.isKuasa,
       nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
       detail_asal: detail_asal.length > 0 ? detail_asal : undefined,
       detail_tujuan: detail_tujuan,
-      lampiran: formData.lampiran.length > 0 ? formData.lampiran.map(l => ({
+      lampiran: (mergedData.lampiran || []).length > 0 ? mergedData.lampiran.map(l => ({
         jenis_dokumen: l.jenis_dokumen,
         url_file: l.url_file
       })) : undefined,
     };
   };
 
-  const saveDraft = async () => {
-    const payload = buildPayload();
+  const saveDraft = async (overrideData = {}) => {
+    const payload = buildPayload(overrideData);
     if (idTransaksi) {
       await api.post(`/transaksi-spop/draft/${idTransaksi}`, payload);
-      await loadDraft(idTransaksi);
+      await loadDraft(idTransaksi, true); // background load to avoid unmounting
       return idTransaksi;
     } else {
       const res = await api.post('/transaksi-spop', payload);
       const newId = res.data?.data?.id_transaksi || res.data?.id_transaksi;
       if (newId) {
-        await loadDraft(newId);
+        if (!location.pathname.includes(newId)) {
+          const basePath = location.pathname.split('/').filter(Boolean);
+          // if it ends with an empty id, or no id, replace it
+          navigate(`/${basePath.join('/')}/${newId}`, { replace: true });
+        }
+        await loadDraft(newId, true); // background load
         return newId;
       }
     }

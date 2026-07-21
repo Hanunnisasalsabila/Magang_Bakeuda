@@ -72,13 +72,23 @@ export default function Step1InformasiUmum() {
       return;
     }
 
+    if (formData.transaksi === 'HAPUS' && !formData.catatanPengaju?.trim()) {
+      setErrors({ catatanPengaju: 'Alasan penghapusan wajib diisi' });
+      setToast({ show: true, message: 'Mohon isi alasan penghapusan.', type: 'error' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const newId = await saveDraft();
       setToast({ show: true, message: 'Langkah 1 berhasil disimpan.', type: 'success' });
       const savedId = idTransaksi || newId;
       if (savedId) {
-        navigate(`/spop/objek-pajak/${savedId}`);
+        if (formData.transaksi === 'HAPUS') {
+          navigate(`/spop/konfirmasi/${savedId}`);
+        } else {
+          navigate(`/spop/subjek-pajak/${savedId}`);
+        }
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -207,6 +217,7 @@ export default function Step1InformasiUmum() {
                         <WilayahDropdown
                           selectedKecamatan={formData.kecamatanObjek}
                           selectedKelurahan={formData.kelurahanObjek}
+                          autoLockByRole={true}
                           onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
                             setFormData(prev => ({
                               ...prev,
@@ -418,8 +429,26 @@ export default function Step1InformasiUmum() {
         </div>
       </section>
 
+      {formData.transaksi === 'HAPUS' && (
+        <section className="bg-surface-container-low p-6 rounded-lg mt-6">
+          <div className="flex items-center gap-3 mb-6">
+            <h4 className="text-on-surface font-bold uppercase">ALASAN PENGHAPUSAN</h4>
+          </div>
+          <div className="flex flex-col gap-2">
+            <textarea
+              value={formData.catatanPengaju || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, catatanPengaju: e.target.value }))}
+              placeholder="Tuliskan alasan lengkap mengapa NOP ini diajukan untuk dihapus..."
+              className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full min-h-[100px]"
+              required
+            />
+            {errors.catatanPengaju && <p className="text-error text-sm mt-1">{errors.catatanPengaju}</p>}
+          </div>
+        </section>
+      )}
+
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate('/dashboard-desa')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
