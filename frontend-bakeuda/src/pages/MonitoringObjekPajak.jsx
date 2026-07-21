@@ -29,7 +29,7 @@ export default function MonitoringObjekPajak() {
         const rawList = listRes.data.data;
         const formattedList = rawList.map(item => {
           const detail = item.detail_tujuan?.[0];
-          const calonSubjek = item.calon_subjek_temp;
+          const calonSubjek = item.detail_tujuan?.[0]?.calon_subjek_json;
           
           let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
@@ -43,7 +43,7 @@ export default function MonitoringObjekPajak() {
           return {
             id: item.id_transaksi,
             nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
-            name: calonSubjek?.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+            name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
             address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
             land: detail?.luas_tanah_baru || 0,
             building: luasBangunan,
