@@ -17,6 +17,7 @@ import {
 } from '@prisma/client';
 import { SubmitTransaksiDto } from './dto/submit-transaksi.dto.js';
 import { CurrentUser, assertWilayahAccess } from '../common/wilayah-scope.helper.js';
+import { validasiSelisihLuasPecah } from './luas-validation.helper.js';
 
 type TransaksiSpopWithDetail = Prisma.TransaksiSpopGetPayload<{
   include: { detail_asal: true; detail_tujuan: true; lampiran: true; pengaju: true }
@@ -53,6 +54,9 @@ export class TransaksiSpopService {
       }
     }
 
+    // Validasi soft warning selisih luas — KHUSUS PECAH (GABUNG tidak perlu, luas dihitung otomatis)
+    const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
+
     const statusAjuan = asDraft ? 'DRAFT' : 'MENUNGGU';
 
     const transaksi = await this.prisma.transaksiSpop.create({
@@ -67,6 +71,7 @@ export class TransaksiSpopService {
         menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
         tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
         status_ajuan: statusAjuan,
+        peringatan_validasi: peringatanValidasi,
         detail_asal: dto.detail_asal ? {
           create: dto.detail_asal.map((a) => ({
             nop_asal: a.nop_asal,
@@ -90,9 +95,20 @@ export class TransaksiSpopService {
       include: { detail_asal: true, detail_tujuan: true },
     });
 
-    await this.catatRiwayat(transaksi.id_transaksi, null, transaksi.status_ajuan, currentUser.id_user, 'Pengajuan dibuat');
+    await this.catatRiwayat(
+      transaksi.id_transaksi,
+      null,
+      transaksi.status_ajuan,
+      currentUser.id_user,
+      peringatanValidasi ? `Pengajuan dibuat — ${peringatanValidasi}` : 'Pengajuan dibuat',
+    );
 
-    return { success: true, message: 'Pengajuan berhasil dibuat', data: transaksi };
+    return {
+      success: true,
+      message: 'Pengajuan berhasil dibuat',
+      data: transaksi,
+      peringatan: peringatanValidasi,
+    };
   }
 
   async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
@@ -106,6 +122,9 @@ export class TransaksiSpopService {
     }
 
     this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
+
+    // Hitung ulang peringatan validasi — bisa jadi null kalau luas sudah diperbaiki, atau baru muncul kalau editnya bikin tambah selisih
+    const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
@@ -123,6 +142,7 @@ export class TransaksiSpopService {
           nop_bersama: dto.nop_bersama,
           menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
           tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+          peringatan_validasi: peringatanValidasi,
           detail_asal: dto.detail_asal ? {
             create: dto.detail_asal.map((a) => ({
               nop_asal: a.nop_asal,
@@ -151,7 +171,7 @@ export class TransaksiSpopService {
       include: { detail_asal: true, detail_tujuan: true }
     });
 
-    return { success: true, message: 'Draft berhasil diupdate', data: updated };
+    return { success: true, message: 'Draft berhasil diupdate', data: updated, peringatan: peringatanValidasi };
   }
 
   async finalisasiSubmit(idTransaksi: string, currentUser: CurrentUser) {
@@ -189,6 +209,11 @@ export class TransaksiSpopService {
       where.pengaju = { kode_wilayah: currentUser.kode_wilayah };
     } else if (query.kode_wilayah) {
       where.pengaju = { kode_wilayah: query.kode_wilayah };
+    }
+
+    // Filter opsional — BAKEUDA bisa lihat khusus transaksi yang punya peringatan validasi
+    if (query.ada_peringatan === 'true') {
+      where.peringatan_validasi = { not: null };
     }
 
     const result = await this.prisma.transaksiSpop.findMany({
@@ -389,6 +414,24 @@ export class TransaksiSpopService {
     if (jumlahTujuan < rule.tujuan[0] || jumlahTujuan > rule.tujuan[1]) {
       throw new BadRequestException(`Jumlah detail tujuan tidak sesuai untuk transaksi ${jenis}`);
     }
+  }
+
+  /**
+   * Hitung peringatan validasi selisih luas tanah — khusus PECAH.
+   * Dipanggil dari submitPengajuan() DAN saveDraft() supaya tidak duplikasi logic.
+   */
+  private async hitungPeringatanValidasiLuas(dto: SubmitTransaksiDto): Promise<string | null> {
+    if (dto.jenis_transaksi !== 'PECAH' || !dto.detail_asal?.length || !dto.detail_tujuan?.length) {
+      return null;
+    }
+
+    const objekAsal = await this.prisma.objekPajak.findUnique({ where: { nop: dto.detail_asal[0].nop_asal } });
+    if (!objekAsal) return null;
+
+    const totalLuasTujuan = dto.detail_tujuan.reduce((sum, t) => sum + Number(t.luas_tanah_baru), 0);
+    const hasil = validasiSelisihLuasPecah(Number(objekAsal.luas_tanah), totalLuasTujuan);
+
+    return hasil.ada_selisih ? hasil.pesan : null;
   }
 
   // --- EKSEKUSI DATA MASTER ---
@@ -609,7 +652,22 @@ export class TransaksiSpopService {
     return { nop_asal_dinonaktifkan: asal.nop_asal, nop_baru: hasilNop };
   }
 
+  // GABUNG — REVISI: luas tanah/bangunan dihitung OTOMATIS dari total NOP asal,
+  // bukan lagi input manual DESA. Alamat tetap wajib diisi manual (data baru, sama
+  // seperti transaksi BARU), tapi ada FALLBACK ke alamat NOP asal pertama kalau kosong.
   private async eksekusiGabung(tx: Prisma.TransactionClient, transaksi: TransaksiSpopWithDetail, currentUser: CurrentUser) {
+    // 1. Ambil data lengkap semua NOP asal SEBELUM dinonaktifkan — dipakai untuk auto-sum luas dan fallback alamat
+    const semuaObjekAsal = await tx.objekPajak.findMany({
+      where: { nop: { in: transaksi.detail_asal.map((a) => a.nop_asal!) } },
+    });
+
+    const totalLuasTanah = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_tanah), 0);
+    const totalLuasBangunan = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_bangunan), 0);
+
+    // Fallback alamat — pakai data dari NOP asal PERTAMA di array detail_asal
+    const objekAsalPertama = semuaObjekAsal.find((o) => o.nop === transaksi.detail_asal[0].nop_asal);
+
+    // 2. Nonaktifkan semua NOP asal
     for (const asal of transaksi.detail_asal) {
       await tx.objekPajak.update({
         where: { nop: asal.nop_asal! },
@@ -617,14 +675,16 @@ export class TransaksiSpopService {
       });
     }
 
+    // 3. Buat NOP baru hasil gabungan
     const t = transaksi.detail_tujuan[0];
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
-    
+
     const kodeWilayah = t.kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
-      
+
     const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: t.kode_blok_baru || '001', kode_jenis_op: '1' }, tx);
-    await tx.objekPajak.create({
+
+    const objekBaru = await tx.objekPajak.create({
       data: {
         nop,
         kode_wilayah: kodeWilayah,
@@ -632,17 +692,29 @@ export class TransaksiSpopService {
         no_urut: nop.substring(13, 17),
         kode_jenis_op: '1',
         nik_subjek: nikSubjek,
-        jalan_op: t.jalan_op_baru ?? '',
+        jalan_op: t.jalan_op_baru || objekAsalPertama?.jalan_op || '',   // FALLBACK di sini
+        blok_kav_no: t.blok_kav_no_baru || objekAsalPertama?.blok_kav_no || undefined,
+        rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
+        rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
+        no_persil: t.no_persil_baru || undefined,
         jenis_tanah: t.jenis_tanah_baru,
-        luas_tanah: t.luas_tanah_baru,
-        luas_bangunan: t.luas_bangunan_baru ?? 0,
+        luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
+        luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },
     });
 
     await this.upsertLspop(tx, t, nop, false);
 
     await tx.detailTransaksiTujuan.update({ where: { id_detail_tujuan: t.id_detail_tujuan }, data: { nop_generated: nop } });
-    return { nop_asal_dinonaktifkan: transaksi.detail_asal.map((a) => a.nop_asal), nop_baru: nop };
+
+    return {
+      nop_asal_dinonaktifkan: transaksi.detail_asal.map((a) => a.nop_asal),
+      nop_baru: nop,
+      luas_tanah_hasil: totalLuasTanah,
+      luas_bangunan_hasil: totalLuasBangunan,
+      alamat_dipakai: objekBaru.jalan_op,
+      alamat_dari_fallback: !t.jalan_op_baru,  // true kalau DESA tidak isi manual, dipakai dari fallback
+    };
   }
 
   private async eksekusiHapus(tx: Prisma.TransactionClient, transaksi: TransaksiSpopWithDetail, currentUser: CurrentUser) {

@@ -35,6 +35,7 @@ model TransaksiSpop {
   id_verifikator     String? // FK → users.id_user (verifikator BAKEUDA)
   verified_at        DateTime?
   catatan_bakeuda    String? // TEXT
+  peringatan_validasi String? @db.VarChar(500) // Warning otomatis dari sistem (khusus PECAH), terpisah dari catatan_bakeuda
   locked_by          String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
   locked_at          DateTime?
   created_at         DateTime       @default(now())
