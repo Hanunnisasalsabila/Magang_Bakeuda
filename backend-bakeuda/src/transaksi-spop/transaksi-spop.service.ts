@@ -63,51 +63,46 @@ export class TransaksiSpopService {
 
     const statusAjuan = asDraft ? 'DRAFT' : 'MENUNGGU';
 
-    let transaksi;
-    try {
-      transaksi = await this.prisma.transaksiSpop.create({
-        data: {
-          id_user: currentUser.id_user,
-          tahun_pajak: dto.tahun_pajak ? Number(dto.tahun_pajak) : new Date().getFullYear(),
-          jenis_transaksi: dto.jenis_transaksi as JenisTransaksi || JenisTransaksi.BARU,
-          no_sppt_lama: dto.no_sppt_lama,
-          nama_pengaju: dto.nama_pengaju,
-          no_formulir: dto.no_formulir,
-          nop_bersama: dto.nop_bersama,
-          menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-          tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan as string) : new Date(),
-          status_ajuan: statusAjuan,
-          peringatan_validasi: peringatanValidasi,
-          detail_asal: dto.detail_asal ? {
-            create: dto.detail_asal.map((a) => ({
-              nop_asal: a.nop_asal,
-              nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
-            }))
-          } : undefined,
-          detail_tujuan: dto.detail_tujuan ? {
-            create: dto.detail_tujuan.map((t) => ({
-              ...t,
-              luas_tanah_baru: t.luas_tanah_baru ?? 0,
-              luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
-              jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-              jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
-              koordinat_polygon: t.koordinat_polygon as any,
-              calon_subjek_json: t.calon_subjek_json as any,
-              data_bangunan_json: t.data_bangunan_json as any
-            }))
-          } : undefined,
-          lampiran: dto.lampiran ? {
-            create: dto.lampiran.map((l) => ({
-              ...l,
-              uploaded_by: currentUser.id_user
-            }))
-          } : undefined
-        },
-        include: { detail_asal: true, detail_tujuan: true },
-      });
-    } catch (error) {
-      throw new BadRequestException('PRISMA ERROR: ' + error.message);
-    }
+    const transaksi = await this.prisma.transaksiSpop.create({
+      data: {
+        id_user: currentUser.id_user,
+        tahun_pajak: dto.tahun_pajak as number,
+        jenis_transaksi: dto.jenis_transaksi as JenisTransaksi,
+        no_sppt_lama: dto.no_sppt_lama,
+        nama_pengaju: dto.nama_pengaju,
+        no_formulir: dto.no_formulir,
+        nop_bersama: dto.nop_bersama,
+        menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
+        tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan as string) : new Date(),
+        status_ajuan: statusAjuan,
+        peringatan_validasi: peringatanValidasi,
+        detail_asal: dto.detail_asal ? {
+          create: dto.detail_asal.map((a) => ({
+            nop_asal: a.nop_asal,
+            nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
+          }))
+        } : undefined,
+        detail_tujuan: dto.detail_tujuan ? {
+          create: dto.detail_tujuan.map((t) => ({
+            ...t,
+            luas_tanah_baru: t.luas_tanah_baru ?? 0,
+            luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
+            jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
+            jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
+            koordinat_polygon: t.koordinat_polygon as any,
+            calon_subjek_json: t.calon_subjek_json as any,
+            data_bangunan_json: t.data_bangunan_json as any
+          }))
+        } : undefined,
+        lampiran: dto.lampiran ? {
+          create: dto.lampiran.map((l) => ({
+            ...l,
+            uploaded_by: currentUser.id_user
+          }))
+        } : undefined
+      },
+      include: { detail_asal: true, detail_tujuan: true },
+    });
 
     await this.catatRiwayat(
       transaksi.id_transaksi,

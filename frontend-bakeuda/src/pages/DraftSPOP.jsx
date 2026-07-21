@@ -35,7 +35,7 @@ export default function DraftSPOP() {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus Draft ini? Seluruh data form yang tersimpan akan dihapus permanen dan tidak dapat dikembalikan.')) return;
-
+    
     try {
       await api.delete(`/transaksi-spop/${id}`);
       showToast('Draft berhasil dihapus.', 'success');
@@ -54,8 +54,9 @@ export default function DraftSPOP() {
     <main className="p-gutter max-w-screen-xl mx-auto w-full relative">
       {/* Toast Notification */}
       {toast.show && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 animate-fadeIn ${toast.type === 'error' ? 'bg-error text-on-error' : 'bg-primary text-on-primary'
-          }`}>
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 animate-fadeIn ${
+          toast.type === 'error' ? 'bg-error text-on-error' : 'bg-primary text-on-primary'
+        }`}>
           <div className="flex items-center gap-3">
             <span className="material-symbols-outlined">{toast.type === 'error' ? 'error' : 'check_circle'}</span>
             <span className="font-semibold text-sm">{toast.message}</span>
@@ -74,7 +75,7 @@ export default function DraftSPOP() {
           <button 
             onClick={() => {
               loadDraft(null);
-              navigate('/spop/informasi-umum');
+              navigate('/spop');
             }}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm active:scale-95"
           >
@@ -123,14 +124,14 @@ export default function DraftSPOP() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-center gap-2">
-                        <button
+                        <button 
                           onClick={() => handleEdit(draft.id_transaksi)}
                           className="w-8 h-8 rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white flex items-center justify-center transition-colors"
                           title="Lanjutkan Edit"
                         >
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
-                        <button
+                        <button 
                           onClick={() => handleDelete(draft.id_transaksi)}
                           className="w-8 h-8 rounded-full bg-error/10 text-error hover:bg-error hover:text-white flex items-center justify-center transition-colors"
                           title="Hapus Draft"

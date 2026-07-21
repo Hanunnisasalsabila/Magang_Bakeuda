@@ -23,14 +23,14 @@ export default function MonitoringObjekPajak() {
           api.get('/transaksi-spop/stats'),
           api.get('/transaksi-spop')
         ]);
-
+        
         setStats(statsRes.data.data);
 
         const rawList = listRes.data.data;
         const formattedList = rawList.map(item => {
           const detail = item.detail_tujuan?.[0];
           const calonSubjek = item.calon_subjek_temp;
-
+          
           let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
           let status = 'Ditolak';
@@ -69,13 +69,13 @@ export default function MonitoringObjekPajak() {
       (statusVerif === 'Draft' && obj.status === 'Draft') ||
       (statusVerif === 'Disetujui' && obj.status === 'Disetujui') ||
       (statusVerif === 'Perlu Revisi' && obj.status === 'Perlu Revisi');
-
+    
     const searchLower = search.toLowerCase();
     const matchesSearch =
       obj.name.toLowerCase().includes(searchLower) ||
       obj.nop.toLowerCase().includes(searchLower) ||
       obj.address.toLowerCase().includes(searchLower);
-
+      
     return matchesStatus && matchesSearch;
   });
 
@@ -83,7 +83,7 @@ export default function MonitoringObjekPajak() {
   const totalItems = filteredSubmissions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
   const safeCurrentPage = Math.min(currentPage, totalPages);
-
+  
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex);
@@ -119,7 +119,7 @@ export default function MonitoringObjekPajak() {
             Total SPOP yang pernah diajukan
           </p>
         </div>
-
+        
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Disetujui</p>
@@ -242,7 +242,7 @@ export default function MonitoringObjekPajak() {
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/spop/detail/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
+                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/spop/informasi-umum/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
                       >
                         <span className="material-symbols-outlined text-[14px]">{(obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? 'edit' : 'visibility'}</span>
@@ -267,7 +267,7 @@ export default function MonitoringObjekPajak() {
           <div className="flex items-center gap-4 text-sm text-gray-500 w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Tampilkan</span>
-              <select
+              <select 
                 value={itemsPerPage}
                 onChange={(e) => {
                   setItemsPerPage(Number(e.target.value));
@@ -295,16 +295,16 @@ export default function MonitoringObjekPajak() {
               <span className="font-bold text-gray-900">{totalItems}</span> data
             </div>
           </div>
-
+          
           <div className="flex items-center gap-1.5">
-            <button
+            <button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={safeCurrentPage === 1 || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-
+            
             {Array.from({ length: Math.min(5, totalPages > 0 ? totalPages : 1) }, (_, i) => {
               let pageNum = safeCurrentPage;
               const safeTotalPages = totalPages > 0 ? totalPages : 1;
@@ -312,22 +312,23 @@ export default function MonitoringObjekPajak() {
               else if (safeCurrentPage <= 3) pageNum = i + 1;
               else if (safeCurrentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
               else pageNum = safeCurrentPage - 2 + i;
-
+              
               return (
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${safeCurrentPage === pageNum
-                      ? 'bg-blue-900 text-white shadow-sm'
+                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
+                    safeCurrentPage === pageNum 
+                      ? 'bg-blue-900 text-white shadow-sm' 
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
-                    }`}
+                  }`}
                 >
                   {pageNum}
                 </button>
               );
             })}
 
-            <button
+            <button 
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={safeCurrentPage === totalPages || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -342,9 +343,9 @@ export default function MonitoringObjekPajak() {
       {selectedSubmission && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
           <div className="absolute inset-0 bg-background/60 backdrop-blur-md transition-opacity" onClick={() => setSelectedSubmission(null)}></div>
-
+          
           <div className="bg-surface border border-outline-variant/50 rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-in fade-in zoom-in-95 duration-300 flex flex-col max-h-[90vh] overflow-hidden">
-
+            
             {/* Header (Premium Gradient) */}
             <div className="p-6 border-b border-outline-variant bg-gradient-to-r from-surface-container-low to-surface flex justify-between items-start shrink-0">
               <div className="flex gap-4 items-center">
@@ -363,17 +364,17 @@ export default function MonitoringObjekPajak() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedSubmission(null)}
+              <button 
+                onClick={() => setSelectedSubmission(null)} 
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface"
               >
                 <span className="material-symbols-outlined text-xl">close</span>
               </button>
             </div>
-
+            
             {/* Scrollable Content */}
             <div className="p-6 overflow-y-auto custom-scrollbar space-y-8 bg-surface">
-
+              
               {/* Status Banner */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm gap-4">
                 <div className="flex items-center gap-3">
@@ -385,7 +386,7 @@ export default function MonitoringObjekPajak() {
                 </div>
                 <StatusBadge status={selectedSubmission.status} />
               </div>
-
+              
               {/* Catatan Verifikator (Muncul jika status Perlu Revisi) */}
               {selectedSubmission.status === 'Perlu Revisi' && (
                 <div className="bg-error/5 border border-error/20 rounded-xl p-4 flex gap-4 items-start">
@@ -400,7 +401,7 @@ export default function MonitoringObjekPajak() {
                   </div>
                 </div>
               )}
-
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Left Column: Data Utama */}
                 <div className="space-y-6">
@@ -408,7 +409,7 @@ export default function MonitoringObjekPajak() {
                     <span className="material-symbols-outlined text-primary text-[18px]">person</span>
                     Informasi Subjek Pajak
                   </h3>
-
+                  
                   <div className="space-y-4">
                     <div>
                       <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Nama Lengkap</p>
@@ -447,7 +448,7 @@ export default function MonitoringObjekPajak() {
                     <span className="material-symbols-outlined text-primary text-[18px]">history</span>
                     Riwayat Pengajuan
                   </h3>
-
+                  
                   <div className="relative pl-6 space-y-6 before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-outline-variant">
                     <div className="relative">
                       <div className="absolute -left-[30px] w-3 h-3 bg-primary rounded-full ring-4 ring-surface"></div>
@@ -455,7 +456,7 @@ export default function MonitoringObjekPajak() {
                       <p className="text-sm font-bold text-on-surface">Pembaruan Status</p>
                       <p className="text-sm text-on-surface-variant mt-1">Status diubah menjadi <span className="font-bold text-on-surface">{selectedSubmission.status}</span> oleh Verifikator BKD.</p>
                     </div>
-
+                    
                     <div className="relative opacity-60">
                       <div className="absolute -left-[30px] w-3 h-3 bg-outline rounded-full ring-4 ring-surface"></div>
                       <p className="text-xs font-bold text-on-surface-variant mb-1">Kemarin, 14:20 WIB</p>
@@ -473,11 +474,11 @@ export default function MonitoringObjekPajak() {
                 </div>
               </div>
             </div>
-
+            
             {/* Footer */}
             <div className="p-5 border-t border-outline-variant bg-surface-container-lowest flex justify-end items-center shrink-0">
-              <button
-                onClick={() => setSelectedSubmission(null)}
+              <button 
+                onClick={() => setSelectedSubmission(null)} 
                 className="px-6 py-2 bg-primary text-on-primary font-bold text-sm rounded-lg shadow-sm hover:brightness-110 transition-all flex items-center gap-2"
               >
                 Tutup
