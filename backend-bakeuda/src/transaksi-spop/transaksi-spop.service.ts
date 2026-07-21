@@ -31,6 +31,9 @@ export class TransaksiSpopService {
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
     this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
+    if (!asDraft && dto.jenis_transaksi) {
+      this.validateByJenisTransaksi(dto.jenis_transaksi, dto);
+    }
 
     if (dto.detail_asal?.length) {
       for (const asal of dto.detail_asal) {
@@ -60,24 +63,28 @@ export class TransaksiSpopService {
       transaksi = await this.prisma.transaksiSpop.create({
         data: {
           id_user: currentUser.id_user,
-          tahun_pajak: dto.tahun_pajak,
-          jenis_transaksi: dto.jenis_transaksi,
+          tahun_pajak: dto.tahun_pajak as number,
+          jenis_transaksi: dto.jenis_transaksi as JenisTransaksi,
           no_sppt_lama: dto.no_sppt_lama,
           nama_pengaju: dto.nama_pengaju,
           no_formulir: dto.no_formulir,
           nop_bersama: dto.nop_bersama,
           menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-          tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+          tanggal_pengajuan: new Date(dto.tanggal_pengajuan as string),
           status_ajuan: statusAjuan,
+          catatan_pengaju: dto.catatan_pengaju,
           detail_asal: dto.detail_asal ? {
             create: dto.detail_asal.map((a) => ({
               nop_asal: a.nop_asal,
-              nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
+              nonaktifkan_saat_disetujui: this.shouldDeactivateAsal(dto.jenis_transaksi as string)
             }))
           } : undefined,
           detail_tujuan: dto.detail_tujuan ? {
             create: dto.detail_tujuan.map((t) => ({
               ...t,
+              luas_tanah_baru: t.luas_tanah_baru ?? 0,
+              luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
+              jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
               calon_subjek_json: t.calon_subjek_json as any,
               data_bangunan_json: t.data_bangunan_json as any
             }))
@@ -121,23 +128,27 @@ export class TransaksiSpopService {
         await tx.transaksiSpop.update({
           where: { id_transaksi },
           data: {
-            tahun_pajak: dto.tahun_pajak,
-            jenis_transaksi: dto.jenis_transaksi,
+            tahun_pajak: dto.tahun_pajak as number,
+            jenis_transaksi: dto.jenis_transaksi as JenisTransaksi,
             no_sppt_lama: dto.no_sppt_lama,
             nama_pengaju: dto.nama_pengaju,
             no_formulir: dto.no_formulir,
             nop_bersama: dto.nop_bersama,
             menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-            tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+            tanggal_pengajuan: new Date(dto.tanggal_pengajuan as string),
+            catatan_pengaju: dto.catatan_pengaju,
             detail_asal: dto.detail_asal ? {
               create: dto.detail_asal.map((a) => ({
                 nop_asal: a.nop_asal,
-                nonaktifkan_saat_disetujui: a.nonaktifkan_saat_disetujui ?? true
+                nonaktifkan_saat_disetujui: this.shouldDeactivateAsal(dto.jenis_transaksi as string)
               }))
             } : undefined,
             detail_tujuan: dto.detail_tujuan ? {
               create: dto.detail_tujuan.map((t) => ({
                 ...t,
+                luas_tanah_baru: t.luas_tanah_baru ?? 0,
+                luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
+                jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
                 calon_subjek_json: t.calon_subjek_json as any,
                 data_bangunan_json: t.data_bangunan_json as any
               }))
@@ -401,6 +412,52 @@ export class TransaksiSpopService {
     }
   }
 
+  private validateByJenisTransaksi(jenis: JenisTransaksi, dto: SubmitTransaksiDto) {
+    const tujuan = dto.detail_tujuan?.[0];
+
+    switch (jenis) {
+      case 'BARU':
+        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru <= 0)
+          throw new BadRequestException('Luas tanah wajib diisi untuk pendaftaran baru.');
+        if (!tujuan?.jenis_tanah_baru)
+          throw new BadRequestException('Jenis tanah wajib dipilih untuk pendaftaran baru.');
+        if (!tujuan?.calon_subjek_json)
+          throw new BadRequestException('Data subjek pajak wajib diisi.');
+        break;
+
+      case 'PECAH':
+      case 'GABUNG':
+        if (!dto.detail_tujuan?.length)
+          throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
+        for (const t of dto.detail_tujuan) {
+          if (!t.luas_tanah_baru || t.luas_tanah_baru <= 0)
+            throw new BadRequestException('Luas tanah setiap tujuan wajib diisi.');
+          if (!t.jenis_tanah_baru)
+            throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
+        }
+        break;
+
+      case 'MUTASI':
+        if (!tujuan?.calon_subjek_json)
+          throw new BadRequestException('Data pemilik baru (subjek pajak) wajib diisi untuk mutasi.');
+        break;
+
+      case 'PERUBAHAN_DATA':
+        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru <= 0)
+          throw new BadRequestException('Luas tanah wajib diisi untuk perubahan data.');
+        break;
+
+      case 'HAPUS':
+        if (!dto.catatan_pengaju)
+          throw new BadRequestException('Alasan penghapusan wajib diisi untuk transaksi hapus.');
+        break;
+    }
+  }
+
+  private shouldDeactivateAsal(jenisTransaksi: string): boolean {
+    return ['PECAH', 'GABUNG', 'HAPUS'].includes(jenisTransaksi);
+  }
+
   // --- EKSEKUSI DATA MASTER ---
 
   private async upsertSubjek(tx: Prisma.TransactionClient, t: any, transaksiUserId: string) {
@@ -555,7 +612,8 @@ export class TransaksiSpopService {
 
     await tx.objekPajak.update({ where: { nop: nopAsal }, data: { nik_subjek: nikBaru } });
     
-    await this.upsertLspop(tx, t, nopAsal, true);
+    // MUTASI: JANGAN sentuh bangunan/LSPOP
+    // Bangunan mengikuti NOP secara otomatis via relasi FK.
     
     await tx.detailTransaksiTujuan.update({ where: { id_detail_tujuan: t.id_detail_tujuan }, data: { nop_generated: nopAsal } });
     return { nop: nopAsal, subjek_baru: nikBaru };
@@ -657,8 +715,14 @@ export class TransaksiSpopService {
 
   private async eksekusiHapus(tx: Prisma.TransactionClient, transaksi: TransaksiSpopWithDetail, currentUser: CurrentUser) {
     const asal = transaksi.detail_asal[0];
-    await tx.objekPajak.update({
-      where: { nop: asal.nop_asal! },
+    if (!asal?.nop_asal) throw new BadRequestException('NOP asal wajib ada untuk transaksi HAPUS.');
+    
+    const objek = await tx.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+    if (!objek) throw new BadRequestException(`NOP ${asal.nop_asal} tidak ditemukan.`);
+    if (!objek.status_aktif) throw new BadRequestException(`NOP ${asal.nop_asal} sudah nonaktif.`);
+
+    await tx.objekPajak.updateMany({
+      where: { nop: asal.nop_asal, status_aktif: true },
       data: { status_aktif: false, nonaktif_oleh: currentUser.id_user, nonaktif_at: new Date() },
     });
     return { nop_dihapus: asal.nop_asal };

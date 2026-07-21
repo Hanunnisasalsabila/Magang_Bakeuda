@@ -8,52 +8,52 @@ enum JenisTanah {
 
 enum KondisiBangunan {
   SANGAT_BAIK // 1. Sangat Baik
-  BAIK        // 2. Baik
-  SEDANG      // 3. Sedang
-  JELEK       // 4. Jelek
+  BAIK // 2. Baik
+  SEDANG // 3. Sedang
+  JELEK // 4. Jelek
 }
 
 enum JenisKonstruksi {
-  BAJA      // 1. Baja
-  BETON     // 2. Beton
+  BAJA // 1. Baja
+  BETON // 2. Beton
   BATU_BATA // 3. Batu Bata
-  KAYU      // 4. Kayu
+  KAYU // 4. Kayu
 }
 
 enum JenisAtap {
   DECRABON_BETON_GLAZUR // 1. Decrabon/Beton/Gtg Glazur
   GENTENG_BETON_ALUMINIUM // 2. Gtg Beton/Aluminium
-  GENTENG_BIASA_SIRAP     // 3. Gtg Biasa/Sirap
-  ASBES                   // 4. Asbes
-  SENG                    // 5. Seng
+  GENTENG_BIASA_SIRAP // 3. Gtg Biasa/Sirap
+  ASBES // 4. Asbes
+  SENG // 5. Seng
 }
 
 enum JenisDinding {
   KACA_ALUMINIUM // 1. Kaca/Aluminium
-  BETON          // 2. Beton
+  BETON // 2. Beton
   BATU_BATA_CONBLOK // 3. Batu Bata/Conblok
-  KAYU              // 4. Kayu
-  SENG              // 5. Seng
+  KAYU // 4. Kayu
+  SENG // 5. Seng
   TIDAK_ADA_DINDING // 6. Tidak Ada Dinding
 }
 
 enum JenisLantai {
-  MARMER      // 1. Marmer
-  KERAMIK     // 2. Keramik
-  TERASO      // 3. Teraso
+  MARMER // 1. Marmer
+  KERAMIK // 2. Keramik
+  TERASO // 3. Teraso
   UBIN_PC_PAPAN // 4. Ubin PC/Papan
-  SEMEN         // 5. Semen
+  SEMEN // 5. Semen
 }
 
 enum JenisLangitLangit {
-  AKUSTIK_JATI      // 1. Akustik/Jati
+  AKUSTIK_JATI // 1. Akustik/Jati
   TRIPLEK_ASBES_BAMBU // 2. Triplek/Asbes/Bambu
-  TIDAK_ADA           // 3. Tidak Ada
+  TIDAK_ADA // 3. Tidak Ada
 }
 
 enum BahanPagar {
-  BAJA_BESI    // 1. Baja/Besi
-  BATA_BATAKO  // 2. Bata/Batako
+  BAJA_BESI // 1. Baja/Besi
+  BATA_BATAKO // 2. Bata/Batako
 }
 
 // ─────────────────────────────────────────
@@ -136,15 +136,15 @@ model ObjekBumi {
 // ─────────────────────────────────────────
 
 model ObjekBangunan {
-  id_bangunan           String   @id @default(uuid())
-  nop                   String   @db.VarChar(18)
+  id_bangunan           String             @id @default(uuid())
+  nop                   String             @db.VarChar(18)
   no_bangunan           Int // urutan bangunan ke berapa
-  kode_jpb              String?  @db.VarChar(2) // FK → referensi_jenis_penggunaan_bangunan
-  no_formulir_lspop     String?  @db.VarChar(11)
+  kode_jpb              String?            @db.VarChar(2) // FK → referensi_jenis_penggunaan_bangunan
+  no_formulir_lspop     String?            @db.VarChar(11)
   tahun_dibangun        Int?
   tahun_renovasi        Int?
-  luas_bangunan         Decimal  @default(0) @db.Decimal(12, 2)
-  jumlah_lantai         Int      @default(1)
+  luas_bangunan         Decimal            @default(0) @db.Decimal(12, 2)
+  jumlah_lantai         Int                @default(1)
   daya_listrik_watt     Int? // BARU — form lampiran SPOP field 10
   kondisi_bangunan      KondisiBangunan?
   jenis_konstruksi      JenisKonstruksi?
@@ -152,11 +152,11 @@ model ObjekBangunan {
   kode_dinding          JenisDinding?
   kode_lantai           JenisLantai?
   kode_langit_langit    JenisLangitLangit?
-  nilai_sistem_bangunan Decimal? @db.Decimal(15, 2)
-  tanggal_pendataan     DateTime @default(now())
-  nip_pendata           String?  @db.VarChar(20)
-  keterangan_jpb        String?  @db.VarChar(50)
-  created_at            DateTime @default(now())
+  nilai_sistem_bangunan Decimal?           @db.Decimal(15, 2)
+  tanggal_pendataan     DateTime           @default(now())
+  nip_pendata           String?            @db.VarChar(20)
+  keterangan_jpb        String?            @db.VarChar(50)
+  created_at            DateTime           @default(now())
 
   objek_pajak   ObjekPajak                        @relation(fields: [nop], references: [nop], onDelete: Cascade)
   referensi_jpb ReferensiJenisPenggunaanBangunan? @relation(fields: [kode_jpb], references: [kode_jpb])
@@ -212,7 +212,7 @@ model ObjekBangunanFasilitas {
   tangga_berjalan_lbr_lebih_080m  Int @default(0)
 
   // 24. Pagar
-  panjang_pagar_m Decimal @default(0) @db.Decimal(10, 2)
+  panjang_pagar_m Decimal     @default(0) @db.Decimal(10, 2)
   bahan_pagar     BahanPagar?
 
   // 25. Pemadam Kebakaran

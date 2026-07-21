@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -44,6 +44,16 @@ export default function Step3ObjekPajak() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (formData.transaksi === 'MUTASI' || formData.transaksi === 'HAPUS') {
+      if (idTransaksi) {
+        navigate(`/spop/konfirmasi/${idTransaksi}`, { replace: true });
+      } else {
+        navigate('/spop/informasi-umum', { replace: true });
+      }
+    }
+  }, [formData.transaksi, idTransaksi, navigate]);
 
   // Purbalingga Default Coordinates
   const currentPosition = [formData.latitude || -7.38883, formData.longitude || 109.36647];

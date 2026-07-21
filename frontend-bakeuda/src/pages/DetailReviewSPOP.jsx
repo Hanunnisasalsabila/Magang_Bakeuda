@@ -188,6 +188,13 @@ export default function DetailReviewSPOP() {
           kode_jenis_op: status === 'DISETUJUI' ? kodeJenisOp : undefined,
         });
         setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
+        
+        setData(prev => ({
+          ...prev,
+          status_ajuan: status,
+          catatan_bakeuda: decisionNotes,
+          verified_at: new Date().toISOString()
+        }));
       }
 
       setShowToast(true);
@@ -454,21 +461,21 @@ export default function DetailReviewSPOP() {
       </div>
 
       {/* Verification Action Card or Final Decision */}
-      {['DISETUJUI', 'DITOLAK'].includes(data.status_ajuan) ? (
+      {['DISETUJUI', 'DITOLAK', 'REVISI'].includes(data.status_ajuan) ? (
         <div className="mt-8 mb-12">
-          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : (data.status_ajuan === 'REVISI' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')}`}>
             <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
-              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : 'text-red-600'}`}>
-                {data.status_ajuan === 'DISETUJUI' ? 'verified' : 'cancel'}
+              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : (data.status_ajuan === 'REVISI' ? 'text-amber-600' : 'text-red-600')}`}>
+                {data.status_ajuan === 'DISETUJUI' ? 'verified' : (data.status_ajuan === 'REVISI' ? 'assignment_return' : 'cancel')}
               </span>
               <div>
-                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : 'text-red-800'}`}>
-                  Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : 'Ditolak Permanen'}
+                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : (data.status_ajuan === 'REVISI' ? 'text-amber-800' : 'text-red-800')}`}>
+                  Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : (data.status_ajuan === 'REVISI' ? 'Dikembalikan untuk Revisi' : 'Ditolak Permanen')}
                 </h3>
-                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : 'text-red-700'}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
+                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : (data.status_ajuan === 'REVISI' ? 'text-amber-700' : 'text-red-700')}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
               </div>
             </div>
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : 'text-red-900'}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : (data.status_ajuan === 'REVISI' ? 'text-amber-900' : 'text-red-900')}`}>
               <div>
                 <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Diverifikasi Oleh</p>
                 <p className="font-semibold text-sm flex items-center gap-2">

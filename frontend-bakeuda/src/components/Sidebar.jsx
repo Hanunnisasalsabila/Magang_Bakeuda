@@ -28,8 +28,8 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
 
   const spopSubItems = [
     { path: `/spop/detail${currentId ? `/${currentId}` : ''}`, label: 'Detail Pengajuan', step: 0, icon: 'info' },
-    { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
     { path: `/spop/informasi-umum${currentId ? `/${currentId}` : ''}`, label: 'Informasi Umum', step: 1 },
+    { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
     { path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 },
     { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 4 },
     { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 5 },

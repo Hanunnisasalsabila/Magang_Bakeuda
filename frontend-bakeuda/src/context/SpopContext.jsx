@@ -52,10 +52,11 @@ export const SpopProvider = ({ children }) => {
         alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
         noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '', jenisTanah: '',
         lampiran: [],
+        lampiran: [],
         latitude: '', longitude: '', koordinat_polygon: [],
         batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
         nopAsalList: [''], spptLama: '',
-        kodeWilayah: '', kodeWilayahObjek: ''
+        kodeWilayah: '', kodeWilayahObjek: '', catatanPengaju: ''
       });
       return;
     }
@@ -136,7 +137,8 @@ export const SpopProvider = ({ children }) => {
           batasTimur: detailTujuan.batas_timur || '',
           batasBarat: detailTujuan.batas_barat || '',
           
-          lampiran: data.lampiran || []
+          lampiran: data.lampiran || [],
+          catatanPengaju: data.catatan_pengaju || ''
         }));
 
         // Basic check for completion
@@ -177,9 +179,15 @@ export const SpopProvider = ({ children }) => {
     const mapStatusWp = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
     const mapPekerjaan = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
 
+    const jenis = formData.transaksi;
+    const isMutasi = jenis === 'MUTASI';
+    const isHapus = jenis === 'HAPUS';
+    const isPerubahanData = jenis === 'PERUBAHAN_DATA';
+
     const detail_asal = rawNopAsalList.map(n => ({ nop_asal: n, nonaktifkan_saat_disetujui: true }));
-    if (formData.transaksi === 'PEMUTAKHIRAN' && rawNop.length >= 18 && detail_asal.length === 0) {
-      detail_asal.push({ nop_asal: rawNop, nonaktifkan_saat_disetujui: true });
+    if (['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(jenis) && rawNop.length >= 18 && detail_asal.length === 0) {
+      const shouldDeactivate = ['PECAH', 'GABUNG', 'HAPUS'].includes(jenis);
+      detail_asal.push({ nop_asal: rawNop, nonaktifkan_saat_disetujui: shouldDeactivate });
     }
 
     const calon_subjek_json = {
@@ -200,33 +208,46 @@ export const SpopProvider = ({ children }) => {
       kabupaten: formData.kabupaten || 'Purbalingga'
     };
 
-    const detail_tujuan = [{
-      nik_calon_subjek: formData.nik || undefined,
-      calon_subjek_json,
-      luas_tanah_baru: formData.luasTanah ? Number(formData.luasTanah) : 0,
-      luas_bangunan_baru: formData.luasBangunan ? Number(formData.luasBangunan) : 0,
-      jenis_tanah_baru: formData.jenisTanah || 'TANAH_BANGUNAN',
-      jalan_op_baru: formData.alamatObjek || '',
-      kode_wilayah_baru: formData.kodeWilayahObjek || undefined,
-      kode_blok_baru: formData.blokKavObjek || undefined,
-      rt_op_baru: formData.rtObjek || undefined,
-      rw_op_baru: formData.rwObjek || undefined,
-      blok_kav_no_baru: formData.blokKavObjek || undefined,
-      kelurahan_op_baru: formData.kelurahanObjek || formData.kelurahan || '',
-      kecamatan_op_baru: formData.kecamatanObjek || formData.kecamatan || '',
-      latitude: formData.latitude || undefined,
-      longitude: formData.longitude || undefined,
-      batas_utara: formData.batasUtara || undefined,
-      batas_selatan: formData.batasSelatan || undefined,
-      batas_timur: formData.batasTimur || undefined,
-      batas_barat: formData.batasBarat || undefined,
-      data_bangunan_json: formData.jenisTanah === 'TANAH_BANGUNAN' ? [] : undefined
-    }];
+    let detail_tujuan;
+    if (isHapus) {
+      detail_tujuan = undefined;
+    } else if (isMutasi) {
+      detail_tujuan = [{
+        nik_calon_subjek: formData.nik || undefined,
+        calon_subjek_json,
+        luas_tanah_baru: 0,
+        jenis_tanah_baru: 'TANAH_BANGUNAN' // placeholder, backend ignores it
+      }];
+    } else {
+      detail_tujuan = [{
+        nik_calon_subjek: formData.nik || undefined,
+        calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
+        luas_tanah_baru: formData.luasTanah ? Number(formData.luasTanah) : 0,
+        luas_bangunan_baru: formData.luasBangunan ? Number(formData.luasBangunan) : 0,
+        jenis_tanah_baru: formData.jenisTanah || 'TANAH_BANGUNAN',
+        jalan_op_baru: formData.alamatObjek || '',
+        kode_wilayah_baru: formData.kodeWilayahObjek || undefined,
+        kode_blok_baru: formData.blokKavObjek || undefined,
+        rt_op_baru: formData.rtObjek || undefined,
+        rw_op_baru: formData.rwObjek || undefined,
+        blok_kav_no_baru: formData.blokKavObjek || undefined,
+        kelurahan_op_baru: formData.kelurahanObjek || formData.kelurahan || '',
+        kecamatan_op_baru: formData.kecamatanObjek || formData.kecamatan || '',
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+        batas_utara: formData.batasUtara || undefined,
+        batas_selatan: formData.batasSelatan || undefined,
+        batas_timur: formData.batasTimur || undefined,
+        batas_barat: formData.batasBarat || undefined,
+        data_bangunan_json: undefined // undefined agar tidak menghapus bangunan lama jika tidak ada form LSPOP
+      }];
+    }
 
     return {
       jenis_transaksi: formData.transaksi || 'BARU',
       tahun_pajak: new Date().getFullYear(),
       tanggal_pengajuan: new Date().toISOString(),
+      catatan_pengaju: formData.catatanPengaju || undefined,
       menggunakan_kuasa: formData.isKuasa,
       nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
       detail_asal: detail_asal.length > 0 ? detail_asal : undefined,

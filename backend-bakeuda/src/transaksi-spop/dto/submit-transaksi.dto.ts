@@ -33,9 +33,9 @@ export class DetailTujuanInputDto {
   @Type(() => CalonSubjekDto)
   calon_subjek_json?: CalonSubjekDto;
 
-  @IsNumber() luas_tanah_baru: number;
+  @IsOptional() @IsNumber() luas_tanah_baru?: number;
   @IsOptional() @IsNumber() luas_bangunan_baru?: number;
-  @IsEnum(JenisTanah) jenis_tanah_baru: JenisTanah;
+  @IsOptional() @IsEnum(JenisTanah) jenis_tanah_baru?: JenisTanah;
 
   @IsOptional() @IsString() jalan_op_baru?: string;
   @IsOptional() @IsString() kode_wilayah_baru?: string;
@@ -59,6 +59,7 @@ export class DetailTujuanInputDto {
 export class SubmitTransaksiDto {
   @IsOptional() @IsEnum(JenisTransaksi) jenis_transaksi?: JenisTransaksi;
   @IsOptional() @IsString() no_formulir?: string;
+  @IsOptional() @IsString() catatan_pengaju?: string;
   @IsOptional() @IsNumber() tahun_pajak?: number;
   @IsOptional() @IsString() no_sppt_lama?: string;
   @IsOptional() @IsString() nama_pengaju?: string;

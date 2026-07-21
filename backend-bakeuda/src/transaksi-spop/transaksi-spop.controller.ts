@@ -10,15 +10,14 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 
 @Controller('transaksi-spop')
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class TransaksiSpopController {
   constructor(private readonly service: TransaksiSpopService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async submitDraft(@Body() dto: SubmitTransaksiDto, @Request() req: any) {
-    const user = req.user || { id_user: 'dummy', role: 'DESA', desa_id: 1 };
-    return this.service.submitPengajuan(dto, user, true); // DRAFT
+    return this.service.submitPengajuan(dto, req.user, true); // DRAFT
   }
 
   @Post('draft/:id')

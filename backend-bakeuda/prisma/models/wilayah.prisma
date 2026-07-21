@@ -19,8 +19,8 @@ model Wilayah {
   updated_at DateTime @updatedAt
 
   // ── Relasi ──
-  users   User[]
-  pejabat PejabatDesa[]
+  users        User[]
+  pejabat      PejabatDesa[]
   objek_pajak  ObjekPajak[]
   subjek_pajak SubjekPajak[]
 
