@@ -283,9 +283,13 @@ export default function Step4Konfirmasi() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <span className="material-symbols-outlined text-green-600 text-4xl">check_circle</span>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Berhasil Disimpan!</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {formData.transaksi === 'HAPUS' ? 'Berhasil Diajukan!' : 'Berhasil Disimpan!'}
+            </h3>
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Data SPOP Anda telah berhasil disimpan dan diajukan. Silakan cek status pengajuan Anda.
+              {formData.transaksi === 'HAPUS' 
+                ? 'Pengajuan penghapusan objek pajak Anda telah berhasil dikirim. Silakan cek status pengajuan Anda.' 
+                : 'Data SPOP Anda telah berhasil disimpan dan diajukan. Silakan cek status pengajuan Anda.'}
             </p>
             <button
               onClick={() => navigate(`/spop/status/${showSuccessModal.id}`)}
@@ -318,7 +322,7 @@ export default function Step4Konfirmasi() {
                 {['BARU', 'PECAH'].includes(formData.transaksi) ? (
                   <span className="text-on-surface-variant text-sm italic">Akan digenerate oleh Bakeuda</span>
                 ) : (
-                  `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}-${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
+                  `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}.${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
                 )}
               </p>
             </div>
@@ -402,12 +406,14 @@ export default function Step4Konfirmasi() {
           <div className="flex items-center gap-3">
             <div className="w-1 bg-primary h-8 rounded-full"></div>
             <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-              F. PERNYATAAN SUBJEK PAJAK
+              {formData.transaksi === 'HAPUS' ? 'F. PERNYATAAN PENGAJUAN PENGHAPUSAN' : 'F. PERNYATAAN SUBJEK PAJAK'}
             </h4>
           </div>
           <div className="p-5 bg-surface-container-low border border-outline-variant rounded-xl space-y-4">
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              Saya menyatakan bahwa informasi yang telah saya berikan dalam formulir ini termasuk lampirannya adalah <b>benar, jelas, dan lengkap</b> menurut keadaan yang sebenarnya, sesuai dengan Pasal 10 ayat (2) Peraturan Daerah Kabupaten Purbalingga No.15 Tahun 2012.
+              {formData.transaksi === 'HAPUS' 
+                ? 'Saya menyatakan bahwa pengajuan penghapusan NOP ini dilakukan secara sadar, dapat dipertanggungjawabkan, dan alasan yang diberikan adalah benar sesuai keadaan yang sebenarnya.'
+                : <span>Saya menyatakan bahwa informasi yang telah saya berikan dalam formulir ini termasuk lampirannya adalah <b>benar, jelas, dan lengkap</b> menurut keadaan yang sebenarnya, sesuai dengan Pasal 10 ayat (2) Peraturan Daerah Kabupaten Purbalingga No.15 Tahun 2012.</span>}
             </p>
 
             <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 border border-outline-variant rounded-lg hover:bg-white transition-colors bg-white">

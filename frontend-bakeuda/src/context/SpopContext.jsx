@@ -41,6 +41,15 @@ export const SpopProvider = ({ children }) => {
   
   const [errors, setErrors] = useState({});
 
+  // Reset context automatically if user leaves the /spop path entirely
+  useEffect(() => {
+    if (!location.pathname.startsWith('/spop') && idTransaksi) {
+      setIdTransaksi(null);
+      setSpopData(null);
+      setCompletionStatus({ 1: false, 2: false, 3: false, 4: false });
+    }
+  }, [location.pathname, idTransaksi]);
+
   const loadDraft = async (id, isBackground = false) => {
     if (!id) {
       setIdTransaksi(null);

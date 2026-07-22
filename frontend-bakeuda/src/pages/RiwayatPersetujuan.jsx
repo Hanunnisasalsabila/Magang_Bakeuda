@@ -15,7 +15,7 @@ function formatNOP(nopRaw) {
   const kab = parts.substring(2, 4) || '03';
   const kec = parts.substring(4, 7) || '000';
   const kel = parts.substring(7, 10) || '000';
-  return `${prov}.${kab}.${kec}.${kel}.000-0000.0`;
+  return `${prov}.${kab}.${kec}.${kel}.000.0000.0`;
 }
 
 export default function RiwayatPersetujuan() {

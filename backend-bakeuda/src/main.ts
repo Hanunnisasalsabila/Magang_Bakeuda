@@ -1,6 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import * as fs from 'fs';
+import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
+import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
+
+@Catch()
+class AllExceptionsFilter extends BaseExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    fs.appendFileSync('backend_errors.log', '\n[GLOBAL EXCEPTION] ' + new Date().toISOString() + '\n' + (exception instanceof Error ? exception.stack : String(exception)) + '\n' + (exception instanceof HttpException ? JSON.stringify(exception.getResponse()) : '') + '\n');
+    super.catch(exception, host);
+  }
+}
 
 // Trigger restart for Prisma schema sync
 async function bootstrap() {
@@ -11,6 +22,9 @@ async function bootstrap() {
   
   // Enable CORS
   app.enableCors();
+  
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
 
   // ValidationPipe: validasi DTO otomatis
   app.useGlobalPipes(
@@ -18,7 +32,10 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      exceptionFactory: (errors) => new BadRequestException(errors),
+      exceptionFactory: (errors) => {
+        fs.appendFileSync('backend_errors.log', JSON.stringify(errors, null, 2) + '\n');
+        return new BadRequestException(errors);
+      },
     }),
   );
 
