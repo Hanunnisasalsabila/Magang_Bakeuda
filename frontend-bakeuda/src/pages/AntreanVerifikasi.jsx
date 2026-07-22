@@ -159,7 +159,7 @@ export default function AntreanVerifikasi() {
       <div className="mb-section-gap">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl text-primary font-bold">Antrean Berkas Masuk</h1>
+            <h1 className="text-3xl text-primary font-bold">Antrean Berkas Masuk</h1>
             <p className="text-sm font-body-md text-on-surface-variant mt-1">
               Daftar berkas SPOP yang baru dikirimkan oleh desa dan menunggu untuk Anda periksa.
             </p>
@@ -176,66 +176,67 @@ export default function AntreanVerifikasi() {
 
       {/* Filters & Search */}
       <section className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant mb-6 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Cari NOP/Subjek Pajak
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={handleSearchChange}
-                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
-                placeholder="Masukkan NOP atau Nama..."
-              />
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
-                search
-              </span>
+        <div className="flex flex-col md:flex-row gap-4 justify-between md:items-end">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <div className="space-y-1.5 flex-1 w-full">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Cari NOP/Subjek Pajak
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={handleSearchChange}
+                  className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
+                  placeholder="Masukkan NOP atau Nama..."
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[220px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Kecamatan
+              </label>
+              <select
+                value={kecamatan}
+                onChange={(e) => setKecamatan(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
+              >
+                <option value="Semua Kecamatan">Semua Kecamatan</option>
+                {kecamatanList.map(kec => (
+                  <option key={kec} value={kec}>{kec}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[220px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Kelurahan/Desa
+              </label>
+              <select
+                value={kelurahan}
+                onChange={(e) => setKelurahan(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
+              >
+                <option value="Semua Desa">Semua Desa</option>
+                {kelurahanList.map(kel => (
+                  <option key={kel} value={kel}>{kel}</option>
+                ))}
+              </select>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kecamatan
-            </label>
-            <select
-              value={kecamatan}
-              onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
-            >
-              <option value="Semua Kecamatan">Semua Kecamatan</option>
-              {kecamatanList.map(kec => (
-                <option key={kec} value={kec}>{kec}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kelurahan/Desa
-            </label>
-            <select
-              value={kelurahan}
-              onChange={(e) => setKelurahan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
-            >
-              <option value="Semua Desa">Semua Desa</option>
-              {kelurahanList.map(kel => (
-                <option key={kel} value={kel}>{kel}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <button
-              onClick={() => {
-                setKecamatan('Semua Kecamatan');
-                setKelurahan('Semua Desa');
-                setSearch('');
-              }}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none flex items-center justify-center"
-            >
-              Reset Filter
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setKecamatan('Semua Kecamatan');
+              setKelurahan('Semua Desa');
+              setSearch('');
+            }}
+            className="bg-white border border-gray-300 rounded-lg px-5 h-10 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2 shrink-0 w-full md:w-auto"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            Reset Filter
+          </button>
         </div>
       </section>
 

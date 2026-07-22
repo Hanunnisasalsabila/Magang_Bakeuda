@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import StatusBadge from '../components/StatusBadge';
 import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
 export default function DashboardDesa() {
   const navigate = useNavigate();
   const { loadDraft } = useSpop();
   const [stats, setStats] = useState([
-    { title: 'Total SPOP Dikirim', value: '0', icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
-    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Lihat yang menunggu →', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500', link: '/monitoring-pajak' },
-    { title: 'SPOP Disetujui', value: '0', icon: 'domain', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Lihat yang disetujui →', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500', link: '/monitoring-pajak' },
-    { title: 'SPOP Perlu Perbaikan', value: '0', icon: 'report', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Segera tindak lanjuti →', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500', link: '/monitoring-pajak' },
+    { title: 'Total SPOP Dikirim', value: '0', icon: 'receipt_long', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
+    { title: 'Menunggu Verifikasi', value: '0', icon: 'hourglass_empty', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Lihat yang menunggu →', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500', link: '/monitoring-pajak' },
+    { title: 'SPOP Disetujui', value: '0', icon: 'verified', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Lihat yang disetujui →', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500', link: '/monitoring-pajak' },
+    { title: 'SPOP Perlu Perbaikan', value: '0', icon: 'edit_document', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Segera tindak lanjuti →', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500', link: '/monitoring-pajak' },
   ]);
 
   const [recentSubmissions, setRecentSubmissions] = useState([]);
@@ -29,10 +30,10 @@ export default function DashboardDesa() {
         
         const dataStats = statsRes.data.data;
         setStats([
-          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'description', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
-          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'pending_actions', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Lihat yang menunggu →', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500', link: '/monitoring-pajak' },
-          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'domain', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Lihat yang disetujui →', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500', link: '/monitoring-pajak' },
-          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'report', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Segera tindak lanjuti →', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500', link: '/monitoring-pajak' },
+          { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'receipt_long', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
+          { title: 'Menunggu Verifikasi', value: dataStats.menunggu.toString(), icon: 'hourglass_empty', iconBg: 'bg-yellow-100', iconColor: 'text-yellow-600', trend: 'Lihat yang menunggu →', trendColor: 'text-yellow-500', trendIcon: 'info', borderHover: 'hover:border-yellow-500', link: '/monitoring-pajak' },
+          { title: 'SPOP Disetujui', value: dataStats.disetujui.toString(), icon: 'verified', iconBg: 'bg-green-100', iconColor: 'text-green-600', trend: 'Lihat yang disetujui →', trendColor: 'text-green-500', trendIcon: 'check_circle', borderHover: 'hover:border-green-500', link: '/monitoring-pajak' },
+          { title: 'SPOP Perlu Perbaikan', value: dataStats.perluPerbaikan.toString(), icon: 'edit_document', iconBg: 'bg-red-100', iconColor: 'text-red-600', trend: 'Segera tindak lanjuti →', trendColor: 'text-red-500', trendIcon: 'warning', borderHover: 'hover:border-red-500', link: '/monitoring-pajak' },
         ]);
 
         const rawList = listRes.data.data;
@@ -75,50 +76,54 @@ export default function DashboardDesa() {
 
 
       {/* Stats Bento Grid */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Paper Header banner */}
+      <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500">Ringkasan status pengajuan SPOP Anda</p>
+          <div className="flex items-center gap-6">
+            <img
+              alt="Kabupaten Purbalingga Logo"
+              className="h-16 w-16 object-contain"
+              src={logoPurbalingga}
+            />
+            <div>
+              <h1 className="text-2xl text-on-surface uppercase font-extrabold tracking-wide">
+                {userInfo?.nama_lengkap || 'Pemerintah Desa'}
+              </h1>
+              <p className="text-on-surface-variant font-medium">
+                Pemerintah Kabupaten Purbalingga
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
+              SISTEM INFORMASI PAJAK DAERAH
+            </span>
+            <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
+              SPOP DIGITAL V.2.0
+            </span>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            loadDraft(null);
-            navigate('/spop');
-          }}
-          className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Buat SPOP Baru
-        </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map((stat, i) => (
-          <button
+          <div
             key={i}
-            onClick={() => navigate(stat.link)}
-            className={`bg-white p-6 border border-gray-200 rounded-xl shadow-sm transition-all duration-200 group ${stat.borderHover} text-left w-full cursor-pointer hover:shadow-lg hover:-translate-y-1 relative overflow-hidden`}
+            className="bg-white px-5 py-4 border border-gray-200 rounded-xl shadow-sm relative overflow-hidden flex flex-col"
           >
-            {/* Background shape */}
-            <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 group-hover:scale-110 transition-transform ${stat.iconBg} opacity-20`}></div>
-
-            <div
-              className={`w-12 h-12 ${stat.iconBg} rounded-lg flex items-center justify-center ${stat.iconColor} mb-4 group-hover:scale-110 transition-transform shadow-sm`}
-            >
-              <span className="material-symbols-outlined text-[24px]">
-                {stat.icon}
-              </span>
-            </div>
-            <p className="text-on-surface-variant font-label-md font-bold uppercase tracking-wide text-xs">{stat.title}</p>
-            <p className="text-4xl font-extrabold text-on-surface mt-1">{stat.value}</p>
-            <div className="mt-4 flex">
-              <div className={`flex items-center gap-1 px-3 py-1.5 ${stat.iconBg.replace('100', '50')} ${stat.iconColor} group-hover:${stat.iconBg.replace('100', '100')} rounded-md transition-colors`}>
-                <span className="text-xs font-bold">Lihat Semua</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-gray-500 font-semibold uppercase tracking-wider text-[10px] pr-2 leading-relaxed">{stat.title}</p>
+              <div className={`p-1.5 rounded-full ${stat.iconBg.replace('100', '50')} ${stat.iconColor} ring-1 ring-inset ${stat.iconBg.replace('bg-', 'ring-').replace('100', '200/50')} shadow-sm shrink-0`}>
+                <span className="material-symbols-outlined text-[14px] block">
+                  {stat.icon}
+                </span>
               </div>
             </div>
-          </button>
+            
+            <p className="text-3xl font-extrabold text-gray-900 leading-none">{stat.value}</p>
+          </div>
         ))}
       </div>
+
 
         {/* Recent Submissions Table */}
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
@@ -129,13 +134,25 @@ export default function DashboardDesa() {
               </h3>
               <p className="font-label-sm text-on-surface-variant mt-1">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
             </div>
-            <button
-              onClick={() => navigate('/monitoring-pajak')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md font-label-sm transition-colors"
-            >
-              <span>Lihat Semua</span>
-              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  loadDraft(null);
+                  navigate('/spop');
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                <span>Buat SPOP Baru</span>
+              </button>
+              <button
+                onClick={() => navigate('/monitoring-pajak')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-outline text-on-surface hover:bg-surface-container-low rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+                <span>Lihat Semua</span>
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left min-w-max">
@@ -187,20 +204,13 @@ export default function DashboardDesa() {
                       <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                         <div className="flex items-center justify-end">
                           <button
-                            onClick={() => navigate(`/pelacakan-dokumen/${sub.id}`)}
-                            title="Lacak Status Dokumen"
-                            className="px-2 py-2 mr-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-primary/10 rounded-lg transition-all shadow-sm focus:outline-none"
+                            onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/spop/informasi-umum/${sub.id}` : `/pelacakan-dokumen/${sub.id}`)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
                           >
-                            <span className="material-symbols-outlined text-[16px]">timeline</span>
-                          </button>
-                          <button
-                            onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/spop/informasi-umum/${sub.id}` : `/detail-review/${sub.id}`)}
-                            className="px-4 py-2 bg-background text-primary border border-outline-variant hover:border-primary hover:bg-surface-container-lowest active:bg-primary/10 rounded-lg transition-all font-label-sm font-bold text-xs shadow-sm flex items-center gap-1.5 focus:outline-none"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
+                            <span className="material-symbols-outlined text-[14px]">
                               {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'edit' : 'visibility'}
                             </span>
-                            {sub.status === 'Draft' ? 'Edit' : sub.status === 'Revisi' ? 'Perbaiki' : 'Detail'}
+                            {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'Edit' : 'Detail'}
                           </button>
                         </div>
                       </td>
