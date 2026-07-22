@@ -9,13 +9,12 @@ const STATUS_FILTER = [
 ];
 
 function formatNOP(nopRaw) {
-  if (!nopRaw) return '............-.......';
-  const parts = nopRaw.replace(/\D/g, '');
-  const prov = parts.substring(0, 2) || '33';
-  const kab = parts.substring(2, 4) || '03';
-  const kec = parts.substring(4, 7) || '000';
-  const kel = parts.substring(7, 10) || '000';
-  return `${prov}.${kab}.${kec}.${kel}.000.0000.0`;
+  if (!nopRaw || nopRaw.includes('...')) return 'Menunggu penetapan';
+  const clean = nopRaw.replace(/\D/g, '');
+  if (clean.length === 18) {
+    return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+  }
+  return nopRaw;
 }
 
 export default function RiwayatPersetujuan() {
@@ -98,40 +97,63 @@ export default function RiwayatPersetujuan() {
     <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fadeIn">
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-display-lg text-primary tracking-tight">Riwayat Keputusan</h1>
-        <p className="text-on-surface-variant font-body-lg mt-1 opacity-80">
-          Berkas SPOP yang telah mendapat keputusan akhir (disetujui atau ditolak) oleh Bakeuda.
+        <h1 className="text-2xl text-primary font-bold">Riwayat Berkas</h1>
+        <p className="text-sm font-body-md text-on-surface-variant mt-1">
+          Daftar seluruh berkas SPOP yang sudah selesai Anda periksa (baik yang disetujui maupun ditolak).
         </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[20px] text-primary">list_alt</span>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-lg bg-blue-100 text-blue-700 shadow-sm">
+              <span className="material-symbols-outlined text-[24px]">list_alt</span>
+            </div>
+            <span className="text-xs font-bold text-on-surface-variant bg-gray-100 px-2.5 py-1 rounded-full">
+              Semua
+            </span>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Total Keputusan</p>
-            <p className="text-xl font-bold text-gray-900">{loading ? '...' : allData.length}</p>
-          </div>
+          <p className="text-on-surface-variant font-label-md font-bold mb-1 uppercase tracking-wide text-xs">
+            Total Keputusan
+          </p>
+          <h2 className="text-4xl font-extrabold text-on-surface">{loading ? '...' : allData.length}</h2>
+          <p className="text-[11px] text-gray-500 mt-2 italic">Keseluruhan riwayat berkas</p>
         </div>
-        <div className="bg-white border border-green-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-          <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[20px] text-green-600">check_circle</span>
+
+        <div className="bg-white border border-green-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-lg bg-green-100 text-green-700 shadow-sm">
+              <span className="material-symbols-outlined text-[24px]">check_circle</span>
+            </div>
+            <span className="text-xs font-bold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+              Sukses
+            </span>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Disetujui</p>
-            <p className="text-xl font-bold text-green-700">{loading ? '...' : countDisetujui}</p>
-          </div>
+          <p className="text-green-800 font-label-md font-bold mb-1 uppercase tracking-wide text-xs">
+            Disetujui
+          </p>
+          <h2 className="text-4xl font-extrabold text-green-700">{loading ? '...' : countDisetujui}</h2>
+          <p className="text-[11px] text-green-600/80 mt-2 italic">Berkas valid dan diterbitkan</p>
         </div>
-        <div className="bg-white border border-red-200 rounded-xl p-4 flex items-center gap-3 shadow-sm col-span-2 sm:col-span-1">
-          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[20px] text-red-500">cancel</span>
+
+        <div className="bg-white border border-red-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-lg bg-red-100 text-red-700 shadow-sm">
+              <span className="material-symbols-outlined text-[24px]">cancel</span>
+            </div>
+            <span className="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+              Ditolak
+            </span>
           </div>
-          <div>
-            <p className="text-xs text-gray-500">Ditolak</p>
-            <p className="text-xl font-bold text-red-600">{loading ? '...' : countDitolak}</p>
-          </div>
+          <p className="text-red-800 font-label-md font-bold mb-1 uppercase tracking-wide text-xs">
+            Ditolak
+          </p>
+          <h2 className="text-4xl font-extrabold text-red-700">{loading ? '...' : countDitolak}</h2>
+          <p className="text-[11px] text-red-600/80 mt-2 italic">Berkas dikembalikan/revisi</p>
         </div>
       </div>
 
@@ -187,7 +209,7 @@ export default function RiwayatPersetujuan() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto max-h-[55vh] overflow-y-auto scrollbar-thin scrollbar-thumb-outline-variant scrollbar-track-transparent">
+        <div className="overflow-x-auto max-h-[55vh] overflow-y-auto w-full pb-2">
           <table className="w-full min-w-max text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-white shadow-sm outline outline-1 outline-primary/10">
               <tr className="bg-primary/5 text-primary font-medium text-xs uppercase tracking-wider border-b border-primary/20">
@@ -233,7 +255,11 @@ export default function RiwayatPersetujuan() {
                   >
                     <td className="py-2.5 px-3 text-center text-gray-400 text-xs">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                     <td className="py-2.5 px-3">
-                      <span className="font-mono text-xs text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded whitespace-nowrap">{item.nop}</span>
+                      {item.nop === 'Menunggu penetapan' ? (
+                        <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200 whitespace-nowrap">Menunggu penetapan</span>
+                      ) : (
+                        <span className="font-mono text-sm font-bold text-primary whitespace-nowrap">{item.nop}</span>
+                      )}
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap pr-8">
                       <p className="font-medium text-gray-900 text-sm">{item.namaPengaju}</p>

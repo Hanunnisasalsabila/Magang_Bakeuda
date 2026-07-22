@@ -181,11 +181,11 @@ export default function ManajemenWilayah() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className=" text-display-lg text-primary tracking-tight">
-            Manajemen Wilayah
+          <h1 className="text-2xl text-primary font-bold">
+            Data Wilayah
           </h1>
-          <p className="text-on-surface-variant font-body-lg mt-1 opacity-80 max-w-3xl">
-            Kelola data referensi wilayah untuk seluruh Kecamatan dan Desa/Kelurahan.
+          <p className="text-sm font-body-md text-on-surface-variant mt-1 max-w-3xl">
+            Atur daftar nama kecamatan dan kelurahan/desa yang terdaftar di sistem.
           </p>
         </div>
         <div className="shrink-0">

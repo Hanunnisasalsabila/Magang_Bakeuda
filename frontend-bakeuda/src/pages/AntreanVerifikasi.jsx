@@ -64,13 +64,13 @@ export default function AntreanVerifikasi() {
 
         const formatted = allData.map(item => {
           const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
-          const parts = nopRaw.replace(/\D/g, '');
-          const prov = parts.substring(0,2) || '33';
-          const kab = parts.substring(2,4) || '03';
-          const kec = parts.substring(4,7) || '000';
-          const kel = parts.substring(7,10) || '000';
-
-          const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000.0000.0`;
+          const clean = nopRaw.replace(/\D/g, '');
+          let nopFormatted = nopRaw;
+          if (clean.length === 18) {
+            nopFormatted = `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+          } else if (nopRaw.includes('...')) {
+            nopFormatted = 'Menunggu penetapan';
+          }
 
           // Tentukan status badge dan aksi
           let badgeStatus = 'Menunggu Verifikasi';
@@ -94,7 +94,7 @@ export default function AntreanVerifikasi() {
             nop: nopFormatted,
             name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
-            address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
+            address: item.detail_tujuan[0]?.jalan_op_baru || item.detail_tujuan[0]?.jenis_tanah_baru?.replace('_', ' ') || '-',
             rtRw: '',
             kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || '-',
             kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || '-',
@@ -159,9 +159,9 @@ export default function AntreanVerifikasi() {
       <div className="mb-section-gap">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl text-primary font-bold">Daftar Antrean Validasi SPOP</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Daftar tunggu verifikasi dan validasi dokumen SPOP PBB-P2
+            <h1 className="text-2xl text-primary font-bold">Antrean Berkas Masuk</h1>
+            <p className="text-sm font-body-md text-on-surface-variant mt-1">
+              Daftar berkas SPOP yang baru dikirimkan oleh desa dan menunggu untuk Anda periksa.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -271,8 +271,12 @@ export default function AntreanVerifikasi() {
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="font-mono text-sm font-bold text-gray-800">
-                        {item.nop}
+                      <div className="font-mono text-sm font-bold text-primary whitespace-nowrap">
+                        {item.nop === 'Menunggu penetapan' ? (
+                          <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>
+                        ) : (
+                          item.nop
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -291,10 +295,10 @@ export default function AntreanVerifikasi() {
                       <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-on-surface-variant'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center gap-2">
+                      <div className="flex flex-col items-center justify-center gap-2">
                         {item.isLockedByOther ? (
                           <>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-200">
+                            <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
                               🔒 {item.status}
                             </span>
                             <button
@@ -308,13 +312,13 @@ export default function AntreanVerifikasi() {
                         ) : (
                           <>
                             {item.isLockedByMe && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 mb-1">
-                                🔵 {item.status}
+                              <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 whitespace-nowrap">
+                                🔵 Sedang Anda Verifikasi
                               </span>
                             )}
                             <button
                               onClick={() => navigate('/detail-review/' + item.id)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm w-full ${
+                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm w-full whitespace-nowrap ${
                                 item.isLockedByMe 
                                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                                   : 'bg-blue-600 text-white hover:bg-blue-700'

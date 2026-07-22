@@ -52,7 +52,7 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
 
   const menuItems = isDesa
     ? [
-        { path: '/dashboard-desa', label: 'Dashboard', icon: 'dashboard' },
+        { path: '/dashboard-desa', label: 'Beranda', icon: 'dashboard' },
         { path: '/monitoring-pajak', label: 'Pemantauan PBB-P2', icon: 'analytics' },
         { 
           label: 'Pengajuan SPOP', 
@@ -61,16 +61,16 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
           subItems: visibleSpopSubItems
         },
         { path: '/daftar-objek', label: 'Data Objek Pajak', icon: 'database' },
-        { path: '/profil', label: 'Profil Akun', icon: 'person' },
+        { path: '/profil', label: 'Profil Pengguna', icon: 'person' },
       ]
     : [
-        { path: '/dashboard-admin', label: 'Dashboard', icon: 'dashboard' },
-        { path: '/manajemen-akun-desa', label: 'Data Pengguna', icon: 'manage_accounts' },
-        { path: '/manajemen-wilayah', label: 'Data Wilayah', icon: 'map' },
-        { path: '/antrean-verifikasi', label: 'Antrean Validasi', icon: 'fact_check' },
-        { path: '/detail-review', label: 'Verifikasi Berkas', icon: 'rate_review' },
-        { path: '/riwayat-persetujuan', label: 'Riwayat Persetujuan', icon: 'task_alt' },
-        { path: '/profil', label: 'Profil Akun', icon: 'person' },
+        { path: '/dashboard-admin', label: 'Beranda', icon: 'dashboard' },
+        { path: '/manajemen-akun-desa', label: 'Manajemen Pengguna', icon: 'manage_accounts' },
+        { path: '/manajemen-wilayah', label: 'Manajemen Wilayah', icon: 'map' },
+        { path: '/antrean-verifikasi', label: 'Antrean Verifikasi', icon: 'fact_check' },
+        { path: '/detail-review', label: 'Pemeriksaan Berkas', icon: 'rate_review' },
+        { path: '/riwayat-persetujuan', label: 'Riwayat Keputusan', icon: 'task_alt' },
+        { path: '/profil', label: 'Profil Pengguna', icon: 'person' },
       ];
 
   const [openMenus, setOpenMenus] = useState({});

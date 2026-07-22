@@ -50,33 +50,195 @@ const pageTitles = {
   '/help': 'Pusat Bantuan'
 };
 
-function HelpPage() {
+function HelpPage({ role }) {
+  const isAdmin = role === 'bakeuda' || role === 'BAKEUDA';
+
   return (
-    <div className="p-gutter max-w-4xl mx-auto space-y-6">
+    <div className="p-gutter max-w-screen-2xl mx-auto w-full animate-fadeIn space-y-6">
       <h3 className="text-2xl font-bold text-primary">Pusat Bantuan &amp; Panduan</h3>
       <div className="bg-white border border-outline-variant p-6 rounded-xl space-y-4 shadow-sm">
         <p className="text-on-surface-variant text-sm leading-relaxed">
-          Selamat datang di Pusat Bantuan SIPD Kabupaten Purbalingga. Gunakan panduan di bawah ini untuk memahami alur kerja aplikasi SPOP Digital.
+          Pusat Bantuan SIPD Kabupaten Purbalingga menyediakan informasi terkait pedoman dan alur kerja aplikasi SPOP Digital berdasarkan hak akses masing-masing pengguna.
         </p>
         <div className="border-t border-outline-variant/60 pt-4 space-y-3">
-          <details className="group cursor-pointer">
-            <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
-              <span>Bagaimana alur pengisian SPOP oleh Perangkat Desa?</span>
-              <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <p className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-2 border-l-2 border-primary/20 leading-relaxed">
-              Perangkat Desa masuk ke menu "Formulir SPOP", memilih jenis transaksi, mengisi NOP, data subjek pajak, data objek pajak, melakukan konfirmasi, dan menekan submit. Berkas akan dikirim ke antrean verifikator BKD.
-            </p>
-          </details>
-          <details className="group cursor-pointer">
-            <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
-              <span>Bagaimana verifikator menyetujui pengajuan SPOP?</span>
-              <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
-            </summary>
-            <p className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-2 border-l-2 border-primary/20 leading-relaxed">
-              Verifikator BKD membuka menu "Verification Queue", memilih berkas yang perlu ditinjau, memeriksa perbandingan data lama vs baru serta lampiran sertifikat, menulis catatan verifikator, lalu mengklik "Setujui Pengajuan".
-            </p>
-          </details>
+          {isAdmin ? (
+            <>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur memproses antrean verifikasi SPOP?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Proses verifikasi dokumen SPOP memerlukan ketelitian. Berikut adalah tahapan untuk memproses antrean:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Antrean Validasi" melalui menu navigasi di sebelah kiri.</li>
+                    <li>Cari dokumen SPOP yang berstatus "Menunggu Verifikasi" (berkas yang belum diproses oleh petugas lain).</li>
+                    <li>Klik tombol "Proses Validasi" pada dokumen tersebut agar berkas terkunci dan tidak bisa diproses oleh admin lain di saat yang bersamaan.</li>
+                    <li>Lakukan pemeriksaan data. Bandingkan "Data Lama" (jika ada) dengan "Data Baru" yang diajukan oleh desa.</li>
+                    <li>Periksa juga dokumen lampiran (seperti Sertifikat Tanah atau Bukti Kepemilikan) untuk memastikan kelengkapan syarat.</li>
+                    <li>Jika ada data atau lampiran yang salah, tuliskan alasan penolakan pada kolom catatan, lalu klik tombol "Tolak".</li>
+                    <li>Jika semua data sudah benar dan lengkap, klik tombol "Setujui" untuk menyelesaikan proses verifikasi.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur pencarian dan pengecekan daftar seluruh objek pajak?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Menu Data Objek Pajak menampilkan seluruh data wajib pajak yang sudah terdaftar di sistem. Langkah-langkah pengecekannya adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Data Objek Pajak" pada menu navigasi.</li>
+                    <li>Gunakan kolom pencarian untuk mencari data spesifik berdasarkan Nomor Objek Pajak (NOP), nama wajib pajak, ataupun nama desa/kecamatan.</li>
+                    <li>Klik baris data yang diinginkan untuk melihat informasi detail mengenai objek pajak tersebut.</li>
+                    <li>Pada tampilan detail, tersedia informasi mengenai riwayat perubahan data dan riwayat pengajuan SPOP yang pernah diproses.</li>
+                    <li>Sebagai catatan, menu ini hanya bersifat untuk melihat data (Read-Only) guna menjaga keamanan basis data. Semua perubahan wajib melalui pengajuan SPOP.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur pelacakan riwayat keputusan dokumen SPOP?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Setiap dokumen yang telah selesai diproses akan tercatat secara permanen di dalam sistem. Cara melihat riwayat tersebut adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Riwayat Persetujuan" melalui menu navigasi.</li>
+                    <li>Sistem akan menampilkan daftar seluruh pengajuan SPOP yang sudah selesai diproses (baik yang berstatus "Disetujui" maupun "Ditolak").</li>
+                    <li>Pada tabel, perhatikan kolom "Verifikator" untuk mengetahui siapa admin Bakeuda yang memberikan keputusan atas dokumen tersebut.</li>
+                    <li>Riwayat penyelesaian ini disimpan secara aman oleh sistem dan tidak dapat diubah setelah keputusan dibuat.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur pengelolaan data wilayah (Kecamatan dan Desa)?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Pengaturan data wilayah harus dipastikan sudah benar sebelum sistem digunakan oleh pihak desa. Tahapan pengelolaannya adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Data Wilayah" yang dikhususkan bagi hak akses Admin Pusat.</li>
+                    <li>Untuk menambah daerah baru, klik tombol penambahan wilayah, pilih tingkatannya (Kecamatan atau Kelurahan/Desa), dan masukkan kode wilayah yang sesuai standar.</li>
+                    <li>Untuk memperbaiki kesalahan penulisan nama wilayah, gunakan tombol "Ubah" pada baris wilayah yang ingin diperbaiki.</li>
+                    <li>Jika ada desa yang dinonaktifkan atau digabung, cukup ubah status wilayah tersebut menjadi tidak aktif. Sistem tidak akan menghapus riwayat dokumen SPOP dari wilayah tersebut pada masa lalu.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur pengelolaan, pendaftaran, dan penghapusan akun pengguna?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Admin Pusat memiliki kewenangan untuk mengatur akses login bagi pengguna sistem. Langkah pengelolaannya adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Data Pengguna" melalui panel navigasi.</li>
+                    <li>Untuk membuat akun perangkat desa atau admin baru, klik tombol "Tambah Pengguna". Isikan nama lengkap, wilayah tugas, dan buat kata sandi awal untuk pengguna tersebut.</li>
+                    <li>Jika ada pengguna yang lupa kata sandinya, admin dapat mereset kata sandi melalui tombol "Ubah" pada akun pengguna tersebut dan memasukkan kata sandi yang baru.</li>
+                    <li>Jika terdapat perangkat desa yang sudah tidak menjabat, admin wajib mencabut aksesnya dengan mengeklik tombol "Hapus Akun".</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur Login, Logout, dan mengubah profil akun?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Prosedur untuk mengakses sistem, keluar, dan mengatur profil akun adalah sebagai berikut:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li><strong>Login:</strong> Buka halaman utama aplikasi, masukkan Username dan Kata Sandi dengan benar, lalu klik tombol "Masuk".</li>
+                    <li><strong>Ubah Profil:</strong> Buka menu "Profil Akun" yang terletak di pojok kiri bawah navigasi. Di halaman ini, data seperti Nomor Induk Pegawai (NIP) dapat diperbarui.</li>
+                    <li><strong>Ubah Kata Sandi:</strong> Di menu yang sama, masukkan kata sandi baru untuk meningkatkan keamanan akun, lalu klik "Simpan Perubahan".</li>
+                    <li><strong>Logout:</strong> Untuk keluar dari sistem secara aman, klik tombol "Keluar" pada bagian paling bawah panel navigasi.</li>
+                  </ol>
+                </div>
+              </details>
+            </>
+          ) : (
+            <>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur pengisian formulir SPOP oleh Perangkat Desa?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Pengajuan SPOP merupakan langkah awal untuk memperbarui data wajib pajak. Cara mengisi formulir tersebut adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka menu "Formulir SPOP" melalui menu navigasi di sebelah kiri.</li>
+                    <li>Pada Langkah 1, pilih Jenis Transaksi yang sesuai (misalnya Pendaftaran Baru atau Mutasi), dan masukkan Nomor Objek Pajak (NOP) secara teliti.</li>
+                    <li>Pada Langkah 2, isi kelengkapan data Subjek Pajak (pemilik), termasuk Nomor Induk Kependudukan (NIK) dan detail alamat domisili.</li>
+                    <li>Pada Langkah 3, masukkan detail fisik Objek Pajak, yang mencakup luas tanah dan luas bangunan yang ada.</li>
+                    <li>Pada Langkah 4, unggah file dokumen pendukung (seperti foto Sertifikat Tanah). Setelah dipastikan benar, klik tombol "Kirim" agar dokumen masuk ke dalam antrean pusat untuk diperiksa.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Di mana status pengajuan SPOP dapat dipantau?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Seluruh berkas yang telah dikirim dapat dipantau perkembangannya secara langsung. Cara memeriksanya adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Buka halaman "Dashboard" (Beranda) untuk melihat ringkasan singkat jumlah berkas yang sedang "Menunggu Verifikasi", "Disetujui", dan "Ditolak/Perlu Perbaikan".</li>
+                    <li>Untuk melihat informasi yang lebih lengkap, buka menu "Monitoring Pajak".</li>
+                    <li>Cari Nomor Objek Pajak (NOP) atau nama wajib pajak dari berkas yang dicari melalui kolom pencarian.</li>
+                    <li>Klik tombol "Pelacakan Dokumen" pada baris berkas tersebut. Sistem akan menampilkan rincian tahapan dokumen beserta tanggal dan jam pemrosesannya.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Apa tindakan yang harus dilakukan apabila pengajuan SPOP ditolak?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Jika berkas ditolak, biasanya disebabkan oleh data yang tidak sesuai atau lampiran yang kurang jelas. Langkah perbaikannya adalah:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Pada menu Monitoring Pajak atau Riwayat Pengajuan, periksa "Catatan Verifikator" untuk melihat alasan spesifik mengapa admin pusat menolak berkas tersebut.</li>
+                    <li>Buka menu "Draft SPOP". Berkas yang telah ditolak akan dikembalikan ke dalam menu draf ini secara otomatis.</li>
+                    <li>Klik tombol ubah pada berkas draf tersebut.</li>
+                    <li>Lakukan perbaikan data sesuai dengan catatan dari admin pusat, atau unggah ulang lampiran dokumen jika foto sebelumnya kurang jelas.</li>
+                    <li>Setelah diperbaiki, kirim ulang berkas tersebut agar dapat diperiksa kembali oleh admin pusat.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Apa perbedaan fungsi antara Formulir SPOP dan Draft SPOP?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Pemahaman akan kedua menu ini penting agar tidak terjadi pengisian data ganda:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Menu <strong>Formulir SPOP</strong> hanya digunakan untuk membuat pengajuan yang benar-benar baru dari awal (kertas kosong).</li>
+                    <li>Menu <strong>Draft SPOP</strong> digunakan sebagai tempat penyimpanan sementara.</li>
+                    <li>Apabila saat mengisi Formulir SPOP isian belum terkirim dan Anda menutup aplikasi, maka isian tersebut akan otomatis tersimpan di dalam menu Draft SPOP.</li>
+                    <li>Menu Draft SPOP juga berisi berkas-berkas yang ditolak oleh pusat, sehingga perbaikan cukup dilakukan pada draf tersebut tanpa perlu membuat pengajuan baru dari awal di menu Formulir SPOP.</li>
+                  </ol>
+                </div>
+              </details>
+              <details className="group cursor-pointer">
+                <summary className="font-bold text-primary flex items-center justify-between text-sm sm:text-base">
+                  <span>Bagaimana prosedur Login, Logout, dan mengubah profil akun?</span>
+                  <span className="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                </summary>
+                <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
+                  <span>Prosedur untuk mengakses sistem, keluar, dan mengatur profil akun adalah sebagai berikut:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li><strong>Login:</strong> Buka halaman aplikasi, masukkan Username dan Kata Sandi yang telah diberikan oleh pihak kecamatan/kabupaten, lalu klik tombol "Masuk".</li>
+                    <li><strong>Ubah Profil:</strong> Buka menu "Profil Akun" di bagian paling bawah panel navigasi sebelah kiri. Anda dapat melengkapi informasi pendukung seperti Nomor Induk Pegawai (NIP).</li>
+                    <li><strong>Ubah Kata Sandi:</strong> Sangat disarankan untuk segera mengubah kata sandi dari admin pusat dengan memasukkan kata sandi baru pada menu ini, lalu klik "Simpan Perubahan".</li>
+                    <li><strong>Logout:</strong> Jangan lupa untuk selalu keluar dari sistem dengan aman melalui tombol "Keluar" (Log Out) yang terletak di ujung bawah layar.</li>
+                  </ol>
+                </div>
+              </details>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -169,7 +331,7 @@ function AppContent() {
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
         <Route path="/pelacakan-dokumen/:id" element={<PelacakanDokumen />} />
         <Route path="/profil" element={<ProfilPengguna role={role} />} />
-        <Route path="/help" element={<HelpPage />} />
+        <Route path="/help" element={<HelpPage role={role} />} />
         <Route path="*" element={<Navigate to={role === 'bakeuda' ? '/dashboard-admin' : '/dashboard-desa'} />} />
       </Routes>
       </AppLayout>

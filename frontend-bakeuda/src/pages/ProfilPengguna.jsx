@@ -120,6 +120,21 @@ export default function ProfilPengguna({ role }) {
       }));
       setIsEditing(false);
       setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+      
+      // Update localStorage and notify Header
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          userObj.nama_lengkap = editForm.name;
+          userObj.nip = editForm.nip || '';
+          localStorage.setItem('user', JSON.stringify(userObj));
+          window.dispatchEvent(new Event('profileUpdated'));
+        }
+      } catch (e) {
+        console.error('Failed to update localStorage', e);
+      }
+
       api.post('/activities', { type: 'edit', title: 'Memperbarui informasi profil akun' }).catch(() => {});
       // Refresh activities
       const res = await api.get('/activities').catch(() => null);
@@ -217,6 +232,24 @@ export default function ProfilPengguna({ role }) {
     if (isYesterday) return `Kemarin, ${timeString}`;
 
     return `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${timeString}`;
+  };
+
+  const formatNIPInput = (value) => {
+    const clean = value.replace(/\D/g, '');
+    let formatted = '';
+    if (clean.length > 0) {
+      formatted = clean.substring(0, 8);
+    }
+    if (clean.length > 8) {
+      formatted += ' ' + clean.substring(8, 14);
+    }
+    if (clean.length > 14) {
+      formatted += ' ' + clean.substring(14, 15);
+    }
+    if (clean.length > 15) {
+      formatted += ' ' + clean.substring(15, 18);
+    }
+    return formatted;
   };
 
   const getActivityIcon = (type) => {
@@ -325,14 +358,15 @@ export default function ProfilPengguna({ role }) {
                 {isEditing ? (
                   <input
                     type="text"
+                    maxLength={21}
                     value={editForm.nip}
-                    onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })}
-                    placeholder="Masukkan NIP..."
-                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    onChange={(e) => setEditForm({ ...editForm, nip: formatNIPInput(e.target.value) })}
+                    placeholder="Contoh: 19850315 201012 1 002"
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 ) : (
-                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
-                    {profileData.nip || '-'}
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface tracking-wide">
+                    {profileData.nip && profileData.nip !== '-' ? formatNIPInput(profileData.nip) : '-'}
                   </div>
                 )}
               </div>

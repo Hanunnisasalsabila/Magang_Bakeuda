@@ -259,11 +259,11 @@ export default function ManajemenAkunDesa() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className=" text-display-lg text-primary tracking-tight">
-            Manajemen Akun Desa
+          <h1 className="text-2xl text-primary font-bold">
+            Data Akun Desa
           </h1>
-          <p className="text-on-surface-variant font-body-lg mt-1 opacity-80">
-            Kelola akses dan data profil pengguna perangkat desa.
+          <p className="text-sm font-body-md text-on-surface-variant mt-1">
+            Atur pendaftaran akun, kata sandi, dan data profil pengguna desa di sini.
           </p>
         </div>
         <div className="shrink-0 flex gap-3">

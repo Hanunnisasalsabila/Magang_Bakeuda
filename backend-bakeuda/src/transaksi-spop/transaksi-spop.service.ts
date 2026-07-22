@@ -281,7 +281,7 @@ export class TransaksiSpopService {
 
     const [totalDikirim, menunggu, disetujui, perluPerbaikan] = await Promise.all([
       this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: { not: StatusAjuan.DRAFT } } }),
-      this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: StatusAjuan.MENUNGGU } }),
+      this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: { in: ['MENUNGGU', 'PROSES'] } } }),
       this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: StatusAjuan.DISETUJUI } }),
       this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: StatusAjuan.REVISI } })
     ]);
