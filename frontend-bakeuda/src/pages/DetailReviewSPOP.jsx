@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/axios';
-import { MapContainer, TileLayer, Polygon, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Marker, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
@@ -11,6 +11,13 @@ const dotIcon = L.divIcon({
   html: "<div style='background-color:#EF4444;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>",
   iconSize: [12, 12],
   iconAnchor: [6, 6]
+});
+
+const createNumberedIcon = (number) => L.divIcon({
+  className: 'custom-numbered-icon',
+  html: `<div style='background-color:#EF4444;color:white;width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;line-height:1;'>${number}</div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
 });
 
 export default function DetailReviewSPOP() {
@@ -423,21 +430,35 @@ export default function DetailReviewSPOP() {
 
 
       <div className="space-y-6">
-                    {/* NOP Asal (Induk) */}
+          {/* NOP */}
           <section className="border border-gray-300">
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">A. DATA NOP ASAL (INDUK)</h3>
+              <h3 className="text-base font-bold text-blue-900 uppercase m-0">
+                {data.jenis_transaksi !== 'BARU' ? 'A. DATA NOP ASAL (INDUK)' : 'A. NOMOR OBJEK PAJAK (NOP)'}
+              </h3>
             </div>
             <div className="p-0">
               <table className="w-full text-sm border-collapse">
                 <tbody>
                   <tr>
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nomor Objek Pajak Induk</td>
-                    <td className="p-3 font-mono font-bold text-black tracking-widest border-r border-gray-200">
-                      {nopAsal !== 'Menunggu NOP' ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>}
+                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">
+                      {data.jenis_transaksi !== 'BARU' ? 'Nomor Objek Pajak Induk' : 'Nomor Objek Pajak'}
                     </td>
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Induk (Tanah)</td>
-                    <td className="p-3 font-bold text-black">{luasInduk} MÂ²</td>
+                    <td className="p-3 font-mono font-bold text-black tracking-widest border-r border-gray-200">
+                      {data.jenis_transaksi !== 'BARU' ? (nopAsal !== 'Menunggu NOP' ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>) : (detailTujuanList[0]?.nop_generated || 'Akan digenerate oleh Bakeuda')}
+                    </td>
+                    {data.jenis_transaksi !== 'BARU' && (
+                      <>
+                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Induk (Tanah)</td>
+                        <td className="p-3 font-bold text-black">{luasInduk} M&sup2;</td>
+                      </>
+                    )}
+                    {data.jenis_transaksi === 'BARU' && (
+                      <>
+                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700"></td>
+                        <td className="p-3 font-bold text-black"></td>
+                      </>
+                    )}
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="p-3 bg-gray-50 font-semibold text-gray-700">Format NOP</td>
@@ -474,7 +495,7 @@ export default function DetailReviewSPOP() {
                     </span>
                     <h3 className="text-base font-bold uppercase m-0 flex items-center gap-2">
                       B. RINCIAN {data.jenis_transaksi === 'PECAH' ? `PECAHAN ${idx + 1}` : 'TUJUAN'} 
-                      {data.jenis_transaksi === 'PECAH' && <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full font-normal">Luas: {detailTujuan.luas_tanah_baru || 0} MÂ²</span>}
+                      {data.jenis_transaksi === 'PECAH' && <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full font-normal">Luas: {detailTujuan.luas_tanah_baru || 0} M&sup2;</span>}
                     </h3>
                   </div>
                   {detailTujuan.nop_generated && (
@@ -496,7 +517,7 @@ export default function DetailReviewSPOP() {
                         <tbody>
                           <tr className="border-b border-gray-100">
                             <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Nama Subjek Pajak</td>
-                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{calonSubjek.nama || data.nama_pengaju || '-'}</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{calonSubjek.nama_subjek || data.nama_pengaju || '-'}</td>
                             <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">No. Telepon/HP</td>
                             <td className="p-3 w-1/4 font-mono text-black">{calonSubjek.no_hp || '-'}</td>
                           </tr>
@@ -505,7 +526,7 @@ export default function DetailReviewSPOP() {
                             <td className="p-3 font-bold text-black border-r border-gray-100">{calonSubjek.status_wp || calonSubjek.status_subjek || '-'}</td>
                             <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="3">Alamat WP</td>
                             <td className="p-3 text-black align-top" rowSpan="3">
-                              {calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
+                              {calonSubjek.alamat_jalan || calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
                               KEL. {calonSubjek.kelurahan || '-'}, KEC. {calonSubjek.kecamatan || '-'}<br />
                               KAB. {calonSubjek.kabupaten || 'Purbalingga'} {calonSubjek.kode_pos ? `- ${calonSubjek.kode_pos}` : ''}
                             </td>
@@ -531,7 +552,7 @@ export default function DetailReviewSPOP() {
                         <tbody>
                           <tr className="border-b border-gray-100">
                             <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Luas Tanah</td>
-                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{detailTujuan.luas_tanah_baru || 0} MÂ²</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{detailTujuan.luas_tanah_baru || 0} M&sup2;</td>
                             <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="2">Letak Objek</td>
                             <td className="p-3 w-1/4 text-black align-top" rowSpan="2">
                               {detailTujuan.jalan_op_baru || '-'} {detailTujuan.blok_kav_no_baru ? `(Blok/Kav: ${detailTujuan.blok_kav_no_baru})` : ''}<br />
@@ -546,31 +567,139 @@ export default function DetailReviewSPOP() {
                           <tr className="border-b border-gray-100">
                             <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top">Titik Koordinat</td>
                             <td className="p-3 border-r border-gray-100 align-top" colSpan="3">
-                              {detailTujuan.latitude && detailTujuan.longitude ? (
+                              {Array.isArray(detailTujuan.koordinat_polygon) && detailTujuan.koordinat_polygon.length > 0 ? (
                                 <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded">
+                                  <div className="flex flex-col gap-2 mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-mono text-xs bg-blue-100 border border-blue-300 px-2 py-1 rounded font-bold text-blue-900">
+                                        {detailTujuan.koordinat_polygon.length} Titik Polygon
+                                      </span>
+                                      <div className="flex gap-4 border-l border-gray-300 pl-3">
+                                        <a
+                                          href={`https://www.google.com/maps?q=${detailTujuan.koordinat_polygon[0].lat},${detailTujuan.koordinat_polygon[0].lng}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                        >
+                                          <span className="material-symbols-outlined text-[14px]">map</span>
+                                          Google Maps
+                                        </a>
+                                        <a
+                                          href="https://bhumi.atrbpn.go.id/peta"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                        >
+                                          <span className="material-symbols-outlined text-[14px]">public</span>
+                                          Portal BHUMI ATR/BPN
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded text-[11px] font-mono">
+                                      {detailTujuan.koordinat_polygon.map((p, pIdx) => (
+                                        <span key={pIdx} className="bg-white border border-gray-300 px-1.5 py-0.5 rounded shadow-sm text-gray-700">
+                                          <span className="font-bold text-gray-400 mr-1">P{pIdx+1}:</span>
+                                          {p.lat}, {p.lng}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="border border-gray-300 rounded overflow-hidden h-[260px]">
+                                    <MapContainer 
+                                      center={[detailTujuan.koordinat_polygon[0].lat, detailTujuan.koordinat_polygon[0].lng]} 
+                                      zoom={17} 
+                                      style={{ height: "100%", width: "100%" }}
+                                      scrollWheelZoom={false}
+                                    >
+                                      <LayersControl position="topright">
+                                        <LayersControl.BaseLayer name="Google Satellite" checked>
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                        <LayersControl.BaseLayer name="Google Streets">
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                      </LayersControl>
+                                      <Polygon 
+                                        positions={detailTujuan.koordinat_polygon.map(p => [p.lat, p.lng])} 
+                                        pathOptions={{ color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.4, weight: 3 }}
+                                      />
+                                      {detailTujuan.koordinat_polygon.map((p, pIdx) => (
+                                        <Marker
+                                          key={`marker-${pIdx}`}
+                                          position={[p.lat, p.lng]}
+                                          icon={createNumberedIcon(pIdx + 1)}
+                                        />
+                                      ))}
+                                    </MapContainer>
+                                  </div>
+                                </div>
+                              ) : detailTujuan.latitude && detailTujuan.longitude ? (
+                                <div>
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded font-semibold text-gray-800">
                                       {detailTujuan.latitude}, {detailTujuan.longitude}
                                     </span>
-                                    <a
-                                      href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
-                                    >
-                                      <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                                      Buka di Google Maps
-                                    </a>
+                                    <div className="flex gap-4 border-l border-gray-300 pl-3">
+                                      <a
+                                        href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">map</span>
+                                        Google Maps
+                                      </a>
+                                      <a
+                                        href="https://bhumi.atrbpn.go.id/peta"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">public</span>
+                                        Portal BHUMI ATR/BPN
+                                      </a>
+                                    </div>
                                   </div>
-                                  <div className="border border-gray-300 rounded overflow-hidden">
-                                    <iframe
-                                      title="Lokasi Objek Pajak"
-                                      width="100%"
-                                      height="260"
-                                      style={{ border: 0 }}
-                                      loading="lazy"
-                                      src={`https://maps.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}&z=17&output=embed`}
-                                    />
+                                  <div className="border border-gray-300 rounded overflow-hidden h-[260px]">
+                                    <MapContainer 
+                                      center={[parseFloat(detailTujuan.latitude), parseFloat(detailTujuan.longitude)]} 
+                                      zoom={17} 
+                                      style={{ height: "100%", width: "100%" }}
+                                      scrollWheelZoom={false}
+                                    >
+                                      <LayersControl position="topright">
+                                        <LayersControl.BaseLayer name="Google Satellite" checked>
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                        <LayersControl.BaseLayer name="Google Streets">
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                      </LayersControl>
+                                      <Marker 
+                                        position={[parseFloat(detailTujuan.latitude), parseFloat(detailTujuan.longitude)]}
+                                        icon={dotIcon}
+                                      />
+                                    </MapContainer>
                                   </div>
                                 </div>
                               ) : (
@@ -599,7 +728,7 @@ export default function DetailReviewSPOP() {
                       <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-2 flex justify-between items-center">
                         <h4 className="text-sm font-bold text-blue-900 m-0">3. Data Bangunan</h4>
                         <div className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
-                          {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} MÂ²)
+                          {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} M&sup2;)
                         </div>
                       </div>
                       
@@ -615,39 +744,39 @@ export default function DetailReviewSPOP() {
                                   <tbody>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Penggunaan</td>
-                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.penggunaan || '-'}</td>
+                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.penggunaan || bgn.jenisPenggunaanBangunan || '-'}</td>
                                       <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Konstruksi</td>
                                       <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
                                     </tr>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Luas Bangunan</td>
-                                      <td className="p-2 text-black border-r border-gray-100">{bgn.luas_bangunan || 0} MÂ²</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.luas_bangunan || bgn.luasBangunan || 0} M&sup2;</td>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Atap</td>
                                       <td className="p-2 text-black">{bgn.atap || '-'}</td>
                                     </tr>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Jumlah Lantai</td>
-                                      <td className="p-2 text-black border-r border-gray-100">{bgn.jumlah_lantai || 1}</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.jumlah_lantai || bgn.jumlahLantai || 1}</td>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Dinding</td>
                                       <td className="p-2 text-black">{bgn.dinding || '-'}</td>
                                     </tr>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Dibangun</td>
-                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_dibangun || '-'}</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_dibangun || bgn.tahunDibangun || '-'}</td>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Lantai</td>
                                       <td className="p-2 text-black">{bgn.lantai || '-'}</td>
                                     </tr>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Renovasi</td>
-                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_direnovasi || '-'}</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_direnovasi || bgn.tahunDirenovasi || '-'}</td>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Langit-Langit</td>
-                                      <td className="p-2 text-black">{bgn.langit_langit || '-'}</td>
+                                      <td className="p-2 text-black">{bgn.langit_langit || bgn.langitLangit || '-'}</td>
                                     </tr>
                                     <tr>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Kondisi</td>
                                       <td className="p-2 text-black border-r border-gray-100">{bgn.kondisi || '-'}</td>
                                       <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Daya Listrik</td>
-                                      <td className="p-2 text-black">{bgn.daya_listrik || 0} Watt</td>
+                                      <td className="p-2 text-black">{bgn.daya_listrik || bgn.dayaListrik || 0} Watt</td>
                                     </tr>
                                   </tbody>
                                 </table>
