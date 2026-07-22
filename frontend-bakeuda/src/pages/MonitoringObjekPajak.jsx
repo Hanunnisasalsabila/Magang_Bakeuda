@@ -27,29 +27,33 @@ export default function MonitoringObjekPajak() {
         setStats(statsRes.data.data);
 
         const rawList = listRes.data.data;
-        const formattedList = rawList.map(item => {
-          const detail = item.detail_tujuan?.[0];
-          const calonSubjek = item.detail_tujuan?.[0]?.calon_subjek_json;
+        const formattedList = rawList.flatMap(item => {
+          if (!item.detail_tujuan || item.detail_tujuan.length === 0) return [];
           
-          let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
+          return item.detail_tujuan.map(detail => {
+            const calonSubjek = detail?.calon_subjek_json;
+            
+            let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
-          let status = 'Ditolak';
-          if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
-          else if (item.status_ajuan === 'PROSES') status = 'Diproses';
-          else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
-          else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
-          else if (item.status_ajuan === 'DRAFT') status = 'Draft';
+            let status = 'Ditolak';
+            if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
+            else if (item.status_ajuan === 'PROSES') status = 'Diproses';
+            else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
+            else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
+            else if (item.status_ajuan === 'DRAFT') status = 'Draft';
 
-          return {
-            id: item.id_transaksi,
-            nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
-            name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
-            address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
-            land: detail?.luas_tanah_baru || 0,
-            building: luasBangunan,
-            status: status,
-            date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-          };
+            return {
+              id: item.id_transaksi,
+              id_detail: detail?.id_detail_tujuan,
+              nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+              name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (calonSubjek?.nama || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+              address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
+              land: detail?.luas_tanah_baru || 0,
+              building: luasBangunan,
+              status: status,
+              date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+            };
+          });
         });
 
         setSubmissions(formattedList);
@@ -231,7 +235,7 @@ export default function MonitoringObjekPajak() {
                 </tr>
               ) : paginatedSubmissions.length > 0 ? (
                 paginatedSubmissions.map((obj, i) => (
-                  <tr key={obj.id} className="hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+                  <tr key={obj.id_detail || `${obj.id}-${i}`} className="hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
                     <td className="px-4 py-3 font-data-mono font-bold text-primary text-xs w-[1%] whitespace-nowrap">{obj.nop}</td>
                     <td className="px-4 py-3 text-sm font-bold text-on-surface min-w-[150px]">{obj.name}</td>
                     <td className="px-4 py-3 text-xs text-on-surface-variant" title={obj.address}>{obj.address}</td>

@@ -501,17 +501,6 @@ export default function Step4DataBangunan() {
         </div>
       </div>
 
-      {isRevisi && catatanRevisi && (
-        <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 mb-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-amber-600">warning</span>
-            <div>
-              <h4 className="font-bold text-amber-800">⚠️ Catatan Revisi dari Bakeuda</h4>
-              <p className="text-amber-700 mt-1 whitespace-pre-wrap">{catatanRevisi}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="bg-surface-container border border-outline-variant p-6 rounded-t-xl shadow-sm">
         <h4 className="font-bold text-on-surface text-lg border-b border-outline-variant/50 pb-3 mb-4">Informasi Induk (SPOP)</h4>
