@@ -110,9 +110,11 @@ export default function DashboardDesa() {
             </div>
             <p className="text-on-surface-variant font-label-md font-bold uppercase tracking-wide text-xs">{stat.title}</p>
             <p className="text-4xl font-extrabold text-on-surface mt-1">{stat.value}</p>
-            <div className={`mt-4 flex items-center gap-1 ${stat.trendColor}`}>
-              <span className="material-symbols-outlined text-[16px]">{stat.trendIcon}</span>
-              <span className="text-[12px] font-bold">{stat.trend}</span>
+            <div className="mt-4 flex">
+              <div className={`flex items-center gap-1 px-3 py-1.5 ${stat.iconBg.replace('100', '50')} ${stat.iconColor} group-hover:${stat.iconBg.replace('100', '100')} rounded-md transition-colors`}>
+                <span className="text-xs font-bold">Lihat Semua</span>
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </div>
             </div>
           </button>
         ))}
