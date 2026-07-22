@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 import '../widgets/custom_text_field.dart';
@@ -51,7 +50,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _nikController = TextEditingController();
   final _npwpController = TextEditingController();
   final _noHpController = TextEditingController();
-  List<LatLng> _polygonPoints = [];
+  final List<LatLng> _polygonPoints = [];
   
   String _statusWp = 'PEMILIK';
   String _pekerjaan = 'PNS';
@@ -102,7 +101,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   ];
 
   // Step 4 - Lampiran
-  List<Map<String, String>> _lampiran = [];
+  final List<Map<String, String>> _lampiran = [];
 
   @override
   void dispose() {
@@ -365,7 +364,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
