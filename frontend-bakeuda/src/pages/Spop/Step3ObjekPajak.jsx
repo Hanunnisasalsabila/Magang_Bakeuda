@@ -147,38 +147,42 @@ export default function Step3ObjekPajak() {
   const currentData = isPecah ? (formData.pecahanList?.[activeTab] || {}) : formData;
 
   useEffect(() => {
-    // Auto-fill Wilayah if user has kode_wilayah and it's not yet filled
-    if (!formData.kecamatanObjek && !formData.kelurahanObjek) {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          if (user.kode_wilayah) {
+    // Auto-fill Wilayah if user has kode_wilayah
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.kode_wilayah) {
+          const needsGlobal = !formData.kecamatanObjek && !formData.kelurahanObjek;
+          const needsPecahan = isPecah && formData.pecahanList?.some(p => !p.kecamatanObjek || !p.kelurahanObjek);
+          
+          if (needsGlobal || needsPecahan) {
             api.get('/wilayah').then(res => {
               const wData = res.data.data;
               const w = wData.find(item => item.kode_wilayah === user.kode_wilayah);
               if (w) {
                 setFormData(prev => {
-                  const newData = {
-                    ...prev,
-                    kecamatanObjek: prev.kecamatanObjek || w.kecamatan,
-                    kelurahanObjek: prev.kelurahanObjek || w.nama_desa
-                  };
+                  const newData = { ...prev };
+                  if (needsGlobal) {
+                    newData.kecamatanObjek = prev.kecamatanObjek || w.kecamatan;
+                    newData.kelurahanObjek = prev.kelurahanObjek || w.nama_desa;
+                  }
                   if (isPecah && newData.pecahanList) {
                     const newList = [...newData.pecahanList];
+                    let changed = false;
                     newList.forEach(p => {
-                      if (!p.kecamatanObjek) p.kecamatanObjek = w.kecamatan;
-                      if (!p.kelurahanObjek) p.kelurahanObjek = w.nama_desa;
+                      if (!p.kecamatanObjek) { p.kecamatanObjek = w.kecamatan; changed = true; }
+                      if (!p.kelurahanObjek) { p.kelurahanObjek = w.nama_desa; changed = true; }
                     });
-                    newData.pecahanList = newList;
+                    if (changed) newData.pecahanList = newList;
                   }
                   return newData;
                 });
               }
             }).catch(console.error);
           }
-        } catch (e) { }
-      }
+        }
+      } catch (e) { }
     }
   }, []);
 

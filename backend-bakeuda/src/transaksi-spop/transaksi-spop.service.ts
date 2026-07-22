@@ -270,7 +270,9 @@ export class TransaksiSpopService {
       where: { id_transaksi },
       include: {
         detail_tujuan: true,
-        detail_asal: true,
+        detail_asal: {
+          include: { objek_asal: true }
+        },
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         lampiran: true,
         riwayat: { orderBy: { created_at: 'asc' } },

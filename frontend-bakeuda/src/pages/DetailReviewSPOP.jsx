@@ -100,6 +100,7 @@ export default function DetailReviewSPOP() {
     }
   };
 
+  const [openPecahan, setOpenPecahan] = useState([0]);
   const [kodeBlok, setKodeBlok] = useState('');
   const [kodeJenisOp, setKodeJenisOp] = useState('0');
   const [allWilayah, setAllWilayah] = useState([]);
@@ -158,6 +159,17 @@ export default function DetailReviewSPOP() {
       }
     }
   }, [data, allWilayah]);
+
+  
+  // Auto-fill kodeBlok for PECAH from NOP Induk
+  useEffect(() => {
+    if (isBakeuda && data?.status_ajuan === 'PROSES' && data?.jenis_transaksi === 'PECAH') {
+      const nopAsal = data?.detail_asal?.[0]?.nop_asal;
+      if (nopAsal && nopAsal.length >= 13 && !kodeBlok) {
+        setKodeBlok(nopAsal.substring(10, 13));
+      }
+    }
+  }, [data, isBakeuda, kodeBlok]);
 
   const handleDecision = async (status) => {
     try {
@@ -264,10 +276,11 @@ export default function DetailReviewSPOP() {
     );
   }
 
-  const detailTujuan = data.detail_tujuan?.[0] || {};
-  const calonSubjek = detailTujuan.calon_subjek_json || {};
+  const detailTujuanList = data.detail_tujuan || [];
   const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
-  const nopDisplay = detailTujuan.nop_generated || (isTetap ? data.detail_asal?.[0]?.nop_asal : detailTujuan.no_persil_baru) || 'Menunggu NOP';
+  const nopAsal = data.detail_asal?.[0]?.nop_asal || 'Menunggu NOP';
+  const luasInduk = data.detail_asal?.[0]?.objek_asal?.luas_bumi || '-';
+
   
   // Format Tanggal
   const tglPengajuan = new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', {
@@ -332,211 +345,252 @@ export default function DetailReviewSPOP() {
 
 
       <div className="space-y-6">
-          {/* NOP */}
+                    {/* NOP Asal (Induk) */}
           <section className="border border-gray-300">
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">A. NOMOR OBJEK PAJAK (NOP)</h3>
+              <h3 className="text-base font-bold text-blue-900 uppercase m-0">A. DATA NOP ASAL (INDUK)</h3>
             </div>
             <div className="p-0">
               <table className="w-full text-sm border-collapse">
                 <tbody>
                   <tr>
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nomor Objek Pajak</td>
-                    <td className="p-3 font-mono font-bold text-black tracking-widest">
-                      {detailTujuan.nop_generated || (isTetap ? data.detail_asal?.[0]?.nop_asal : detailTujuan.no_persil_baru) || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>}
+                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nomor Objek Pajak Induk</td>
+                    <td className="p-3 font-mono font-bold text-black tracking-widest border-r border-gray-200">
+                      {nopAsal !== 'Menunggu NOP' ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>}
                     </td>
+                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Induk (Tanah)</td>
+                    <td className="p-3 font-bold text-black">{luasInduk} MÂ²</td>
                   </tr>
                   <tr className="border-t border-gray-200">
                     <td className="p-3 bg-gray-50 font-semibold text-gray-700">Format NOP</td>
-                    <td className="p-3 text-gray-500 text-xs italic">Prov - Kab - Kec - Kel - Blok - No.Urut - Kode</td>
+                    <td className="p-3 text-gray-500 text-xs italic" colSpan="3">Prov - Kab - Kec - Kel - Blok - No.Urut - Kode</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
 
-          {/* Subjek Pajak */}
-          <section className="border border-gray-300">
-            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">B. DATA SUBJEK PAJAK</h3>
-            </div>
-            <div className="p-0">
-              <table className="w-full text-sm border-collapse">
-                <tbody>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nama Subjek Pajak</td>
-                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{calonSubjek.nama || data.nama_pengaju || '-'}</td>
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">No. Telepon/HP</td>
-                    <td className="p-3 w-1/4 font-mono text-black">{calonSubjek.no_hp || '-'}</td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Status Subjek</td>
-                    <td className="p-3 font-bold text-black border-r border-gray-200">{calonSubjek.status_wp || calonSubjek.status_subjek || '-'}</td>
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700 align-top" rowSpan="3">Alamat WP</td>
-                    <td className="p-3 text-black align-top" rowSpan="3">
-                      {calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
-                      KEL. {calonSubjek.kelurahan || '-'}, KEC. {calonSubjek.kecamatan || '-'}<br />
-                      KAB. {calonSubjek.kabupaten || 'Purbalingga'} {calonSubjek.kode_pos ? `- ${calonSubjek.kode_pos}` : ''}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">NIK / NPWP</td>
-                    <td className="p-3 font-mono text-black border-r border-gray-200">{calonSubjek.nik || calonSubjek.npwp || detailTujuan.nik_calon_subjek || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Pekerjaan</td>
-                    <td className="p-3 text-black border-r border-gray-200">{calonSubjek.pekerjaan || '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* Data Tanah */}
-          <section className="border border-gray-300">
-            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">C. DATA OBJEK PAJAK (TANAH)</h3>
-            </div>
-            <div className="p-0">
-              <table className="w-full text-sm border-collapse">
-                <tbody>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Tanah</td>
-                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{detailTujuan.luas_tanah_baru || 0} MÂ²</td>
-                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700 align-top" rowSpan="2">Letak Objek</td>
-                    <td className="p-3 w-1/4 text-black align-top" rowSpan="2">
-                      {detailTujuan.jalan_op_baru || '-'} {detailTujuan.blok_kav_no_baru ? `(Blok/Kav: ${detailTujuan.blok_kav_no_baru})` : ''}<br />
-                      RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br />
-                      DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Jenis Tanah</td>
-                    <td className="p-3 font-bold text-black border-r border-gray-200">{detailTujuan.jenis_tanah_baru || '-'}</td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700 align-top">Titik Koordinat</td>
-                    <td className="p-3 border-r border-gray-200 align-top" colSpan="3">
-                      {detailTujuan.latitude && detailTujuan.longitude ? (
-                        <div>
-                          {/* Koordinat badge */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded">
-                              {detailTujuan.latitude}, {detailTujuan.longitude}
-                            </span>
-                            <a
-                              href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                              Buka di Google Maps
-                            </a>
-                          </div>
-                          {/* Embedded Map */}
-                          <div className="border border-gray-300 rounded overflow-hidden">
-                            <iframe
-                              title="Lokasi Objek Pajak"
-                              width="100%"
-                              height="260"
-                              style={{ border: 0 }}
-                              loading="lazy"
-                              src={`https://maps.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}&z=17&output=embed`}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 italic text-xs">Koordinat tidak tersedia</span>
-                      )}
-                    </td>
-                  </tr>
-                  <tr className="border-b border-gray-200">
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Batas Utara</td>
-                    <td className="p-3 text-black">{detailTujuan.batas_utara || detailTujuan.batas_utara_nop || '-'}</td>
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700 border-l border-gray-200">Batas Selatan</td>
-                    <td className="p-3 text-black">{detailTujuan.batas_selatan || detailTujuan.batas_selatan_nop || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Batas Timur</td>
-                    <td className="p-3 text-black">{detailTujuan.batas_timur || detailTujuan.batas_timur_nop || '-'}</td>
-                    <td className="p-3 bg-gray-50 font-semibold text-gray-700 border-l border-gray-200">Batas Barat</td>
-                    <td className="p-3 text-black">{detailTujuan.batas_barat || detailTujuan.batas_barat_nop || '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* Data Bangunan */}
-          <section className="border border-gray-300">
-            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex justify-between items-center">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">D. DATA BANGUNAN</h3>
-              <div className="text-xs font-bold text-blue-600">
-                TOTAL: {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} MÂ²)
-              </div>
-            </div>
+          {/* Rincian Tujuan (Looping) */}
+          {detailTujuanList.map((detailTujuan, idx) => {
+            const calonSubjek = detailTujuan.calon_subjek_json || {};
+            const isOpen = openPecahan.includes(idx);
             
-            <div className="p-0">
-              {Array.isArray(detailTujuan.data_bangunan_json) && detailTujuan.data_bangunan_json.length > 0 ? (
-                <div>
-                  {detailTujuan.data_bangunan_json.map((bgn, idx) => (
-                    <div key={idx} className={idx > 0 ? "border-t-4 border-gray-300" : ""}>
-                      <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5">
-                        <h4 className="font-bold text-gray-800 text-xs uppercase">Bangunan Ke-{idx + 1}</h4>
+            const toggleAccordion = () => {
+              if (isOpen) {
+                setOpenPecahan(openPecahan.filter(i => i !== idx));
+              } else {
+                setOpenPecahan([...openPecahan, idx]);
+              }
+            };
+
+            return (
+              <div key={detailTujuan.id_detail_tujuan || idx} className="border border-gray-300 bg-white overflow-hidden shadow-sm">
+                {/* Accordion Header */}
+                <div 
+                  className={`px-4 py-3 cursor-pointer flex justify-between items-center transition-colors ${isOpen ? 'bg-blue-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-b border-gray-300'}`}
+                  onClick={toggleAccordion}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                      expand_more
+                    </span>
+                    <h3 className="text-base font-bold uppercase m-0 flex items-center gap-2">
+                      B. RINCIAN {data.jenis_transaksi === 'PECAH' ? `PECAHAN ${idx + 1}` : 'TUJUAN'} 
+                      {data.jenis_transaksi === 'PECAH' && <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full font-normal">Luas: {detailTujuan.luas_tanah_baru || 0} MÂ²</span>}
+                    </h3>
+                  </div>
+                  {detailTujuan.nop_generated && (
+                    <div className="font-mono text-sm tracking-widest opacity-90">
+                      NOP: {detailTujuan.nop_generated}
+                    </div>
+                  )}
+                </div>
+
+                {/* Accordion Body */}
+                {isOpen && (
+                  <div className="animate-fadeIn">
+                    {/* Subjek Pajak */}
+                    <div className="p-0 border-b-4 border-gray-100">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-1.5">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">1. Data Subjek Pajak</h4>
                       </div>
                       <table className="w-full text-sm border-collapse">
                         <tbody>
-                          <tr className="border-b border-gray-200">
-                            <td className="p-2 w-1/4 bg-gray-50 font-semibold text-gray-700">Penggunaan</td>
-                            <td className="p-2 w-1/4 text-black border-r border-gray-200">{bgn.penggunaan || '-'}</td>
-                            <td className="p-2 w-1/4 bg-gray-50 font-semibold text-gray-700">Konstruksi</td>
-                            <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Nama Subjek Pajak</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{calonSubjek.nama || data.nama_pengaju || '-'}</td>
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">No. Telepon/HP</td>
+                            <td className="p-3 w-1/4 font-mono text-black">{calonSubjek.no_hp || '-'}</td>
                           </tr>
-                          <tr className="border-b border-gray-200">
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Luas Bangunan</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.luas_bangunan || 0} MÂ²</td>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Atap</td>
-                            <td className="p-2 text-black">{bgn.atap || '-'}</td>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Status Subjek</td>
+                            <td className="p-3 font-bold text-black border-r border-gray-100">{calonSubjek.status_wp || calonSubjek.status_subjek || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="3">Alamat WP</td>
+                            <td className="p-3 text-black align-top" rowSpan="3">
+                              {calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
+                              KEL. {calonSubjek.kelurahan || '-'}, KEC. {calonSubjek.kecamatan || '-'}<br />
+                              KAB. {calonSubjek.kabupaten || 'Purbalingga'} {calonSubjek.kode_pos ? `- ${calonSubjek.kode_pos}` : ''}
+                            </td>
                           </tr>
-                          <tr className="border-b border-gray-200">
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Jumlah Lantai</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.jumlah_lantai || 1}</td>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Dinding</td>
-                            <td className="p-2 text-black">{bgn.dinding || '-'}</td>
-                          </tr>
-                          <tr className="border-b border-gray-200">
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Tahun Dibangun</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_dibangun || '-'}</td>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Lantai</td>
-                            <td className="p-2 text-black">{bgn.lantai || '-'}</td>
-                          </tr>
-                          <tr className="border-b border-gray-200">
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Tahun Renovasi</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_direnovasi || '-'}</td>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Langit-Langit</td>
-                            <td className="p-2 text-black">{bgn.langit_langit || '-'}</td>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">NIK / NPWP</td>
+                            <td className="p-3 font-mono text-black border-r border-gray-100">{calonSubjek.nik || calonSubjek.npwp || detailTujuan.nik_calon_subjek || '-'}</td>
                           </tr>
                           <tr>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Kondisi</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.kondisi || '-'}</td>
-                            <td className="p-2 bg-gray-50 font-semibold text-gray-700">Daya Listrik</td>
-                            <td className="p-2 text-black">{bgn.daya_listrik || 0} Watt</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Pekerjaan</td>
+                            <td className="p-3 text-black border-r border-gray-100">{calonSubjek.pekerjaan || '-'}</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                detailTujuan.jumlah_bangunan_baru > 0 && (
-                  <div className="p-4 text-gray-600 text-sm italic">
-                    Catatan: Jumlah bangunan diisi {detailTujuan.jumlah_bangunan_baru} unit, namun rincian formulir LSPOP (Data Bangunan) tidak dilampirkan secara digital.
+
+                    {/* Data Tanah */}
+                    <div className="p-0 border-b-4 border-gray-100">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-1.5">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">2. Data Objek Pajak (Tanah)</h4>
+                      </div>
+                      <table className="w-full text-sm border-collapse">
+                        <tbody>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Luas Tanah</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{detailTujuan.luas_tanah_baru || 0} MÂ²</td>
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="2">Letak Objek</td>
+                            <td className="p-3 w-1/4 text-black align-top" rowSpan="2">
+                              {detailTujuan.jalan_op_baru || '-'} {detailTujuan.blok_kav_no_baru ? `(Blok/Kav: ${detailTujuan.blok_kav_no_baru})` : ''}<br />
+                              RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br />
+                              DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Jenis Tanah</td>
+                            <td className="p-3 font-bold text-black border-r border-gray-100">{detailTujuan.jenis_tanah_baru || '-'}</td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top">Titik Koordinat</td>
+                            <td className="p-3 border-r border-gray-100 align-top" colSpan="3">
+                              {detailTujuan.latitude && detailTujuan.longitude ? (
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded">
+                                      {detailTujuan.latitude}, {detailTujuan.longitude}
+                                    </span>
+                                    <a
+                                      href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                    >
+                                      <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                      Buka di Google Maps
+                                    </a>
+                                  </div>
+                                  <div className="border border-gray-300 rounded overflow-hidden">
+                                    <iframe
+                                      title="Lokasi Objek Pajak"
+                                      width="100%"
+                                      height="260"
+                                      style={{ border: 0 }}
+                                      loading="lazy"
+                                      src={`https://maps.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}&z=17&output=embed`}
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">Koordinat tidak tersedia</span>
+                              )}
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Batas Utara</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_utara || detailTujuan.batas_utara_nop || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 border-l border-gray-100">Batas Selatan</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_selatan || detailTujuan.batas_selatan_nop || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Batas Timur</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_timur || detailTujuan.batas_timur_nop || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 border-l border-gray-100">Batas Barat</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_barat || detailTujuan.batas_barat_nop || '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Data Bangunan */}
+                    <div className="p-0">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-2 flex justify-between items-center">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">3. Data Bangunan</h4>
+                        <div className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                          {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} MÂ²)
+                        </div>
+                      </div>
+                      
+                      <div className="p-0">
+                        {Array.isArray(detailTujuan.data_bangunan_json) && detailTujuan.data_bangunan_json.length > 0 ? (
+                          <div>
+                            {detailTujuan.data_bangunan_json.map((bgn, idx2) => (
+                              <div key={idx2} className={idx2 > 0 ? "border-t-2 border-dashed border-gray-200" : ""}>
+                                <div className="bg-gray-50/30 border-b border-gray-100 px-4 py-1.5">
+                                  <h5 className="font-bold text-gray-800 text-xs uppercase">Bangunan Ke-{idx2 + 1}</h5>
+                                </div>
+                                <table className="w-full text-sm border-collapse">
+                                  <tbody>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Penggunaan</td>
+                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.penggunaan || '-'}</td>
+                                      <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Konstruksi</td>
+                                      <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Luas Bangunan</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.luas_bangunan || 0} MÂ²</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Atap</td>
+                                      <td className="p-2 text-black">{bgn.atap || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Jumlah Lantai</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.jumlah_lantai || 1}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Dinding</td>
+                                      <td className="p-2 text-black">{bgn.dinding || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Dibangun</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_dibangun || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Lantai</td>
+                                      <td className="p-2 text-black">{bgn.lantai || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Renovasi</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_direnovasi || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Langit-Langit</td>
+                                      <td className="p-2 text-black">{bgn.langit_langit || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Kondisi</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.kondisi || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Daya Listrik</td>
+                                      <td className="p-2 text-black">{bgn.daya_listrik || 0} Watt</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          detailTujuan.jumlah_bangunan_baru > 0 && (
+                            <div className="p-4 text-gray-600 text-sm italic">
+                              Catatan: Jumlah bangunan diisi {detailTujuan.jumlah_bangunan_baru} unit, namun rincian formulir LSPOP (Data Bangunan) tidak dilampirkan secara digital.
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+
                   </div>
-                )
-              )}
-            </div>
-          </section>
+                )}
+              </div>
+            );
+          })}
 
           {/* Lampiran Dokumen */}
           <section className="border border-gray-300">
