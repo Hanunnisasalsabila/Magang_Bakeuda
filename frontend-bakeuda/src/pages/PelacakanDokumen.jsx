@@ -98,7 +98,7 @@ export default function PelacakanDokumen() {
   };
 
   return (
-    <main className="p-gutter max-w-screen-lg mx-auto w-full relative">
+    <main className="p-gutter w-full relative">
       {/* Top Header & Back Button */}
       <div className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -262,24 +262,27 @@ export default function PelacakanDokumen() {
 
               <div className="space-y-6">
                 {dataTransaksi.riwayat?.map((item, index) => {
-                  const isLast = index === dataTransaksi.riwayat.length - 1;
+                  const statusRiwayat = item.status_baru || item.status_riwayat;
+                  const waktuKejadian = item.created_at || item.waktu_kejadian;
+                  const keterangan = item.catatan || item.keterangan;
+                  
                   return (
-                    <div key={item.id_riwayat} className="relative flex items-start gap-4">
+                    <div key={item.id_riwayat || index} className="relative flex items-start gap-4">
                       {/* Timeline Icon */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ring-4 ring-surface-container-lowest shadow-sm ${getStatusColor(item.status_riwayat)}`}>
-                        <span className="material-symbols-outlined text-[18px]">{getStatusIcon(item.status_riwayat)}</span>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ring-4 ring-surface-container-lowest shadow-sm ${getStatusColor(statusRiwayat)}`}>
+                        <span className="material-symbols-outlined text-[18px]">{getStatusIcon(statusRiwayat)}</span>
                       </div>
 
                       {/* Content */}
                       <div className="pt-1 pb-2">
-                        <h4 className="font-bold text-on-surface text-sm mb-1">{formatStatus(item.status_riwayat)}</h4>
+                        <h4 className="font-bold text-on-surface text-sm mb-1">{formatStatus(statusRiwayat)}</h4>
                         <div className="flex items-center gap-1.5 text-on-surface-variant text-xs font-medium mb-1.5 opacity-80">
                           <span className="material-symbols-outlined text-[14px]">schedule</span>
-                          {formatDateTime(item.waktu_kejadian)}
+                          {waktuKejadian ? formatDateTime(waktuKejadian) : '-'}
                         </div>
-                        {item.keterangan && (
+                        {keterangan && (
                           <div className="bg-surface-container-low/50 px-3 py-2 rounded-lg text-xs text-on-surface-variant border border-outline-variant/50 mt-1">
-                            {item.keterangan}
+                            {keterangan}
                           </div>
                         )}
                       </div>
