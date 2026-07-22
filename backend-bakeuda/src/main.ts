@@ -1,8 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
-import * as fs from 'fs';
-import { BadRequestException } from '@nestjs/common';
 
 // Trigger restart for Prisma schema sync
 async function bootstrap() {
@@ -36,6 +34,7 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
+// trigger restart
 
 
 

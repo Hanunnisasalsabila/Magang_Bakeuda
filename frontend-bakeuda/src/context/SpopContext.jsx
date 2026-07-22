@@ -35,7 +35,8 @@ export const SpopProvider = ({ children }) => {
     latitude: '', longitude: '', koordinat_polygon: [],
     batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
     nopAsalList: [''], spptLama: '',
-    kodeWilayah: '', kodeWilayahObjek: ''
+    kodeWilayah: '', kodeWilayahObjek: '', catatanPengaju: '',
+    pecahanList: [] // Khusus PECAH: array of objects containing subjek & objek data
   });
   
   const [errors, setErrors] = useState({});
@@ -60,7 +61,8 @@ export const SpopProvider = ({ children }) => {
         latitude: '', longitude: '', koordinat_polygon: [],
         batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
         nopAsalList: [''], spptLama: '',
-        kodeWilayah: '', kodeWilayahObjek: '', catatanPengaju: ''
+        kodeWilayah: '', kodeWilayahObjek: '', catatanPengaju: '',
+        pecahanList: []
       });
       return;
     }
@@ -140,12 +142,52 @@ export const SpopProvider = ({ children }) => {
           batasSelatan: detailTujuan.batas_selatan || '',
           batasTimur: detailTujuan.batas_timur || '',
           batasBarat: detailTujuan.batas_barat || '',
+          spptLama: '',
+          kodeWilayah: data.kode_wilayah || '',
+          kodeWilayahObjek: data.kode_wilayah || '',
+          catatanPengaju: data.catatan_pengaju || '',
           
-          lampiran: data.lampiran || [],
-          catatanPengaju: data.catatan_pengaju || ''
+          pecahanList: data.jenis_transaksi === 'PECAH' ? data.detail_tujuan?.map((t, idx) => ({
+             id: idx,
+             nik: t.calon_subjek_json?.nik || '',
+             nama: t.calon_subjek_json?.nama || '',
+             npwp: t.calon_subjek_json?.npwp || '',
+             noTelp: t.calon_subjek_json?.no_telp || '',
+             statusWp: t.calon_subjek_json?.status_wp || '',
+             pekerjaan: t.calon_subjek_json?.pekerjaan || '',
+             email: t.calon_subjek_json?.email || '',
+             alamat: t.calon_subjek_json?.alamat || '',
+             blokKav: t.calon_subjek_json?.blok_kav || '',
+             rt: t.calon_subjek_json?.rt || '',
+             rw: t.calon_subjek_json?.rw || '',
+             kelurahan: t.calon_subjek_json?.kelurahan || '',
+             kecamatan: t.calon_subjek_json?.kecamatan || '',
+             kabupaten: t.calon_subjek_json?.kabupaten || 'Purbalingga',
+             kodePos: t.calon_subjek_json?.kode_pos || '',
+             luasTanah: t.luas_tanah_baru ? t.luas_tanah_baru.toString() : '',
+             luasBangunan: t.luas_bangunan_baru ? t.luas_bangunan_baru.toString() : '',
+             jumlahBangunan: t.jumlah_bangunan_baru ? t.jumlah_bangunan_baru.toString() : '',
+             jenisTanah: t.jenis_tanah_baru || '',
+             alamatObjek: t.jalan_op_baru || '',
+             blokKavObjek: t.blok_kav_op_baru || '',
+             rtObjek: t.rt_op_baru || '',
+             rwObjek: t.rw_op_baru || '',
+             kelurahanObjek: t.kelurahan_op_baru || '',
+             kecamatanObjek: t.kecamatan_op_baru || '',
+             batasUtara: t.batas_utara || '',
+             batasSelatan: t.batas_selatan || '',
+             batasTimur: t.batas_timur || '',
+             batasBarat: t.batas_barat || '',
+             koordinat_polygon: t.koordinat_polygon ? (typeof t.koordinat_polygon === 'string' ? JSON.parse(t.koordinat_polygon) : t.koordinat_polygon) : [],
+             latitude: t.koordinat_polygon ? (t.koordinat_polygon[0]?.lat?.toString() || '') : '',
+             longitude: t.koordinat_polygon ? (t.koordinat_polygon[0]?.lng?.toString() || '') : '',
+             lampiran: (data.lampiran || [])
+                .filter(l => l.jenis_dokumen.endsWith(`_PECAHAN_${idx + 1}`))
+                .map(l => ({ ...l, jenis_dokumen: l.jenis_dokumen.replace(`_PECAHAN_${idx + 1}`, '') }))
+          })) : [],
+          lampiran: (data.lampiran || []).filter(l => !l.jenis_dokumen.includes('_PECAHAN_'))
         }));
 
-        // Basic check for completion
         const isStep1Complete = !!(data.jenis_transaksi);
         const isStep2Complete = !!(subjek.nama_subjek && subjek.nama_subjek !== 'TANPA NAMA' && subjek.nik && subjek.nik !== '0000000000000000' && subjek.alamat_jalan && subjek.alamat_jalan !== 'TANPA ALAMAT');
         const isStep3Complete = !!(detailTujuan.luas_tanah_baru > 0 && detailTujuan.jenis_tanah_baru);
@@ -154,7 +196,7 @@ export const SpopProvider = ({ children }) => {
         if (isStep3Complete) {
           const numBng = detailTujuan.jumlah_bangunan_baru || 0;
           if (numBng === 0) {
-            isStep4Complete = true; // skipped
+            isStep4Complete = true; 
           } else if (detailTujuan.data_bangunan_json) {
             try {
               const parsed = typeof detailTujuan.data_bangunan_json === 'string' ? JSON.parse(detailTujuan.data_bangunan_json) : detailTujuan.data_bangunan_json;
@@ -177,9 +219,17 @@ export const SpopProvider = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error("Gagal memuat draf:", error);
+      console.error('Error saving step:', error);
+      let errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
+      if (Array.isArray(errorMsg)) {
+        errorMsg = errorMsg.join(', ');
+      } else if (typeof errorMsg === 'object') {
+        errorMsg = JSON.stringify(errorMsg);
+      }
+      setToast({ show: true, message: errorMsg, type: 'error' });
+      return false;
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
@@ -194,10 +244,11 @@ export const SpopProvider = ({ children }) => {
 
     const nop = `${nopObj.prov}${nopObj.kab}${nopObj.kec || '000'}${nopObj.kel || '000'}${nopObj.blok || '000'}${nopObj.nourut || '0000'}${nopObj.kode || '0'}`;
     const rawNop = nop.replace(/\D/g, '');
-    
-    const nopBersama = `${nopBersamaObj.prov || ''}${nopBersamaObj.kab || ''}${nopBersamaObj.kec || ''}${nopBersamaObj.kel || ''}${nopBersamaObj.blok || ''}${nopBersamaObj.nourut || ''}${nopBersamaObj.kode || ''}`;
-    const rawNopBersama = nopBersama.replace(/\D/g, '');
-    const rawNopAsalList = (mergedData.nopAsalList || []).map(n => n.replace(/\D/g, '')).filter(n => n.length >= 18);
+    const nopBersama = `${nopBersamaObj?.prov || ''}${nopBersamaObj?.kab || ''}${nopBersamaObj?.kec || ''}${nopBersamaObj?.kel || ''}${nopBersamaObj?.blok || ''}${nopBersamaObj?.nourut || ''}${nopBersamaObj?.kode || ''}`;
+    const rawNopBersama = nopBersama.replace(/\D/g, '').substring(0, 18);
+    const rawNopAsalList = (mergedData.nopAsalList || [])
+      .map(n => n.replace(/\D/g, '').substring(0, 18))
+      .filter(n => n.length === 18);
 
     const mapStatusWp = { 'PEMILIK': 'PEMILIK', 'PENYEWA': 'PENYEWA', 'PENGELOLA': 'PENGELOLA', 'PEMAKAI': 'PEMAKAI', 'SENGKETA': 'SENGKETA' };
     const mapPekerjaan = { 'PNS': 'PNS', 'ABRI': 'ABRI', 'PENSIUNAN': 'PENSIUNAN', 'BADAN': 'BADAN', 'LAINNYA': 'LAINNYA' };
@@ -249,7 +300,7 @@ export const SpopProvider = ({ children }) => {
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: mergedData.luasBangunan ? Number(mergedData.luasBangunan) : 0,
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
-        jenis_tanah_baru: mergedData.jenisTanah || undefined,
+        jenis_tanah_baru: mergedData.jenisTanah || 'TANAH_BANGUNAN',
         jalan_op_baru: mergedData.alamatObjek || '',
         kode_wilayah_baru: mergedData.kodeWilayahObjek || undefined,
         blok_kav_no_baru: mergedData.blokKavObjek || undefined,
@@ -260,16 +311,61 @@ export const SpopProvider = ({ children }) => {
         kecamatan_op_baru: mergedData.kecamatanObjek || mergedData.kecamatan || '',
         latitude: mergedData.latitude ? String(mergedData.latitude) : undefined,
         longitude: mergedData.longitude ? String(mergedData.longitude) : undefined,
-        koordinat_polygon: mergedData.koordinat_polygon || undefined,
+        koordinat_polygon: mergedData.koordinat_polygon || [],
         batas_utara: mergedData.batasUtara || undefined,
         batas_selatan: mergedData.batasSelatan || undefined,
         batas_timur: mergedData.batasTimur || undefined,
         batas_barat: mergedData.batasBarat || undefined,
         data_bangunan_json: mergedData.data_bangunan_json || undefined
       }];
+      
+      if (mergedData.transaksi === 'PECAH' && mergedData.pecahanList && mergedData.pecahanList.length > 0) {
+        detail_tujuan = mergedData.pecahanList.map((p, index) => ({
+          nik_calon_subjek: p.nik || undefined,
+          calon_subjek_json: {
+            nik: p.nik || '0000000000000000',
+            nama_subjek: p.nama || 'TANPA NAMA',
+            npwp: p.npwp || undefined,
+            no_hp: p.noTelp || undefined,
+            status_wp: mapStatusWp[p.statusWp] || undefined,
+            pekerjaan: mapPekerjaan[p.pekerjaan] || undefined,
+            email: p.email || undefined,
+            alamat_jalan: p.alamat || 'TANPA ALAMAT',
+            blok_kav_no_subjek: p.blokKav || undefined,
+            rt: p.rt || '',
+            rw: p.rw || '',
+            kode_pos: p.kodePos || undefined,
+            kelurahan: p.kelurahan || '',
+            kecamatan: p.kecamatan || undefined,
+            kabupaten: p.kabupaten || 'Purbalingga',
+            kode_wilayah: p.kodeWilayah || undefined
+          },
+          luas_tanah_baru: p.luasTanah ? parseFloat(p.luasTanah) : 0,
+          luas_bangunan_baru: p.luasBangunan ? parseFloat(p.luasBangunan) : 0,
+          jumlah_bangunan_baru: p.jumlahBangunan ? parseInt(p.jumlahBangunan, 10) : 0,
+          jalan_op_baru: p.alamatObjek || undefined,
+          blok_kav_no_baru: p.blokKavObjek || undefined,
+          no_persil_baru: p.noPersil || undefined,
+          rt_op_baru: p.rtObjek || undefined,
+          rw_op_baru: p.rwObjek || undefined,
+          kelurahan_op_baru: p.kelurahanObjek || p.kelurahan || '',
+          kecamatan_op_baru: p.kecamatanObjek || p.kecamatan || '',
+          jenis_tanah_baru: p.jenisTanah || 'TANAH_BANGUNAN',
+          latitude: p.latitude ? String(p.latitude) : undefined,
+          longitude: p.longitude ? String(p.longitude) : undefined,
+          koordinat_polygon: p.koordinat_polygon || [],
+          batas_utara: p.batasUtara || undefined,
+          batas_selatan: p.batasSelatan || undefined,
+          batas_timur: p.batasTimur || undefined,
+          batas_barat: p.batasBarat || undefined,
+          data_bangunan_json: (mergedData.data_bangunan_json || []).filter(b => b._pecahanIndex === index).length > 0
+            ? (mergedData.data_bangunan_json || []).filter(b => b._pecahanIndex === index)
+            : undefined,
+        }));
+      }
     }
 
-    return {
+    const payload = {
       jenis_transaksi: formData.transaksi || 'BARU',
       tahun_pajak: new Date().getFullYear(),
       tanggal_pengajuan: new Date().toISOString(),
@@ -278,11 +374,30 @@ export const SpopProvider = ({ children }) => {
       nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
       detail_asal: detail_asal.length > 0 ? detail_asal : undefined,
       detail_tujuan: detail_tujuan,
-      lampiran: (mergedData.lampiran || []).length > 0 ? mergedData.lampiran.map(l => ({
+    };
+
+    let finalLampiran = [...(mergedData.lampiran || [])];
+    if (mergedData.transaksi === 'PECAH' && mergedData.pecahanList) {
+      mergedData.pecahanList.forEach((p, idx) => {
+        if (p.lampiran && p.lampiran.length > 0) {
+          p.lampiran.forEach(l => {
+            finalLampiran.push({
+              jenis_dokumen: `${l.jenis_dokumen}_PECAHAN_${idx + 1}`,
+              url_file: l.url_file
+            });
+          });
+        }
+      });
+    }
+
+    if (finalLampiran.length > 0) {
+      payload.lampiran = finalLampiran.map(l => ({
         jenis_dokumen: l.jenis_dokumen,
         url_file: l.url_file
-      })) : undefined,
-    };
+      }));
+    }
+
+    return payload;
   };
 
   const saveDraft = async (overrideData = {}) => {

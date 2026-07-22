@@ -92,7 +92,12 @@ export default function Step1InformasiUmum() {
       }
     } catch (error) {
       console.error('Error saving step:', error);
-      const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
+      let errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
+      if (Array.isArray(errorMsg)) {
+        errorMsg = errorMsg.join(', ');
+      } else if (typeof errorMsg === 'object') {
+        errorMsg = JSON.stringify(errorMsg);
+      }
       setToast({ show: true, message: errorMsg, type: 'error' });
       setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
     } finally {
