@@ -32,9 +32,11 @@ export class TransaksiSpopService {
   ) {}
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
-    this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
-    if (!asDraft && dto.jenis_transaksi) {
-      this.validateByJenisTransaksi(dto.jenis_transaksi, dto);
+    if (!asDraft) {
+      this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
+      if (dto.jenis_transaksi) {
+        this.validateByJenisTransaksi(dto.jenis_transaksi, dto);
+      }
     }
 
     if (dto.detail_asal?.length) {
@@ -132,8 +134,6 @@ export class TransaksiSpopService {
        throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
     }
 
-    this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
-
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
     try {
@@ -198,7 +198,7 @@ export class TransaksiSpopService {
   async finalisasiSubmit(idTransaksi: string, currentUser: CurrentUser) {
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi: idTransaksi },
-      include: { pengaju: true },
+      include: { pengaju: true, detail_asal: true, detail_tujuan: true },
     });
 
     if (!transaksi) throw new NotFoundException('Pengajuan tidak ditemukan');
@@ -208,6 +208,16 @@ export class TransaksiSpopService {
     if (transaksi.pengaju.kode_wilayah !== currentUser.kode_wilayah && currentUser.role !== 'BAKEUDA') {
       throw new ForbiddenException('Akses ditolak');
     }
+
+    this.validateJumlahDetail(transaksi.jenis_transaksi, transaksi.detail_asal, transaksi.detail_tujuan);
+    
+    // Construct DTO-like object for validation
+    const dtoForValidation = {
+      ...transaksi,
+      detail_tujuan: transaksi.detail_tujuan,
+    } as any;
+    
+    this.validateByJenisTransaksi(transaksi.jenis_transaksi, dtoForValidation);
 
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
@@ -649,6 +659,7 @@ export class TransaksiSpopService {
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? 0,
         jumlah_bangunan: t.jumlah_bangunan_baru ?? 0,
+        koordinat_polygon: t.koordinat_polygon as any,
         status_aktif: true,
       },
     });
@@ -685,6 +696,7 @@ export class TransaksiSpopService {
         luas_bangunan: t.luas_bangunan_baru ?? undefined,
         jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
         jalan_op: t.jalan_op_baru ?? undefined,
+        koordinat_polygon: t.koordinat_polygon != null ? (t.koordinat_polygon as any) : undefined,
       },
     });
 
@@ -727,6 +739,7 @@ export class TransaksiSpopService {
           jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
           luas_tanah: t.luas_tanah_baru,
           luas_bangunan: t.luas_bangunan_baru ?? 0,
+          koordinat_polygon: t.koordinat_polygon as any,
         },
       });
 
@@ -749,6 +762,12 @@ export class TransaksiSpopService {
 
     const totalLuasTanah = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_tanah), 0);
     const totalLuasBangunan = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_bangunan), 0);
+    
+    // Gunakan luas_tanah_baru dari input (yang sudah diauto-fill & diedit manual di FE) jika ada,
+    // fallback ke perhitungan sum jika FE mengirim 0.
+    const t = transaksi.detail_tujuan[0];
+    const finalLuasTanah = (t.luas_tanah_baru != null && Number(t.luas_tanah_baru) > 0) ? Number(t.luas_tanah_baru) : totalLuasTanah;
+    const finalLuasBangunan = (t.luas_bangunan_baru != null && Number(t.luas_bangunan_baru) > 0) ? Number(t.luas_bangunan_baru) : totalLuasBangunan;
 
     // Fallback alamat — pakai data dari NOP asal PERTAMA di array detail_asal
     const objekAsalPertama = semuaObjekAsal.find((o) => o.nop === transaksi.detail_asal[0].nop_asal);
@@ -767,7 +786,6 @@ export class TransaksiSpopService {
     if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penggabungan NOP');
 
     // 3. Buat NOP baru hasil gabungan
-    const t = transaksi.detail_tujuan[0];
     const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
     
@@ -789,8 +807,9 @@ export class TransaksiSpopService {
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
         jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
-        luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
-        luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
+        luas_tanah: finalLuasTanah,
+        luas_bangunan: finalLuasBangunan,
+        koordinat_polygon: t.koordinat_polygon != null ? (t.koordinat_polygon as any) : undefined,
       },
     });
 
@@ -801,8 +820,8 @@ export class TransaksiSpopService {
     return {
       nop_asal_dinonaktifkan: transaksi.detail_asal.map((a) => a.nop_asal),
       nop_baru: nop,
-      luas_tanah_hasil: totalLuasTanah,
-      luas_bangunan_hasil: totalLuasBangunan,
+      luas_tanah_hasil: finalLuasTanah,
+      luas_bangunan_hasil: finalLuasBangunan,
       alamat_dipakai: objekBaru.jalan_op,
       alamat_dari_fallback: !t.jalan_op_baru,  // true kalau DESA tidak isi manual, dipakai dari fallback
     };

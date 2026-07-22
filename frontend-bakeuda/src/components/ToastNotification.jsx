@@ -9,7 +9,7 @@ export default function ToastNotification({ show, message, type = 'success', onC
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [show, duration, onClose]);
+  }, [show, message, duration, onClose]);
 
   if (!show) return null;
 

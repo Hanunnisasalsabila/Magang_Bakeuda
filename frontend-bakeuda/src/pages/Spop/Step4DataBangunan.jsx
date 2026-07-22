@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
+import api from '../../utils/axios';
 
 export default function Step4DataBangunan() {
   const navigate = useNavigate();
@@ -9,6 +10,29 @@ export default function Step4DataBangunan() {
   
   const parsedTotal = ctxFormData?.jumlahBangunan ? parseInt(ctxFormData.jumlahBangunan, 10) : 1;
   const currentId = ctxId || id_transaksi || '';
+
+  const isPecah = ctxFormData?.transaksi === 'PECAH';
+  const requiredBangunan = React.useMemo(() => {
+    if (isPecah) {
+      const list = [];
+      ctxFormData?.pecahanList?.forEach((p, idx) => {
+        const jum = parseInt(p.jumlahBangunan, 10) || 0;
+        for (let i = 1; i <= jum; i++) {
+          list.push({ pecahanIndex: idx, nomorBangunan: i });
+        }
+      });
+      return list;
+    } else {
+      const list = [];
+      const jum = parseInt(ctxFormData?.jumlahBangunan, 10) || 1;
+      for (let i = 1; i <= jum; i++) {
+        list.push({ pecahanIndex: null, nomorBangunan: i });
+      }
+      return list;
+    }
+  }, [ctxFormData, isPecah]);
+
+  const [activeRequiredIndex, setActiveRequiredIndex] = useState(0);
 
   const formatNop = (n) => {
     if (typeof n === 'string') return n;
@@ -81,33 +105,74 @@ export default function Step4DataBangunan() {
 
   useEffect(() => {
     if (!spopData) return;
-    const detailTujuan = spopData.detail_tujuan && spopData.detail_tujuan[0];
-    if (detailTujuan?.data_bangunan_json) {
-      try {
+    
+    let flatList = [];
+    if (isPecah) {
+      spopData.detail_tujuan?.forEach((t, idx) => {
+         if (t.data_bangunan_json) {
+           let parsed = typeof t.data_bangunan_json === 'string' ? JSON.parse(t.data_bangunan_json) : t.data_bangunan_json;
+           if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+           if (Array.isArray(parsed)) {
+             parsed.forEach(b => {
+               b._pecahanIndex = idx;
+               flatList.push(b);
+             });
+           }
+         }
+      });
+    } else {
+      const detailTujuan = spopData.detail_tujuan && spopData.detail_tujuan[0];
+      if (detailTujuan?.data_bangunan_json) {
         let parsedList = typeof detailTujuan.data_bangunan_json === 'string' 
           ? JSON.parse(detailTujuan.data_bangunan_json) 
           : detailTujuan.data_bangunan_json;
-        
         if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
-
-        if (Array.isArray(parsedList) && parsedList.length > 0) {
-          parsedList.forEach(bangunan => {
-            Object.keys(bangunan).forEach(key => {
-              if (bangunan[key] === 0) bangunan[key] = '';
-            });
-          });
-
-          setDraftDataList(parsedList);
-          setBangunanList([]);
-          setNomorBangunan(1);
-          setTotalBangunan(parsedTotal > 0 ? parsedTotal : parsedList.length);
-          setTimeout(() => applyDataToForm(parsedList[0]), 0);
+        if (Array.isArray(parsedList)) {
+          flatList = parsedList;
         }
-      } catch (e) {
-        console.error('Failed to parse data_bangunan_json', e);
       }
     }
-  }, [spopData, parsedTotal]);
+
+    if (flatList.length > 0) {
+      flatList.forEach(bangunan => {
+        Object.keys(bangunan).forEach(key => {
+          if (bangunan[key] === 0) bangunan[key] = '';
+        });
+      });
+      setDraftDataList(flatList);
+      setBangunanList([]);
+      setActiveRequiredIndex(0);
+      setTimeout(() => applyDataToForm(flatList[0]), 0);
+    }
+  }, [spopData, isPecah]);
+
+  // Auto-fill Luas Bangunan for GABUNG
+  useEffect(() => {
+    const fetchLuasGabung = async () => {
+      if (ctxFormData.transaksi === 'GABUNG' && ctxFormData.nopAsalList?.length > 1 && activeRequiredIndex === 0) {
+        if (!formData.luasBangunan || formData.luasBangunan === '0') {
+          let totalLuas = 0;
+          for (const rawNop of ctxFormData.nopAsalList) {
+            const cleanNop = String(rawNop).replace(/\D/g, '');
+            if (cleanNop.length === 18) {
+              try {
+                const res = await api.get(`/objek-pajak/${cleanNop}`);
+                if (res.data?.data?.luas_bangunan) {
+                  totalLuas += parseFloat(res.data.data.luas_bangunan);
+                }
+              } catch (e) {
+                console.error('Gagal mengambil detail NOP', cleanNop);
+              }
+            }
+          }
+          if (totalLuas > 0) {
+            setFormData(prev => ({ ...prev, luasBangunan: totalLuas.toString() }));
+          }
+        }
+      }
+    };
+    fetchLuasGabung();
+  }, [ctxFormData.transaksi, ctxFormData.nopAsalList, nomorBangunan]);
 
   const [formData, setFormData] = useState({
     // INDUK
@@ -306,6 +371,11 @@ export default function Step4DataBangunan() {
     sanitizedData.jumlahBng = totalBangunan.toString();
     sanitizedData.bangunanM2 = sanitizedData.luasBangunan ? sanitizedData.luasBangunan.toString() : '0';
 
+    if (requiredBangunan[activeRequiredIndex]) {
+      sanitizedData._pecahanIndex = requiredBangunan[activeRequiredIndex].pecahanIndex;
+    }
+    sanitizedData.jumlahBng = requiredBangunan.length.toString();
+
     return sanitizedData;
   };
 
@@ -357,19 +427,20 @@ export default function Step4DataBangunan() {
     const sanitizedData = getSanitizedData();
     const newBangunanList = [...bangunanList, sanitizedData];
     
-    if (nomorBangunan < totalBangunan) {
+    if (activeRequiredIndex < requiredBangunan.length - 1) {
       setBangunanList(newBangunanList);
       setIsSubmitting(false);
-      setToast({ show: true, message: `Data Bangunan Ke-${nomorBangunan} berhasil disimpan sementara. Lanjut ke bangunan berikutnya.`, type: 'success' });
+      setToast({ show: true, message: `Data Bangunan berhasil disimpan sementara. Lanjut ke bangunan berikutnya.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
       
-      if (isRevisi && draftDataList[nomorBangunan]) {
-        applyDataToForm(draftDataList[nomorBangunan]);
+      const nextIdx = activeRequiredIndex + 1;
+      if (isRevisi && draftDataList[nextIdx]) {
+        applyDataToForm(draftDataList[nextIdx]);
       } else {
         resetForm();
       }
       
-      setNomorBangunan(prev => prev + 1);
+      setActiveRequiredIndex(nextIdx);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       try {
@@ -377,7 +448,7 @@ export default function Step4DataBangunan() {
         updateCompletion(4, true);
         await saveDraft({ data_bangunan_json: newBangunanList });
         setIsSubmitting(false);
-        setToast({ show: true, message: 'Data Bangunan berhasil disimpan.', type: 'success' });
+        setToast({ show: true, message: 'Seluruh Data Bangunan berhasil disimpan.', type: 'success' });
         setTimeout(() => navigate(`/spop/konfirmasi/${currentId}`), 1000);
       } catch (error) {
         setIsSubmitting(false);
@@ -809,7 +880,7 @@ export default function Step4DataBangunan() {
               className={`px-12 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 group ${isSubmitting ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed opacity-70' : 'bg-primary text-on-primary hover:shadow-lg hover:brightness-110 active:scale-95'}`}
             >
               <span className="material-symbols-outlined">{isSubmitting ? 'hourglass_empty' : 'save'}</span>
-              {isSubmitting ? 'Menyimpan...' : nomorBangunan < totalBangunan ? 'Simpan & Lanjut ke Bangunan Berikutnya' : isRevisi ? 'Simpan & Ajukan Ulang ke Bakeuda' : 'Kirim Seluruh Data LSPOP'}
+              {isSubmitting ? 'Menyimpan...' : (activeRequiredIndex < requiredBangunan.length - 1 ? 'Simpan & Lanjut ke Bangunan Berikutnya' : (isRevisi ? 'Simpan & Ajukan Ulang ke Bakeuda' : 'Kirim Seluruh Data LSPOP'))}
             </button>
           </div>
         </form>

@@ -136,6 +136,185 @@ export default function Step4Konfirmasi() {
     }
   };
 
+  const renderDataBlock = (data, idx = null) => (
+    <div key={idx ?? 'single'} className={idx !== null ? 'p-6 border-b border-outline-variant last:border-b-0' : 'p-6'}>
+      {idx !== null && (
+        <h5 className="font-bold text-lg text-primary mb-6 bg-primary/10 inline-block px-4 py-2 rounded-lg">
+          PECAHAN {idx + 1}
+        </h5>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Identitas Subjek Pajak</h6>
+          <table className="w-full text-sm">
+            <tbody>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant w-1/3">Nama Lengkap</td>
+                <td className="py-1.5 font-bold text-on-surface">{data.nama || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">NIK (No. KTP)</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.nik || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">NPWP</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.npwp || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">No. Telp / HP</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.noTelp || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Email</td>
+                <td className="py-1.5 text-on-surface">{data.email || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Status WP</td>
+                <td className="py-1.5 text-on-surface">{data.statusWp || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Pekerjaan</td>
+                <td className="py-1.5 text-on-surface">{data.pekerjaan === 'ABRI' ? 'TNI/POLRI' : (data.pekerjaan || '-')}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant align-top">Alamat WP</td>
+                <td className="py-1.5 text-on-surface leading-snug">
+                  {data.alamat || '-'}, RT {data.rt || '-'}/RW {data.rw || '-'}, {data.kelurahan || '-'}, {data.kabupaten || '-'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="pt-4 space-y-4">
+            <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Titik Koordinat</h6>
+            <div className="font-data-mono text-on-surface">
+              {data.koordinat_polygon && data.koordinat_polygon.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {data.koordinat_polygon.map((pos, i) => (
+                    <div key={i} className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
+                      <span className="font-bold text-primary border-b border-outline-variant/30 pb-1 mb-0.5">Titik Koordinat Ke-{i + 1}</span>
+                      <div className="flex justify-between items-center gap-4">
+                        <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
+                        <span className="font-data-mono">{pos.lat}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-4">
+                        <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
+                        <span className="font-data-mono">{pos.lng}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : data.latitude && data.longitude ? (
+                <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
+                    <span className="font-data-mono">{data.latitude}</span>
+                  </div>
+                  <div className="flex justify-between items-center gap-4">
+                    <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
+                    <span className="font-data-mono">{data.longitude}</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm italic text-on-surface-variant font-sans">Belum ditentukan</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Spesifikasi Objek Pajak</h6>
+          <table className="w-full text-sm">
+            <tbody>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant w-1/3">Alamat Objek</td>
+                <td className="py-1.5 font-bold text-on-surface">{data.alamatObjek || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Luas Tanah</td>
+                <td className="py-1.5 font-bold text-on-surface">{data.luasTanah || '-'} M²</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant align-top">Detail Wilayah</td>
+                <td className="py-1.5 text-on-surface leading-snug">
+                  RT {data.rtObjek || '-'}/RW {data.rwObjek || '-'}, {data.kelurahanObjek || '-'}, {data.kecamatanObjek || '-'}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">No. Persil</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{formData.noPersil || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Jenis Tanah</td>
+                <td className="py-1.5 text-on-surface">{data.jenisTanah || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Bangunan</td>
+                <td className="py-1.5 text-on-surface flex items-center gap-2">
+                  {data.jumlahBangunan || '0'} Unit ({data.luasBangunan || '0'} M²)
+                  {parseInt(data.jumlahBangunan || '0') > 0 && (
+                    <button onClick={() => setShowBangunanModal(true)} className="text-xs text-primary underline hover:text-primary/80 font-bold ml-2">
+                      Lihat Detail
+                    </button>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Batas Utara</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.batasUtara || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Batas Selatan</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.batasSelatan || '-'}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="pt-4 space-y-4">
+            <div className="flex justify-between items-end border-b border-outline-variant pb-2">
+              <h6 className="font-bold text-primary uppercase text-xs tracking-wider">Peta Lokasi Objek</h6>
+              <button onClick={() => navigate(`/spop/objek-pajak/${idTransaksi || ''}`)} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline transition-all">
+                <span className="material-symbols-outlined text-[14px]">edit_location_alt</span>
+                Ubah Peta / Titik
+              </button>
+            </div>
+            <div className="h-[280px] w-full rounded-xl overflow-hidden border border-outline-variant/50 shadow-sm z-0 relative">
+              {(data.koordinat_polygon && data.koordinat_polygon.length > 0) || (data.latitude && data.longitude) ? (
+                <MapContainer 
+                  key={`map-konfirmasi-${idx ?? 'single'}`}
+                  center={data.koordinat_polygon?.length > 0 ? [data.koordinat_polygon[0].lat, data.koordinat_polygon[0].lng] : [parseFloat(data.latitude), parseFloat(data.longitude)]} 
+                  zoom={17} 
+                  style={{ height: '100%', width: '100%', zIndex: 0 }}
+                  zoomControl={true}
+                  scrollWheelZoom={true}
+                  dragging={true}
+                  doubleClickZoom={true}
+                >
+                  <TileLayer url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" subdomains={['mt0', 'mt1', 'mt2', 'mt3']} maxZoom={20} />
+                  {data.koordinat_polygon && data.koordinat_polygon.length > 0 ? (
+                    <>
+                      <Polygon positions={data.koordinat_polygon} color="blue" />
+                      {data.koordinat_polygon.map((pos, i) => (
+                        <Marker key={i} position={[pos.lat, pos.lng]} icon={dotIcon} />
+                      ))}
+                    </>
+                  ) : (
+                    <Marker position={[parseFloat(data.latitude), parseFloat(data.longitude)]} icon={dotIcon} />
+                  )}
+                </MapContainer>
+              ) : (
+                <div className="w-full h-full bg-surface-container-low flex flex-col items-center justify-center text-on-surface-variant gap-2">
+                  <span className="material-symbols-outlined text-4xl opacity-50">location_off</span>
+                  <p className="text-sm italic font-sans">Peta belum ditentukan</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -255,174 +434,13 @@ export default function Step4Konfirmasi() {
             </div>
           </div>
 
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Identitas Subjek Pajak</h6>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant w-1/3">Nama Lengkap</td>
-                    <td className="py-1.5 font-bold text-on-surface">{formData.nama || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">NIK (No. KTP)</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.nik || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">NPWP</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.npwp || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">No. Telp / HP</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.noTelp || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Email</td>
-                    <td className="py-1.5 text-on-surface">{formData.email || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Status WP</td>
-                    <td className="py-1.5 text-on-surface">{formData.statusWp || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Pekerjaan</td>
-                    <td className="py-1.5 text-on-surface">{formData.pekerjaan === 'ABRI' ? 'TNI/POLRI' : (formData.pekerjaan || '-')}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant align-top">Alamat WP</td>
-                    <td className="py-1.5 text-on-surface leading-snug">
-                      {formData.alamat || '-'}, RT {formData.rt || '-'}/RW {formData.rw || '-'}, {formData.kelurahan || '-'}, {formData.kabupaten || '-'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className="pt-4 space-y-4">
-                <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Titik Koordinat</h6>
-                <div className="font-data-mono text-on-surface">
-                  {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      {formData.koordinat_polygon.map((pos, idx) => (
-                        <div key={idx} className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
-                          <span className="font-bold text-primary border-b border-outline-variant/30 pb-1 mb-0.5">Titik Koordinat Ke-{idx + 1}</span>
-                          <div className="flex justify-between items-center gap-4">
-                            <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
-                            <span className="font-data-mono">{pos.lat}</span>
-                          </div>
-                          <div className="flex justify-between items-center gap-4">
-                            <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
-                            <span className="font-data-mono">{pos.lng}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : formData.latitude && formData.longitude ? (
-                    <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
-                      <div className="flex justify-between items-center gap-4">
-                        <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
-                        <span className="font-data-mono">{formData.latitude}</span>
-                      </div>
-                      <div className="flex justify-between items-center gap-4">
-                        <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
-                        <span className="font-data-mono">{formData.longitude}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm italic text-on-surface-variant font-sans">Belum ditentukan</p>
-                  )}
-                </div>
-              </div>
+          {formData.transaksi === 'PECAH' && formData.pecahanList?.length > 0 ? (
+            <div className="divide-y divide-outline-variant">
+              {formData.pecahanList.map((p, idx) => renderDataBlock(p, idx))}
             </div>
-
-            <div className="space-y-4">
-              <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Spesifikasi Objek Pajak</h6>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant w-1/3">Alamat Objek</td>
-                    <td className="py-1.5 font-bold text-on-surface">{formData.alamatObjek || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Luas Tanah</td>
-                    <td className="py-1.5 font-bold text-on-surface">{formData.luasTanah || '-'} M²</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant align-top">Detail Wilayah</td>
-                    <td className="py-1.5 text-on-surface leading-snug">
-                      RT {formData.rtObjek || '-'}/RW {formData.rwObjek || '-'}, {formData.kelurahanObjek || '-'}, {formData.kecamatanObjek || '-'}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">No. Persil</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.noPersil || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Jenis Tanah</td>
-                    <td className="py-1.5 text-on-surface">{formData.jenisTanah || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Bangunan</td>
-                    <td className="py-1.5 text-on-surface flex items-center gap-2">
-                      {formData.jumlahBangunan || '0'} Unit ({formData.luasBangunan || '0'} M²)
-                      {parseInt(formData.jumlahBangunan || '0') > 0 && (
-                        <button onClick={() => setShowBangunanModal(true)} className="text-xs text-primary underline hover:text-primary/80 font-bold ml-2">
-                          Lihat Detail
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Batas Utara</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.batasUtara || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1.5 text-on-surface-variant">Batas Selatan</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.batasSelatan || '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div className="pt-4 space-y-4">
-                <div className="flex justify-between items-end border-b border-outline-variant pb-2">
-                  <h6 className="font-bold text-primary uppercase text-xs tracking-wider">Peta Lokasi Objek</h6>
-                  <button onClick={() => navigate(`/spop/objek-pajak/${idTransaksi || ''}`)} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline transition-all">
-                    <span className="material-symbols-outlined text-[14px]">edit_location_alt</span>
-                    Ubah Peta / Titik
-                  </button>
-                </div>
-                <div className="h-[280px] w-full rounded-xl overflow-hidden border border-outline-variant/50 shadow-sm z-0 relative">
-                  {(formData.koordinat_polygon && formData.koordinat_polygon.length > 0) || (formData.latitude && formData.longitude) ? (
-                    <MapContainer 
-                      key="map-konfirmasi-interactive"
-                      center={formData.koordinat_polygon?.length > 0 ? [formData.koordinat_polygon[0].lat, formData.koordinat_polygon[0].lng] : [parseFloat(formData.latitude), parseFloat(formData.longitude)]} 
-                      zoom={17} 
-                      style={{ height: '100%', width: '100%', zIndex: 0 }}
-                      zoomControl={true}
-                      scrollWheelZoom={true}
-                      dragging={true}
-                      doubleClickZoom={true}
-                    >
-                      <TileLayer url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" subdomains={['mt0', 'mt1', 'mt2', 'mt3']} maxZoom={20} />
-                      {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
-                        <>
-                          <Polygon positions={formData.koordinat_polygon} color="blue" />
-                          {formData.koordinat_polygon.map((p, idx) => (
-                            <Marker key={idx} position={[p.lat, p.lng]} icon={dotIcon} />
-                          ))}
-                        </>
-                      ) : (
-                        <Marker position={[parseFloat(formData.latitude), parseFloat(formData.longitude)]} icon={dotIcon} />
-                      )}
-                    </MapContainer>
-                  ) : (
-                    <div className="w-full h-full bg-surface-container-low flex flex-col items-center justify-center text-on-surface-variant gap-2">
-                      <span className="material-symbols-outlined text-4xl opacity-50">location_off</span>
-                      <p className="text-sm italic font-sans">Peta belum ditentukan</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          ) : (
+            renderDataBlock(formData)
+          )}
         </div>
 
         {/* LAMPIRAN */}
@@ -559,14 +577,28 @@ export default function Step4Konfirmasi() {
               {(() => {
                 let parsedList = [];
                 try {
-                  if (formData?.data_bangunan_json) {
-                    parsedList = formData.data_bangunan_json;
-                    if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
+                  if (formData?.transaksi === 'PECAH') {
+                    if (formData?.data_bangunan_json && formData.data_bangunan_json.length > 0) {
+                       parsedList = formData.data_bangunan_json;
+                    } else if (spopData?.detail_tujuan) {
+                       spopData.detail_tujuan.forEach(t => {
+                          if (t.data_bangunan_json) {
+                             let parsed = typeof t.data_bangunan_json === 'string' ? JSON.parse(t.data_bangunan_json) : t.data_bangunan_json;
+                             if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                             if (Array.isArray(parsed)) parsedList.push(...parsed);
+                          }
+                       });
+                    }
                   } else {
-                    const detailTujuan = spopData?.detail_tujuan?.[0];
-                    if (detailTujuan?.data_bangunan_json) {
-                      parsedList = JSON.parse(detailTujuan.data_bangunan_json);
+                    if (formData?.data_bangunan_json) {
+                      parsedList = formData.data_bangunan_json;
                       if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
+                    } else {
+                      const detailTujuan = spopData?.detail_tujuan?.[0];
+                      if (detailTujuan?.data_bangunan_json) {
+                        parsedList = JSON.parse(detailTujuan.data_bangunan_json);
+                        if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
+                      }
                     }
                   }
                 } catch (e) { console.error('Gagal parse bangunan', e); }
