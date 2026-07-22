@@ -8,9 +8,9 @@ export default function DashboardAdmin() {
   const navigate = useNavigate();
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
   const [bentoCards, setBentoCards] = useState([
-    { title: 'Total Pengajuan', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
-    { title: 'Antrean Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
-    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
+    { title: 'Total Pengajuan', value: '0', icon: 'description', badgeText: '', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
+    { title: 'Antrean Verifikasi', value: '0', icon: 'fact_check', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+    { title: 'Total Objek Pajak', value: '0', icon: 'maps_home_work', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
   ]);
 
   const [verifiers, setVerifiers] = useState([]);
@@ -31,9 +31,9 @@ export default function DashboardAdmin() {
         const dataStats = statsRes.data.data;
         const totalObj = (objekStatsRes && objekStatsRes.data && objekStatsRes.data.data) ? objekStatsRes.data.data.total : 0;
         setBentoCards([
-          { title: 'Total Pengajuan', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Semua Data', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
-          { title: 'Antrean Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
-          { title: 'Total Objek Pajak', value: totalObj.toString(), icon: 'location_city', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
+          { title: 'Total Pengajuan', value: (dataStats.totalDikirim || 0).toString(), icon: 'description', badgeText: 'Semua Data', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
+          { title: 'Antrean Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'fact_check', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+          { title: 'Total Objek Pajak', value: totalObj.toString(), icon: 'maps_home_work', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
         ]);
 
         if (usersRes.data && usersRes.data.success) {
@@ -175,13 +175,16 @@ export default function DashboardAdmin() {
       {/* Bento Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {bentoCards.map((card, i) => (
-          <div key={i} onClick={() => navigate(card.link)} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer">
+          <div key={i} onClick={() => navigate(card.link)} className="bg-white border border-gray-200 p-6 rounded-lg hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer relative overflow-hidden group shadow-sm">
+            {/* Background shape */}
+            <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 group-hover:scale-110 transition-transform ${card.badgeColor.includes('error') ? 'bg-red-50' : card.badgeColor.includes('secondary') ? 'bg-blue-50' : 'bg-gray-50'}`}></div>
+            
             <div className="flex justify-between items-start mb-4">
-              <div className={`p-3 rounded-lg ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-primary-container text-on-primary-container').replace('bg-error-container text-error', 'bg-error-container text-error').replace('bg-secondary-container text-on-secondary-container', 'bg-secondary-container text-on-secondary-container')}`}>
-                <span className="material-symbols-outlined">{card.icon}</span>
+              <div className={`p-3 rounded-lg shadow-sm ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-blue-100 text-blue-700').replace('bg-error-container text-error', 'bg-red-100 text-red-700')}`}>
+                <span className="material-symbols-outlined text-[24px]">{card.icon}</span>
               </div>
               {card.badgeText && (
-                <span className={`text-xs font-bold ${card.badgeColor.replace('text-secondary', 'text-blue-600').replace('text-error font-bold', 'text-red-600').replace('text-on-surface-variant', 'text-on-surface-variant')}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${card.badgeColor.includes('error') ? 'text-red-700 bg-red-50 border-red-200' : card.badgeColor.includes('secondary') ? 'text-blue-700 bg-blue-50 border-blue-200' : 'text-gray-700 bg-gray-100 border-gray-200'}`}>
                   {card.badgeText}
                 </span>
               )}
@@ -191,11 +194,11 @@ export default function DashboardAdmin() {
                 </div>
               )}
             </div>
-            <p className="text-on-surface-variant font-label-md font-bold mb-1">
+            <p className="text-on-surface-variant font-label-md font-bold mb-1 uppercase tracking-wide text-xs">
               {card.title}
             </p>
-            <h2 className="text-3xl font-bold text-on-surface">{card.value}</h2>
-            <p className="text-[10px] text-gray-400 mt-2 italic">{card.meta}</p>
+            <h2 className="text-4xl font-extrabold text-on-surface">{card.value}</h2>
+            <p className="text-[11px] text-gray-500 mt-2 italic">{card.meta}</p>
           </div>
         ))}
       </div>

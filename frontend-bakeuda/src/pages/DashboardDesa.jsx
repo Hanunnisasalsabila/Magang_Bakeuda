@@ -96,17 +96,20 @@ export default function DashboardDesa() {
           <button
             key={i}
             onClick={() => navigate(stat.link)}
-            className={`bg-surface-container-lowest p-6 border border-outline-variant rounded-xl shadow-sm transition-all duration-200 group ${stat.borderHover} text-left w-full cursor-pointer hover:shadow-md active:scale-[0.98]`}
+            className={`bg-white p-6 border border-gray-200 rounded-xl shadow-sm transition-all duration-200 group ${stat.borderHover} text-left w-full cursor-pointer hover:shadow-lg hover:-translate-y-1 relative overflow-hidden`}
           >
+            {/* Background shape */}
+            <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 group-hover:scale-110 transition-transform ${stat.iconBg} opacity-20`}></div>
+
             <div
-              className={`w-12 h-12 ${stat.iconBg} rounded-lg flex items-center justify-center ${stat.iconColor} mb-4 group-hover:scale-110 transition-transform`}
+              className={`w-12 h-12 ${stat.iconBg} rounded-lg flex items-center justify-center ${stat.iconColor} mb-4 group-hover:scale-110 transition-transform shadow-sm`}
             >
               <span className="material-symbols-outlined text-[24px]">
                 {stat.icon}
               </span>
             </div>
-            <p className="text-on-surface-variant font-label-md font-bold">{stat.title}</p>
-            <p className="text-3xl font-black text-on-surface mt-1">{stat.value}</p>
+            <p className="text-on-surface-variant font-label-md font-bold uppercase tracking-wide text-xs">{stat.title}</p>
+            <p className="text-4xl font-extrabold text-on-surface mt-1">{stat.value}</p>
             <div className={`mt-4 flex items-center gap-1 ${stat.trendColor}`}>
               <span className="material-symbols-outlined text-[16px]">{stat.trendIcon}</span>
               <span className="text-[12px] font-bold">{stat.trend}</span>
