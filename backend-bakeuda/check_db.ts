@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const tx = await prisma.transaksi_spop.findFirst({
+  const tx = await prisma.transaksiSpop.findFirst({
     where: { jenis_transaksi: 'PECAH' },
     orderBy: { tanggal_pengajuan: 'desc' },
     include: { pengaju: true }

@@ -39,7 +39,7 @@ export default function RiwayatPersetujuan() {
 
         const mapItem = (item, status) => {
           const detail = item.detail_tujuan?.[0] || {};
-          const nopRaw = detail.nop_generated || detail.no_persil_baru || '';
+          const nopRaw = detail.nop_generated || '';
           return {
             id: item.id_transaksi,
             nop: formatNOP(nopRaw),

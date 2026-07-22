@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IMaskInput } from 'react-imask';
 import { useSpop } from '../../context/SpopContext';
 import SegmentedNOPInput from '../../components/SegmentedNOPInput';
 import ToastNotification from '../../components/ToastNotification';
@@ -410,12 +411,13 @@ export default function Step1InformasiUmum() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {(formData.nopAsalList || ['']).map((nop, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="text"
+                    <IMaskInput
+                      mask="00.00.000.000.000.0000.0"
                       value={nop || '33.03.'}
-                      onChange={(e) => {
+                      unmask={false}
+                      onAccept={(value) => {
                         const newNopAsal = [...(formData.nopAsalList || [''])];
-                        newNopAsal[idx] = formatNopString(e.target.value);
+                        newNopAsal[idx] = value;
                         setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
                       }}
                       placeholder="33.03.XXX.XXX.XXX.XXXX.X"
@@ -440,10 +442,11 @@ export default function Step1InformasiUmum() {
           {formData.transaksi !== 'HAPUS' && (
             <div className="flex flex-col gap-2">
               <label className="text-xs text-on-surface-variant font-bold uppercase flex items-center gap-1">No. SPPT Lama <span className="font-normal text-[11px] ml-1 flex-none normal-case">(Opsional)</span></label>
-              <input
-                type="text"
+              <IMaskInput
+                mask="000.000.000.000.000.000"
                 value={formData.spptLama}
-                onChange={(e) => setFormData(prev => ({ ...prev, spptLama: formatSpptString(e.target.value) }))}
+                unmask={false}
+                onAccept={(value) => setFormData(prev => ({ ...prev, spptLama: value }))}
                 placeholder="XXX.XXX.XXX"
                 className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
               />

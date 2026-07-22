@@ -39,6 +39,56 @@ export default function Step4Konfirmasi() {
   const [completedCrop, setCompletedCrop] = useState(null);
   const imgRef = useRef(null);
   const [cropHistory, setCropHistory] = useState({});
+  const [hapusNopData, setHapusNopData] = useState(null);
+
+  React.useEffect(() => {
+    if (formData.transaksi === 'HAPUS' && formData.nopAsalList?.[0]) {
+      const fetchHapusNopData = async () => {
+        try {
+          const rawNop = formData.nopAsalList[0].replace(/\D/g, '');
+          if (rawNop.length === 18) {
+            const res = await api.get(`/objek-pajak/${rawNop}`);
+            if (res.data?.success) {
+              const data = res.data.data;
+              setHapusNopData({
+                nama: data.subjek_pajak?.nama_subjek,
+                nik: data.subjek_pajak?.nik,
+                npwp: data.subjek_pajak?.npwp,
+                noTelp: data.subjek_pajak?.no_hp,
+                email: data.subjek_pajak?.email,
+                statusWp: data.subjek_pajak?.status_wp,
+                pekerjaan: data.subjek_pajak?.pekerjaan,
+                alamat: data.subjek_pajak?.alamat_jalan,
+                rt: data.subjek_pajak?.rt,
+                rw: data.subjek_pajak?.rw,
+                kabupaten: data.subjek_pajak?.kabupaten,
+                kelurahan: data.subjek_pajak?.kelurahan,
+                kecamatan: data.subjek_pajak?.kecamatan,
+                alamatObjek: data.jalan_op,
+                luasTanah: data.luas_tanah,
+                rtObjek: data.rt_op,
+                rwObjek: data.rw_op,
+                kelurahanObjek: data.kelurahan_op,
+                kecamatanObjek: data.kecamatan_op,
+                noPersil: data.no_persil,
+                jenisTanah: data.jenis_tanah,
+                jumlahBangunan: data.bangunan?.length || 0,
+                luasBangunan: data.luas_bangunan || 0,
+                batasUtara: data.batas_utara,
+                batasSelatan: data.batas_selatan,
+                batasTimur: data.batas_timur,
+                batasBarat: data.batas_barat,
+                koordinat_polygon: data.koordinat_polygon
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch NOP data', e);
+        }
+      };
+      fetchHapusNopData();
+    }
+  }, [formData.transaksi, formData.nopAsalList]);
 
   const handleUndo = () => {
     const docHist = cropHistory[previewDocUid];
@@ -136,7 +186,17 @@ export default function Step4Konfirmasi() {
     }
   };
 
-  const renderDataBlock = (data, idx = null) => (
+  const renderDataBlock = (data, idx = null) => {
+    let calcLuasBangunan = data.luasBangunan || '0';
+    if (parseFloat(calcLuasBangunan) === 0 && Array.isArray(formData.data_bangunan_json)) {
+      const bgnList = idx !== null 
+        ? formData.data_bangunan_json.filter(b => b._pecahanIndex === idx)
+        : formData.data_bangunan_json;
+      const sum = bgnList.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0);
+      if (sum > 0) calcLuasBangunan = sum.toString();
+    }
+
+    return (
     <div key={idx ?? 'single'} className={idx !== null ? 'p-6 border-b border-outline-variant last:border-b-0' : 'p-6'}>
       {idx !== null && (
         <h5 className="font-bold text-lg text-primary mb-6 bg-primary/10 inline-block px-4 py-2 rounded-lg">
@@ -164,10 +224,7 @@ export default function Step4Konfirmasi() {
                 <td className="py-1.5 text-on-surface-variant">No. Telp / HP</td>
                 <td className="py-1.5 font-data-mono text-on-surface">{data.noTelp || '-'}</td>
               </tr>
-              <tr>
-                <td className="py-1.5 text-on-surface-variant">Email</td>
-                <td className="py-1.5 text-on-surface">{data.email || '-'}</td>
-              </tr>
+
               <tr>
                 <td className="py-1.5 text-on-surface-variant">Status WP</td>
                 <td className="py-1.5 text-on-surface">{data.statusWp || '-'}</td>
@@ -250,7 +307,7 @@ export default function Step4Konfirmasi() {
               <tr>
                 <td className="py-1.5 text-on-surface-variant">Bangunan</td>
                 <td className="py-1.5 text-on-surface flex items-center gap-2">
-                  {data.jumlahBangunan || '0'} Unit ({data.luasBangunan || '0'} M²)
+                  {data.jumlahBangunan || '0'} Unit ({calcLuasBangunan} M²)
                   {parseInt(data.jumlahBangunan || '0') > 0 && (
                     <button onClick={() => setShowBangunanModal(true)} className="text-xs text-primary underline hover:text-primary/80 font-bold ml-2">
                       Lihat Detail
@@ -312,7 +369,8 @@ export default function Step4Konfirmasi() {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
 
   const handleFileUpload = async (e) => {
@@ -427,6 +485,8 @@ export default function Step4Konfirmasi() {
               <p className="font-data-mono font-bold text-on-surface text-lg mt-0.5">
                 {['BARU', 'PECAH'].includes(formData.transaksi) ? (
                   <span className="text-on-surface-variant text-sm italic">Akan digenerate oleh Bakeuda</span>
+                ) : formData.transaksi === 'HAPUS' ? (
+                  formData.nopAsalList?.[0] || '-'
                 ) : (
                   `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}.${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
                 )}
@@ -437,6 +497,14 @@ export default function Step4Konfirmasi() {
           {formData.transaksi === 'PECAH' && formData.pecahanList?.length > 0 ? (
             <div className="divide-y divide-outline-variant">
               {formData.pecahanList.map((p, idx) => renderDataBlock(p, idx))}
+            </div>
+          ) : formData.transaksi === 'HAPUS' ? (
+            <div className="divide-y divide-outline-variant">
+               <div className="p-6 bg-red-50/50">
+                 <h5 className="font-bold text-error uppercase text-xs tracking-wider mb-2">Alasan Penghapusan:</h5>
+                 <p className="text-on-surface text-sm italic">"{formData.catatanPengaju || '-'}"</p>
+               </div>
+               {hapusNopData ? renderDataBlock(hapusNopData) : <div className="p-6 text-center text-on-surface-variant text-sm font-bold">Memuat data NOP...</div>}
             </div>
           ) : (
             renderDataBlock(formData)
@@ -552,7 +620,7 @@ export default function Step4Konfirmasi() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/objek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(formData.transaksi === 'HAPUS' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/objek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting || !formData.persetujuan} className={`px-6 py-2.5 rounded-full font-bold shadow-md transition-all flex items-center gap-2 ${!formData.persetujuan ? 'bg-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'}`}>

@@ -63,7 +63,7 @@ export default function AntreanVerifikasi() {
         }
 
         const formatted = allData.map(item => {
-          const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
+          const nopRaw = item.detail_tujuan[0]?.nop_generated || '..................';
           const clean = nopRaw.replace(/\D/g, '');
           let nopFormatted = nopRaw;
           if (clean.length === 18) {

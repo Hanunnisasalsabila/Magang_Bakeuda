@@ -143,6 +143,9 @@ export const SpopProvider = ({ children }) => {
           luasBangunan: (detailTujuan.luas_bangunan_baru !== null && detailTujuan.luas_bangunan_baru !== undefined) ? detailTujuan.luas_bangunan_baru.toString() : '',
           jumlahBangunan: detailTujuan.jumlah_bangunan_baru || '0',
           jenisTanah: detailTujuan.jenis_tanah_baru || '',
+          data_bangunan_json: data.jenis_transaksi === 'PECAH' 
+             ? data.detail_tujuan?.flatMap(t => typeof t.data_bangunan_json === 'string' ? JSON.parse(t.data_bangunan_json) : (t.data_bangunan_json || []))
+             : (typeof detailTujuan.data_bangunan_json === 'string' ? JSON.parse(detailTujuan.data_bangunan_json) : (detailTujuan.data_bangunan_json || [])),
           
           latitude: detailTujuan.latitude || '',
           longitude: detailTujuan.longitude || '',
@@ -216,7 +219,7 @@ export const SpopProvider = ({ children }) => {
           }
         }
         
-        const isStep5Complete = data.status_ajuan !== 'DRAFT';
+        const isStep5Complete = data.status_ajuan && !['DRAFT', 'DITOLAK', 'REVISI'].includes(data.status_ajuan);
 
         setCompletionStatus({
           1: isStep1Complete,
@@ -307,9 +310,9 @@ export const SpopProvider = ({ children }) => {
         nik_calon_subjek: mergedData.nik || undefined,
         calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
-        luas_bangunan_baru: mergedData.luasBangunan ? Number(mergedData.luasBangunan) : 0,
+        luas_bangunan_baru: (parseFloat(mergedData.luasBangunan) > 0) ? Number(mergedData.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
-        jenis_tanah_baru: mergedData.jenisTanah || 'TANAH_BANGUNAN',
+        jenis_tanah_baru: mergedData.jenisTanah || undefined,
         jalan_op_baru: mergedData.alamatObjek || '',
         kode_wilayah_baru: mergedData.kodeWilayahObjek || undefined,
         blok_kav_no_baru: mergedData.blokKavObjek || undefined,
@@ -350,7 +353,7 @@ export const SpopProvider = ({ children }) => {
             kode_wilayah: p.kodeWilayah || undefined
           },
           luas_tanah_baru: p.luasTanah ? parseFloat(p.luasTanah) : 0,
-          luas_bangunan_baru: p.luasBangunan ? parseFloat(p.luasBangunan) : 0,
+          luas_bangunan_baru: (parseFloat(p.luasBangunan) > 0) ? parseFloat(p.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.filter(b => b._pecahanIndex === index).reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
           jumlah_bangunan_baru: p.jumlahBangunan ? parseInt(p.jumlahBangunan, 10) : 0,
           jalan_op_baru: p.alamatObjek || undefined,
           blok_kav_no_baru: p.blokKavObjek || undefined,
@@ -360,7 +363,7 @@ export const SpopProvider = ({ children }) => {
           kelurahan_op_baru: p.kelurahanObjek || mergedData.kelurahanObjek || '',
           kecamatan_op_baru: p.kecamatanObjek || mergedData.kecamatanObjek || '',
           kode_wilayah_baru: p.kodeWilayahObjek || mergedData.kodeWilayahObjek || undefined,
-          jenis_tanah_baru: p.jenisTanah || 'TANAH_BANGUNAN',
+          jenis_tanah_baru: p.jenisTanah || undefined,
           latitude: p.latitude ? String(p.latitude) : undefined,
           longitude: p.longitude ? String(p.longitude) : undefined,
           koordinat_polygon: p.koordinat_polygon || [],
