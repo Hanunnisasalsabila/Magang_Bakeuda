@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { IMaskInput } from 'react-imask';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon, useMap, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -451,14 +452,18 @@ export default function Step3ObjekPajak() {
 
   const handleLokasiSaya = () => {
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        const coords = [position.coords.latitude, position.coords.longitude];
-        setCurrentPosition(coords);
-        setReferencePoint(coords);
-        setSearchBoundary(null);
-      }, (error) => {
-        alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
-      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = [position.coords.latitude, position.coords.longitude];
+          setCurrentPosition(coords);
+          setReferencePoint(coords);
+          setSearchBoundary(null);
+        }, 
+        (error) => {
+          alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
     } else {
       alert('Browser Anda tidak mendukung fitur lokasi');
     }
@@ -616,7 +621,7 @@ export default function Step3ObjekPajak() {
         {/* Baris 1: No.Persil + Alamat */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-1">
-            <label className="font-label-sm text-primary block">No. PERSIL</label>
+            <label className="font-label-sm text-primary block">No. PERSIL <span className="text-gray-400 font-normal lowercase">(opsional)</span></label>
             <input
               type="text"
               maxLength={50}
@@ -842,48 +847,52 @@ export default function Step3ObjekPajak() {
           <div className="p-4 bg-surface-container-low border border-outline-variant rounded-xl grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs text-on-surface-variant flex items-center gap-1 font-bold">BATAS UTARA (NOP) <span className="font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
-              <input
-                type="text"
+              <IMaskInput
+                mask="00.00.000.000.000.0000.0"
+                unmask={false}
                 value={currentData.batasUtara}
-                onChange={(e) => handleTextChange('batasUtara', { target: { value: formatNopString(e.target.value) } })}
-                onFocus={() => { if (!currentData.batasUtara) handleTextChange('batasUtara', { target: { value: '33.03.' } }); }}
-                onBlur={() => { if (currentData.batasUtara === '33.03.') handleTextChange('batasUtara', { target: { value: '' } }); }}
+                onAccept={(value) => handleTextChange('batasUtara', value)}
+                onFocus={() => { if (!currentData.batasUtara) handleTextChange('batasUtara', '33.03.'); }}
+                onBlur={() => { if (currentData.batasUtara === '33.03.') handleTextChange('batasUtara', ''); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
               <label className="text-xs text-on-surface-variant flex items-center gap-1 font-bold">BATAS SELATAN (NOP) <span className="font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
-              <input
-                type="text"
+              <IMaskInput
+                mask="00.00.000.000.000.0000.0"
+                unmask={false}
                 value={currentData.batasSelatan}
-                onChange={(e) => handleTextChange('batasSelatan', { target: { value: formatNopString(e.target.value) } })}
-                onFocus={() => { if (!currentData.batasSelatan) handleTextChange('batasSelatan', { target: { value: '33.03.' } }); }}
-                onBlur={() => { if (currentData.batasSelatan === '33.03.') handleTextChange('batasSelatan', { target: { value: '' } }); }}
+                onAccept={(value) => handleTextChange('batasSelatan', value)}
+                onFocus={() => { if (!currentData.batasSelatan) handleTextChange('batasSelatan', '33.03.'); }}
+                onBlur={() => { if (currentData.batasSelatan === '33.03.') handleTextChange('batasSelatan', ''); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
               <label className="text-xs text-on-surface-variant flex items-center gap-1 font-bold">BATAS TIMUR (NOP) <span className="font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
-              <input
-                type="text"
+              <IMaskInput
+                mask="00.00.000.000.000.0000.0"
+                unmask={false}
                 value={currentData.batasTimur}
-                onChange={(e) => handleTextChange('batasTimur', { target: { value: formatNopString(e.target.value) } })}
-                onFocus={() => { if (!currentData.batasTimur) handleTextChange('batasTimur', { target: { value: '33.03.' } }); }}
-                onBlur={() => { if (currentData.batasTimur === '33.03.') handleTextChange('batasTimur', { target: { value: '' } }); }}
+                onAccept={(value) => handleTextChange('batasTimur', value)}
+                onFocus={() => { if (!currentData.batasTimur) handleTextChange('batasTimur', '33.03.'); }}
+                onBlur={() => { if (currentData.batasTimur === '33.03.') handleTextChange('batasTimur', ''); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />
             </div>
             <div className="space-y-2">
               <label className="text-xs text-on-surface-variant flex items-center gap-1 font-bold">BATAS BARAT (NOP) <span className="font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
-              <input
-                type="text"
+              <IMaskInput
+                mask="00.00.000.000.000.0000.0"
+                unmask={false}
                 value={currentData.batasBarat}
-                onChange={(e) => handleTextChange('batasBarat', { target: { value: formatNopString(e.target.value) } })}
-                onFocus={() => { if (!currentData.batasBarat) handleTextChange('batasBarat', { target: { value: '33.03.' } }); }}
-                onBlur={() => { if (currentData.batasBarat === '33.03.') handleTextChange('batasBarat', { target: { value: '' } }); }}
+                onAccept={(value) => handleTextChange('batasBarat', value)}
+                onFocus={() => { if (!currentData.batasBarat) handleTextChange('batasBarat', '33.03.'); }}
+                onBlur={() => { if (currentData.batasBarat === '33.03.') handleTextChange('batasBarat', ''); }}
                 className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm tracking-widest outline-none"
                 placeholder="33.03.XXX.XXX.XXX.XXXX.X"
               />

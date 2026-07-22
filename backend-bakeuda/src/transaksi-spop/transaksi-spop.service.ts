@@ -78,6 +78,7 @@ export class TransaksiSpopService {
         tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan as string) : new Date(),
         status_ajuan: statusAjuan,
         peringatan_validasi: peringatanValidasi,
+        catatan_pengaju: dto.catatan_pengaju,
         detail_asal: dto.detail_asal ? {
           create: dto.detail_asal.map((a) => ({
             nop_asal: a.nop_asal,

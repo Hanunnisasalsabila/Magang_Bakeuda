@@ -22,7 +22,14 @@ async function bootstrap() {
   // Serve uploaded files statically at /uploads
   const uploadsPath = path.join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath, { recursive: true });
-  app.useStaticAssets(uploadsPath, { prefix: '/uploads' });
+  app.useStaticAssets(uploadsPath, { 
+    prefix: '/uploads',
+    setHeaders: (res) => {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  });
 
   // Global prefix: semua route dimulai dengan /api
   app.setGlobalPrefix('api');

@@ -31,8 +31,7 @@ async function main() {
         status_wp: 'PEMILIK',
         pekerjaan: 'LAINNYA',
         alamat_jalan: item.alamat,
-        kelurahan: 'Purbalingga Kidul',
-        kabupaten: 'Purbalingga',
+        kode_wilayah: '3303100', // Dummy fallback
         created_by: admin.id_user,
       }
     });
@@ -43,17 +42,12 @@ async function main() {
       update: {},
       create: {
         nop: item.nop,
-        kode_propinsi: item.nop.substring(0, 2),
-        kode_dati2: item.nop.substring(2, 4),
-        kode_kecamatan: item.nop.substring(4, 7),
-        kode_kelurahan: item.nop.substring(7, 10),
+        kode_wilayah: item.nop.substring(0, 10),
         kode_blok: item.nop.substring(10, 13),
         no_urut: item.nop.substring(13, 17),
         kode_jenis_op: item.nop.substring(17, 18),
         nik_subjek: subjek.nik,
         jalan_op: item.alamat,
-        kelurahan_op: 'Purbalingga Kidul',
-        kecamatan_op: 'Purbalingga',
         jenis_tanah: 'TANAH_BANGUNAN',
         luas_tanah: 100,
         luas_bangunan: 50,

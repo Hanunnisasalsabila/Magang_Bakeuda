@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/axios';
+import { MapContainer, TileLayer, Polygon, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
+
+const dotIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: "<div style='background-color:#EF4444;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>",
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
 
 export default function DetailReviewSPOP() {
   const navigate = useNavigate();
@@ -50,7 +60,75 @@ export default function DetailReviewSPOP() {
         } else {
           res = await api.get(`/transaksi-spop/${id}`);
         }
-        setData(res.data.data);
+        let fetchedData = res.data.data;
+        
+        // Fetch existing NOP data if transaction is HAPUS to show the data being deleted
+        if (fetchedData.jenis_transaksi === 'HAPUS' && fetchedData.detail_asal?.length > 0) {
+          try {
+            const nopAsal = fetchedData.detail_asal[0].nop_asal;
+            const opRes = await api.get(`/objek-pajak/${nopAsal}`);
+            const opData = opRes.data.data;
+            if (opData) {
+              const subjek = opData.subjek_pajak || {};
+              const bumi = opData.bumi || {};
+              
+              // Mocking detail_tujuan structure so the UI can render it
+              fetchedData.detail_tujuan = [{
+                nik_calon_subjek: subjek.nik,
+                calon_subjek_json: {
+                  nik: subjek.nik,
+                  nama_subjek: subjek.nama_subjek,
+                  npwp: subjek.npwp,
+                  no_hp: subjek.no_telp,
+                  status_wp: subjek.status_pekerjaan,
+                  pekerjaan: subjek.pekerjaan,
+                  email: subjek.email,
+                  alamat_jalan: subjek.jalan_wp,
+                  rt: subjek.rt_wp,
+                  rw: subjek.rw_wp,
+                  kelurahan: subjek.kelurahan_wp,
+                  kecamatan: subjek.kecamatan_wp,
+                  kabupaten: subjek.kabupaten_wp,
+                  kode_pos: subjek.kode_pos_wp,
+                },
+                luas_tanah_baru: bumi.luas_bumi,
+                jenis_tanah_baru: bumi.jenis_bumi,
+                jalan_op_baru: opData.jalan_op,
+                blok_kav_no_baru: opData.blok_kav_no_op,
+                rt_op_baru: opData.rt_op,
+                rw_op_baru: opData.rw_op,
+                kelurahan_op_baru: opData.wilayah?.nama_desa,
+                kecamatan_op_baru: opData.wilayah?.kecamatan,
+                batas_utara: opData.batas_utara,
+                batas_selatan: opData.batas_selatan,
+                batas_timur: opData.batas_timur,
+                batas_barat: opData.batas_barat,
+                jumlah_bangunan_baru: opData.bangunan?.length || 0,
+                latitude: opData.latitude,
+                longitude: opData.longitude,
+                koordinat_polygon: opData.koordinat_polygon,
+                data_bangunan_json: (opData.bangunan || []).map(b => ({
+                  penggunaan: b.jenis_penggunaan_bangunan,
+                  luas_bangunan: b.luas_bangunan,
+                  jumlah_lantai: b.jumlah_lantai,
+                  tahun_dibangun: b.tahun_dibangun,
+                  tahun_direnovasi: b.tahun_direnovasi,
+                  kondisi: b.kondisi_bangunan,
+                  konstruksi: b.jenis_konstruksi,
+                  atap: b.jenis_atap,
+                  dinding: b.dinding,
+                  lantai: b.lantai,
+                  langit_langit: b.langit_langit,
+                  daya_listrik: (b.fasilitas || []).reduce((acc, f) => f.jenis_fasilitas === 'LISTRIK' ? acc + (f.jumlah_satuan || 0) : acc, 0)
+                }))
+              }];
+            }
+          } catch (e) {
+            console.error('Failed to fetch existing NOP data for HAPUS:', e);
+          }
+        }
+        
+        setData(fetchedData);
       } catch (error) {
         console.error('Gagal mengambil detail SPOP:', error);
         setToastMessage('Gagal mengambil data SPOP');
@@ -267,8 +345,26 @@ export default function DetailReviewSPOP() {
   const detailTujuan = data.detail_tujuan?.[0] || {};
   const calonSubjek = detailTujuan.calon_subjek_json || {};
   const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
-  const nopDisplay = detailTujuan.nop_generated || (isTetap ? data.detail_asal?.[0]?.nop_asal : detailTujuan.no_persil_baru) || 'Menunggu NOP';
-  
+  let nopDisplay = 'Menunggu NOP';
+  if (detailTujuan.nop_generated) {
+    nopDisplay = detailTujuan.nop_generated;
+  } else if (isTetap && data.detail_asal?.[0]?.nop_asal) {
+    nopDisplay = data.detail_asal[0].nop_asal;
+  } else if (!isTetap) {
+    nopDisplay = 'Akan digenerate oleh Bakeuda';
+  }
+
+  // Parse JSON fields just in case they come as strings
+  const parsedDataBangunan = typeof detailTujuan.data_bangunan_json === 'string' 
+    ? JSON.parse(detailTujuan.data_bangunan_json) 
+    : (detailTujuan.data_bangunan_json || []);
+
+  let totalLuasBangunan = parseFloat(detailTujuan.luas_bangunan_baru || 0) || 0;
+  if (totalLuasBangunan === 0 && Array.isArray(parsedDataBangunan)) {
+    const sum = parsedDataBangunan.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0);
+    if (sum > 0) totalLuasBangunan = sum;
+  }
+
   // Format Tanggal
   const tglPengajuan = new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', {
     day: 'numeric', month: 'short', year: 'numeric',
@@ -295,7 +391,7 @@ export default function DetailReviewSPOP() {
               Verifikasi Berkas SPOP PBB-P2
             </h2>
             <p className="text-on-surface-variant mt-1 text-sm">
-              Formulir {data.no_formulir || 'SPOP-A01-2024'} â€¢ ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
+              Formulir {data.no_formulir || 'SPOP-A01-2024'} &bull; ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
             </p>
           </div>
         </div>
@@ -343,7 +439,7 @@ export default function DetailReviewSPOP() {
                   <tr>
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nomor Objek Pajak</td>
                     <td className="p-3 font-mono font-bold text-black tracking-widest">
-                      {detailTujuan.nop_generated || (isTetap ? data.detail_asal?.[0]?.nop_asal : detailTujuan.no_persil_baru) || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>}
+                      {nopDisplay}
                     </td>
                   </tr>
                   <tr className="border-t border-gray-200">
@@ -365,7 +461,7 @@ export default function DetailReviewSPOP() {
                 <tbody>
                   <tr className="border-b border-gray-200">
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Nama Subjek Pajak</td>
-                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{calonSubjek.nama || data.nama_pengaju || '-'}</td>
+                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{calonSubjek.nama_subjek || data.nama_pengaju || '-'}</td>
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">No. Telepon/HP</td>
                     <td className="p-3 w-1/4 font-mono text-black">{calonSubjek.no_hp || '-'}</td>
                   </tr>
@@ -374,7 +470,7 @@ export default function DetailReviewSPOP() {
                     <td className="p-3 font-bold text-black border-r border-gray-200">{calonSubjek.status_wp || calonSubjek.status_subjek || '-'}</td>
                     <td className="p-3 bg-gray-50 font-semibold text-gray-700 align-top" rowSpan="3">Alamat WP</td>
                     <td className="p-3 text-black align-top" rowSpan="3">
-                      {calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
+                      {calonSubjek.alamat_jalan || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
                       KEL. {calonSubjek.kelurahan || '-'}, KEC. {calonSubjek.kecamatan || '-'}<br />
                       KAB. {calonSubjek.kabupaten || 'Purbalingga'} {calonSubjek.kode_pos ? `- ${calonSubjek.kode_pos}` : ''}
                     </td>
@@ -402,7 +498,7 @@ export default function DetailReviewSPOP() {
                 <tbody>
                   <tr className="border-b border-gray-200">
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Tanah</td>
-                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{detailTujuan.luas_tanah_baru || 0} MÂ²</td>
+                    <td className="p-3 w-1/4 font-bold text-black border-r border-gray-200">{detailTujuan.luas_tanah_baru || 0} M&sup2;</td>
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700 align-top" rowSpan="2">Letak Objek</td>
                     <td className="p-3 w-1/4 text-black align-top" rowSpan="2">
                       {detailTujuan.jalan_op_baru || '-'} {detailTujuan.blok_kav_no_baru ? `(Blok/Kav: ${detailTujuan.blok_kav_no_baru})` : ''}<br />
@@ -417,38 +513,65 @@ export default function DetailReviewSPOP() {
                   <tr className="border-b border-gray-200">
                     <td className="p-3 bg-gray-50 font-semibold text-gray-700 align-top">Titik Koordinat</td>
                     <td className="p-3 border-r border-gray-200 align-top" colSpan="3">
-                      {detailTujuan.latitude && detailTujuan.longitude ? (
-                        <div>
-                          {/* Koordinat badge */}
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded">
-                              {detailTujuan.latitude}, {detailTujuan.longitude}
-                            </span>
-                            <a
-                              href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
-                            >
-                              <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                              Buka di Google Maps
-                            </a>
+                      {(() => {
+                        let positions = [];
+                        try {
+                          if (detailTujuan.koordinat_polygon) {
+                            const parsed = typeof detailTujuan.koordinat_polygon === 'string' ? JSON.parse(detailTujuan.koordinat_polygon) : detailTujuan.koordinat_polygon;
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                              positions = parsed;
+                            }
+                          }
+                        } catch(e) {}
+                        
+                        if (positions.length === 0 && detailTujuan.latitude && detailTujuan.longitude) {
+                          positions = [{ lat: detailTujuan.latitude, lng: detailTujuan.longitude }];
+                        }
+
+                        if (positions.length === 0) {
+                          return <span className="text-gray-400 italic text-xs">Koordinat tidak tersedia</span>;
+                        }
+
+                        const mapPositions = positions.map(p => [parseFloat(p.lat || p.latitude || 0), parseFloat(p.lng || p.longitude || 0)]);
+                        const centerLat = detailTujuan.latitude || mapPositions[0][0];
+                        const centerLng = detailTujuan.longitude || mapPositions[0][1];
+                        const hasPolygon = mapPositions.length >= 3;
+
+                        return (
+                          <div>
+                            <div className="flex flex-col gap-2 mb-3">
+                              {positions.map((pos, i) => (
+                                <div key={i} className="flex items-center gap-2">
+                                  <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded">
+                                    Titik {i+1}: {pos.lat || pos.latitude}, {pos.lng || pos.longitude}
+                                  </span>
+                                </div>
+                              ))}
+                              {positions.length > 0 && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${centerLat},${centerLng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold mt-1"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                  Buka Lokasi di Google Maps
+                                </a>
+                              )}
+                            </div>
+                            <div className="border border-gray-300 rounded overflow-hidden" style={{ height: '260px' }}>
+                              <MapContainer center={[parseFloat(centerLat), parseFloat(centerLng)]} zoom={17} style={{ height: '100%', width: '100%', zIndex: 0 }}>
+                                <TileLayer url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}" maxZoom={20} subdomains={['mt0', 'mt1', 'mt2', 'mt3']} />
+                                {hasPolygon ? (
+                                  <Polygon positions={mapPositions} pathOptions={{ color: '#EF4444', fillColor: '#EF4444', fillOpacity: 0.4 }} />
+                                ) : (
+                                  <Marker position={[parseFloat(centerLat), parseFloat(centerLng)]} icon={dotIcon} />
+                                )}
+                              </MapContainer>
+                            </div>
                           </div>
-                          {/* Embedded Map */}
-                          <div className="border border-gray-300 rounded overflow-hidden">
-                            <iframe
-                              title="Lokasi Objek Pajak"
-                              width="100%"
-                              height="260"
-                              style={{ border: 0 }}
-                              loading="lazy"
-                              src={`https://maps.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}&z=17&output=embed`}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 italic text-xs">Koordinat tidak tersedia</span>
-                      )}
+                        );
+                      })()}
                     </td>
                   </tr>
                   <tr className="border-b border-gray-200">
@@ -473,14 +596,14 @@ export default function DetailReviewSPOP() {
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex justify-between items-center">
               <h3 className="text-base font-bold text-blue-900 uppercase m-0">D. DATA BANGUNAN</h3>
               <div className="text-xs font-bold text-blue-600">
-                TOTAL: {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} MÂ²)
+                TOTAL: {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({totalLuasBangunan} M&sup2;)
               </div>
             </div>
             
             <div className="p-0">
-              {Array.isArray(detailTujuan.data_bangunan_json) && detailTujuan.data_bangunan_json.length > 0 ? (
+              {Array.isArray(parsedDataBangunan) && parsedDataBangunan.length > 0 ? (
                 <div>
-                  {detailTujuan.data_bangunan_json.map((bgn, idx) => (
+                  {parsedDataBangunan.map((bgn, idx) => (
                     <div key={idx} className={idx > 0 ? "border-t-4 border-gray-300" : ""}>
                       <div className="bg-gray-50 border-b border-gray-200 px-4 py-1.5">
                         <h4 className="font-bold text-gray-800 text-xs uppercase">Bangunan Ke-{idx + 1}</h4>
@@ -489,39 +612,39 @@ export default function DetailReviewSPOP() {
                         <tbody>
                           <tr className="border-b border-gray-200">
                             <td className="p-2 w-1/4 bg-gray-50 font-semibold text-gray-700">Penggunaan</td>
-                            <td className="p-2 w-1/4 text-black border-r border-gray-200">{bgn.penggunaan || '-'}</td>
+                            <td className="p-2 w-1/4 text-black border-r border-gray-200">{bgn.penggunaan || bgn.jenisPenggunaan || '-'}</td>
                             <td className="p-2 w-1/4 bg-gray-50 font-semibold text-gray-700">Konstruksi</td>
                             <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
                           </tr>
                           <tr className="border-b border-gray-200">
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Luas Bangunan</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.luas_bangunan || 0} MÂ²</td>
+                            <td className="p-2 text-black border-r border-gray-200">{bgn.luas_bangunan || bgn.luasBangunan || 0} M&sup2;</td>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Atap</td>
                             <td className="p-2 text-black">{bgn.atap || '-'}</td>
                           </tr>
                           <tr className="border-b border-gray-200">
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Jumlah Lantai</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.jumlah_lantai || 1}</td>
+                            <td className="p-2 text-black border-r border-gray-200">{bgn.jumlah_lantai || bgn.jumlahLantai || 1}</td>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Dinding</td>
                             <td className="p-2 text-black">{bgn.dinding || '-'}</td>
                           </tr>
                           <tr className="border-b border-gray-200">
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Tahun Dibangun</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_dibangun || '-'}</td>
+                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_dibangun || bgn.tahunDibangun || '-'}</td>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Lantai</td>
                             <td className="p-2 text-black">{bgn.lantai || '-'}</td>
                           </tr>
                           <tr className="border-b border-gray-200">
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Tahun Renovasi</td>
-                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_direnovasi || '-'}</td>
+                            <td className="p-2 text-black border-r border-gray-200">{bgn.tahun_direnovasi || bgn.tahunDirenovasi || '-'}</td>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Langit-Langit</td>
-                            <td className="p-2 text-black">{bgn.langit_langit || '-'}</td>
+                            <td className="p-2 text-black">{bgn.langit_langit || bgn.langitLangit || '-'}</td>
                           </tr>
                           <tr>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Kondisi</td>
                             <td className="p-2 text-black border-r border-gray-200">{bgn.kondisi || '-'}</td>
                             <td className="p-2 bg-gray-50 font-semibold text-gray-700">Daya Listrik</td>
-                            <td className="p-2 text-black">{bgn.daya_listrik || 0} Watt</td>
+                            <td className="p-2 text-black">{bgn.daya_listrik || bgn.dayaListrik || 0} Watt</td>
                           </tr>
                         </tbody>
                       </table>

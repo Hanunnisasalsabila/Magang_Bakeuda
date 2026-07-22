@@ -42,7 +42,7 @@ export default function MonitoringObjekPajak() {
 
           return {
             id: item.id_transaksi,
-            nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+            nop: detail?.nop_generated || 'Menunggu NOP',
             name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
             address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
             land: detail?.luas_tanah_baru || 0,
