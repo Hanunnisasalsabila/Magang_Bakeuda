@@ -21,10 +21,22 @@ export default function Step5Status() {
         <span className="material-symbols-outlined text-[56px]">check_circle</span>
       </div>
       <h3 className="text-3xl text-on-surface uppercase font-extrabold tracking-tight">
-        SPOP Berhasil Disimpan / Dikirim
+        {formData.transaksi === 'HAPUS' ? 'Pengajuan Penghapusan Dikirim' : 'SPOP Berhasil Disimpan / Dikirim'}
       </h3>
       <p className="text-lg text-on-surface-variant max-w-lg mx-auto">
-        Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop?.kec || '___'}.${formData.nop?.kel || '___'}.${formData.nop?.blok || '___'}.${formData.nop?.nourut || '____'}.${formData.nop?.kode || '_'}`}</span> telah tersimpan di sistem.
+        {['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi) ? (
+          <span>
+            Pengajuan Perekaman Data Baru SPOP Anda telah tersimpan dan sedang diproses untuk <b>Pembuatan NOP Baru</b>.
+          </span>
+        ) : formData.transaksi === 'HAPUS' ? (
+          <span>
+            Pengajuan Penghapusan Data untuk NOP <span className="font-bold text-primary font-data-mono">{formData.nopAsalList?.[0] || 'Terkait'}</span> telah dikirim ke sistem.
+          </span>
+        ) : (
+          <span>
+            Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop?.kec || '___'}.${formData.nop?.kel || '___'}.${formData.nop?.blok || '___'}.${formData.nop?.nourut || '____'}.${formData.nop?.kode || '_'}`}</span> telah tersimpan di sistem.
+          </span>
+        )}
       </p>
 
       <div className="bg-white border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-3 mt-6 shadow-sm">

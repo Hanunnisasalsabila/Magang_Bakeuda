@@ -92,9 +92,13 @@ export default function Step1InformasiUmum() {
       }
     } catch (error) {
       console.error('Error saving step:', error);
-      const errorMsg = error.response?.data?.message || 'Gagal menyimpan langkah ini.';
+      let errorMsg = 'Gagal menyimpan langkah ini.';
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        errorMsg = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'object' ? JSON.stringify(msg) : msg;
+      }
       setToast({ show: true, message: errorMsg, type: 'error' });
-      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 5000);
     } finally {
       setIsSubmitting(false);
     }
@@ -324,19 +328,7 @@ export default function Step1InformasiUmum() {
                         </button>
                       </div>
                     )}
-                    {formData.kategoriTransaksi === 'hapus' && (
-                      <div className="border-t border-green-200 pt-3 flex flex-wrap gap-2">
-                        <p className="w-full text-xs text-red-700 font-bold mb-1">Tindakan penghapusan:</p>
-                        <button
-                          type="button"
-                          onClick={async () => { await handleSave(); }}
-                          className="flex items-center gap-2 px-4 py-2 bg-error text-white rounded-lg text-sm font-bold hover:bg-error/90 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete_forever</span>
-                          Ajukan Penghapusan
-                        </button>
-                      </div>
-                    )}
+
                   </div>
                 )}
               </div>
@@ -368,12 +360,13 @@ export default function Step1InformasiUmum() {
 
       <hr className="border-outline-variant" />
 
-      <section className="bg-surface-container-low p-6 rounded-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <h4 className="text-on-surface font-bold uppercase">
-            INFORMASI TAMBAHAN UNTUK DATA BARU
-          </h4>
-        </div>
+      {formData.transaksi !== 'HAPUS' && (
+        <section className="bg-surface-container-low p-6 rounded-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <h4 className="text-on-surface font-bold uppercase">
+              {['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi) ? 'INFORMASI TAMBAHAN UNTUK DATA BARU' : 'INFORMASI TAMBAHAN'}
+            </h4>
+          </div>
         <div className="grid grid-cols-2 gap-4">
           {/* Input NOP ASAL */}
           {['PECAH', 'GABUNG'].includes(formData.transaksi) && (
@@ -416,18 +409,21 @@ export default function Step1InformasiUmum() {
           )}
 
           {/* Input NO SPPT LAMA */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-on-surface-variant font-bold uppercase flex items-center gap-1">No. SPPT Lama <span className="font-normal text-[11px] ml-1 flex-none normal-case">(Opsional)</span></label>
-            <input
-              type="text"
-              value={formData.spptLama}
-              onChange={(e) => setFormData(prev => ({ ...prev, spptLama: e.target.value.replace(/[^0-9.]/g, '') }))}
-              placeholder="XXX.XXX.XXX"
-              className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-            />
-          </div>
+          {formData.transaksi !== 'HAPUS' && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-on-surface-variant font-bold uppercase flex items-center gap-1">No. SPPT Lama <span className="font-normal text-[11px] ml-1 flex-none normal-case">(Opsional)</span></label>
+              <input
+                type="text"
+                value={formData.spptLama}
+                onChange={(e) => setFormData(prev => ({ ...prev, spptLama: e.target.value.replace(/[^0-9.]/g, '') }))}
+                placeholder="XXX.XXX.XXX"
+                className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+              />
+            </div>
+          )}
         </div>
-      </section>
+        </section>
+      )}
 
       {formData.transaksi === 'HAPUS' && (
         <section className="bg-surface-container-low p-6 rounded-lg mt-6">
@@ -451,13 +447,15 @@ export default function Step1InformasiUmum() {
         <button type="button" onClick={() => navigate('/dashboard-desa')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
-        <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
+        <button type="button" onClick={handleSave} disabled={isSubmitting} className={`px-6 py-2.5 ${formData.transaksi === 'HAPUS' ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'} text-white rounded-full font-bold shadow-md transition-all flex items-center gap-2`}>
           {isSubmitting ? (
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
           ) : (
-            <span className="material-symbols-outlined text-[20px]">save</span>
+            <span className="material-symbols-outlined text-[20px]">
+              {formData.transaksi === 'HAPUS' ? 'delete_forever' : 'save'}
+            </span>
           )}
-          Simpan Data
+          {formData.transaksi === 'HAPUS' ? 'Lanjut Konfirmasi Penghapusan' : 'Simpan Data'}
         </button>
       </div>
     </div>

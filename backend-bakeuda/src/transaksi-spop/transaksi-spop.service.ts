@@ -639,7 +639,7 @@ export class TransaksiSpopService {
         blok_kav_no: t.blok_kav_no_baru,
         rw_op: t.rw_op_baru,
         rt_op: t.rt_op_baru,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru!,
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? 0,
         jumlah_bangunan: t.jumlah_bangunan_baru ?? 0,
@@ -677,7 +677,7 @@ export class TransaksiSpopService {
       data: {
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? undefined,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru!,
         jalan_op: t.jalan_op_baru ?? undefined,
       },
     });
@@ -718,7 +718,7 @@ export class TransaksiSpopService {
           kode_jenis_op: dto.kode_jenis_op,
           nik_subjek: nikSubjek,
           jalan_op: t.jalan_op_baru ?? '',
-          jenis_tanah: t.jenis_tanah_baru,
+          jenis_tanah: t.jenis_tanah_baru!,
           luas_tanah: t.luas_tanah_baru,
           luas_bangunan: t.luas_bangunan_baru ?? 0,
         },
@@ -782,7 +782,7 @@ export class TransaksiSpopService {
         rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru!,
         luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
         luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },
