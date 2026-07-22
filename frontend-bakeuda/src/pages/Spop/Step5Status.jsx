@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 
 export default function Step5Status() {
-  const { formData, idTransaksi } = useSpop();
+  const { formData, idTransaksi, completionStatus, loadDraft } = useSpop();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Prevent direct access via URL/Sidebar if they haven't actually submitted
+    if (idTransaksi && !completionStatus[5]) {
+      navigate('/spop/konfirmasi', { replace: true });
+    }
+  }, [completionStatus, navigate, idTransaksi]);
+
+  if (!idTransaksi || !completionStatus[5]) return null;
 
   return (
     <div className="space-y-8 text-center py-10 animate-fadeIn bg-surface-container-low rounded-2xl">
@@ -32,20 +41,7 @@ export default function Step5Status() {
         </div>
       </div>
 
-      {parseInt(formData.jumlahBangunan) > 0 && (
-        <div className="max-w-lg mx-auto mt-8 p-5 bg-primary/10 border border-primary/20 rounded-xl text-left flex gap-4 items-start shadow-sm">
-          <span className="material-symbols-outlined text-primary text-3xl">home_work</span>
-          <div>
-            <h5 className="font-bold text-on-surface mb-1 text-lg">Penting: Lanjut ke Pendataan Bangunan</h5>
-            <p className="text-sm text-blue-900 leading-relaxed mb-3">
-              Anda mendeklarasikan adanya {formData.jumlahBangunan} unit bangunan. Anda diwajibkan untuk mengisi Lampiran SPOP (LSPOP) untuk mendata spesifikasi bangunan tersebut.
-            </p>
-            <button className="text-sm font-bold bg-white text-primary px-4 py-2 rounded-lg border border-primary/30 hover:bg-blue-100 transition-colors shadow-sm">
-              Menuju Form LSPOP
-            </button>
-          </div>
-        </div>
-      )}
+
 
       <div className="mt-12 flex justify-center gap-4">
         <button

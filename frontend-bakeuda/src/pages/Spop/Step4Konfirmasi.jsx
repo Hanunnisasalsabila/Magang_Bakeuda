@@ -1,11 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Polygon } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
 import api from '../../utils/axios';
 
+// Fix leaflet icon issues
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const dotIcon = L.divIcon({
+  className: 'custom-dot-icon',
+  html: '<div style="width: 12px; height: 12px; background-color: white; border: 2px solid blue; border-radius: 50%; box-shadow: 0 0 2px rgba(0,0,0,0.5);"></div>',
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
 export default function Step4Konfirmasi() {
-  const { formData, setFormData, saveDraft, idTransaksi } = useSpop();
+  const { formData, setFormData, saveDraft, idTransaksi, spopData, updateCompletion } = useSpop();
+  const [showBangunanModal, setShowBangunanModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [jenisDokumenUpload, setJenisDokumenUpload] = useState('Sertifikat/KTP/Lainnya');
@@ -59,6 +77,7 @@ export default function Step4Konfirmasi() {
       // Jika disetujui, ajukan
       if (formData.persetujuan) {
         await api.post(`/transaksi-spop/${newId}/submit`);
+        updateCompletion(5, true);
       }
 
       setShowSuccessModal({ show: true, id: newId });
@@ -140,8 +159,24 @@ export default function Step4Konfirmasi() {
                     <td className="py-1.5 font-data-mono text-on-surface">{formData.nik || '-'}</td>
                   </tr>
                   <tr>
+                    <td className="py-1.5 text-on-surface-variant">NPWP</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.npwp || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">No. Telp / HP</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.noTelp || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Email</td>
+                    <td className="py-1.5 text-on-surface">{formData.email || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Status WP</td>
+                    <td className="py-1.5 text-on-surface">{formData.statusWp || '-'}</td>
+                  </tr>
+                  <tr>
                     <td className="py-1.5 text-on-surface-variant">Pekerjaan</td>
-                    <td className="py-1.5 text-on-surface">{formData.pekerjaan || '-'}</td>
+                    <td className="py-1.5 text-on-surface">{formData.pekerjaan === 'ABRI' ? 'TNI/POLRI' : (formData.pekerjaan || '-')}</td>
                   </tr>
                   <tr>
                     <td className="py-1.5 text-on-surface-variant align-top">Alamat WP</td>
@@ -151,6 +186,41 @@ export default function Step4Konfirmasi() {
                   </tr>
                 </tbody>
               </table>
+              <div className="pt-4 space-y-4">
+                <h6 className="font-bold text-primary uppercase text-xs tracking-wider border-b border-outline-variant pb-2">Titik Koordinat</h6>
+                <div className="font-data-mono text-on-surface">
+                  {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {formData.koordinat_polygon.map((pos, idx) => (
+                        <div key={idx} className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
+                          <span className="font-bold text-primary border-b border-outline-variant/30 pb-1 mb-0.5">Titik Koordinat Ke-{idx + 1}</span>
+                          <div className="flex justify-between items-center gap-4">
+                            <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
+                            <span className="font-data-mono">{pos.lat}</span>
+                          </div>
+                          <div className="flex justify-between items-center gap-4">
+                            <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
+                            <span className="font-data-mono">{pos.lng}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : formData.latitude && formData.longitude ? (
+                    <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant/50 text-xs flex flex-col gap-1.5 shadow-sm">
+                      <div className="flex justify-between items-center gap-4">
+                        <span className="text-on-surface-variant font-medium">Latitude (Garis Lintang)</span>
+                        <span className="font-data-mono">{formData.latitude}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-4">
+                        <span className="text-on-surface-variant font-medium">Longitude (Garis Bujur)</span>
+                        <span className="font-data-mono">{formData.longitude}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm italic text-on-surface-variant font-sans">Belum ditentukan</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -166,15 +236,81 @@ export default function Step4Konfirmasi() {
                     <td className="py-1.5 font-bold text-on-surface">{formData.luasTanah || '-'} M²</td>
                   </tr>
                   <tr>
+                    <td className="py-1.5 text-on-surface-variant align-top">Detail Wilayah</td>
+                    <td className="py-1.5 text-on-surface leading-snug">
+                      RT {formData.rtObjek || '-'}/RW {formData.rwObjek || '-'}, {formData.kelurahanObjek || '-'}, {formData.kecamatanObjek || '-'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">No. Persil</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.noPersil || '-'}</td>
+                  </tr>
+                  <tr>
                     <td className="py-1.5 text-on-surface-variant">Jenis Tanah</td>
                     <td className="py-1.5 text-on-surface">{formData.jenisTanah || '-'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 text-on-surface-variant">Titik Koordinat</td>
-                    <td className="py-1.5 font-data-mono text-on-surface">{formData.latitude && formData.longitude ? `${formData.latitude}, ${formData.longitude}` : '-'}</td>
+                    <td className="py-1.5 text-on-surface-variant">Bangunan</td>
+                    <td className="py-1.5 text-on-surface flex items-center gap-2">
+                      {formData.jumlahBangunan || '0'} Unit ({formData.luasBangunan || '0'} M²)
+                      {parseInt(formData.jumlahBangunan || '0') > 0 && (
+                        <button onClick={() => setShowBangunanModal(true)} className="text-xs text-primary underline hover:text-primary/80 font-bold ml-2">
+                          Lihat Detail
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Batas Utara</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.batasUtara || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 text-on-surface-variant">Batas Selatan</td>
+                    <td className="py-1.5 font-data-mono text-on-surface">{formData.batasSelatan || '-'}</td>
                   </tr>
                 </tbody>
               </table>
+
+              <div className="pt-4 space-y-4">
+                <div className="flex justify-between items-end border-b border-outline-variant pb-2">
+                  <h6 className="font-bold text-primary uppercase text-xs tracking-wider">Peta Lokasi Objek</h6>
+                  <button onClick={() => navigate(`/spop/objek-pajak/${idTransaksi || ''}`)} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline transition-all">
+                    <span className="material-symbols-outlined text-[14px]">edit_location_alt</span>
+                    Ubah Peta / Titik
+                  </button>
+                </div>
+                <div className="h-[280px] w-full rounded-xl overflow-hidden border border-outline-variant/50 shadow-sm z-0 relative">
+                  {(formData.koordinat_polygon && formData.koordinat_polygon.length > 0) || (formData.latitude && formData.longitude) ? (
+                    <MapContainer 
+                      key="map-konfirmasi-interactive"
+                      center={formData.koordinat_polygon?.length > 0 ? [formData.koordinat_polygon[0].lat, formData.koordinat_polygon[0].lng] : [parseFloat(formData.latitude), parseFloat(formData.longitude)]} 
+                      zoom={17} 
+                      style={{ height: '100%', width: '100%', zIndex: 0 }}
+                      zoomControl={true}
+                      scrollWheelZoom={true}
+                      dragging={true}
+                      doubleClickZoom={true}
+                    >
+                      <TileLayer url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" subdomains={['mt0', 'mt1', 'mt2', 'mt3']} maxZoom={20} />
+                      {formData.koordinat_polygon && formData.koordinat_polygon.length > 0 ? (
+                        <>
+                          <Polygon positions={formData.koordinat_polygon} color="blue" />
+                          {formData.koordinat_polygon.map((p, idx) => (
+                            <Marker key={idx} position={[p.lat, p.lng]} icon={dotIcon} />
+                          ))}
+                        </>
+                      ) : (
+                        <Marker position={[parseFloat(formData.latitude), parseFloat(formData.longitude)]} icon={dotIcon} />
+                      )}
+                    </MapContainer>
+                  ) : (
+                    <div className="w-full h-full bg-surface-container-low flex flex-col items-center justify-center text-on-surface-variant gap-2">
+                      <span className="material-symbols-outlined text-4xl opacity-50">location_off</span>
+                      <p className="text-sm italic font-sans">Peta belum ditentukan</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -213,7 +349,7 @@ export default function Step4Konfirmasi() {
                 <select 
                   value={jenisDokumenUpload}
                   onChange={(e) => setJenisDokumenUpload(e.target.value)}
-                  className="h-12 border border-outline-variant rounded-lg px-4 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary font-bold text-sm w-full sm:w-auto outline-none"
+                  className="h-12 border border-outline-variant rounded-lg pl-4 pr-10 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary font-bold text-sm w-full sm:w-auto outline-none"
                 >
                   <option value="Sertifikat/KTP/Lainnya">Dokumen Umum (KTP/Sertifikat)</option>
                   <option value="SURAT_KUASA">Surat Kuasa</option>
@@ -284,6 +420,75 @@ export default function Step4Konfirmasi() {
           Simpan & Ajukan
         </button>
       </div>
+
+      {/* BANGUNAN MODAL */}
+      {showBangunanModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-fadeIn">
+            <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+              <h3 className="font-bold text-lg text-primary uppercase tracking-wider">Detail Data Bangunan</h3>
+              <button onClick={() => setShowBangunanModal(false)} className="material-symbols-outlined text-on-surface-variant hover:text-error transition-colors">close</button>
+            </div>
+            <div className="p-4 overflow-y-auto space-y-4 bg-surface-container-lowest custom-scrollbar">
+              {(() => {
+                let parsedList = [];
+                try {
+                  if (formData?.data_bangunan_json) {
+                    parsedList = formData.data_bangunan_json;
+                    if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
+                  } else {
+                    const detailTujuan = spopData?.detail_tujuan?.[0];
+                    if (detailTujuan?.data_bangunan_json) {
+                      parsedList = JSON.parse(detailTujuan.data_bangunan_json);
+                      if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
+                    }
+                  }
+                } catch (e) { console.error('Gagal parse bangunan', e); }
+
+                if (!parsedList || parsedList.length === 0) {
+                  return <p className="text-center italic text-on-surface-variant py-8">Tidak ada detail data bangunan yang diisi.</p>;
+                }
+
+                return parsedList.map((b, i) => (
+                  <div key={i} className="border border-outline-variant rounded-xl overflow-hidden bg-white shadow-sm mb-6">
+                    <div className="bg-surface-container-low px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+                      <h4 className="font-bold text-primary uppercase tracking-wider text-sm">Bangunan Ke-{i + 1}</h4>
+                    </div>
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {Object.entries(b)
+                          .filter(([k, v]) => v && v !== '' && v !== '0' && k !== 'nomorBangunan')
+                          .map(([k, v], idx) => (
+                            <tr key={k} className={`border-b border-outline-variant/30 ${idx % 2 === 0 ? 'bg-white' : 'bg-surface-container-lowest/50'}`}>
+                              <td className="py-2.5 px-4 text-on-surface-variant w-1/2 align-top uppercase text-xs tracking-wider font-semibold">
+                                {k.replace(/([A-Z])/g, ' $1').trim()}
+                              </td>
+                              <td className="py-2.5 px-4 font-medium text-on-surface w-1/2 align-top">
+                                {v}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ));
+              })()}
+            </div>
+            <div className="p-4 border-t border-outline-variant bg-surface-container-lowest flex justify-end">
+              <button 
+                onClick={() => {
+                  setShowBangunanModal(false);
+                  navigate(`/spop/data-bangunan/${idTransaksi || ''}`);
+                }}
+                className="px-6 py-2 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-all flex items-center gap-2 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">edit</span>
+                Ubah Data Bangunan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,7 +10,14 @@ export default function Step4DataBangunan() {
   const parsedTotal = ctxFormData?.jumlahBangunan ? parseInt(ctxFormData.jumlahBangunan, 10) : 1;
   const currentId = ctxId || id_transaksi || '';
 
-  const [nop, setNop] = useState(ctxFormData?.nop || '');
+  const formatNop = (n) => {
+    if (typeof n === 'string') return n;
+    if (!n) return '';
+    if (!n.kec && !n.kel && !n.blok && !n.nourut && !n.kode) return 'Belum diisi';
+    return `${n.prov || ''}.${n.kab || ''}.${n.kec || ''}.${n.kel || ''}.${n.blok || ''}-${n.nourut || ''}.${n.kode || ''}`;
+  };
+
+  const [nop, setNop] = useState(formatNop(ctxFormData?.nop));
   const [nomorBangunan, setNomorBangunan] = useState(1);
   const [totalBangunan, setTotalBangunan] = useState(parsedTotal);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -440,13 +447,13 @@ export default function Step4DataBangunan() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="space-y-2">
             <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">No. Formulir</label>
-            <input type="text" value={formData.noFormulir} onChange={(e) => handleTextChange('noFormulir', e)} className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono" placeholder="No. Formulir" />
+            <input type="text" value={formData.noFormulir} onChange={(e) => handleTextChange('noFormulir', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono" placeholder="No. Formulir" />
           </div>
           <div className="space-y-2">
             <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">Jenis Transaksi</label>
             <select 
               value={formData.jenisTransaksi} 
-              onChange={(e) => handleTextChange('jenisTransaksi', e)} 
+              onChange={(e) => handleTextChange('jenisTransaksi', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} 
               disabled={['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(ctxFormData?.transaksi)}
               className={`w-full h-10 border border-outline-variant rounded px-3 text-sm ${['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(ctxFormData?.transaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : ''}`}
             >
@@ -472,18 +479,20 @@ export default function Step4DataBangunan() {
               )}
             </select>
           </div>
-          <div className="space-y-2">
-            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">NOP</label>
-            <input type="text" value={nop} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold" />
-          </div>
+          {ctxFormData?.transaksi !== 'BARU' && (
+            <div className="space-y-2">
+              <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">NOP</label>
+              <input type="text" value={nop} disabled className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-lowest text-on-surface-variant font-bold cursor-not-allowed" />
+            </div>
+          )}
           <div className="flex gap-4">
             <div className="space-y-2 flex-1">
               <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Jml Bng</label>
-              <input type="number" onWheel={(e) => e.target.blur()} value={totalBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" />
+              <input type="text" value={totalBangunan} disabled className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-lowest text-on-surface-variant font-bold text-center cursor-not-allowed" />
             </div>
             <div className="space-y-2 flex-1">
               <label className="font-label-sm text-primary block text-[10px] uppercase tracking-widest whitespace-nowrap">Bng M²</label>
-              <input type="number" onWheel={(e) => e.target.blur()} value={formData.luasBangunan} readOnly className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-low text-on-surface-variant font-bold text-center" placeholder="M²" />
+              <input type="text" value={formData.luasBangunan || ''} disabled className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono bg-surface-container-lowest text-on-surface-variant font-bold text-center cursor-not-allowed" placeholder="M²" />
             </div>
           </div>
         </div>
@@ -516,29 +525,29 @@ export default function Step4DataBangunan() {
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">2. Luas Bangunan (M²)</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
+                <input type="text" inputMode="decimal" value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
                 {errors.luasBangunan && <p className="text-error text-[12px]">{errors.luasBangunan}</p>}
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">3. Jumlah Lantai</label>
-                <input type="text" value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
+                <input type="text" value={formData.jumlahLantai} onChange={(e) => handleTextChange('jumlahLantai', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1" />
                 {errors.jumlahLantai && <p className="text-error text-[12px]">{errors.jumlahLantai}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">4. Tahun Dibangun</label>
-                <input type="text" value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', e)} className={`w-full h-12 border ${errors.tahunDibangun ? 'border-error' : 'border-outline-variant'} rounded px-4 font-data-mono`} placeholder="Contoh: 2010" />
+                <input type="text" value={formData.tahunDibangun} onChange={(e) => handleTextChange('tahunDibangun', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className={`w-full h-12 border ${errors.tahunDibangun ? 'border-error' : 'border-outline-variant'} rounded px-4 font-data-mono`} placeholder="Contoh: 2010" />
                 {errors.tahunDibangun && <p className="text-error text-[12px]">{errors.tahunDibangun}</p>}
               </div>
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">5. Tahun Direnovasi (Opsional)</label>
-                <input type="text" value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
+                <input type="text" value={formData.tahunDirenovasi} onChange={(e) => handleTextChange('tahunDirenovasi', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Kosongkan jika tidak ada" />
                 {errors.tahunDirenovasi && <p className="text-error text-[12px]">{errors.tahunDirenovasi}</p>}
               </div>
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">6. Daya Listrik Terpasang (WATT)</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.dayaListrik} onChange={(e) => handleTextChange('dayaListrik', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1300" />
+                <input type="text" inputMode="decimal" value={formData.dayaListrik} onChange={(e) => handleTextChange('dayaListrik', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 1300" />
                 {errors.dayaListrik && <p className="text-error text-[12px]">{errors.dayaListrik}</p>}
               </div>
               <div className="space-y-2"></div>
@@ -576,17 +585,17 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Jumlah AC Split</label>
-                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.acSplit} onChange={e => handleTextChange('acSplit', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                      <input type="text" inputMode="decimal" value={formData.acSplit} onChange={(e) => handleTextChange('acSplit', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Jumlah AC Window</label>
-                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.acWindow} onChange={e => handleTextChange('acWindow', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                      <input type="text" inputMode="decimal" value={formData.acWindow} onChange={(e) => handleTextChange('acWindow', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">AC Sentral</label>
                       <div className="flex gap-4 pt-1">
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Ada" checked={formData.acSentral === 'Ada'} onChange={e=>handleTextChange('acSentral', e)} className="text-primary focus:ring-primary" /> Ada</label>
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Tidak Ada" checked={formData.acSentral === 'Tidak Ada'} onChange={e=>handleTextChange('acSentral', e)} className="text-primary focus:ring-primary" /> Tidak Ada</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Ada" checked={formData.acSentral === 'Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="text-primary focus:ring-primary" /> Ada</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Tidak Ada" checked={formData.acSentral === 'Tidak Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="text-primary focus:ring-primary" /> Tidak Ada</label>
                       </div>
                     </div>
                   </div>
@@ -604,13 +613,13 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Luas Kolam (M²)</label>
-                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.kolamRenangLuas} onChange={e => handleTextChange('kolamRenangLuas', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 50" />
+                      <input type="text" inputMode="decimal" value={formData.kolamRenangLuas} onChange={(e) => handleTextChange('kolamRenangLuas', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 50" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Finishing / Pelapis</label>
                       <div className="flex gap-4">
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> Diplester</label>
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={e=>handleTextChange('kolamRenangFinishing', e)} /> Dengan Pelapis</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} /> Diplester</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} /> Dengan Pelapis</label>
                       </div>
                     </div>
                   </div>
@@ -628,11 +637,11 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Panjang Pagar (M)</label>
-                      <input type="number" onWheel={(e) => e.target.blur()} value={formData.panjangPagar} onChange={e => handleTextChange('panjangPagar', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 15" />
+                      <input type="text" inputMode="decimal" value={formData.panjangPagar} onChange={(e) => handleTextChange('panjangPagar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Contoh: 15" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Bahan Pagar</label>
-                      <select value={formData.bahanPagar} onChange={e => handleTextChange('bahanPagar', e)} className="w-full p-2.5 border border-outline-variant rounded-lg text-sm bg-white">
+                      <select value={formData.bahanPagar} onChange={(e) => handleTextChange('bahanPagar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg text-sm bg-white">
                         <option value="">- Pilih Bahan -</option>
                         <option value="Baja/Besi">Baja/Besi</option>
                         <option value="Bata/Batako">Bata/Batako</option>
@@ -654,10 +663,10 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <h6 className="font-bold text-sm mb-4">Luas Perkerasan Berdasarkan Jenis (M²)</h6>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Ringan</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanRingan} onChange={e=>handleTextChange('halamanRingan',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Sedang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanSedang} onChange={e=>handleTextChange('halamanSedang',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Berat</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanBerat} onChange={e=>handleTextChange('halamanBerat',e)} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Penutup Lantai</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.halamanPenutupLantai} onChange={e=>handleTextChange('halamanPenutupLantai',e)} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Ringan</label><input type="text" inputMode="decimal" value={formData.halamanRingan} onChange={(e) => handleTextChange('halamanRingan', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Sedang</label><input type="text" inputMode="decimal" value={formData.halamanSedang} onChange={(e) => handleTextChange('halamanSedang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Berat</label><input type="text" inputMode="decimal" value={formData.halamanBerat} onChange={(e) => handleTextChange('halamanBerat', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Penutup Lantai</label><input type="text" inputMode="decimal" value={formData.halamanPenutupLantai} onChange={(e) => handleTextChange('halamanPenutupLantai', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
                     </div>
                   </div>
                 )}
@@ -678,17 +687,17 @@ export default function Step4DataBangunan() {
                       <div>
                         <p className="text-xs font-bold text-primary mb-3 uppercase tracking-widest border-b pb-2">Dengan Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuBeton} onChange={e=>handleTextChange('lapanganTenisLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuAspal} onChange={e=>handleTextChange('lapanganTenisLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisLampuTanah} onChange={e=>handleTextChange('lapanganTenisLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuBeton} onChange={(e) => handleTextChange('lapanganTenisLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuAspal} onChange={(e) => handleTextChange('lapanganTenisLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuTanah} onChange={(e) => handleTextChange('lapanganTenisLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
                         </div>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-outline mb-3 uppercase tracking-widest border-b pb-2">Tanpa Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuBeton} onChange={e=>handleTextChange('lapanganTenisTanpaLampuBeton', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuAspal} onChange={e=>handleTextChange('lapanganTenisTanpaLampuAspal', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.lapanganTenisTanpaLampuTanah} onChange={e=>handleTextChange('lapanganTenisTanpaLampuTanah', e)} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuBeton} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuAspal} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuTanah} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
                         </div>
                       </div>
                     </div>
@@ -707,14 +716,14 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Lift (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Penumpang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftPenumpang} onChange={e=>handleTextChange('liftPenumpang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Kapsul</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftKapsul} onChange={e=>handleTextChange('liftKapsul', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Barang</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.liftBarang} onChange={e=>handleTextChange('liftBarang', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Penumpang</label><input type="text" inputMode="decimal" value={formData.liftPenumpang} onChange={(e) => handleTextChange('liftPenumpang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Kapsul</label><input type="text" inputMode="decimal" value={formData.liftKapsul} onChange={(e) => handleTextChange('liftKapsul', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Barang</label><input type="text" inputMode="decimal" value={formData.liftBarang} onChange={(e) => handleTextChange('liftBarang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
                     </div>
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Eskalator (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &lt; 0.80 M</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.tanggaBerjalanKecil} onChange={e=>handleTextChange('tanggaBerjalanKecil', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &gt; 0.80 M</label><input type="number" onWheel={(e) => e.target.blur()} value={formData.tanggaBerjalanBesar} onChange={e=>handleTextChange('tanggaBerjalanBesar', e)} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &lt; 0.80 M</label><input type="text" inputMode="decimal" value={formData.tanggaBerjalanKecil} onChange={(e) => handleTextChange('tanggaBerjalanKecil', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &gt; 0.80 M</label><input type="text" inputMode="decimal" value={formData.tanggaBerjalanBesar} onChange={(e) => handleTextChange('tanggaBerjalanBesar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
                     </div>
                   </div>
                 )}
@@ -758,7 +767,7 @@ export default function Step4DataBangunan() {
                 {hasPabx && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <label className="text-xs font-bold text-on-surface-variant block mb-2 uppercase tracking-wider">Jumlah Saluran</label>
-                    <input type="number" onWheel={(e) => e.target.blur()} value={formData.saluranPabx} onChange={e => handleTextChange('saluranPabx', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
+                    <input type="text" inputMode="decimal" value={formData.saluranPabx} onChange={(e) => handleTextChange('saluranPabx', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Unit" />
                   </div>
                 )}
               </div>
@@ -772,7 +781,7 @@ export default function Step4DataBangunan() {
                 {hasSumur && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <label className="text-xs font-bold text-on-surface-variant block mb-2 uppercase tracking-wider">Kedalaman (Meter)</label>
-                    <input type="number" onWheel={(e) => e.target.blur()} value={formData.sumurArtesis} onChange={e => handleTextChange('sumurArtesis', e)} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Kedalaman" />
+                    <input type="text" inputMode="decimal" value={formData.sumurArtesis} onChange={(e) => handleTextChange('sumurArtesis', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg" placeholder="Kedalaman" />
                   </div>
                 )}
               </div>

@@ -88,7 +88,7 @@ export class TransaksiSpopService {
             luas_tanah_baru: t.luas_tanah_baru ?? 0,
             luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
             jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-            jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
+            jenis_tanah_baru: t.jenis_tanah_baru,
             koordinat_polygon: t.koordinat_polygon as any,
             calon_subjek_json: t.calon_subjek_json as any,
             data_bangunan_json: t.data_bangunan_json as any
@@ -167,7 +167,7 @@ export class TransaksiSpopService {
                 luas_tanah_baru: t.luas_tanah_baru ?? 0,
                 luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
                 jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-                jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
+                jenis_tanah_baru: t.jenis_tanah_baru,
                 koordinat_polygon: t.koordinat_polygon as any,
                 calon_subjek_json: t.calon_subjek_json as any,
                 data_bangunan_json: t.data_bangunan_json as any

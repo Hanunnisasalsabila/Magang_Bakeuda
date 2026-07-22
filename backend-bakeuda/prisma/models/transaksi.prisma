@@ -80,7 +80,7 @@ model DetailTransaksiTujuan {
   luas_tanah_baru      Decimal    @db.Decimal(10, 2)
   luas_bangunan_baru   Decimal    @default(0) @db.Decimal(10, 2)
   jumlah_bangunan_baru Int        @default(0)
-  jenis_tanah_baru     JenisTanah
+  jenis_tanah_baru     JenisTanah?
   jalan_op_baru        String?    @db.VarChar(255)
   rt_op_baru           String?    @db.VarChar(5)
   rw_op_baru           String?    @db.VarChar(5)

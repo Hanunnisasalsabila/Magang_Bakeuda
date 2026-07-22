@@ -134,7 +134,7 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
 });
 
 export default function Step3ObjekPajak() {
-  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, updateCompletion } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
@@ -295,7 +295,7 @@ export default function Step3ObjekPajak() {
         if (!isNaN(jumBng) && jumBng > 0) {
           navigate(`/spop/data-bangunan/${savedId}`);
         } else {
-          setCompletionStatus(prev => ({ ...prev, 4: true }));
+          updateCompletion(4, true);
           navigate(`/spop/konfirmasi/${savedId}`);
         }
       }
@@ -430,10 +430,10 @@ export default function Step3ObjekPajak() {
           <div className="space-y-2">
             <label className="font-label-sm text-primary block">LUAS TANAH (M²)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={formData.luasTanah}
-              onChange={(e) => handleTextChange('luasTanah', e)}
-              onWheel={(e) => e.target.blur()}
+              onChange={(e) => handleTextChange('luasTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '') } })}
               className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none`}
               placeholder="Contoh: 150"
             />
@@ -468,7 +468,14 @@ export default function Step3ObjekPajak() {
                     name="jenisTanah"
                     value={val}
                     checked={formData.jenisTanah === val}
-                    onChange={(e) => handleTextChange('jenisTanah', e)}
+                    onChange={(e) => {
+                      const newVal = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        jenisTanah: newVal,
+                        jumlahBangunan: newVal !== 'TANAH_BANGUNAN' ? '0' : prev.jumlahBangunan
+                      }));
+                    }}
                     className="w-4 h-4 text-primary focus:ring-primary border-outline-variant flex-shrink-0"
                   />
                   <span className="text-sm font-medium text-on-surface leading-snug">{label}</span>
@@ -492,7 +499,7 @@ export default function Step3ObjekPajak() {
               <input
                 type="text"
                 value={formData.jenisTanah !== 'TANAH_BANGUNAN' ? '0' : formData.jumlahBangunan}
-                onChange={(e) => handleTextChange('jumlahBangunan', { target: { value: e.target.value.replace(/\D/g, '') } })}
+                onChange={(e) => handleTextChange('jumlahBangunan', { target: { value: e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '') } })}
                 disabled={formData.jenisTanah !== 'TANAH_BANGUNAN'}
                 className={`w-full h-12 border ${errors.jumlahBangunan ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none ${formData.jenisTanah !== 'TANAH_BANGUNAN' ? 'bg-surface-container cursor-not-allowed opacity-70' : ''}`}
                 placeholder="Contoh: 1"

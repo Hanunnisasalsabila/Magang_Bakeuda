@@ -11,12 +11,14 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
   // Try to use Spop context, it might be null if not provided
   let completionStatus = { 1: false, 2: false, 3: false, 4: false };
   let spopData = null;
+  let formData = null;
   let idTransaksiCtx = null;
   try {
     const spop = useSpop();
     if (spop) {
       completionStatus = spop.completionStatus;
       spopData = spop.spopData;
+      formData = spop.formData;
       idTransaksiCtx = spop.idTransaksi;
     }
   } catch (e) {
@@ -31,13 +33,22 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
     { path: `/spop/informasi-umum${currentId ? `/${currentId}` : ''}`, label: 'Informasi Umum', step: 1 },
     { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
     { path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 },
-    { path: `/spop/data-bangunan${currentId ? `/${currentId}` : ''}`, label: 'Data Bangunan', step: 4 },
-    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 5 },
-    { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 6 },
   ];
+
+  const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
+  const skipDataBangunan = jumlahBangunan === 0;
+
+  if (!skipDataBangunan) {
+    spopSubItems.push({ path: `/spop/data-bangunan${currentId ? `/${currentId}` : ''}`, label: 'Data Bangunan', step: 4 });
+  }
+
+  spopSubItems.push(
+    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 5 },
+    { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 6 }
+  );
   
   const isSpopComplete = completionStatus[1] && completionStatus[2] && completionStatus[3] && completionStatus[4];
-  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, 5);
+  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, skipDataBangunan ? 4 : 5);
 
   const menuItems = isDesa
     ? [
