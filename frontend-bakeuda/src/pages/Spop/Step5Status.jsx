@@ -67,7 +67,10 @@ export default function Step5Status() {
           Buat SPOP Baru
         </button>
         <button
-          onClick={() => navigate('/beranda')}
+          onClick={() => {
+            loadDraft(null);
+            navigate('/beranda');
+          }}
           className="px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
         >
           Kembali ke Beranda

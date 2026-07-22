@@ -14,7 +14,7 @@ export default function Step4DataBangunan() {
     if (typeof n === 'string') return n;
     if (!n) return '';
     if (!n.kec && !n.kel && !n.blok && !n.nourut && !n.kode) return 'Belum diisi';
-    return `${n.prov || ''}.${n.kab || ''}.${n.kec || ''}.${n.kel || ''}.${n.blok || ''}-${n.nourut || ''}.${n.kode || ''}`;
+    return `${n.prov || ''}.${n.kab || ''}.${n.kec || ''}.${n.kel || ''}.${n.blok || ''}.${n.nourut || ''}.${n.kode || ''}`;
   };
 
   const [nop, setNop] = useState(formatNop(ctxFormData?.nop));

@@ -46,6 +46,34 @@ export default function Step1InformasiUmum() {
     }
   };
 
+  const formatNopString = (val) => {
+    let digits = (val || '').replace(/\D/g, '');
+    if (!digits) return '33.03.';
+    if (!digits.startsWith('3303')) {
+      digits = '3303' + digits.replace(/^3303?|^33?|^3?/, '');
+    }
+    digits = digits.slice(0, 18);
+    let formatted = '';
+    if (digits.length > 0) formatted += digits.substring(0, 2);
+    if (digits.length > 2) formatted += '.' + digits.substring(2, 4);
+    if (digits.length > 4) formatted += '.' + digits.substring(4, 7);
+    if (digits.length > 7) formatted += '.' + digits.substring(7, 10);
+    if (digits.length > 10) formatted += '.' + digits.substring(10, 13);
+    if (digits.length > 13) formatted += '.' + digits.substring(13, 17);
+    if (digits.length > 17) formatted += '.' + digits.substring(17, 18);
+    return formatted;
+  };
+
+  const formatSpptString = (val) => {
+    let digits = (val || '').replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < digits.length; i += 3) {
+      if (i > 0) formatted += '.';
+      formatted += digits.substring(i, i + 3);
+    }
+    return formatted.slice(0, 23); // limit just in case
+  };
+
   const handleTextChange = (field, e) => {
     const val = e.target.value;
     setFormData(prev => {
@@ -384,13 +412,13 @@ export default function Step1InformasiUmum() {
                   <div key={idx} className="flex items-center gap-2">
                     <input
                       type="text"
-                      value={nop}
+                      value={nop || '33.03.'}
                       onChange={(e) => {
                         const newNopAsal = [...(formData.nopAsalList || [''])];
-                        newNopAsal[idx] = e.target.value.replace(/[^0-9.]/g, '');
+                        newNopAsal[idx] = formatNopString(e.target.value);
                         setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
                       }}
-                      placeholder="33.03.XXX.XXX.XXX-XXXX.X"
+                      placeholder="33.03.XXX.XXX.XXX.XXXX.X"
                       className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
                     />
                     {formData.transaksi === 'GABUNG' && (formData.nopAsalList || ['']).length > 2 && (
@@ -415,7 +443,7 @@ export default function Step1InformasiUmum() {
               <input
                 type="text"
                 value={formData.spptLama}
-                onChange={(e) => setFormData(prev => ({ ...prev, spptLama: e.target.value.replace(/[^0-9.]/g, '') }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, spptLama: formatSpptString(e.target.value) }))}
                 placeholder="XXX.XXX.XXX"
                 className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
               />

@@ -24,17 +24,17 @@ const dotIcon = L.divIcon({
 
 const formatNopString = (val) => {
   if (!val) return '';
-  let v = val.replace(/\D/g, ''); // keep only numbers
-  if (v.length > 18) v = v.substring(0, 18);
+  let digits = val.replace(/\D/g, '');
+  if (digits.length > 18) digits = digits.substring(0, 18);
   
   let formatted = '';
-  if (v.length > 0) formatted += v.substring(0, 2);
-  if (v.length > 2) formatted += '.' + v.substring(2, 4);
-  if (v.length > 4) formatted += '.' + v.substring(4, 7);
-  if (v.length > 7) formatted += '.' + v.substring(7, 10);
-  if (v.length > 10) formatted += '.' + v.substring(10, 13);
-  if (v.length > 13) formatted += '.' + v.substring(13, 17);
-  if (v.length > 17) formatted += '.' + v.substring(17, 18);
+  if (digits.length > 0) formatted += digits.substring(0, 2);
+  if (digits.length > 2) formatted += '.' + digits.substring(2, 4);
+  if (digits.length > 4) formatted += '.' + digits.substring(4, 7);
+  if (digits.length > 7) formatted += '.' + digits.substring(7, 10);
+  if (digits.length > 10) formatted += '.' + digits.substring(10, 13);
+  if (digits.length > 13) formatted += '.' + digits.substring(13, 17);
+  if (digits.length > 17) formatted += '.' + digits.substring(17, 18);
   
   return formatted;
 };

@@ -143,7 +143,7 @@ export default function Step4Konfirmasi() {
                 {['BARU', 'PECAH'].includes(formData.transaksi) ? (
                   <span className="text-on-surface-variant text-sm italic">Akan digenerate oleh Bakeuda</span>
                 ) : (
-                  `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}-${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
+                  `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}.${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
                 )}
               </p>
             </div>
