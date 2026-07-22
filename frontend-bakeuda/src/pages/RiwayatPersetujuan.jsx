@@ -9,7 +9,7 @@ const STATUS_FILTER = [
 ];
 
 function formatNOP(nopRaw) {
-  if (!nopRaw) return '-';
+  if (!nopRaw) return '............-.......';
   const parts = nopRaw.replace(/\D/g, '');
   const prov = parts.substring(0, 2) || '33';
   const kab = parts.substring(2, 4) || '03';
@@ -47,7 +47,7 @@ export default function RiwayatPersetujuan() {
             namaPengaju: item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
             namaDesa: detail.kelurahan_op_baru || '-',
             kecamatan: detail.kecamatan_op_baru || '-',
-            reviewer: item.verifikator?.nama_lengkap || item.reviewer?.nama_lengkap || '-',
+            reviewer: item.verifikator?.nama_lengkap || item.reviewer?.nama_lengkap || '—',
             tanggalDiajukan: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesai: new Date(item.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesaiRaw: new Date(item.updated_at),
@@ -188,7 +188,7 @@ export default function RiwayatPersetujuan() {
 
         {/* Table */}
         <div className="overflow-x-auto max-h-[55vh] overflow-y-auto scrollbar-thin scrollbar-thumb-outline-variant scrollbar-track-transparent">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full min-w-max text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-white shadow-sm outline outline-1 outline-primary/10">
               <tr className="bg-primary/5 text-primary font-medium text-xs uppercase tracking-wider border-b border-primary/20">
                 <th className="py-2.5 px-3 text-center whitespace-nowrap w-8">No</th>
@@ -196,8 +196,8 @@ export default function RiwayatPersetujuan() {
                 <th className="py-2.5 px-3 text-left whitespace-nowrap">Nama Pengaju</th>
                 <th className="py-2.5 px-3 text-left whitespace-nowrap">Kecamatan</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Diproses Oleh</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tgl Diajukan</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tgl Selesai</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tanggal Diajukan</th>
+                <th className="py-2.5 px-3 text-center whitespace-nowrap">Tanggal Selesai</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Status</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap w-10">Aksi</th>
               </tr>
@@ -235,7 +235,7 @@ export default function RiwayatPersetujuan() {
                     <td className="py-2.5 px-3">
                       <span className="font-mono text-xs text-gray-800 bg-gray-100 px-1.5 py-0.5 rounded whitespace-nowrap">{item.nop}</span>
                     </td>
-                    <td className="py-2.5 px-3">
+                    <td className="py-2.5 px-3 whitespace-nowrap pr-8">
                       <p className="font-medium text-gray-900 text-sm">{item.namaPengaju}</p>
                       <p className="text-xs text-gray-400">{item.namaDesa}</p>
                     </td>

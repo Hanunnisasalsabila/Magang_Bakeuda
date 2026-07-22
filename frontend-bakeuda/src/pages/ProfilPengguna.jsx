@@ -137,25 +137,40 @@ export default function ProfilPengguna({ role }) {
       setToast({ show: true, message: 'Konfirmasi kata sandi tidak cocok', type: 'error' });
       return;
     }
-    if (passwordForm.new.length < 6) {
-      setToast({ show: true, message: 'Kata sandi baru minimal 6 karakter', type: 'error' });
+    if (passwordForm.new.length < 8) {
+      setToast({ show: true, message: 'Kata sandi baru minimal 8 karakter', type: 'error' });
       return;
     }
     setIsChangingPwd(true);
     try {
       await api.patch('/auth/change-password', {
-        oldPassword: passwordForm.old,
-        newPassword: passwordForm.new,
+        old_password: passwordForm.old,
+        new_password: passwordForm.new,
       });
       setShowPasswordModal(false);
       setPasswordForm({ old: '', new: '', confirm: '' });
-      setToast({ show: true, message: 'Kata sandi berhasil diubah', type: 'success' });
+      setToast({ show: true, message: 'Kata sandi berhasil diubah. Mengeluarkan sesi Anda demi keamanan...', type: 'success' });
       api.post('/activities', { type: 'edit', title: 'Berhasil mengubah kata sandi akun' }).catch(() => {});
+      
+      // Force logout for security
+      setTimeout(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }, 2500);
       // Refresh activities
       const res = await api.get('/activities').catch(() => null);
       if (res) setActivities(res.data);
     } catch (err) {
-      setToast({ show: true, message: err.response?.data?.message || 'Gagal mengubah kata sandi', type: 'error' });
+      const msg = err.response?.data?.message;
+      let errorMsg = 'Gagal mengubah kata sandi';
+      if (typeof msg === 'string') {
+        errorMsg = msg;
+      } else if (Array.isArray(msg) && msg.length > 0) {
+        if (typeof msg[0] === 'string') errorMsg = msg.join(', ');
+        else if (msg[0].constraints) errorMsg = Object.values(msg[0].constraints)[0];
+      }
+      setToast({ show: true, message: errorMsg, type: 'error' });
     } finally {
       setIsChangingPwd(false);
     }

@@ -88,7 +88,7 @@ export class TransaksiSpopService {
             luas_tanah_baru: t.luas_tanah_baru ?? 0,
             luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
             jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-            jenis_tanah_baru: t.jenis_tanah_baru,
+            jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
             koordinat_polygon: t.koordinat_polygon as any,
             calon_subjek_json: t.calon_subjek_json as any,
             data_bangunan_json: t.data_bangunan_json as any
@@ -167,7 +167,7 @@ export class TransaksiSpopService {
                 luas_tanah_baru: t.luas_tanah_baru ?? 0,
                 luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
                 jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-                jenis_tanah_baru: t.jenis_tanah_baru,
+                jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
                 koordinat_polygon: t.koordinat_polygon as any,
                 calon_subjek_json: t.calon_subjek_json as any,
                 data_bangunan_json: t.data_bangunan_json as any
@@ -202,8 +202,8 @@ export class TransaksiSpopService {
     });
 
     if (!transaksi) throw new NotFoundException('Pengajuan tidak ditemukan');
-    if (transaksi.status_ajuan !== 'DRAFT') {
-      throw new BadRequestException('Hanya dokumen berstatus DRAFT yang dapat disubmit');
+    if (transaksi.status_ajuan !== 'DRAFT' && transaksi.status_ajuan !== 'REVISI') {
+      throw new BadRequestException('Hanya dokumen berstatus DRAFT atau REVISI yang dapat disubmit');
     }
     if (transaksi.pengaju.kode_wilayah !== currentUser.kode_wilayah && currentUser.role !== 'BAKEUDA') {
       throw new ForbiddenException('Akses ditolak');
@@ -214,7 +214,7 @@ export class TransaksiSpopService {
       data: { status_ajuan: 'MENUNGGU' },
     });
 
-    await this.catatRiwayat(idTransaksi, 'DRAFT', 'MENUNGGU', currentUser.id_user, 'Berkas disubmit dan menunggu verifikasi');
+    await this.catatRiwayat(idTransaksi, transaksi.status_ajuan, 'MENUNGGU', currentUser.id_user, 'Berkas disubmit dan menunggu verifikasi');
 
     return { success: true, message: 'Berkas berhasil diajukan', data: updated };
   }
@@ -228,8 +228,13 @@ export class TransaksiSpopService {
     }
     if (currentUser.role === 'DESA') {
       where.pengaju = { kode_wilayah: currentUser.kode_wilayah };
-    } else if (query.kode_wilayah) {
-      where.pengaju = { kode_wilayah: query.kode_wilayah };
+    } else {
+      if (query.kode_wilayah) {
+        where.pengaju = { kode_wilayah: query.kode_wilayah };
+      }
+      if (!where.status_ajuan) {
+        where.status_ajuan = { not: 'DRAFT' };
+      }
     }
 
     // Filter opsional — BAKEUDA bisa lihat khusus transaksi yang punya peringatan validasi
@@ -242,7 +247,8 @@ export class TransaksiSpopService {
       include: {
         detail_tujuan: true,
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
-        reviewer: { select: { nama_lengkap: true } }
+        reviewer: { select: { nama_lengkap: true } },
+        verifikator: { select: { nama_lengkap: true } }
       },
       orderBy: { updated_at: 'desc' },
     });
@@ -297,13 +303,13 @@ export class TransaksiSpopService {
       return this.getDetail(idTransaksi, currentUser);
     }
 
-    const updated = await this.prisma.transaksiSpop.update({
+    await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'PROSES', locked_by: currentUser.id_user, locked_at: new Date() },
     });
 
     await this.catatRiwayat(idTransaksi, 'MENUNGGU', 'PROSES', currentUser.id_user, 'Mulai direviu');
-    return { success: true, data: updated };
+    return this.getDetail(idTransaksi, currentUser);
   }
 
   async unlockReview(idTransaksi: string, currentUser: CurrentUser) {
@@ -639,7 +645,7 @@ export class TransaksiSpopService {
         blok_kav_no: t.blok_kav_no_baru,
         rw_op: t.rw_op_baru,
         rt_op: t.rt_op_baru,
-        jenis_tanah: t.jenis_tanah_baru!,
+        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? 0,
         jumlah_bangunan: t.jumlah_bangunan_baru ?? 0,
@@ -677,7 +683,7 @@ export class TransaksiSpopService {
       data: {
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? undefined,
-        jenis_tanah: t.jenis_tanah_baru!,
+        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
         jalan_op: t.jalan_op_baru ?? undefined,
       },
     });
@@ -718,7 +724,7 @@ export class TransaksiSpopService {
           kode_jenis_op: dto.kode_jenis_op,
           nik_subjek: nikSubjek,
           jalan_op: t.jalan_op_baru ?? '',
-          jenis_tanah: t.jenis_tanah_baru!,
+          jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
           luas_tanah: t.luas_tanah_baru,
           luas_bangunan: t.luas_bangunan_baru ?? 0,
         },
@@ -782,7 +788,7 @@ export class TransaksiSpopService {
         rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
-        jenis_tanah: t.jenis_tanah_baru!,
+        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
         luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
         luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },

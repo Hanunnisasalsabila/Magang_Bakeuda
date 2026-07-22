@@ -70,7 +70,7 @@ export default function AntreanVerifikasi() {
           const kec = parts.substring(4,7) || '000';
           const kel = parts.substring(7,10) || '000';
 
-          const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000-0000.0`;
+          const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000.0000.0`;
 
           // Tentukan status badge dan aksi
           let badgeStatus = 'Menunggu Verifikasi';
@@ -80,11 +80,11 @@ export default function AntreanVerifikasi() {
 
           if (item.status_ajuan === 'PROSES') {
             if (item.locked_by === myId) {
-              badgeStatus = 'Anda Sedang Mereviu';
+              badgeStatus = 'Sedang Anda Verifikasi';
               isLockedByMe = true;
             } else {
               lockedByName = item.reviewer?.nama_lengkap || 'Admin Lain';
-              badgeStatus = `Sedang direviu oleh ${lockedByName}`;
+              badgeStatus = `Sedang diverifikasi oleh ${lockedByName}`;
               isLockedByOther = true;
             }
           }
@@ -124,7 +124,7 @@ export default function AntreanVerifikasi() {
   }, []);
 
   const handleUnlock = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin melepas kunci reviu admin lain?")) return;
+    if (!window.confirm("Apakah Anda yakin ingin melepas kunci verifikasi admin lain?")) return;
     try {
       await api.patch(`/transaksi-spop/${id}/unlock`);
       // Force refresh data
@@ -179,6 +179,23 @@ export default function AntreanVerifikasi() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="space-y-1.5">
             <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+              Cari NOP/Subjek Pajak
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={handleSearchChange}
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
+                placeholder="Masukkan NOP atau Nama..."
+              />
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
+                search
+              </span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
               Kecamatan
             </label>
             <select
@@ -207,23 +224,6 @@ export default function AntreanVerifikasi() {
               ))}
             </select>
           </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Cari NOP/Subjek Pajak
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={handleSearchChange}
-                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
-                placeholder="Masukkan NOP atau Nama..."
-              />
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
-                search
-              </span>
-            </div>
-          </div>
           <div className="space-y-1.5 flex flex-col justify-end">
             <button
               onClick={() => {
@@ -242,15 +242,15 @@ export default function AntreanVerifikasi() {
       {/* Data Table Card */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto custom-scrollbar w-full">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Desa/Kelurahan</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Tanggal Kirim</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">NOP</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[20%]">Subjek Pajak</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[25%]">Alamat Objek</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Desa/Kelurahan</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Tanggal Kirim</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant text-center w-[10%]">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
@@ -291,7 +291,7 @@ export default function AntreanVerifikasi() {
                       <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-on-surface-variant'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex justify-center gap-2">
                         {item.isLockedByOther ? (
                           <>
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-200">
@@ -320,7 +320,7 @@ export default function AntreanVerifikasi() {
                                   : 'bg-blue-600 text-white hover:bg-blue-700'
                               }`}
                             >
-                              {item.isLockedByMe ? 'Lanjut Reviu' : 'Tinjau Berkas'}
+                              {item.isLockedByMe ? 'Lanjut Verifikasi' : 'Periksa Berkas'}
                             </button>
                           </>
                         )}
