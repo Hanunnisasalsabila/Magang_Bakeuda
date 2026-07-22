@@ -12,12 +12,12 @@ async function main() {
       const correctKodeKec = w.kode_wilayah.substring(4, 7);
       const correctKodeKel = w.kode_wilayah.substring(7, 10);
       
-      if (w.kode_kec !== correctKodeKec || w.kode_kel !== correctKodeKel) {
+      if (w.kode_kecamatan !== correctKodeKec || w.kode_kelurahan !== correctKodeKel) {
         await prisma.wilayah.update({
           where: { kode_wilayah: w.kode_wilayah },
           data: {
-            kode_kec: correctKodeKec,
-            kode_kel: correctKodeKel
+            kode_kecamatan: correctKodeKec,
+            kode_kelurahan: correctKodeKel
           }
         });
         count++;
