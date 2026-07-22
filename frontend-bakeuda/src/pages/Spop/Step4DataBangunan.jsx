@@ -665,8 +665,8 @@ export default function Step4DataBangunan() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">AC Sentral</label>
                       <div className="flex gap-4 pt-1">
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Ada" checked={formData.acSentral === 'Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="text-primary focus:ring-primary" /> Ada</label>
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Tidak Ada" checked={formData.acSentral === 'Tidak Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="text-primary focus:ring-primary" /> Tidak Ada</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Ada" checked={formData.acSentral === 'Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value } })} className="text-primary focus:ring-primary" /> Ada</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="acSentral" value="Tidak Ada" checked={formData.acSentral === 'Tidak Ada'} onChange={(e) => handleTextChange('acSentral', { target: { value: e.target.value } })} className="text-primary focus:ring-primary" /> Tidak Ada</label>
                       </div>
                     </div>
                   </div>
@@ -689,8 +689,8 @@ export default function Step4DataBangunan() {
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Finishing / Pelapis</label>
                       <div className="flex gap-4">
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} /> Diplester</label>
-                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} /> Dengan Pelapis</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Diplester" checked={formData.kolamRenangFinishing === 'Diplester'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value } })} /> Diplester</label>
+                        <label className="flex items-center gap-2 text-sm"><input type="radio" name="kolamRenangFinishing" value="Dengan Pelapis" checked={formData.kolamRenangFinishing === 'Dengan Pelapis'} onChange={(e) => handleTextChange('kolamRenangFinishing', { target: { value: e.target.value } })} /> Dengan Pelapis</label>
                       </div>
                     </div>
                   </div>
@@ -712,7 +712,7 @@ export default function Step4DataBangunan() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-on-surface-variant block uppercase tracking-wider">Bahan Pagar</label>
-                      <select value={formData.bahanPagar} onChange={(e) => handleTextChange('bahanPagar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border border-outline-variant rounded-lg text-sm bg-white">
+                      <select value={formData.bahanPagar} onChange={(e) => handleTextChange('bahanPagar', { target: { value: e.target.value } })} className="w-full p-2.5 border border-outline-variant rounded-lg text-sm bg-white">
                         <option value="">- Pilih Bahan -</option>
                         <option value="Baja/Besi">Baja/Besi</option>
                         <option value="Bata/Batako">Bata/Batako</option>
@@ -734,10 +734,10 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <h6 className="font-bold text-sm mb-4">Luas Perkerasan Berdasarkan Jenis (M²)</h6>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Ringan</label><input type="text" inputMode="decimal" value={formData.halamanRingan} onChange={(e) => handleTextChange('halamanRingan', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Sedang</label><input type="text" inputMode="decimal" value={formData.halamanSedang} onChange={(e) => handleTextChange('halamanSedang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Berat</label><input type="text" inputMode="decimal" value={formData.halamanBerat} onChange={(e) => handleTextChange('halamanBerat', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
-                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block">Penutup Lantai</label><input type="text" inputMode="decimal" value={formData.halamanPenutupLantai} onChange={(e) => handleTextChange('halamanPenutupLantai', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block font-bold">Ringan</label><span className="text-[10px] text-on-surface-variant block -mt-1 leading-tight">Aspal tipis / paving tanpa pondasi</span><input type="text" inputMode="decimal" value={formData.halamanRingan} onChange={(e) => handleTextChange('halamanRingan', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" placeholder="Contoh: 100" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block font-bold">Sedang</label><span className="text-[10px] text-on-surface-variant block -mt-1 leading-tight">Aspal tebal / paving berpondasi</span><input type="text" inputMode="decimal" value={formData.halamanSedang} onChange={(e) => handleTextChange('halamanSedang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" placeholder="Contoh: 50" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block font-bold">Berat</label><span className="text-[10px] text-on-surface-variant block -mt-1 leading-tight">Beton / aspal kendaraan berat</span><input type="text" inputMode="decimal" value={formData.halamanBerat} onChange={(e) => handleTextChange('halamanBerat', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" placeholder="Contoh: 150" /></div>
+                      <div className="space-y-2"><label className="text-xs text-on-surface-variant block font-bold">Penutup Lantai</label><span className="text-[10px] text-on-surface-variant block -mt-1 leading-tight">Keramik / batu alam eksterior</span><input type="text" inputMode="decimal" value={formData.halamanPenutupLantai} onChange={(e) => handleTextChange('halamanPenutupLantai', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full p-2.5 border rounded-lg" placeholder="Contoh: 20" /></div>
                     </div>
                   </div>
                 )}
@@ -753,22 +753,23 @@ export default function Step4DataBangunan() {
                 />
                 {hasLapanganTenis && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
-                    <h6 className="font-bold text-sm mb-4">Matriks Jumlah Lapangan Tenis (Unit)</h6>
+                    <h6 className="font-bold text-sm">Matriks Jumlah Lapangan Tenis (Unit)</h6>
+                    <p className="text-[11px] text-on-surface-variant mb-4 leading-relaxed">Isi dengan jumlah unit lapangan tenis berdasarkan jenis permukaan dan fasilitas penerangannya.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div>
                         <p className="text-xs font-bold text-primary mb-3 uppercase tracking-widest border-b pb-2">Dengan Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuBeton} onChange={(e) => handleTextChange('lapanganTenisLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuAspal} onChange={(e) => handleTextChange('lapanganTenisLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuTanah} onChange={(e) => handleTextChange('lapanganTenisLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuBeton} onChange={(e) => handleTextChange('lapanganTenisLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuAspal} onChange={(e) => handleTextChange('lapanganTenisLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisLampuTanah} onChange={(e) => handleTextChange('lapanganTenisLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
                         </div>
                       </div>
                       <div>
                         <p className="text-xs font-bold text-outline mb-3 uppercase tracking-widest border-b pb-2">Tanpa Lampu</p>
                         <div className="space-y-3">
-                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuBeton} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuAspal} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
-                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuTanah} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Beton</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuBeton} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuBeton', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Aspal</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuAspal} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuAspal', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                          <div className="flex justify-between items-center"><label className="text-sm">Tanah Liat/Rumput</label><input type="text" inputMode="decimal" value={formData.lapanganTenisTanpaLampuTanah} onChange={(e) => handleTextChange('lapanganTenisTanpaLampuTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
                         </div>
                       </div>
                     </div>
@@ -787,14 +788,14 @@ export default function Step4DataBangunan() {
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Lift (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Penumpang</label><input type="text" inputMode="decimal" value={formData.liftPenumpang} onChange={(e) => handleTextChange('liftPenumpang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Kapsul</label><input type="text" inputMode="decimal" value={formData.liftKapsul} onChange={(e) => handleTextChange('liftKapsul', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Barang</label><input type="text" inputMode="decimal" value={formData.liftBarang} onChange={(e) => handleTextChange('liftBarang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><div className="flex flex-col"><label className="text-sm font-bold">Penumpang</label><span className="text-[10px] text-on-surface-variant">Lift orang dalam gedung</span></div><input type="text" inputMode="decimal" value={formData.liftPenumpang} onChange={(e) => handleTextChange('liftPenumpang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                      <div className="flex justify-between items-center"><div className="flex flex-col"><label className="text-sm font-bold">Kapsul</label><span className="text-[10px] text-on-surface-variant">Lift kaca tembus pandang</span></div><input type="text" inputMode="decimal" value={formData.liftKapsul} onChange={(e) => handleTextChange('liftKapsul', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                      <div className="flex justify-between items-center"><div className="flex flex-col"><label className="text-sm font-bold">Barang</label><span className="text-[10px] text-on-surface-variant">Lift khusus angkut kargo</span></div><input type="text" inputMode="decimal" value={formData.liftBarang} onChange={(e) => handleTextChange('liftBarang', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
                     </div>
                     <div className="space-y-4">
                       <p className="text-xs font-bold text-outline uppercase tracking-wider mb-2 border-b pb-2">Jumlah Eskalator (Unit)</p>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &lt; 0.80 M</label><input type="text" inputMode="decimal" value={formData.tanggaBerjalanKecil} onChange={(e) => handleTextChange('tanggaBerjalanKecil', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
-                      <div className="flex justify-between items-center"><label className="text-sm">Lebar &gt; 0.80 M</label><input type="text" inputMode="decimal" value={formData.tanggaBerjalanBesar} onChange={(e) => handleTextChange('tanggaBerjalanBesar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-20 p-2 border rounded-lg text-center" /></div>
+                      <div className="flex justify-between items-center"><div className="flex flex-col"><label className="text-sm font-bold">Lebar &lt; 0.80 M</label><span className="text-[10px] text-on-surface-variant">Kapasitas 1 orang</span></div><input type="text" inputMode="decimal" value={formData.tanggaBerjalanKecil} onChange={(e) => handleTextChange('tanggaBerjalanKecil', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
+                      <div className="flex justify-between items-center"><div className="flex flex-col"><label className="text-sm font-bold">Lebar &gt; 0.80 M</label><span className="text-[10px] text-on-surface-variant">Kapasitas 2 orang/lebih</span></div><input type="text" inputMode="decimal" value={formData.tanggaBerjalanBesar} onChange={(e) => handleTextChange('tanggaBerjalanBesar', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-24 p-2 border rounded-lg text-center text-sm" placeholder="Jml Unit" /></div>
                     </div>
                   </div>
                 )}
@@ -831,7 +832,8 @@ export default function Step4DataBangunan() {
               {/* Utilitas Tambahan */}
               <div className="space-y-4">
                 <ToggleSwitch 
-                  label="Saluran PABX (Telepon)" 
+                  label="Saluran PABX (Telepon)"
+                  description="Saluran telepon internal antar ruangan dalam gedung / ekstensi."
                   checked={hasPabx} 
                   onChange={() => handleToggle(setHasPabx, ['saluranPabx'])} 
                 />
@@ -845,7 +847,8 @@ export default function Step4DataBangunan() {
 
               <div className="space-y-4">
                 <ToggleSwitch 
-                  label="Sumur Artesis" 
+                  label="Sumur Artesis"
+                  description="Sumur bor dalam untuk sumber air tanah sekunder."
                   checked={hasSumur} 
                   onChange={() => handleToggle(setHasSumur, ['sumurArtesis'])} 
                 />

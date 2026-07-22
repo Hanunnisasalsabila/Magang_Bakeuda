@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import { MapContainer, TileLayer, Marker, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -29,6 +31,110 @@ export default function Step4Konfirmasi() {
   const [jenisDokumenUpload, setJenisDokumenUpload] = useState('Sertifikat/KTP/Lainnya');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewDocUid, setPreviewDocUid] = useState(null); // to track which document uid is being cropped
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [isCropping, setIsCropping] = useState(false);
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const imgRef = useRef(null);
+  const [cropHistory, setCropHistory] = useState({});
+
+  const handleUndo = () => {
+    const docHist = cropHistory[previewDocUid];
+    if (!docHist || docHist.currentIndex <= 0) return;
+    const newIndex = docHist.currentIndex - 1;
+    const oldUrl = docHist.history[newIndex];
+    setCropHistory(prev => ({ ...prev, [previewDocUid]: { ...docHist, currentIndex: newIndex } }));
+    setFormData(prev => ({
+      ...prev,
+      lampiran: prev.lampiran.map(l => l.uid === previewDocUid ? { ...l, url_file: oldUrl } : l)
+    }));
+    setPreviewImage(oldUrl);
+  };
+
+  const handleRedo = () => {
+    const docHist = cropHistory[previewDocUid];
+    if (!docHist || docHist.currentIndex >= docHist.history.length - 1) return;
+    const newIndex = docHist.currentIndex + 1;
+    const newUrl = docHist.history[newIndex];
+    setCropHistory(prev => ({ ...prev, [previewDocUid]: { ...docHist, currentIndex: newIndex } }));
+    setFormData(prev => ({
+      ...prev,
+      lampiran: prev.lampiran.map(l => l.uid === previewDocUid ? { ...l, url_file: newUrl } : l)
+    }));
+    setPreviewImage(newUrl);
+  };
+
+  const getCroppedImg = async (image, crop, fileName) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error('Canvas is empty');
+          return;
+        }
+        blob.name = fileName;
+        resolve(blob);
+      }, 'image/jpeg');
+    });
+  };
+
+  const handleSaveCrop = async () => {
+    if (!completedCrop || !imgRef.current || previewDocUid === null) return;
+    try {
+      setIsUploading(true);
+      const croppedBlob = await getCroppedImg(imgRef.current, completedCrop, 'cropped_image.jpg');
+      
+      const formUpload = new FormData();
+      formUpload.append('file', croppedBlob, 'cropped_image.jpg');
+      
+      const uploadRes = await api.post('/transaksi-spop/upload', formUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const fileUrl = uploadRes.data.url_file || uploadRes.data.url;
+      
+      setFormData(prev => ({
+        ...prev,
+        lampiran: prev.lampiran.map(l => l.uid === previewDocUid ? { ...l, url_file: fileUrl } : l)
+      }));
+      setCropHistory(prev => {
+        const docHist = prev[previewDocUid] || { history: [previewImage], currentIndex: 0 };
+        const newHistory = docHist.history.slice(0, docHist.currentIndex + 1);
+        newHistory.push(fileUrl);
+        return {
+          ...prev,
+          [previewDocUid]: { history: newHistory, currentIndex: newHistory.length - 1 }
+        };
+      });
+      setPreviewImage(fileUrl);
+      setIsCropping(false);
+      setToast({ show: true, message: 'Gambar berhasil dipotong dan diperbarui', type: 'success' });
+    } catch (e) {
+      console.error(e);
+      setToast({ show: true, message: 'Gagal memotong gambar', type: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const renderDataBlock = (data, idx = null) => (
     <div key={idx ?? 'single'} className={idx !== null ? 'p-6 border-b border-outline-variant last:border-b-0' : 'p-6'}>
@@ -349,7 +455,21 @@ export default function Step4Konfirmasi() {
                   <span className="material-symbols-outlined text-primary">description</span>
                   <div>
                     <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
-                    <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">Lihat Pratinjau Dokumen</a>
+                    <button type="button" onClick={() => { 
+                      setPreviewImage(doc.url_file);
+                      let docUid = doc.uid;
+                      if (!docUid) {
+                        docUid = Math.random().toString(36).substring(2, 9);
+                        setFormData(prev => ({
+                          ...prev,
+                          lampiran: prev.lampiran.map((l, i) => i === idx ? { ...l, uid: docUid } : l)
+                        }));
+                      }
+                      setPreviewDocUid(docUid); 
+                      setZoomLevel(1); 
+                      setIsCropping(false);
+                      setCropHistory(prev => prev[docUid] ? prev : { ...prev, [docUid]: { history: [doc.url_file], currentIndex: 0 } });
+                    }} className="text-xs text-primary hover:underline font-semibold cursor-pointer">Lihat Pratinjau Dokumen</button>
                   </div>
                 </div>
                 <button
@@ -502,7 +622,19 @@ export default function Step4Konfirmasi() {
                                 {k.replace(/([A-Z])/g, ' $1').trim()}
                               </td>
                               <td className="py-2.5 px-4 font-medium text-on-surface w-1/2 align-top">
-                                {v}
+                                {(() => {
+                                  const keyLower = k.toLowerCase();
+                                  if (isNaN(v) || v === 'Ada' || v === 'Tidak Ada') return v;
+                                  if (keyLower.includes('luas') || keyLower.includes('halaman')) return `${v} M²`;
+                                  if (keyLower.includes('listrik')) return `${v} Watt`;
+                                  if (keyLower.includes('panjang') || keyLower.includes('sumur')) return `${v} Meter`;
+                                  if (keyLower.includes('ac') && keyLower !== 'acsentral' || 
+                                      keyLower.includes('lapangan') || 
+                                      keyLower.includes('lift') || 
+                                      keyLower.includes('tangga') || 
+                                      keyLower.includes('pabx')) return `${v} Unit`;
+                                  return v;
+                                })()}
                               </td>
                             </tr>
                           ))}
@@ -524,6 +656,81 @@ export default function Step4Konfirmasi() {
                 Ubah Data Bangunan
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* PREVIEW IMAGE MODAL */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-scaleIn">
+            <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-white z-10">
+              <h3 className="font-bold text-lg text-primary uppercase tracking-wider">{isCropping ? 'Potong Dokumen' : 'Pratinjau Dokumen'}</h3>
+              <div className="flex items-center gap-2">
+                {!isCropping && (
+                  <>
+                    <button 
+                      onClick={handleUndo} 
+                      disabled={!cropHistory[previewDocUid] || cropHistory[previewDocUid].currentIndex <= 0} 
+                      className="p-2 rounded-full transition-colors material-symbols-outlined disabled:opacity-30 disabled:cursor-not-allowed text-on-surface-variant hover:bg-surface-container-low" 
+                      title="Undo Crop"
+                    >undo</button>
+                    <button 
+                      onClick={handleRedo} 
+                      disabled={!cropHistory[previewDocUid] || cropHistory[previewDocUid].currentIndex >= cropHistory[previewDocUid].history.length - 1} 
+                      className="p-2 rounded-full transition-colors material-symbols-outlined disabled:opacity-30 disabled:cursor-not-allowed text-on-surface-variant hover:bg-surface-container-low" 
+                      title="Redo Crop"
+                    >redo</button>
+                    <div className="w-px h-6 bg-outline-variant mx-1"></div>
+                    <button onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.25))} className="p-2 hover:bg-surface-container-low rounded-full transition-colors material-symbols-outlined text-on-surface-variant" title="Zoom Out">zoom_out</button>
+                    <span className="text-xs font-bold text-on-surface-variant w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
+                    <button onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.25))} className="p-2 hover:bg-surface-container-low rounded-full transition-colors material-symbols-outlined text-on-surface-variant" title="Zoom In">zoom_in</button>
+                    <div className="w-px h-6 bg-outline-variant mx-2"></div>
+                    <button onClick={() => setIsCropping(true)} className="px-4 py-1.5 text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-colors flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[18px]">crop</span> Crop
+                    </button>
+                    <div className="w-px h-6 bg-outline-variant mx-2"></div>
+                  </>
+                )}
+
+                <button onClick={() => { setPreviewImage(null); setIsCropping(false); }} className="p-2 hover:bg-error/10 hover:text-error rounded-full transition-colors material-symbols-outlined text-on-surface-variant" disabled={isUploading}>close</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto bg-surface-container flex items-center justify-center p-4 relative custom-scrollbar">
+              {isCropping ? (
+                <ReactCrop
+                  crop={crop}
+                  onChange={(_, percentCrop) => setCrop(percentCrop)}
+                  onComplete={(c) => setCompletedCrop(c)}
+                  className="shadow-md mx-auto"
+                  style={{ maxHeight: '70vh', maxWidth: '100%' }}
+                >
+                  <img
+                    ref={imgRef}
+                    src={previewImage}
+                    alt="Crop Dokumen"
+                    crossOrigin="anonymous"
+                    style={{ maxHeight: '70vh', maxWidth: '100%', objectFit: 'contain' }}
+                  />
+                </ReactCrop>
+              ) : (
+                <img 
+                  src={previewImage} 
+                  alt="Preview Dokumen" 
+                  crossOrigin="anonymous"
+                  className="max-h-[70vh] max-w-full object-contain transition-transform duration-200 shadow-md"
+                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center' }}
+                />
+              )}
+            </div>
+            {isCropping && (
+              <div className="p-4 border-t border-outline-variant bg-white flex justify-end gap-3 z-10">
+                <button onClick={() => setIsCropping(false)} disabled={isUploading} className="px-6 py-2 text-sm font-bold text-on-surface hover:bg-surface-container-low rounded-full transition-colors border border-outline-variant">Batal</button>
+                <button onClick={handleSaveCrop} disabled={isUploading || !completedCrop} className="px-6 py-2 text-sm font-bold bg-primary text-white hover:bg-primary/90 rounded-full transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50">
+                  {isUploading ? <span className="material-symbols-outlined animate-spin text-[18px]">sync</span> : <span className="material-symbols-outlined text-[18px]">check</span>} 
+                  Simpan Potongan
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

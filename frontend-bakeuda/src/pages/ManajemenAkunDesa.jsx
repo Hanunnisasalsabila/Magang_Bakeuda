@@ -11,7 +11,7 @@ export default function ManajemenAkunDesa() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterWilayah, setFilterWilayah] = useState('');
+  const [filterKecamatan, setFilterKecamatan] = useState('');
   const [wilayahList, setWilayahList] = useState([]);
 
   // Pagination & Sorting state
@@ -240,7 +240,7 @@ export default function ManajemenAkunDesa() {
     const searchLower = searchQuery.toLowerCase();
     const matchSearch = user.username.toLowerCase().includes(searchLower) ||
       user.nama_lengkap.toLowerCase().includes(searchLower);
-    const matchWilayah = filterWilayah ? user.kode_wilayah === filterWilayah : true;
+    const matchWilayah = filterKecamatan ? user.Wilayah?.kecamatan === filterKecamatan : true;
     return matchSearch && matchWilayah;
   }).sort((a, b) => {
     if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -259,11 +259,11 @@ export default function ManajemenAkunDesa() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className=" text-display-lg text-primary tracking-tight">
-            Manajemen Akun Desa
+          <h1 className="text-2xl text-primary font-bold">
+            Data Akun Desa
           </h1>
-          <p className="text-on-surface-variant font-body-lg mt-1 opacity-80">
-            Kelola akses dan data profil pengguna perangkat desa.
+          <p className="text-sm font-body-md text-on-surface-variant mt-1">
+            Atur pendaftaran akun, kata sandi, dan data profil pengguna desa di sini.
           </p>
         </div>
         <div className="shrink-0 flex gap-3">
@@ -308,18 +308,18 @@ export default function ManajemenAkunDesa() {
               location_on
             </span>
             <select
-              value={filterWilayah}
+              value={filterKecamatan}
               onChange={(e) => {
-                setFilterWilayah(e.target.value);
+                setFilterKecamatan(e.target.value);
                 setCurrentPage(1);
               }}
               className="w-full pl-10 pr-10 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap appearance-none"
               style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
             >
-              <option value="">Semua Wilayah</option>
-              {wilayahList.map((w) => (
-                <option key={w.kode_wilayah} value={w.kode_wilayah}>
-                  {w.kode_wilayah} - {w.nama_desa} ({w.kecamatan})
+              <option value="">Semua Kecamatan</option>
+              {Array.from(new Set(wilayahList.map(w => w.kecamatan))).sort().map((kec) => (
+                <option key={kec} value={kec}>
+                  {kec}
                 </option>
               ))}
             </select>
@@ -328,11 +328,11 @@ export default function ManajemenAkunDesa() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/30 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
                 <th
-                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/3 cursor-pointer hover:bg-surface-container-low transition-colors"
+                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-[40%] cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('nama_lengkap')}
                 >
                   <div className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export default function ManajemenAkunDesa() {
                   </div>
                 </th>
                 <th
-                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/4 cursor-pointer hover:bg-surface-container-low transition-colors"
+                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-[25%] cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('username')}
                 >
                   <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ export default function ManajemenAkunDesa() {
                   </div>
                 </th>
                 <th
-                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-1/4 cursor-pointer hover:bg-surface-container-low transition-colors"
+                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-[25%] cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('kode_wilayah')}
                 >
                   <div className="flex items-center gap-2">
@@ -370,7 +370,7 @@ export default function ManajemenAkunDesa() {
                     )}
                   </div>
                 </th>
-                <th className="py-3 px-4 font-medium border-b border-outline-variant text-center w-auto">Aksi</th>
+                <th className="py-3 px-4 font-medium border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/40">
@@ -448,7 +448,7 @@ export default function ManajemenAkunDesa() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex justify-center gap-2">
                         <button
                           onClick={() => openEditModal(user)}
                           className="flex items-center justify-center w-8 h-8 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all shadow-sm group/btn"

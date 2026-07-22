@@ -2,8 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 import * as fs from 'fs';
+import * as path from 'path';
 import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
 import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 @Catch()
 class AllExceptionsFilter extends BaseExceptionFilter {
@@ -15,7 +17,12 @@ class AllExceptionsFilter extends BaseExceptionFilter {
 
 // Trigger restart for Prisma schema sync
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve uploaded files statically at /uploads
+  const uploadsPath = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath, { recursive: true });
+  app.useStaticAssets(uploadsPath, { prefix: '/uploads' });
 
   // Global prefix: semua route dimulai dengan /api
   app.setGlobalPrefix('api');

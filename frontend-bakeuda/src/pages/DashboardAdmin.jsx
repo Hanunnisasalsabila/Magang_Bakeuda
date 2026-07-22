@@ -8,29 +8,32 @@ export default function DashboardAdmin() {
   const navigate = useNavigate();
   const [activeSelect, setActiveSelect] = useState('Minggu Ini');
   const [bentoCards, setBentoCards] = useState([
-    { title: 'Pengajuan Masuk', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary', link: '/antrean-verifikasi' },
-    { title: 'Menunggu Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
-    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
+    { title: 'Total Pengajuan', value: '0', icon: 'inbox', badgeText: '', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
+    { title: 'Antrean Verifikasi', value: '0', icon: 'pending_actions', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+    { title: 'Total Objek Pajak', value: '0', icon: 'location_city', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
   ]);
 
   const [verifiers, setVerifiers] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, listRes, usersRes] = await Promise.all([
+        const [statsRes, listRes, usersRes, objekStatsRes] = await Promise.all([
           api.get('/transaksi-spop/stats'),
           api.get('/transaksi-spop'),
-          api.get('/users')
+          api.get('/users'),
+          api.get('/objek-pajak/stats')
         ]);
         
         const dataStats = statsRes.data.data;
+        const totalObj = (objekStatsRes && objekStatsRes.data && objekStatsRes.data.data) ? objekStatsRes.data.data.total : 0;
         setBentoCards([
-          { title: 'Pengajuan Masuk', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Data Terbaru', badgeColor: 'text-secondary', meta: 'Data SPOP periode berjalan', bgIcon: 'bg-surface-container text-primary', link: '/antrean-verifikasi' },
-          { title: 'Menunggu Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Penting', badgeColor: 'text-error font-bold', meta: 'Butuh penanganan segera', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
-          { title: 'Total Objek Pajak', value: (dataStats.totalObjek || 0).toString(), icon: 'location_city', badgeText: 'Total', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di database PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
+          { title: 'Total Pengajuan', value: (dataStats.totalDikirim || 0).toString(), icon: 'inbox', badgeText: 'Semua Data', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
+          { title: 'Antrean Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'pending_actions', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
+          { title: 'Total Objek Pajak', value: totalObj.toString(), icon: 'location_city', badgeText: 'Keseluruhan', badgeColor: 'text-on-surface-variant', meta: 'Terdaftar di basis data PBB', bgIcon: 'bg-surface-container text-primary', link: '/daftar-objek-pajak' }
         ]);
 
         if (usersRes.data && usersRes.data.success) {
@@ -42,12 +45,15 @@ export default function DashboardAdmin() {
           })));
         }
 
-        const formattedList = listRes.data.data.slice(0, 5).map(item => ({
+        const rawList = listRes.data.data || [];
+        setAllTransactions(rawList);
+
+        const formattedList = rawList.slice(0, 5).map(item => ({
           id: item.id_transaksi,
-          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || 'Menunggu NOP',
+          nop: item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '............-.......',
           name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama'),
           district: item.pengaju?.nama_lengkap || 'Admin Desa',
-          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : 'Ditolak',
+          status: (item.status_ajuan === 'MENUNGGU' || item.status_ajuan === 'PROSES') ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan,
           time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
         }));
         setActivities(formattedList);
@@ -62,20 +68,61 @@ export default function DashboardAdmin() {
 
 
 
-  const barChartData = activeSelect === 'Minggu Ini' ? [
-    { label: 'SEN', height: '60%', value: 120, title: 'Senin: 120' },
-    { label: 'SEL', height: '80%', value: 156, title: 'Selasa: 156' },
-    { label: 'RAB', height: '40%', value: 80, title: 'Rabu: 80' },
-    { label: 'KAM', height: '90%', value: 190, title: 'Kamis: 190' },
-    { label: 'JUM', height: '75%', value: 145, title: 'Jumat: 145' },
-    { label: 'SAB', height: '20%', value: 40, title: 'Sabtu: 40' },
-    { label: 'MIN', height: '10%', value: 12, title: 'Minggu: 12' },
-  ] : [
-    { label: 'MG 1', height: '50%', value: 320, title: 'Minggu 1: 320' },
-    { label: 'MG 2', height: '85%', value: 500, title: 'Minggu 2: 500' },
-    { label: 'MG 3', height: '40%', value: 250, title: 'Minggu 3: 250' },
-    { label: 'MG 4', height: '70%', value: 410, title: 'Minggu 4: 410' },
-  ];
+  const generateChartData = (transactions, period) => {
+    const today = new Date();
+    if (period === 'Minggu Ini') {
+      const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - dayOfWeek);
+      startOfWeek.setHours(0,0,0,0);
+      
+      const counts = [0, 0, 0, 0, 0, 0, 0];
+      const labels = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
+      const fullLabels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+      
+      transactions.forEach(t => {
+        const d = new Date(t.tanggal_pengajuan);
+        if (d >= startOfWeek) {
+          const diffDays = Math.floor((d - startOfWeek) / (1000 * 60 * 60 * 24));
+          if (diffDays >= 0 && diffDays < 7) {
+            counts[diffDays]++;
+          }
+        }
+      });
+      
+      const maxCount = Math.max(...counts, 5); // Minimum scale of 5
+      return counts.map((count, i) => ({
+        label: labels[i],
+        height: `${(count / maxCount) * 100}%`,
+        value: count,
+        title: `${fullLabels[i]}: ${count}`
+      }));
+    } else {
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const counts = [0, 0, 0, 0];
+      
+      transactions.forEach(t => {
+        const d = new Date(t.tanggal_pengajuan);
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          const date = d.getDate();
+          let week = Math.floor((date - 1) / 7);
+          if (week > 3) week = 3;
+          counts[week]++;
+        }
+      });
+      
+      const maxCount = Math.max(...counts, 5);
+      return counts.map((count, i) => ({
+        label: `MG ${i + 1}`,
+        height: `${(count / maxCount) * 100}%`,
+        value: count,
+        title: `Minggu ${i + 1}: ${count}`
+      }));
+    }
+  };
+
+  const barChartData = generateChartData(allTransactions, activeSelect);
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -84,6 +131,17 @@ export default function DashboardAdmin() {
 
 
 
+
+  const formatNOP = (nopStr) => {
+    if (!nopStr || nopStr.includes('...')) {
+      return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>;
+    }
+    const clean = nopStr.replace(/\D/g, '');
+    if (clean.length === 18) {
+      return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+    }
+    return nopStr;
+  };
 
   return (
     <div className="p-6 max-w-screen-2xl mx-auto space-y-6">
@@ -149,17 +207,17 @@ export default function DashboardAdmin() {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-lg text-on-surface font-bold">
-                Tren Pengajuan SPOP
+                Statistik Pengajuan SPOP
               </h3>
-              <p className="text-on-surface-variant text-sm">Statistik pengajuan berdasarkan periode</p>
+              <p className="text-on-surface-variant text-sm">Ringkasan jumlah pengajuan yang masuk</p>
             </div>
             <select
               value={activeSelect}
               onChange={(e) => setActiveSelect(e.target.value)}
               className="bg-white text-sm text-gray-700 border border-gray-300 rounded px-3 py-1.5 pr-8 focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm"
             >
-              <option>Minggu Ini</option>
-              <option>Bulan Ini</option>
+              <option>Minggu</option>
+              <option>Bulan</option>
             </select>
           </div>
           <div className="h-72 flex items-end justify-between gap-4 px-4 relative border-b border-gray-200 pb-2 mt-4">
@@ -191,16 +249,16 @@ export default function DashboardAdmin() {
         <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
           <div>
             <h3 className="font-headline-md text-headline-md text-primary font-bold">
-              Pengajuan SPOP Terbaru
+              Riwayat Pengajuan Terkini
             </h3>
-            <p className="text-sm text-on-surface-variant mt-1">Daftar antrean SPOP yang masuk ke sistem pusat</p>
+            <p className="text-sm text-on-surface-variant mt-1">Daftar pengajuan SPOP terbaru yang masuk ke sistem</p>
           </div>
           <button
-            onClick={() => navigate('/antrean-verifikasi')}
-            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-lg text-sm font-bold transition-colors"
+            onClick={() => navigate('/riwayat-persetujuan')}
+            className="flex items-center gap-2 px-5 py-2 bg-primary text-white hover:bg-primary/90 rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
           >
-            <span>Buka Antrean</span>
-            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+            <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+            <span>Lihat Semua</span>
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -239,7 +297,7 @@ export default function DashboardAdmin() {
                 activities.map((act, i) => (
                   <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''}`}>
                     <td className="px-6 py-4 font-data-mono text-primary font-bold whitespace-nowrap text-sm">
-                      {act.nop}
+                      {formatNOP(act.nop)}
                     </td>
                     <td className="px-6 py-4 font-label-md font-bold text-on-background whitespace-nowrap">
                       {act.name}

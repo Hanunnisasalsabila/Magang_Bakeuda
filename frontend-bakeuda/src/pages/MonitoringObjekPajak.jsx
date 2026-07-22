@@ -216,7 +216,7 @@ export default function MonitoringObjekPajak() {
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/30 text-on-surface">
