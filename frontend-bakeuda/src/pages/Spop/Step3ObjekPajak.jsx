@@ -40,7 +40,7 @@ function MapClickHandler({ koordinatPolygon, setFormData }) {
 }
 
 export default function Step3ObjekPajak() {
-  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, setCompletionStatus } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, updateCompletion } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
@@ -87,7 +87,7 @@ export default function Step3ObjekPajak() {
         if (!isNaN(jumBng) && jumBng > 0) {
           navigate(`/spop/data-bangunan/${savedId}`);
         } else {
-          setCompletionStatus(prev => ({ ...prev, 4: true }));
+          updateCompletion(4, true);
           navigate(`/spop/konfirmasi/${savedId}`);
         }
       }

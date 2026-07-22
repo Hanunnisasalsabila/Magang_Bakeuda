@@ -193,11 +193,13 @@ export default function DetailReviewSPOP() {
 
         if (status === 'DISETUJUI') {
           endpoint = `/transaksi-spop/${id}/approve`;
-          Object.assign(payload, {
-            kode_wilayah: kodeWilayah,
-            kode_blok: kodeBlok,
-            kode_jenis_op: kodeJenisOp,
-          });
+          if (['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
+            Object.assign(payload, {
+              kode_wilayah: kodeWilayah,
+              kode_blok: kodeBlok,
+              kode_jenis_op: kodeJenisOp,
+            });
+          }
         } else if (status === 'DITOLAK') {
           endpoint = `/transaksi-spop/${id}/tolak`;
         } else if (status === 'REVISI') {
@@ -264,7 +266,8 @@ export default function DetailReviewSPOP() {
 
   const detailTujuan = data.detail_tujuan?.[0] || {};
   const calonSubjek = detailTujuan.calon_subjek_json || {};
-  const nopDisplay = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
+  const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
+  const nopDisplay = detailTujuan.nop_generated || (isTetap ? data.detail_asal?.[0]?.nop_asal : detailTujuan.no_persil_baru) || 'Menunggu NOP';
   
   // Format Tanggal
   const tglPengajuan = new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', {
