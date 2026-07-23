@@ -137,7 +137,7 @@ export class ObjekPajakService {
         objek = await this.prisma.objekPajak.findUnique({
           where: { nop },
           include: {
-            subjek_pajak: { select: { nik: true, nama_subjek: true } },
+            subjek_pajak: true,
             bumi: true,
             bangunan: { include: { fasilitas: true } },
             wilayah: true,

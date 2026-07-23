@@ -140,8 +140,6 @@ export class TransaksiSpopService {
 
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
-    const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
-
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
@@ -161,7 +159,6 @@ export class TransaksiSpopService {
             tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan as string) : undefined,
             peringatan_validasi: peringatanValidasi,
             catatan_pengaju: dto.catatan_pengaju,
-            peringatan_validasi: peringatanValidasi,
             detail_asal: dto.detail_asal ? {
               create: dto.detail_asal.map((a) => ({
                 nop_asal: a.nop_asal,
