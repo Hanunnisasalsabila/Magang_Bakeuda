@@ -101,6 +101,12 @@ class TransaksiSpopService {
     return resp.data as Map<String, dynamic>;
   }
 
+  // ─── Hapus Draft SPOP ───
+  Future<Map<String, dynamic>> deleteTransaksi(String idTransaksi) async {
+    final resp = await _dio.delete('/transaksi-spop/$idTransaksi');
+    return resp.data as Map<String, dynamic>;
+  }
+
   // ─── Upload lampiran/dokumen ───
   Future<String> uploadFile(String filePath, String fileName) async {
     final formData = FormData.fromMap({
