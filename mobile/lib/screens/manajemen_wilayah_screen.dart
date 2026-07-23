@@ -5,7 +5,8 @@ import '../services/api_service.dart';
 import '../services/objek_pajak_service.dart';
 
 class ManajemenWilayahScreen extends StatefulWidget {
-  const ManajemenWilayahScreen({super.key});
+  final bool autoShowAddForm;
+  const ManajemenWilayahScreen({super.key, this.autoShowAddForm = false});
 
   @override
   State<ManajemenWilayahScreen> createState() => _ManajemenWilayahScreenState();
@@ -23,6 +24,11 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
   void initState() {
     super.initState();
     _loadData();
+    if (widget.autoShowAddForm) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showFormDialog();
+      });
+    }
   }
 
   @override

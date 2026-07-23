@@ -26,9 +26,8 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    const isDevOverride = password === 'admin123'; // Backdoor untuk testing selama masa development
 
-    if (!isPasswordValid && !isDevOverride) {
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Username atau password salah');
     }
 
@@ -73,9 +72,8 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User tidak ditemukan');
 
     const isValid = await bcrypt.compare(dto.old_password, user.password_hash);
-    const isDevOverride = dto.old_password === 'admin123';
 
-    if (!isValid && !isDevOverride) {
+    if (!isValid) {
       throw new UnauthorizedException('Password lama salah');
     }
 

@@ -10,7 +10,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "LD_LIBRARY_PATH=/home/afifhnrstwn/oracle/instantclient_19_24:$LD_LIBRARY_PATH nest start --watch",
+    "start:dev": "nest start --watch",
     "start:win": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",

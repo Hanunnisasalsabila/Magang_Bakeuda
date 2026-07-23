@@ -114,4 +114,43 @@ class AuthService {
   Future<void> logout() async {
     await _storage.delete(key: 'jwt_token');
   }
+
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null) {
+        return {'success': false, 'message': 'Sesi habis'};
+      }
+      final response = await _dio.get(
+        '$_baseUrl/auth/me',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return {'success': true, 'data': response.data['data']};
+      }
+      return {'success': false, 'message': 'Gagal mengambil data'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(String name, String nip) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      if (token == null) {
+        return {'success': false, 'message': 'Sesi habis'};
+      }
+      final response = await _dio.put(
+        '$_baseUrl/auth/me',
+        data: {'nama_lengkap': name, 'nip': nip},
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      if (response.statusCode == 200) {
+        return {'success': true};
+      }
+      return {'success': false, 'message': 'Gagal update profil'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan'};
+    }
+  }
 }

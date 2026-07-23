@@ -8,8 +8,73 @@ import 'package:share_plus/share_plus.dart';
 import 'package:open_file/open_file.dart';
 import 'package:excel/excel.dart' as xl;
 
+// Palet warna resmi instansi (samakan dengan tema di aplikasi Flutter)
+final PdfColor _kNavy = PdfColor.fromHex('#0C2A5B');
+final PdfColor _kGold = PdfColor.fromHex('#C9A227');
+
 class ExportService {
-  // ─── Cetak Kredensial Akun Desa ke PDF ───
+  /// Kop surat resmi dipakai di semua dokumen PDF kredensial supaya
+  /// tampilannya konsisten: nama instansi tebal, subjudul, logo di kanan,
+  /// garis pembatas navy di bawahnya.
+  static Future<pw.ImageProvider?> _loadLogo() async {
+    try {
+      final logoBytes = await rootBundle.load('assets/logo-purbalingga.png');
+      return pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static pw.Widget _buildKopSurat({
+    required pw.ImageProvider? logoImage,
+    double titleSize = 13,
+    double subtitleSize = 11,
+    double logoSize = 46,
+  }) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'PEMERINTAH KABUPATEN PURBALINGGA',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: titleSize,
+                      color: _kNavy,
+                    ),
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    'BADAN KEUANGAN DAERAH (BAKEUDA)',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: subtitleSize,
+                      color: PdfColors.grey800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(width: 12),
+            if (logoImage != null)
+              pw.Image(logoImage, width: logoSize, height: logoSize),
+          ],
+        ),
+        pw.SizedBox(height: 6),
+        pw.Container(height: 2.5, color: _kNavy),
+        pw.SizedBox(height: 2),
+        pw.Container(height: 0.75, color: _kGold),
+      ],
+    );
+  }
+
+  // ─── Cetak Kredensial Akun Desa ke PDF (satu akun) ───
   static Future<File> cetakKredensialPdf({
     required String namaDesa,
     required String kecamatan,
@@ -17,61 +82,56 @@ class ExportService {
     required String passwordAwal,
   }) async {
     final pdf = pw.Document();
-
-    // Load logo if available
-    pw.ImageProvider? logoImage;
-    try {
-      final logoBytes = await rootBundle.load('assets/images/logo.png');
-      logoImage = pw.MemoryImage(logoBytes.buffer.asUint8List());
-    } catch (_) {}
+    final logoImage = await _loadLogo();
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a5,
+        margin: const pw.EdgeInsets.all(28),
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            // Header
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text('PEMERINTAH KABUPATEN PURBALINGGA',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-                    pw.Text('BADAN KEUANGAN DAERAH (BAKEUDA)',
-                        style: pw.TextStyle(fontSize: 9)),
-                  ],
-                ),
-                if (logoImage != null) pw.Image(logoImage, width: 40, height: 40),
-              ],
+            _buildKopSurat(
+              logoImage: logoImage,
+              titleSize: 10,
+              subtitleSize: 8.5,
+              logoSize: 36,
             ),
-            pw.Divider(thickness: 2),
-            pw.SizedBox(height: 12),
+            pw.SizedBox(height: 14),
             pw.Center(
-              child: pw.Text('KARTU KREDENSIAL AKUN DESA',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+              child: pw.Text(
+                'KARTU KREDENSIAL AKUN DESA',
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 14,
+                  color: _kNavy,
+                ),
+              ),
             ),
             pw.SizedBox(height: 4),
             pw.Center(
-              child: pw.Text('SIPD Purbalingga – Sistem Pajak Bumi Bangunan',
-                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+              child: pw.Text(
+                'Sistem Informasi Pajak Daerah – BAKEUDA Purbalingga',
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey600,
+                ),
+              ),
             ),
             pw.SizedBox(height: 20),
             // Info box
             pw.Container(
               padding: const pw.EdgeInsets.all(16),
               decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.blue800),
-                borderRadius: pw.BorderRadius.circular(8),
-                color: PdfColors.blue50,
+                border: pw.Border.all(color: _kNavy, width: 1),
+                borderRadius: pw.BorderRadius.circular(6),
+                color: PdfColors.grey50,
               ),
               child: pw.Column(
                 children: [
                   _buildKredensialRow('Nama Desa', namaDesa),
                   _buildKredensialRow('Kecamatan', kecamatan),
-                  pw.Divider(color: PdfColors.blue200),
+                  pw.Divider(color: PdfColors.grey300),
                   _buildKredensialRow('Username', username),
                   _buildKredensialRow('Password Awal', passwordAwal),
                 ],
@@ -88,24 +148,39 @@ class ExportService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('⚠ PENTING:',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: PdfColors.amber900)),
+                  pw.Text(
+                    'PENTING:',
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 10,
+                      color: PdfColors.amber900,
+                    ),
+                  ),
                   pw.SizedBox(height: 4),
-                  pw.Text('• Segera ganti password setelah login pertama kali.',
-                      style: const pw.TextStyle(fontSize: 9)),
-                  pw.Text('• Jangan berikan kredensial ini kepada pihak yang tidak berwenang.',
-                      style: const pw.TextStyle(fontSize: 9)),
-                  pw.Text('• Simpan kartu ini di tempat yang aman.',
-                      style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text(
+                    '- Segera ganti password setelah login pertama kali.',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                  pw.Text(
+                    '- Jangan berikan kredensial ini kepada pihak yang tidak berwenang.',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                  pw.Text(
+                    '- Simpan kartu ini di tempat yang aman.',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
                 ],
               ),
             ),
             pw.Spacer(),
-            pw.Divider(),
+            pw.Divider(color: PdfColors.grey400),
             pw.Center(
               child: pw.Text(
                 'Dicetak pada: ${DateFormat('dd MMMM yyyy, HH:mm', 'id').format(DateTime.now())}',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey600,
+                ),
               ),
             ),
           ],
@@ -114,7 +189,9 @@ class ExportService {
     );
 
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/kredensial_${username}_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final file = File(
+      '${dir.path}/kredensial_${username}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
     await file.writeAsBytes(await pdf.save());
     return file;
   }
@@ -126,29 +203,217 @@ class ExportService {
         children: [
           pw.SizedBox(
             width: 100,
-            child: pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            child: pw.Text(
+              label,
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
           ),
           pw.Text(': ', style: const pw.TextStyle(fontSize: 10)),
           pw.Expanded(
-            child: pw.Text(value, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            ),
           ),
         ],
       ),
     );
   }
 
+  // ─── Cetak Berita Acara Kredensial Kecamatan ke PDF (rekap semua desa) ───
+  static Future<File> cetakKredensialKecamatanPdf({
+    required String kecamatan,
+    required String namaKepalaBkd,
+    required String nipKepalaBkd,
+    required String namaCamat,
+    required String nipCamat,
+    required List<Map<String, dynamic>> daftarDesa,
+    required String passwordAwal,
+  }) async {
+    final pdf = pw.Document();
+    final logoImage = await _loadLogo();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (context) => [
+          _buildKopSurat(logoImage: logoImage),
+          pw.SizedBox(height: 20),
+
+          // Title
+          pw.Center(
+            child: pw.Text(
+              'BERITA ACARA PENYERAHAN KREDENSIAL',
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 14,
+                decoration: pw.TextDecoration.underline,
+                color: _kNavy,
+              ),
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Center(
+            child: pw.Text(
+              'Akun SIPD Purbalingga – Kecamatan $kecamatan',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
+          ),
+          pw.SizedBox(height: 24),
+
+          pw.Text(
+            'Pada hari ini ${DateFormat('EEEE, dd MMMM yyyy', 'id').format(DateTime.now())}, telah diserahkan kredensial akun akses Sistem Pajak Bumi Bangunan (SIPD Purbalingga) untuk perangkat desa di wilayah Kecamatan $kecamatan dengan rincian sebagai berikut:',
+            style: const pw.TextStyle(fontSize: 10),
+          ),
+          pw.SizedBox(height: 16),
+
+          // Table
+          pw.TableHelper.fromTextArray(
+            border: pw.TableBorder.all(color: PdfColors.grey400),
+            cellAlignment: pw.Alignment.centerLeft,
+            headerDecoration: pw.BoxDecoration(color: _kNavy),
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 9,
+              color: PdfColors.white,
+            ),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            headerHeight: 25,
+            cellHeight: 26,
+            oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(30), // No
+              1: const pw.FlexColumnWidth(2), // Desa
+              2: const pw.FlexColumnWidth(2), // Username
+              3: const pw.FlexColumnWidth(2), // Password
+              4: const pw.FlexColumnWidth(1), // Paraf
+            },
+            headers: [
+              'No',
+              'Desa/Kelurahan',
+              'Username',
+              'Password Sementara',
+              'Paraf',
+            ],
+            data: List<List<String>>.generate(
+              daftarDesa.length,
+              (index) => [
+                '${index + 1}',
+                daftarDesa[index]['nama_desa']?.toString() ?? '-',
+                daftarDesa[index]['username']?.toString() ?? '-',
+                passwordAwal,
+                '', // Kosong untuk diparaf manual
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 24),
+
+          pw.Text(
+            'Kredensial ini bersifat rahasia. Perangkat desa diwajibkan untuk segera mengganti kata sandi setelah melakukan login pertama kali.',
+            style: const pw.TextStyle(fontSize: 10),
+          ),
+          pw.SizedBox(height: 40),
+
+          // Signatures
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    'Yang Menyerahkan,',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.Text(
+                    'Kepala Bakeuda Purbalingga',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.SizedBox(height: 60),
+                  pw.Text(
+                    namaKepalaBkd,
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 10,
+                      decoration: pw.TextDecoration.underline,
+                    ),
+                  ),
+                  pw.Text(
+                    'NIP. $nipKepalaBkd',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    'Yang Menerima,',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.Text(
+                    'Camat $kecamatan',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
+                  pw.SizedBox(height: 60),
+                  pw.Text(
+                    namaCamat.isEmpty ? '.....................' : namaCamat,
+                    style: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 10,
+                      decoration: pw.TextDecoration.underline,
+                    ),
+                  ),
+                  pw.Text(
+                    'NIP. ${nipCamat.isEmpty ? '.....................' : nipCamat}',
+                    style: const pw.TextStyle(fontSize: 9),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File(
+      '${dir.path}/BA_Kredensial_Kecamatan_${kecamatan}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await file.writeAsBytes(await pdf.save());
+    return file;
+  }
+
   // ─── Export Daftar Objek Pajak ke Excel ───
-  static Future<File> exportObjekPajakExcel(List<Map<String, dynamic>> data) async {
+  static Future<File> exportObjekPajakExcel(
+    List<Map<String, dynamic>> data,
+  ) async {
     final excel = xl.Excel.createExcel();
     final sheet = excel['Daftar Objek Pajak'];
     excel.setDefaultSheet('Daftar Objek Pajak');
 
     // Header row
-    final headers = ['NOP', 'Nama WP', 'Alamat OP', 'Luas Tanah', 'Luas Bgn', 'Status', 'Tgl Update'];
+    final headers = [
+      'NOP',
+      'Nama WP',
+      'Alamat OP',
+      'Luas Tanah',
+      'Luas Bgn',
+      'Status',
+      'Tgl Update',
+    ];
     for (var i = 0; i < headers.length; i++) {
-      final cell = sheet.cell(xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+      final cell = sheet.cell(
+        xl.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+      );
       cell.value = xl.TextCellValue(headers[i]);
-      cell.cellStyle = xl.CellStyle(bold: true, backgroundColorHex: xl.ExcelColor.fromHexString('#1565C0'), fontColorHex: xl.ExcelColor.fromHexString('#FFFFFF'));
+      cell.cellStyle = xl.CellStyle(
+        bold: true,
+        backgroundColorHex: xl.ExcelColor.fromHexString('#0C2A5B'),
+        fontColorHex: xl.ExcelColor.fromHexString('#FFFFFF'),
+      );
     }
 
     // Data rows
@@ -167,20 +432,28 @@ class ExportService {
       ];
       for (var j = 0; j < rowData.length; j++) {
         sheet
-            .cell(xl.CellIndex.indexByColumnRow(columnIndex: j, rowIndex: i + 1))
-            .value = xl.TextCellValue(rowData[j]);
+            .cell(
+              xl.CellIndex.indexByColumnRow(columnIndex: j, rowIndex: i + 1),
+            )
+            .value = xl.TextCellValue(
+          rowData[j],
+        );
       }
     }
 
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/daftar_op_${DateTime.now().millisecondsSinceEpoch}.xlsx');
+    final file = File(
+      '${dir.path}/daftar_op_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+    );
     final bytes = excel.save();
     if (bytes != null) await file.writeAsBytes(bytes);
     return file;
   }
 
   // ─── Export Daftar Objek Pajak ke PDF ───
-  static Future<File> exportObjekPajakPdf(List<Map<String, dynamic>> data) async {
+  static Future<File> exportObjekPajakPdf(
+    List<Map<String, dynamic>> data,
+  ) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -189,16 +462,32 @@ class ExportService {
         header: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('Daftar Objek Pajak Bumi dan Bangunan',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
-            pw.Text('Bakeuda Kab. Purbalingga | ${DateFormat('dd MMMM yyyy', 'id').format(DateTime.now())}',
-                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-            pw.Divider(),
+            pw.Text(
+              'Daftar Objek Pajak Bumi dan Bangunan',
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 14,
+                color: _kNavy,
+              ),
+            ),
+            pw.Text(
+              'Bakeuda Kab. Purbalingga | ${DateFormat('dd MMMM yyyy', 'id').format(DateTime.now())}',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
+            ),
+            pw.Divider(color: _kNavy),
           ],
         ),
         build: (context) => [
           pw.TableHelper.fromTextArray(
-            headers: ['No', 'NOP', 'Nama WP', 'Alamat OP', 'Luas Tanah', 'Luas Bgn', 'Status'],
+            headers: [
+              'No',
+              'NOP',
+              'Nama WP',
+              'Alamat OP',
+              'Luas Tanah',
+              'Luas Bgn',
+              'Status',
+            ],
             data: List.generate(data.length, (i) {
               final d = data[i];
               return [
@@ -211,8 +500,12 @@ class ExportService {
                 d['status_aktif'] == true ? 'Aktif' : 'Non-Aktif',
               ];
             }),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8, color: PdfColors.white),
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.blue800),
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 8,
+              color: PdfColors.white,
+            ),
+            headerDecoration: pw.BoxDecoration(color: _kNavy),
             cellStyle: const pw.TextStyle(fontSize: 8),
             oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
             border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -231,17 +524,18 @@ class ExportService {
     );
 
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/daftar_op_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final file = File(
+      '${dir.path}/daftar_op_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
     await file.writeAsBytes(await pdf.save());
     return file;
   }
 
   // ─── Helper: share file via WhatsApp / platform share sheet ───
   static Future<void> shareFile(File file, {String? subject}) async {
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: subject ?? 'Export SIPD Purbalingga',
-    );
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], subject: subject ?? 'Export SIPD Purbalingga');
   }
 
   // ─── Helper: open file di viewer lokal ───

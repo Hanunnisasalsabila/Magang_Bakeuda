@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../services/transaksi_spop_service.dart';
 import '../detail_review_spop_screen.dart';
-import 'package:intl/intl.dart';
 
 class VerifikasiSpopTab extends StatefulWidget {
   const VerifikasiSpopTab({super.key});
@@ -14,69 +18,115 @@ class VerifikasiSpopTab extends StatefulWidget {
 
 class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
   final _spopService = TransaksiSpopService(ApiService());
+  final _storage = const FlutterSecureStorage();
+  final _searchController = TextEditingController();
 
   List<Map<String, dynamic>> _antrean = [];
   bool _isLoading = true;
   String? _errorMsg;
-  String _filterStatus = 'MENUNGGU';
-
-  final _statusFilter = ['MENUNGGU', 'SEDANG_DITINJAU', 'DISETUJUI', 'DITOLAK'];
-  final _labelStatus = {
-    'MENUNGGU': 'Menunggu',
-    'SEDANG_DITINJAU': 'Sedang Ditinjau',
-    'DISETUJUI': 'Disetujui',
-    'DITOLAK': 'Ditolak',
-  };
+  String? _myId;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadAntrean();
+    _initData();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _loadAntrean(showLoading: false);
+    });
   }
 
-  Future<void> _loadAntrean() async {
-    setState(() { _isLoading = true; _errorMsg = null; });
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initData() async {
+    await _decodeUser();
+    await _loadAntrean(showLoading: true);
+  }
+
+  Future<void> _decodeUser() async {
     try {
-      final data = await _spopService.getAntreanVerifikasi(status: _filterStatus);
-      setState(() { _antrean = data; });
+      final token = await _storage.read(key: 'jwt_token');
+      if (token != null) {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = json.decode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+          _myId = payload['userId']?.toString();
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadAntrean({bool showLoading = true}) async {
+    if (showLoading && mounted) setState(() { _isLoading = true; _errorMsg = null; });
+    try {
+      final futures = await Future.wait([
+        _spopService.getAntreanVerifikasi(status: 'MENUNGGU'),
+        _spopService.getAntreanVerifikasi(status: 'PROSES'),
+      ]);
+      
+      final List<Map<String, dynamic>> allData = [...futures[0], ...futures[1]];
+      
+      // Sort by updated_at or created_at desc
+      allData.sort((a, b) {
+        final dateA = DateTime.tryParse(a['updated_at'] ?? a['tanggal_pengajuan'] ?? '') ?? DateTime.now();
+        final dateB = DateTime.tryParse(b['updated_at'] ?? b['tanggal_pengajuan'] ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
+      if (mounted) {
+        setState(() {
+          _antrean = allData;
+          _errorMsg = null;
+          _isLoading = false;
+        });
+      }
     } on DioException catch (e) {
-      setState(() { _errorMsg = e.response?.data?['message'] ?? 'Gagal memuat data'; });
+      if (mounted) setState(() { _errorMsg = e.response?.data?['message'] ?? 'Gagal memuat data'; _isLoading = false; });
     } catch (e) {
-      setState(() { _errorMsg = 'Terjadi kesalahan: $e'; });
-    } finally {
-      setState(() { _isLoading = false; });
+      if (mounted) setState(() { _errorMsg = 'Terjadi kesalahan: $e'; _isLoading = false; });
     }
   }
 
-  Color _getStatusColor(String status, ColorScheme cs) {
-    switch (status) {
-      case 'DISETUJUI': return Colors.green;
-      case 'DITOLAK': return cs.error;
-      case 'SEDANG_DITINJAU': return Colors.orange;
-      default: return Colors.blue;
+
+
+  Future<void> _unlock(String id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Lepas Kunci'),
+        content: const Text('Apakah Anda yakin ingin melepas kunci verifikasi admin lain?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Lepas Kunci')
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true && mounted) {
+      try {
+        await _spopService.unlockSpop(id);
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Kunci berhasil dilepas')));
+        _loadAntrean(showLoading: true);
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal melepas kunci: $e')));
+      }
     }
   }
 
-  String _formatTanggal(String? iso) {
-    if (iso == null) return '-';
-    try {
-      return DateFormat('dd MMM yyyy', 'id').format(DateTime.parse(iso));
-    } catch (_) {
-      return iso;
+  Future<void> _navigateToDetail(Map<String, dynamic> item, bool isLockedByOther) async {
+    if (isLockedByOther) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berkas sedang diverifikasi admin lain. Lepas kunci terlebih dahulu.')));
+      return;
     }
-  }
-
-  String _labelJenis(String? jenis) {
-    const map = {
-      'BARU': 'Pendaftaran Baru',
-      'MUTASI': 'Mutasi',
-      'PERUBAHAN_DATA': 'Perubahan Data',
-      'HAPUS': 'Penghapusan',
-    };
-    return map[jenis] ?? jenis ?? '-';
-  }
-
-  Future<void> _navigateToDetail(Map<String, dynamic> item) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -85,167 +135,170 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
     );
 
     if (result != null && mounted) {
-      final snack = result == true ? '✅ Pengajuan berhasil disetujui!' : '❌ Pengajuan ditolak.';
+      final snack = result == true ? '✅ Pengajuan berhasil diselesaikan!' : '❌ Pengajuan ditolak.';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snack)));
-      _loadAntrean(); // refresh list
     }
+    _loadAntrean(showLoading: false);
+  }
+
+  String _formatNop(String? raw) {
+    if (raw == null || raw.isEmpty) return '-';
+    final clean = raw.replaceAll(RegExp(r'\D'), '');
+    if (clean.length == 18) {
+      return '${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}';
+    }
+    if (raw.contains('...')) return 'Menunggu penetapan';
+    return raw;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    
+    // Filter
+    final query = _searchController.text.toLowerCase();
+    final filtered = _antrean.where((item) {
+      if (query.isEmpty) return true;
+      final t = item['detail_tujuan'] as List?;
+      final t0 = t != null && t.isNotEmpty ? t[0] : {};
+      final name = t0['calon_subjek_json']?['nama_subjek'] ?? item['pengaju']?['nama_lengkap'] ?? '';
+      final nop = t0['nop_generated'] ?? '';
+      return name.toString().toLowerCase().contains(query) || nop.toString().toLowerCase().contains(query);
+    }).toList();
 
     return Column(
       children: [
-        // Header
+        // Header Search Bar
         Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Antrean Verifikasi SPOP', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
-              // Filter chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _statusFilter.map((s) {
-                    final isSelected = _filterStatus == s;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(_labelStatus[s] ?? s),
-                        selected: isSelected,
-                        onSelected: (sel) {
-                          if (sel) {
-                            setState(() => _filterStatus = s);
-                            _loadAntrean();
-                          }
-                        },
-                        selectedColor: theme.colorScheme.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          fontSize: 12,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
+          color: theme.colorScheme.surface,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Cari NOP atau Nama...',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outlineVariant)),
+            ),
           ),
         ),
+        const Divider(height: 1, thickness: 1),
 
-        // Body
+        // List View
         Expanded(
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _errorMsg != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-                          const SizedBox(height: 8),
-                          Text(_errorMsg!, style: TextStyle(color: theme.colorScheme.error)),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(onPressed: _loadAntrean, icon: const Icon(Icons.refresh), label: const Text('Coba Lagi')),
-                        ],
-                      ),
-                    )
-                  : _antrean.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle_outline, size: 64, color: theme.colorScheme.primary),
-                              const SizedBox(height: 16),
-                              Text(
-                                _filterStatus == 'MENUNGGU'
-                                    ? 'Semua pengajuan sudah diverifikasi!'
-                                    : 'Tidak ada data untuk filter ini.',
-                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                              ),
-                            ],
-                          ),
-                        )
+                  ? Center(child: Text(_errorMsg!, style: TextStyle(color: theme.colorScheme.error)))
+                  : filtered.isEmpty
+                      ? Center(child: Text('Tidak ada antrean saat ini.', style: theme.textTheme.bodyMedium))
                       : RefreshIndicator(
-                          onRefresh: _loadAntrean,
+                          onRefresh: () => _loadAntrean(showLoading: true),
                           child: ListView.builder(
                             padding: const EdgeInsets.all(16),
-                            itemCount: _antrean.length,
+                            itemCount: filtered.length,
                             itemBuilder: (context, index) {
-                              final item = _antrean[index];
-                              final status = item['status_ajuan'] ?? 'MENUNGGU';
-                              final statusColor = _getStatusColor(status, theme.colorScheme);
-                              final desa = item['pengaju']?['kode_wilayah'] ?? '-';
+                              final item = filtered[index];
+                              final t = item['detail_tujuan'] as List?;
+                              final t0 = t != null && t.isNotEmpty ? t[0] : {};
+                              
+                              final nop = _formatNop(t0['nop_generated']);
+                              final subjekName = t0['calon_subjek_json']?['nama_subjek'];
+                              final name = (subjekName != null && subjekName.toString().toUpperCase() != 'TANPA NAMA') 
+                                  ? subjekName 
+                                  : (item['pengaju']?['nama_lengkap'] ?? item['nama_pengaju'] ?? 'Tanpa Nama');
+                              final address = t0['jalan_op_baru'] ?? t0['jenis_tanah_baru']?.toString().replaceAll('_', ' ') ?? '-';
+                              final dateStr = item['tanggal_pengajuan'];
+                              final date = dateStr != null ? DateFormat('dd MMM yyyy • HH:mm', 'id').format(DateTime.tryParse(dateStr)?.toLocal() ?? DateTime.now()) : '-';
+                              
+                              final isProses = item['status_ajuan'] == 'PROSES';
+                              final lockedBy = item['locked_by']?.toString();
+                              final isLockedByMe = isProses && lockedBy == _myId && _myId != null;
+                              final isLockedByOther = isProses && lockedBy != _myId && lockedBy != null;
+                              final lockedByName = item['reviewer']?['nama_lengkap'] ?? 'Admin Lain';
+
+                              String badgeText = 'Menunggu Verifikasi';
+                              Color badgeBg = Colors.blue.withValues(alpha: 0.1);
+                              Color badgeColor = Colors.blue;
+
+                              if (isLockedByMe) {
+                                badgeText = 'Sedang Anda Verifikasi';
+                                badgeBg = Colors.orange.withValues(alpha: 0.1);
+                                badgeColor = Colors.orange.shade800;
+                              } else if (isLockedByOther) {
+                                badgeText = 'Diverifikasi $lockedByName';
+                                badgeBg = Colors.red.withValues(alpha: 0.1);
+                                badgeColor = Colors.red.shade700;
+                              }
 
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                                ),
                                 elevation: 0,
-                                color: theme.colorScheme.surface,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            item['id_transaksi']?.toString().substring(0, 8).toUpperCase() ?? '-',
-                                            style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                            decoration: BoxDecoration(
-                                              color: statusColor.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              _labelStatus[status] ?? status,
-                                              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _labelJenis(item['jenis_transaksi']),
-                                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Desa: $desa • ${_formatTanggal(item['created_at'])}',
-                                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          OutlinedButton(
-                                            onPressed: () => _navigateToDetail(item),
-                                            child: const Text('Detail'),
-                                          ),
-                                          if (status == 'MENUNGGU' || status == 'SEDANG_DITINJAU') ...[
-                                            const SizedBox(width: 8),
-                                            ElevatedButton(
-                                              onPressed: () => _navigateToDetail(item),
-                                              child: const Text('Verifikasi'),
+                                child: InkWell(
+                                  onTap: () => _navigateToDetail(item, isLockedByOther),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(nop, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, letterSpacing: 1)),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(color: badgeBg, borderRadius: BorderRadius.circular(6)),
+                                              child: Text(badgeText, style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold)),
                                             ),
                                           ],
-                                        ],
-                                      ),
-                                    ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(name.toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                                            const SizedBox(width: 4),
+                                            Expanded(child: Text(address.toString(), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.schedule, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                                            const SizedBox(width: 4),
+                                            Text(date, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                            const Spacer(),
+                                            if (isLockedByOther)
+                                              TextButton.icon(
+                                                onPressed: () => _unlock(item['id_transaksi']),
+                                                icon: const Icon(Icons.lock_open, size: 16),
+                                                label: const Text('Lepas Kunci'),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: theme.colorScheme.error,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                                  minimumSize: Size.zero,
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                              )
+                                            else
+                                              Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant, size: 20),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              );
+                              ).animate().fade(duration: 300.ms).slideY(begin: 0.1, curve: Curves.easeOut);
                             },
                           ),
                         ),

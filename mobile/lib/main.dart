@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -9,6 +10,9 @@ Future<void> main() async {
   
   // Load file .env untuk mengambil API_BASE_URL
   await dotenv.load(fileName: ".env");
+  
+  // Inisialisasi format tanggal bahasa Indonesia
+  await initializeDateFormatting('id', null);
   
   runApp(const MyApp());
 }

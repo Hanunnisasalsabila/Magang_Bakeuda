@@ -38,8 +38,18 @@ export class UsersController {
   }
 
   @Get()
-  async searchUsers(@Query('username') username?: string) {
-    return this.usersService.searchByUsername(username ?? '');
+  async getUsers(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.usersService.getUsers({
+      search,
+      role,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
   }
 
   @Get(':id')

@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'tabs/desa_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/monitoring_pajak_tab.dart';
@@ -19,10 +21,42 @@ class HomeDesaScreen extends StatefulWidget {
 class _HomeDesaScreenState extends State<HomeDesaScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const DesaDashboardTab(),
-    const MonitoringPajakTab(),
-  ];
+  List<Widget> _pages = [];
+  String _profileName = 'Perangkat Desa';
+  String _profileEmail = 'desa@purbalingga.go.id';
+  String _profileRole = 'DESA';
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const DesaDashboardTab(),
+      const MonitoringPajakTab(),
+    ];
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final token = await const FlutterSecureStorage().read(key: 'jwt_token');
+    
+    if (token != null) {
+      try {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = json.decode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
+          );
+          if (mounted) {
+            setState(() {
+              _profileName = payload['nama_lengkap'] ?? _profileName;
+              _profileEmail = payload['username'] ?? _profileEmail;
+              _profileRole = payload['role'] ?? _profileRole;
+            });
+          }
+        }
+      } catch (_) {}
+    }
+  }
 
   void _showFormulirOptions(BuildContext context) {
     showModalBottomSheet(
@@ -186,11 +220,11 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
               title: const Text('Profil Pengguna'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(
+                Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(
                   body: ProfileTab(
-                    name: 'Perangkat Desa',
-                    email: 'desa@purbalingga.go.id',
-                    role: 'Desa',
+                    name: _profileName,
+                    username: _profileEmail, // This variable holds the username now
+                    role: _profileRole,
                   ),
                 )));
               },

@@ -57,8 +57,8 @@ export class TransaksiSpopService {
           tujuan.kode_wilayah_baru = currentUser.kode_wilayah || undefined;
         }
         if (tujuan.kode_wilayah_baru) {
-           const wil = await this.prisma.wilayah.findUnique({ where: { kode_wilayah: tujuan.kode_wilayah_baru }});
-           if (!wil) throw new BadRequestException(`Kode wilayah ${tujuan.kode_wilayah_baru} tidak ditemukan`);
+          const wil = await this.prisma.wilayah.findUnique({ where: { kode_wilayah: tujuan.kode_wilayah_baru } });
+          if (!wil) throw new BadRequestException(`Kode wilayah ${tujuan.kode_wilayah_baru} tidak ditemukan`);
         }
       }
     }
@@ -134,13 +134,13 @@ export class TransaksiSpopService {
 
 
   async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
-    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi }});
+    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi } });
     if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
     if (existing.id_user !== currentUser.id_user && currentUser.role !== 'BAKEUDA') {
-       throw new ForbiddenException('Akses ditolak');
+      throw new ForbiddenException('Akses ditolak');
     }
     if (existing.status_ajuan !== 'DRAFT' && existing.status_ajuan !== 'REVISI') {
-       throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
+      throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
     }
 
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
@@ -233,13 +233,13 @@ export class TransaksiSpopService {
     }
 
     this.validateJumlahDetail(transaksi.jenis_transaksi, transaksi.detail_asal, transaksi.detail_tujuan);
-    
+
     // Construct DTO-like object for validation
     const dtoForValidation = {
       ...transaksi,
       detail_tujuan: transaksi.detail_tujuan,
     } as any;
-    
+
     this.validateByJenisTransaksi(transaksi.jenis_transaksi, dtoForValidation);
 
     if (transaksi.detail_asal && transaksi.detail_asal.length > 0) {
@@ -319,11 +319,19 @@ export class TransaksiSpopService {
     }
 
     if (transaksi.lampiran) {
-      const l: any = transaksi.lampiran;
+      let l: any = transaksi.lampiran;
+      if (typeof l === 'string') {
+        try { l = JSON.parse(l); } catch(e) {}
+      }
       const mappedLampiran: any[] = [];
       const mapItem = (urls: any, type: string) => {
-        if (Array.isArray(urls)) {
-          urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
+        if (!urls) return;
+        let parsed = urls;
+        if (typeof parsed === 'string') {
+          try { parsed = JSON.parse(parsed); } catch(e) {}
+        }
+        if (Array.isArray(parsed)) {
+          parsed.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
         }
       };
       mapItem(l.url_ktp, 'KTP');
@@ -332,7 +340,8 @@ export class TransaksiSpopService {
       mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
       mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
       mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
-      (transaksi as any).lampiran = mappedLampiran;
+      
+      return { success: true, data: { ...transaksi, lampiran: mappedLampiran } };
     }
 
     return { success: true, data: transaksi };
@@ -348,7 +357,30 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: StatusAjuan.REVISI } })
     ]);
 
-    return { success: true, data: { totalDikirim, menunggu, disetujui, perluPerbaikan } };
+    // Calculate weekly trends (Sen, Sel, Rab, Kam, Jum)
+    const today = new Date();
+    // Go to Monday of this week
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const weeklyData = await this.prisma.transaksiSpop.findMany({
+      where: {
+        ...baseWhere,
+        created_at: { gte: startOfWeek }
+      },
+      select: { created_at: true }
+    });
+
+    const weeklyTrends = [0, 0, 0, 0, 0];
+    weeklyData.forEach(t => {
+      const day = t.created_at.getDay(); // 1 = Monday, 5 = Friday
+      if (day >= 1 && day <= 5) {
+        weeklyTrends[day - 1]++;
+      }
+    });
+
+    return { success: true, data: { totalDikirim, menunggu, disetujui, perluPerbaikan, weeklyTrends } };
   }
 
   async lockForReview(idTransaksi: string, currentUser: CurrentUser) {
@@ -413,7 +445,7 @@ export class TransaksiSpopService {
 
   async approve(idTransaksi: string, dto: VerifikasiBakeudaDto, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
-    
+
     const transaksi = await this.prisma.transaksiSpop.findUnique({
       where: { id_transaksi: idTransaksi },
       include: { detail_asal: true, detail_tujuan: true, pengaju: true, lampiran: true },
@@ -636,7 +668,7 @@ export class TransaksiSpopService {
 
   private async upsertSubjek(tx: Prisma.TransactionClient, t: any, transaksiUserId: string, fallbackKodeWilayah: string | null) {
     let nikSubjek = t.nik_calon_subjek;
-    
+
     if (t.calon_subjek_json) {
       const subjekTemp = t.calon_subjek_json as any;
       const nikToSave = subjekTemp.nik || nikSubjek || '0000000000000000';
@@ -681,24 +713,23 @@ export class TransaksiSpopService {
   private async upsertLspop(tx: Prisma.TransactionClient, t: any, finalNop: string, isMutasiAtauPerubahan: boolean) {
     if (t.data_bangunan_json && Array.isArray(t.data_bangunan_json)) {
       if (isMutasiAtauPerubahan) {
-         await tx.objekBangunanFasilitas.deleteMany({
-           where: { objek_bangunan: { nop: finalNop } }
-         });
-         await tx.objekBangunan.deleteMany({
-           where: { nop: finalNop }
-         });
+        await tx.objekBangunanFasilitas.deleteMany({
+          where: { objek_bangunan: { nop: finalNop } }
+        });
+        await tx.objekBangunan.deleteMany({
+          where: { nop: finalNop }
+        });
       }
 
       let no_bng = 1;
       for (const bngRaw of t.data_bangunan_json as any[]) {
         const bng = bngRaw as any;
-        
         // Skip pembuatan ulang data bangunan jika LSPOP ditandai sebagai Penghapusan
         if (bng.jenisTransaksi === 'Penghapusan Data' || bng.jenisTransaksi === 'PENGHAPUSAN' || bng.jenisTransaksi === 'HAPUS') {
           continue;
         }
 
-        let kode_jpb = '01'; 
+        let kode_jpb = '01';
         if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
         else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
         else if (bng.jenisPenggunaan === 'Toko/Apotik/Pasar/Ruko') kode_jpb = '04';
@@ -780,7 +811,7 @@ export class TransaksiSpopService {
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
     if (!dto.kode_blok) throw new BadRequestException('Kode blok wajib diisi untuk penetapan NOP baru');
     if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penetapan NOP baru');
-    
+
     const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
 
     const objek = await tx.objekPajak.create({
@@ -818,10 +849,10 @@ export class TransaksiSpopService {
     const nikBaru = await this.upsertSubjek(tx, t, transaksi.id_user, transaksi.pengaju.kode_wilayah);
 
     await tx.objekPajak.update({ where: { nop: nopAsal }, data: { nik_subjek: nikBaru } });
-    
+
     // MUTASI: JANGAN sentuh bangunan/LSPOP
     // Bangunan mengikuti NOP secara otomatis via relasi FK.
-    
+
     await tx.detailTransaksiTujuan.update({ where: { id_detail_tujuan: t.id_detail_tujuan }, data: { nop_generated: nopAsal } });
     return { nop: nopAsal, subjek_baru: nikBaru };
   }
@@ -864,9 +895,9 @@ export class TransaksiSpopService {
     for (const t of transaksi.detail_tujuan) {
       const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
       const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
-      
+
       if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
-      
+
       const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
       await tx.objekPajak.create({
         data: {
@@ -903,7 +934,7 @@ export class TransaksiSpopService {
 
     const totalLuasTanah = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_tanah), 0);
     const totalLuasBangunan = semuaObjekAsal.reduce((sum, o) => sum + Number(o.luas_bangunan), 0);
-    
+
     // Gunakan luas_tanah_baru dari input (yang sudah diauto-fill & diedit manual di FE) jika ada,
     // fallback ke perhitungan sum jika FE mengirim 0.
     const t = transaksi.detail_tujuan[0];
@@ -929,11 +960,11 @@ export class TransaksiSpopService {
     // 3. Buat NOP baru hasil gabungan
     const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
-    
+
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
-      
+
     const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
-    
+
     const objekBaru = await tx.objekPajak.create({
       data: {
         nop,
@@ -970,7 +1001,7 @@ export class TransaksiSpopService {
   private async eksekusiHapus(tx: Prisma.TransactionClient, transaksi: TransaksiSpopWithDetail, currentUser: CurrentUser) {
     const asal = transaksi.detail_asal[0];
     if (!asal?.nop_asal) throw new BadRequestException('NOP asal wajib ada untuk transaksi HAPUS.');
-    
+
     const objek = await tx.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
     if (!objek) throw new BadRequestException(`NOP ${asal.nop_asal} tidak ditemukan.`);
     if (!objek.status_aktif) throw new BadRequestException(`NOP ${asal.nop_asal} sudah nonaktif.`);
