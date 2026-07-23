@@ -319,11 +319,19 @@ export class TransaksiSpopService {
     }
 
     if (transaksi.lampiran) {
-      const l: any = transaksi.lampiran;
+      let l: any = transaksi.lampiran;
+      if (typeof l === 'string') {
+        try { l = JSON.parse(l); } catch(e) {}
+      }
       const mappedLampiran: any[] = [];
       const mapItem = (urls: any, type: string) => {
-        if (Array.isArray(urls)) {
-          urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
+        if (!urls) return;
+        let parsed = urls;
+        if (typeof parsed === 'string') {
+          try { parsed = JSON.parse(parsed); } catch(e) {}
+        }
+        if (Array.isArray(parsed)) {
+          parsed.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
         }
       };
       mapItem(l.url_ktp, 'KTP');
@@ -332,7 +340,8 @@ export class TransaksiSpopService {
       mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
       mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
       mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
-      (transaksi as any).lampiran = mappedLampiran;
+      
+      return { success: true, data: { ...transaksi, lampiran: mappedLampiran } };
     }
 
     return { success: true, data: transaksi };
@@ -696,7 +705,7 @@ export class TransaksiSpopService {
           created_by: transaksiUserId,
         }
       });
-      nikSubjek = nikToSave;
+      return nikToSave;
     }
     return nikSubjek || '0000000000000000';
   }
