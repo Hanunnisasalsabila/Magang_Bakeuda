@@ -99,10 +99,15 @@ export class TransaksiSpopService {
           }))
         } : undefined,
         lampiran: dto.lampiran ? {
-          create: dto.lampiran.map((l) => ({
-            ...l,
-            uploaded_by: currentUser.id_user
-          }))
+          create: {
+            url_ktp: dto.lampiran.url_ktp || [],
+            url_sertifikat: dto.lampiran.url_sertifikat || [],
+            url_ajb: dto.lampiran.url_ajb || [],
+            url_imb: dto.lampiran.url_imb || [],
+            url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+            url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+            uploaded_by: currentUser.id_user,
+          }
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -176,10 +181,15 @@ export class TransaksiSpopService {
               }))
             } : undefined,
             lampiran: dto.lampiran ? {
-              create: dto.lampiran.map((l) => ({
-                ...l,
-                uploaded_by: currentUser.id_user
-              }))
+              create: {
+                url_ktp: dto.lampiran.url_ktp || [],
+                url_sertifikat: dto.lampiran.url_sertifikat || [],
+                url_ajb: dto.lampiran.url_ajb || [],
+                url_imb: dto.lampiran.url_imb || [],
+                url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+                url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+                uploaded_by: currentUser.id_user,
+              }
             } : undefined
           }
         });
@@ -286,6 +296,23 @@ export class TransaksiSpopService {
     if (!transaksi) throw new NotFoundException('Detail transaksi tidak ditemukan');
     if (currentUser.role === 'DESA' && (transaksi as any).pengaju?.kode_wilayah !== currentUser.kode_wilayah) {
       throw new ForbiddenException('Akses ditolak');
+    }
+
+    if (transaksi.lampiran) {
+      const l: any = transaksi.lampiran;
+      const mappedLampiran = [];
+      const mapItem = (urls: any, type: string) => {
+        if (Array.isArray(urls)) {
+          urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
+        }
+      };
+      mapItem(l.url_ktp, 'KTP');
+      mapItem(l.url_sertifikat, 'SERTIFIKAT_HAK_MILIK');
+      mapItem(l.url_ajb, 'AKTE_JUAL_BELI');
+      mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
+      mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
+      mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
+      (transaksi as any).lampiran = mappedLampiran;
     }
 
     return { success: true, data: transaksi };
