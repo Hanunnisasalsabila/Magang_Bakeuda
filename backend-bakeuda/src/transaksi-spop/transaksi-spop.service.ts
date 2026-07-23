@@ -138,6 +138,15 @@ export class TransaksiSpopService {
 
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
+    if (dto.detail_asal && dto.detail_asal.length > 0) {
+      for (const asal of dto.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
+        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
+      }
+    }
+
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
@@ -220,6 +229,15 @@ export class TransaksiSpopService {
     } as any;
     
     this.validateByJenisTransaksi(transaksi.jenis_transaksi, dtoForValidation);
+
+    if (transaksi.detail_asal && transaksi.detail_asal.length > 0) {
+      for (const asal of transaksi.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
+        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
+      }
+    }
 
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
@@ -408,6 +426,22 @@ export class TransaksiSpopService {
 
   async mintaRevisi(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
+
+    const transaksi = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi: idTransaksi },
+      include: { detail_asal: true },
+    });
+
+    if (transaksi?.jenis_transaksi === 'HAPUS' && transaksi.detail_asal?.length > 0) {
+      for (const asal of transaksi.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (objek && !objek.status_aktif) {
+          throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif. Transaksi HAPUS ini tidak dapat direvisi, silakan TOLAK ajuan ini.`);
+        }
+      }
+    }
+
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'REVISI', catatan_bakeuda: catatan, locked_by: null, locked_at: null },
