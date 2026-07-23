@@ -15,7 +15,7 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
       this.oracledb = oracledbModule.default || oracledbModule;
 
       // Karena Oracle Server versi lama (seperti 11g), kita wajib mengaktifkan Thick mode:
-      this.oracledb.initOracleClient({ libDir: '/home/afifhnrstwn/oracle/instantclient_19_24' });
+      //this.oracledb.initOracleClient({ libDir: '/home/afifhnrstwn/oracle/instantclient_19_24' });
 
       const user = this.configService.get<string>('ORACLE_USER');
       const password = this.configService.get<string>('ORACLE_PASSWORD');

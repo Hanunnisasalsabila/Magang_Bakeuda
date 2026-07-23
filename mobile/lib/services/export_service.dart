@@ -37,9 +37,17 @@ class ExportService {
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
+            if (logoImage != null)
+              pw.SizedBox(
+                width: logoSize + 14,
+                child: pw.Align(
+                  alignment: pw.Alignment.centerLeft,
+                  child: pw.Image(logoImage, width: logoSize, height: logoSize),
+                ),
+              ),
             pw.Expanded(
               child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
                   pw.Text(
                     'PEMERINTAH KABUPATEN PURBALINGGA',
@@ -48,22 +56,32 @@ class ExportService {
                       fontSize: titleSize,
                       color: _kNavy,
                     ),
+                    textAlign: pw.TextAlign.center,
                   ),
                   pw.SizedBox(height: 2),
                   pw.Text(
                     'BADAN KEUANGAN DAERAH (BAKEUDA)',
                     style: pw.TextStyle(
                       fontWeight: pw.FontWeight.bold,
-                      fontSize: subtitleSize,
-                      color: PdfColors.grey800,
+                      fontSize: subtitleSize + 1,
+                      color: PdfColors.black,
                     ),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                  pw.SizedBox(height: 2),
+                  pw.Text(
+                    'Jl. Onje No.1B, Purbalingga Lor, Kec. Purbalingga, Kabupaten Purbalingga, Jawa Tengah 53311',
+                    style: pw.TextStyle(
+                      fontSize: subtitleSize - 2,
+                      color: PdfColors.black,
+                    ),
+                    textAlign: pw.TextAlign.center,
                   ),
                 ],
               ),
             ),
-            pw.SizedBox(width: 12),
             if (logoImage != null)
-              pw.Image(logoImage, width: logoSize, height: logoSize),
+              pw.SizedBox(width: logoSize + 14), // Balances the logo on the left to perfectly center the text
           ],
         ),
         pw.SizedBox(height: 6),
@@ -111,7 +129,7 @@ class ExportService {
             pw.SizedBox(height: 4),
             pw.Center(
               child: pw.Text(
-                'Sistem Informasi Pajak Daerah – BAKEUDA Purbalingga',
+                'Sistem Informasi Pajak Daerah - BAKEUDA Purbalingga',
                 style: const pw.TextStyle(
                   fontSize: 9,
                   color: PdfColors.grey600,
@@ -244,7 +262,7 @@ class ExportService {
           // Title
           pw.Center(
             child: pw.Text(
-              'BERITA ACARA PENYERAHAN KREDENSIAL',
+              'SURAT SERAH TERIMA KREDENSIAL AKUN DESA',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
                 fontSize: 14,
@@ -256,7 +274,7 @@ class ExportService {
           pw.SizedBox(height: 6),
           pw.Center(
             child: pw.Text(
-              'Akun SIPD Purbalingga – Kecamatan $kecamatan',
+              'Akun SIPD Purbalingga - Kecamatan $kecamatan',
               style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
             ),
           ),

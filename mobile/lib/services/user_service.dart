@@ -40,6 +40,11 @@ class UserService {
     return resp.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> deleteAkun(String idUser) async {
+    final resp = await _dio.delete('/users/$idUser');
+    return resp.data as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getWilayah() async {
     final resp = await _dio.get('/wilayah');
     return (resp.data['data'] as List).cast<Map<String, dynamic>>();

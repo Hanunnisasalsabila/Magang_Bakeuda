@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../services/dashboard_service.dart';
 
 class DesaDashboardTab extends StatefulWidget {
@@ -11,9 +13,10 @@ class DesaDashboardTab extends StatefulWidget {
 class _DesaDashboardTabState extends State<DesaDashboardTab> {
   final DashboardService _dashboardService = DashboardService();
   bool _isLoading = true;
-  
+
   Map<String, dynamic>? _stats;
   List<dynamic> _recentTransactions = [];
+  String _profileName = 'Perangkat Desa';
 
   @override
   void initState() {
@@ -23,7 +26,21 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
 
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
-    
+
+    // Load profile name from JWT token
+    try {
+      final token = await const FlutterSecureStorage().read(key: 'jwt_token');
+      if (token != null) {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = json.decode(
+            utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+          );
+          _profileName = payload['nama_lengkap'] ?? 'Perangkat Desa';
+        }
+      }
+    } catch (_) {}
+
     final results = await Future.wait([
       _dashboardService.getDashboardStats(),
       _dashboardService.getRecentTransactions(),
@@ -39,10 +56,11 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
   }
 
   Color _getStatusColor(String status, ColorScheme colorScheme) {
-    if (status.contains('MENUNGGU')) return Colors.blue;
+    if (status.contains('MENUNGGU')) return const Color(0xFFD97706);
     if (status.contains('DISETUJUI')) return Colors.green;
     if (status.contains('DITOLAK')) return colorScheme.error;
-    if (status.contains('PERBAIKAN') || status.contains('REVISI')) return Colors.orange;
+    if (status.contains('PERBAIKAN') || status.contains('REVISI'))
+      return Colors.redAccent;
     if (status == 'DRAFT') return Colors.grey;
     return Colors.grey;
   }
@@ -51,159 +69,119 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     if (status.contains('MENUNGGU')) return 'Menunggu';
     if (status.contains('DISETUJUI')) return 'Selesai';
     if (status.contains('DITOLAK')) return 'Ditolak';
-    if (status.contains('PERBAIKAN') || status.contains('REVISI')) return 'Revisi';
+    if (status.contains('PERBAIKAN') || status.contains('REVISI'))
+      return 'Revisi';
     return status.replaceAll('_', ' ');
+  }
+
+  // Greeting handled directly in build method.
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Selamat pagi';
+    if (hour < 15) return 'Selamat siang';
+    if (hour < 18) return 'Selamat sore';
+    return 'Selamat malam';
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(color: theme.colorScheme.primary),
-      );
-    }
-
     return Container(
-      color: theme.colorScheme.surface,
-      child: RefreshIndicator(
-        onRefresh: _fetchData,
-        color: theme.colorScheme.primary,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(
-            parent: BouncingScrollPhysics(),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Selamat Pagi, Perangkat Desa',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF0F172A),
+      color: const Color(0xFFF8F9FA), // Slightly off-white for background
+      child: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchData,
+              color: theme.colorScheme.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Mari selesaikan laporan pajak hari ini dengan\nmudah.',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  height: 1.4,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
                 ),
-              ),
-              const SizedBox(height: 24),
-              _buildNewSpopButton(theme),
-              const SizedBox(height: 24),
-              _buildStackedStats(theme),
-              const SizedBox(height: 32),
-              _buildRecentActivity(theme),
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewSpopButton(ThemeData theme) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {},
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E3A8A), // Deep Blue
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E3A8A).withValues(alpha: 0.3),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Color(0xFF1E3A8A), size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Buat SPOP Baru',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                    Text(
+                      '${_getGreeting()},',
+                      style: const TextStyle(
                         fontSize: 16,
+                        color: Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Mulai pendataan objek pajak baru',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
+                      _profileName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    _buildStackedStats(theme),
+                    const SizedBox(height: 32),
+                    _buildRecentActivity(theme),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white, size: 28),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
   Widget _buildStackedStats(ThemeData theme) {
     final dikirim = _stats?['totalDikirim']?.toString() ?? '0';
     final menunggu = _stats?['menunggu']?.toString() ?? '0';
+    final disetujui = _stats?['disetujui']?.toString() ?? '0';
     final revisi = _stats?['perluPerbaikan']?.toString() ?? '0';
 
     return Column(
       children: [
-        _buildStatRow(
-          title: 'SPOP DIKIRIM',
+        _buildStatCard(
+          title: 'TOTAL SPOP DIKIRIM',
           value: dikirim,
-          icon: Icons.send_rounded,
-          iconColor: const Color(0xFF4F46E5), // Indigo
-          bgColor: const Color(0xFFF8FAFC), // Slate 50
+          icon: Icons.description_outlined,
+          iconColor: Colors.blue,
+          bgColor: Colors.blue.withValues(alpha: 0.1),
         ),
         const SizedBox(height: 12),
-        _buildStatRow(
-          title: 'MENUNGGU',
+        _buildStatCard(
+          title: 'MENUNGGU VERIFIKASI',
           value: menunggu,
-          icon: Icons.pending_actions_rounded,
-          iconColor: const Color(0xFFD97706), // Amber
-          bgColor: const Color(0xFFFFFBEB), // Amber 50
+          icon: Icons.hourglass_bottom,
+          iconColor: const Color(0xFFD97706),
+          bgColor: const Color(0xFFD97706).withValues(alpha: 0.1),
         ),
         const SizedBox(height: 12),
-        _buildStatRow(
-          title: 'PERLU REVISI',
+        _buildStatCard(
+          title: 'SPOP DISETUJUI',
+          value: disetujui,
+          icon: Icons.verified_outlined,
+          iconColor: Colors.green,
+          bgColor: Colors.green.withValues(alpha: 0.1),
+        ),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          title: 'SPOP PERLU PERBAIKAN',
           value: revisi,
-          icon: Icons.assignment_return_rounded,
-          iconColor: const Color(0xFFDC2626), // Red
-          bgColor: const Color(0xFFFEF2F2), // Red 50
+          icon: Icons.edit_outlined,
+          iconColor: Colors.redAccent,
+          bgColor: Colors.redAccent.withValues(alpha: 0.1),
         ),
       ],
     );
   }
 
-  Widget _buildStatRow({
+  Widget _buildStatCard({
     required String title,
     required String value,
     required IconData icon,
@@ -213,44 +191,40 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: Colors.black.withValues(alpha: 0.5),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ],
-            ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+            child: Icon(icon, color: iconColor, size: 24),
           ),
         ],
       ),
@@ -272,52 +246,110 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                 color: Color(0xFF0F172A),
               ),
             ),
+            if (_recentTransactions.isNotEmpty)
+              TextButton(
+                onPressed: () {},
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(50, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Lihat semua',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E3A8A), // Blue text
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
         if (_recentTransactions.isEmpty)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Text('Belum ada aktivitas'),
-          ))
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text('Belum ada aktivitas'),
+            ),
+          )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _recentTransactions.length,
+            itemCount: _recentTransactions.length > 5
+                ? 5
+                : _recentTransactions.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final trx = _recentTransactions[index];
               final detail = (trx['detail_tujuan'] as List?)?.firstOrNull;
-              final nop = detail?['nop_generated'] ?? detail?['no_persil_baru'] ?? 'Menunggu NOP';
               final status = trx['status_ajuan'] ?? 'UNKNOWN';
               final statusColor = _getStatusColor(status, theme.colorScheme);
-              final type = trx['jenis_transaksi'] ?? 'SPOP';
-              
+              final type =
+                  trx['jenis_transaksi']?.toString().replaceAll('_', ' ') ??
+                  'SPOP';
+
+              // Handle title based on NOP availability
+              String nopStr =
+                  detail?['nop_generated'] ?? detail?['no_persil_baru'] ?? '';
+              String titleStr = nopStr.isEmpty || nopStr == 'Menunggu NOP'
+                  ? '$type Menunggu NOP'
+                  : '$type No. $nopStr';
+
+              // Dynamic description based on status
+              String descStr = 'Berkas SPOP sedang diproses dalam antrean.';
+              if (status.contains('MENUNGGU')) {
+                descStr =
+                    'Menunggu verifikasi dan persetujuan dari petugas Bakeuda.';
+              } else if (status.contains('DISETUJUI')) {
+                descStr = 'SPOP telah disetujui dan data tersimpan di sistem.';
+              } else if (status.contains('PERBAIKAN') ||
+                  status.contains('REVISI')) {
+                descStr =
+                    'SPOP memerlukan perbaikan. Silakan periksa detailnya.';
+              } else if (status.contains('DITOLAK')) {
+                descStr = 'Pengajuan SPOP ditolak oleh Bakeuda.';
+              }
+
+              // Handle Date (if available)
+              String dateStr = 'Baru saja';
+              if (trx['created_at'] != null) {
+                try {
+                  final date = DateTime.parse(trx['created_at']);
+                  final diff = DateTime.now().difference(date);
+                  if (diff.inDays > 0) {
+                    dateStr = '${diff.inDays} hari lalu';
+                  } else if (diff.inHours > 0) {
+                    dateStr = '${diff.inHours} jam lalu';
+                  } else if (diff.inMinutes > 0) {
+                    dateStr = '${diff.inMinutes} mnt lalu';
+                  }
+                } catch (e) {
+                  // ignore formatting errors
+                }
+              }
+
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.check_circle_outline, 
+                        status.contains('MENUNGGU')
+                            ? Icons.schedule
+                            : Icons.check_circle_outline,
                         color: statusColor,
                         size: 20,
                       ),
@@ -329,24 +361,26 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${type.toString().replaceAll('_', ' ')} No. $nop',
+                                  titleStr,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold, 
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
-                                '10mnt\nlalu', // placeholder
+                                dateStr,
                                 textAlign: TextAlign.right,
                                 style: TextStyle(
-                                  fontSize: 9,
-                                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  fontSize: 10,
+                                  color: Colors.grey.shade600,
                                 ),
                               ),
                             ],
@@ -360,13 +394,13 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
-                            'SPOP telah masuk dalam sistem dan sedang diproses.',
+                            descStr,
                             style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: Colors.grey.shade700,
                               fontSize: 11,
-                              height: 1.4,
+                              height: 1.3,
                             ),
                           ),
                         ],
@@ -376,20 +410,6 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                 ),
               );
             },
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Lihat Semua Aktivitas',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
-                ),
-              ),
-            ),
           ),
       ],
     );

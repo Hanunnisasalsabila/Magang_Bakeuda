@@ -26,20 +26,18 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
   List<Map<String, dynamic>> _daftarAkun = [];
   bool _isLoading = true;
   String? _errorMsg;
-  int _page = 1;
-  bool _hasMore = true;
-  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
+
   List<Map<String, dynamic>> _wilayahList = [];
   List<String> _kecamatanList = [];
   String? _selectedWilayahFilter;
-  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _fetchWilayah();
-    _loadData(reset: true);
-    _scrollController.addListener(_onScroll);
+    _loadData();
     // Pencarian langsung berjalan saat mengetik (debounce 400ms),
     // dan tombol clear muncul/hilang otomatis.
     _searchController.addListener(_onSearchChanged);
@@ -54,7 +52,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
     setState(() {}); // refresh tombol clear (X)
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
-      _loadData(reset: true);
+      _loadData();
     });
   }
 
@@ -81,28 +79,18 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
     _debounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      if (!_isLoadingMore && _hasMore) _loadData(reset: false);
-    }
+    // Removed infinite scrolling
   }
 
-  Future<void> _loadData({bool reset = true}) async {
-    if (reset) {
-      setState(() {
-        _isLoading = true;
-        _errorMsg = null;
-        _page = 1;
-        _hasMore = true;
-      });
-    } else {
-      setState(() => _isLoadingMore = true);
-    }
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMsg = null;
+    });
 
     try {
       final result = await _userService.getDaftarAkun(
@@ -110,8 +98,8 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
             ? _searchController.text
             : null,
         role: 'DESA',
-        page: _page,
-        limit: 500,
+        page: 1,
+        limit: 5000,
       );
 
       var newItems = (result['data'] as List? ?? [])
@@ -130,15 +118,22 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
         }).toList();
       }
 
+      // Client-side filter untuk pencarian juga — jaga-jaga kalau parameter
+      // `search` di backend tidak benar-benar memfilter hasilnya.
+      final searchQuery = _searchController.text.trim().toLowerCase();
+      if (searchQuery.isNotEmpty) {
+        newItems = newItems.where((item) {
+          final nama = (item['nama_lengkap'] ?? '').toString().toLowerCase();
+          final username = (item['username'] ?? '').toString().toLowerCase();
+          return nama.contains(searchQuery) || username.contains(searchQuery);
+        }).toList();
+      }
+
       final total = result['total'] as int? ?? 0;
 
       setState(() {
-        if (reset)
-          _daftarAkun = newItems;
-        else
-          _daftarAkun.addAll(newItems);
-        _page++;
-        _hasMore = _daftarAkun.length < total;
+        _daftarAkun = newItems;
+        _currentPage = 1;
       });
     } on DioException catch (e) {
       setState(() {
@@ -151,7 +146,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
     } finally {
       setState(() {
         _isLoading = false;
-        _isLoadingMore = false;
       });
     }
   }
@@ -408,7 +402,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                             content: Text('Akun berhasil ditambahkan'),
                           ),
                         );
-                      _loadData(reset: true);
+                      _loadData();
                     } catch (e) {
                       if (mounted)
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -439,29 +433,233 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
     );
   }
 
-  Future<void> _resetPassword(Map<String, dynamic> akun) async {
-    final pwController = TextEditingController();
-    final ok = await showDialog<bool>(
+  // ============================================================
+  // EDIT AKUN PENGGUNA — setara dengan form di versi website:
+  // Nama Lengkap, Username, NIP, Password (opsional), Area/Wilayah.
+  // ============================================================
+  Future<void> _showEditAkunDialog(Map<String, dynamic> akun) async {
+    final namaCtrl = TextEditingController(text: akun['nama_lengkap'] ?? '');
+    final usernameCtrl = TextEditingController(text: akun['username'] ?? '');
+    final nipCtrl = TextEditingController(text: akun['nip'] ?? '');
+    final passwordCtrl = TextEditingController();
+    String? selectedWilayahKode = akun['kode_wilayah']?.toString();
+    final formKey = GlobalKey<FormState>();
+    final dialogWidth = _dialogWidth(context);
+
+    await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        title: const Text('Reset Password'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Edit Akun Pengguna',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.black54),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ubah informasi atau reset password pengguna.',
+              style: TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+          ],
+        ),
         content: SizedBox(
-          width: _dialogWidth(context),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          width: dialogWidth,
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Nama Lengkap',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: namaCtrl,
+                    decoration: _formalInputDecoration('Nama Lengkap'),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Wajib diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Username',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: usernameCtrl,
+                    decoration: _formalInputDecoration('Username'),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Wajib diisi' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'NIP (Opsional)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: nipCtrl,
+                    decoration: _formalInputDecoration(
+                      'Contoh: 19850101 201001 1 001',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Kata Sandi (Password)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: passwordCtrl,
+                    decoration: _formalInputDecoration('Masukkan password...'),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Kosongkan jika tidak ingin mengubah password',
+                    style: TextStyle(fontSize: 11, color: Colors.black45),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Area / Wilayah Tugas',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value:
+                        _wilayahList.any(
+                          (w) =>
+                              w['kode_wilayah']?.toString() ==
+                              selectedWilayahKode,
+                        )
+                        ? selectedWilayahKode
+                        : null,
+                    decoration: _formalInputDecoration('Pilih Kode Wilayah'),
+                    items: _wilayahList.map((w) {
+                      return DropdownMenuItem<String>(
+                        value: w['kode_wilayah']?.toString() ?? '',
+                        child: Text(
+                          '${w['kode_wilayah']} - ${w['nama_desa']} (${w['kecamatan']})',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (v) => selectedWilayahKode = v,
+                    validator: (v) => v == null ? 'Harus pilih wilayah' : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Text('Atur password baru untuk:\n${akun['nama_lengkap']}'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pwController,
-                decoration: _formalInputDecoration('Password baru'),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  foregroundColor: Colors.black87,
+                ),
+                child: const Text('Batal'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  Navigator.pop(ctx);
+                  setState(() => _isLoading = true);
+                  try {
+                    // NOTE: mengasumsikan UserService punya method updateAkun().
+                    // Kalau nama method di user_service.dart Anda beda,
+                    // sesuaikan baris pemanggilan di bawah ini.
+                    await _userService
+                        .updateAkun(akun['id_user']?.toString() ?? '', {
+                          'nama_lengkap': namaCtrl.text,
+                          'username': usernameCtrl.text,
+                          'nip': nipCtrl.text.isNotEmpty ? nipCtrl.text : null,
+                          'kode_wilayah': selectedWilayahKode,
+                          if (passwordCtrl.text.isNotEmpty)
+                            'password': passwordCtrl.text,
+                        });
+                    if (mounted)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Perubahan berhasil disimpan'),
+                        ),
+                      );
+                    _loadData();
+                  } catch (e) {
+                    if (mounted)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal menyimpan: $e')),
+                      );
+                    setState(() => _isLoading = false);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kNavy,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('Simpan Perubahan'),
               ),
             ],
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _hapusAkun(Map<String, dynamic> akun) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Akun'),
+        content: Text('Anda yakin ingin menghapus akun ${akun['nama_lengkap']}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -469,31 +667,33 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: _kNavy,
+              backgroundColor: const Color(0xFFB3261E),
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset'),
+            child: const Text('Hapus'),
           ),
         ],
       ),
     );
 
-    if (ok == true && pwController.text.isNotEmpty && mounted) {
+    if (ok == true && mounted) {
+      setState(() => _isLoading = true);
       try {
-        await _userService.resetPassword(
-          akun['id_user']?.toString() ?? '',
-          pwController.text,
-        );
-        if (mounted)
+        await _userService.deleteAkun(akun['id_user']?.toString() ?? '');
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Password berhasil direset')),
+            const SnackBar(content: Text('Akun berhasil dihapus')),
           );
+        }
+        _loadData();
       } catch (e) {
-        if (mounted)
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Gagal reset: $e')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal menghapus: $e')),
+          );
+        }
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -536,7 +736,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           akun['id_user']?.toString() ?? '',
           !isAktif,
         );
-        _loadData(reset: true);
+        _loadData();
       } catch (e) {
         if (mounted)
           ScaffoldMessenger.of(
@@ -577,6 +777,14 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
               : _daftarAkun
                     .where((a) => _kecamatanDariAkun(a) == selectedKecamatan)
                     .toList();
+          final daftarDesa =
+              _daftarAkun
+                  .where((a) => _kecamatanDariAkun(a) == selectedKecamatan)
+                  .map((a) => {
+                        'nama_desa': _namaDesaDariAkun(a),
+                        'username': a['username'],
+                      })
+                  .toList();
           final dialogWidth = _dialogWidth(context);
 
           return Dialog(
@@ -777,10 +985,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
                             onPressed: selectedKecamatan == null
                                 ? null
                                 : () async {
@@ -796,49 +1003,18 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                                     );
                                   },
                             icon: const Icon(Icons.print_outlined, size: 18),
-                            label: const Text('Cetak PDF'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _kNavy,
-                              side: const BorderSide(color: _kNavy),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: selectedKecamatan == null
-                                ? null
-                                : () async {
-                                    Navigator.pop(ctx);
-                                    await _cetakKredensialKecamatan(
-                                      kecamatan: selectedKecamatan!,
-                                      daftarAkun: akunKecamatan,
-                                      namaKepalaBkd: namaKepalaBkdCtrl.text,
-                                      nipKepalaBkd: nipKepalaBkdCtrl.text,
-                                      namaCamat: namaCamatCtrl.text,
-                                      nipCamat: nipCamatCtrl.text,
-                                      aksi: 'share',
-                                    );
-                                  },
-                            icon: const Icon(Icons.send_outlined, size: 18),
-                            label: const Text('Share WA'),
+                            label: const Text('Cetak & Unduh PDF'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _kNavy,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -930,14 +1106,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
       );
 
       if (!mounted) return;
-      if (aksi == 'open') {
-        await ExportService.openFile(file);
-      } else {
-        await ExportService.shareFile(
-          file,
-          subject: 'Kredensial Akun Desa – Kecamatan $kecamatan',
-        );
-      }
+      await ExportService.openFile(file);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -1018,58 +1187,124 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           const SizedBox(width: 4),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(83),
+          preferredSize: const Size.fromHeight(130),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: _kGold, width: 3)),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: _searchController,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: 'Cari nama desa atau username...',
-                    hintStyle: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black45,
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: TextField(
+                        controller: _searchController,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: 'Cari nama desa atau username...',
+                          hintStyle: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black45,
+                          ),
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 20),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _loadData();
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: _kNavy, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 16,
+                          ),
+                        ),
+                        onSubmitted: (v) => _loadData(),
+                      ),
                     ),
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            onPressed: () {
-                              _searchController.clear();
-                              _loadData(reset: true);
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 44, // Match search field height approximately
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          value: _selectedWilayahFilter,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.black54,
+                          ),
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.location_on_outlined,
+                              color: Colors.black54,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
+                          ),
+                          items: [
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('Semua'),
+                            ),
+                            ..._kecamatanList.map((kec) {
+                              return DropdownMenuItem(
+                                value: kec,
+                                child: Text(kec, overflow: TextOverflow.ellipsis),
+                              );
+                            }),
+                          ],
+                          onChanged: (v) {
+                            setState(() {
+                              _selectedWilayahFilter = v;
+                            });
+                            _loadData();
+                          },
+                        ),
+                      ),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: _kNavy, width: 1.5),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                  ),
-                  // Pencarian sudah otomatis berjalan (debounce) lewat listener,
-                  // ini untuk trigger instan kalau user menekan Enter/Search.
-                  onSubmitted: (v) => _loadData(reset: true),
+                  ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+                Text(
+                  'Menampilkan ${_daftarAkun.length} data akun desa',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1086,60 +1321,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            color: const Color(0xFFF7F6F2),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      isExpanded: true, // cegah overflow nama kecamatan panjang
-                      value: _selectedWilayahFilter,
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down,
-                        color: Colors.black54,
-                      ),
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(
-                          Icons.location_on_outlined,
-                          color: Colors.black54,
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Semua Kecamatan'),
-                        ),
-                        ..._kecamatanList.map((kec) {
-                          return DropdownMenuItem(
-                            value: kec,
-                            child: Text(kec, overflow: TextOverflow.ellipsis),
-                          );
-                        }),
-                      ],
-                      onChanged: (v) {
-                        setState(() {
-                          _selectedWilayahFilter = v;
-                        });
-                        _loadData(reset: true);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: _kNavy))
@@ -1160,7 +1341,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
-                          onPressed: () => _loadData(reset: true),
+                          onPressed: () => _loadData(),
                           icon: const Icon(Icons.refresh),
                           label: const Text('Coba Lagi'),
                           style: ElevatedButton.styleFrom(
@@ -1195,24 +1376,32 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                       ),
                     ),
                   )
-                : RefreshIndicator(
-                    color: _kNavy,
-                    onRefresh: () => _loadData(reset: true),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
-                      itemCount: _daftarAkun.length + (_hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= _daftarAkun.length) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(16),
-                              child: CircularProgressIndicator(color: _kNavy),
-                            ),
-                          );
-                        }
+                : _buildPaginatedList(theme),
+          ),
+        ],
+      ),
+    );
+  }
 
-                        final akun = _daftarAkun[index];
+  Widget _buildPaginatedList(ThemeData theme) {
+    final totalPages = (_daftarAkun.length / _itemsPerPage).ceil();
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = (startIndex + _itemsPerPage < _daftarAkun.length)
+        ? startIndex + _itemsPerPage
+        : _daftarAkun.length;
+    final paginatedData = _daftarAkun.sublist(startIndex, endIndex);
+
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            color: _kNavy,
+            onRefresh: () => _loadData(),
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              itemCount: paginatedData.length,
+              itemBuilder: (context, index) {
+                final akun = paginatedData[index];
                         final kode = akun['kode_wilayah'];
                         String wilayahText = '-';
                         if (kode != null && _wilayahList.isNotEmpty) {
@@ -1245,23 +1434,14 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                                           width: 46,
                                           height: 46,
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFE6F1FB),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: const Color(0xFFBBD6EE),
-                                            ),
+                                            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                                            borderRadius: BorderRadius.circular(12),
                                           ),
-                                          child: const Center(
-                                            child: Text(
-                                              'P',
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                                color: _kNavy,
-                                              ),
-                                            ),
+                                          alignment: Alignment.center,
+                                          child: Icon(
+                                            Icons.person,
+                                            color: theme.colorScheme.primary,
+                                            size: 24,
                                           ),
                                         ),
                                         const SizedBox(width: 14),
@@ -1298,34 +1478,30 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                                           ),
                                           onSelected: (v) {
                                             if (v == 'edit')
-                                              _resetPassword(akun);
-                                            else if (v == 'delete')
-                                              _toggleAktif(akun);
+                                              _showEditAkunDialog(akun);
+                                            else if (v == 'hapus')
+                                              _hapusAkun(akun);
                                           },
-                                          itemBuilder: (_) => const [
-                                            PopupMenuItem(
+                                          itemBuilder: (_) => [
+                                            const PopupMenuItem(
                                               value: 'edit',
                                               child: ListTile(
                                                 leading: Icon(
                                                   Icons.edit_outlined,
                                                   color: _kNavy,
                                                 ),
-                                                title: Text(
-                                                  'Edit / Reset Password',
-                                                ),
+                                                title: Text('Edit Akun'),
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),
                                             PopupMenuItem(
-                                              value: 'delete',
+                                              value: 'hapus',
                                               child: ListTile(
-                                                leading: Icon(
-                                                  Icons.block_outlined,
+                                                leading: const Icon(
+                                                  Icons.delete_outline,
                                                   color: Color(0xFFB3261E),
                                                 ),
-                                                title: Text(
-                                                  'Nonaktifkan / Hapus',
-                                                ),
+                                                title: const Text('Hapus Akun'),
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),
@@ -1403,7 +1579,39 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                             );
                       },
                     ),
-                  ),
+          ),
+        ),
+        _buildPaginationControls(totalPages),
+        const SizedBox(height: 80), // Padding for FAB
+      ],
+    );
+  }
+
+  Widget _buildPaginationControls(int totalPages) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          TextButton.icon(
+            onPressed: _currentPage > 1
+                ? () => setState(() => _currentPage--)
+                : null,
+            icon: const Icon(Icons.chevron_left),
+            label: const Text('Sebelumnnya'),
+          ),
+          Text(
+            'Halaman $_currentPage dari $totalPages',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          TextButton.icon(
+            onPressed: _currentPage < totalPages
+                ? () => setState(() => _currentPage++)
+                : null,
+            icon: const Icon(Icons.chevron_right),
+            label: const Text('Selanjutnya'),
+            iconAlignment: IconAlignment.end,
           ),
         ],
       ),
