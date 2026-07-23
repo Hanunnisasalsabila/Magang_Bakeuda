@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
 import '../services/user_service.dart';
@@ -291,7 +292,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                             ],
                           ),
                         ),
-                      );
+                      ).animate().fade(duration: 400.ms, delay: ((index % 10) * 50).ms).slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutQuad);
                     },
                   ),
                 ),

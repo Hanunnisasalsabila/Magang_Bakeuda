@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
+import 'detail_review_spop_screen.dart';
 
 class PelacakanDokumenScreen extends StatefulWidget {
   const PelacakanDokumenScreen({super.key});
@@ -137,6 +138,20 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
     );
   }
 
+  void _navigateToDetail(Map<String, dynamic> tx) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailReviewSpopScreen(
+          idTransaksi: tx['id_transaksi'].toString(),
+          isReadOnly: true,
+        ),
+      ),
+    ).then((value) {
+      if (value == true) _loadData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -192,7 +207,7 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
                             elevation: 0,
                             color: theme.colorScheme.surface,
                             child: InkWell(
-                              onTap: () => _showTimelineDialog(tx),
+                              onTap: () => _navigateToDetail(tx),
                               borderRadius: BorderRadius.circular(12),
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
@@ -250,7 +265,7 @@ class _PelacakanDokumenScreenState extends State<PelacakanDokumenScreen> {
                                       children: [
                                         Icon(Icons.touch_app_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
                                         const SizedBox(width: 4),
-                                        Text('Ketuk untuk melihat riwayat', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                        Text('Ketuk untuk melihat detail', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                                       ],
                                     ),
                                   ],

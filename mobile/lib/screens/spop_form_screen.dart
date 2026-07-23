@@ -91,6 +91,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _batasSelatanController = TextEditingController();
   final _batasTimurController = TextEditingController();
   final _batasBaratController = TextEditingController();
+  bool _isSatellite = true;
   final _latController = TextEditingController(text: '-7.3934');
   final _lngController = TextEditingController(text: '109.3663');
 
@@ -378,12 +379,24 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   List<Step> _buildSteps(ThemeData theme) {
+    BoxDecoration cardDecoration = BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(color: theme.colorScheme.shadow.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+      ],
+      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+    );
+
     return [
       Step(
-        title: const Text('Data Transaksi'),
+        title: const Text('Transaksi'),
         isActive: _currentStep >= 0,
         state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           children: [
             _buildDropdown('Jenis Layanan', _jenisLayanan, _jenisOptions, (v) => setState(() => _jenisLayanan = v!)),
             CustomTextField(controller: _nopUtamaController, label: 'NOP Utama (18 digit)', hintText: 'Kosongkan jika pendaftaran baru', keyboardType: TextInputType.number),
@@ -394,11 +407,15 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ],
         ),
       ),
+      ),
       Step(
-        title: const Text('Data Wajib Pajak'),
+        title: const Text('Subjek'),
         isActive: _currentStep >= 1,
         state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           children: [
             CustomTextField(controller: _namaWpController, label: 'Nama Wajib Pajak *', validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
             const SizedBox(height: 12),
@@ -433,11 +450,15 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ],
         ),
       ),
+      ),
       Step(
-        title: const Text('Data Objek Pajak'),
+        title: const Text('Objek'),
         isActive: _currentStep >= 2,
         state: _currentStep > 2 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
@@ -514,82 +535,104 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 label: const Text('Lokasi Saya'),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text('Gambar Titik Koordinat (Poligon):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 8),
             Container(
               height: 300,
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300)),
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
-                  initialZoom: 15.0,
-                  maxZoom: 22.0,
-                  onTap: (tapPosition, point) {
-                    setState(() {
-                      _polygonPoints.add(point);
-                      if (_polygonPoints.length == 1) {
-                        _latController.text = point.latitude.toString();
-                        _lngController.text = point.longitude.toString();
-                      }
-                    });
-                  },
-                ),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Stack(
                 children: [
-                  TileLayer(
-                    urlTemplate: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-                    userAgentPackageName: 'com.example.magang_bakeuda',
-                    maxZoom: 22,
-                  ),
-                  if (_searchBoundary.isNotEmpty)
-                    PolygonLayer(
-                      polygons: [
-                        Polygon(
-                          points: _searchBoundary,
-                          color: Colors.blue.withOpacity(0.1),
-                          borderColor: Colors.blue,
-                          borderStrokeWidth: 2,
-                        )
-                      ],
-                    ),
-                  if (_searchReferencePoint != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _searchReferencePoint!,
-                          width: 40,
-                          height: 40,
-                          child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
-                        )
-                      ],
-                    ),
-                  if (_polygonPoints.isNotEmpty)
-                    PolygonLayer(
-                      polygons: [
-                        Polygon(
-                          points: _polygonPoints,
-                          color: Colors.blue.withOpacity(0.3),
-                          borderColor: Colors.blue,
-                          borderStrokeWidth: 2,
-                        )
-                      ],
-                    ),
-                  if (_polygonPoints.isNotEmpty)
-                    MarkerLayer(
-                      markers: _polygonPoints.map((p) => Marker(
-                        point: p,
-                        width: 12,
-                        height: 12,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.blue, width: 2),
-                          ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
+                        initialZoom: 15.0,
+                        maxZoom: 22.0,
+                        onTap: (tapPosition, point) {
+                          setState(() {
+                            _polygonPoints.add(point);
+                            if (_polygonPoints.length == 1) {
+                              _latController.text = point.latitude.toString();
+                              _lngController.text = point.longitude.toString();
+                            }
+                          });
+                        },
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: _isSatellite 
+                              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                          userAgentPackageName: 'com.example.magang_bakeuda',
+                          maxZoom: 22,
                         ),
-                      )).toList(),
+                        if (_searchBoundary.isNotEmpty)
+                          PolygonLayer(
+                            polygons: [
+                              Polygon(
+                                points: _searchBoundary,
+                                color: Colors.blue.withOpacity(0.1),
+                                borderColor: Colors.blue,
+                                borderStrokeWidth: 2,
+                              )
+                            ],
+                          ),
+                        if (_searchReferencePoint != null)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: _searchReferencePoint!,
+                                width: 40,
+                                height: 40,
+                                child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                              )
+                            ],
+                          ),
+                        if (_polygonPoints.isNotEmpty)
+                          PolygonLayer(
+                            polygons: [
+                              Polygon(
+                                points: _polygonPoints,
+                                color: Colors.blue.withOpacity(0.3),
+                                borderColor: Colors.blue,
+                                borderStrokeWidth: 2,
+                              )
+                            ],
+                          ),
+                        if (_polygonPoints.isNotEmpty)
+                          MarkerLayer(
+                            markers: _polygonPoints.map((p) => Marker(
+                              point: p,
+                              width: 12,
+                              height: 12,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.blue, width: 2),
+                                ),
+                              ),
+                            )).toList(),
+                          ),
+                      ],
                     ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: FloatingActionButton.small(
+                      onPressed: () => setState(() => _isSatellite = !_isSatellite),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      child: Icon(
+                        _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -711,11 +754,15 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ],
         ),
       ),
+      ),
       Step(
-        title: const Text('Lampiran Dokumen'),
+        title: const Text('Lampiran'),
         isActive: _currentStep >= 3,
         state: _currentStep == 3 ? StepState.indexed : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Unggah dokumen pendukung (KTP, Sertifikat Tanah, dll)', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -739,6 +786,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
             ),
           ],
         ),
+      ),
       ),
     ];
   }
@@ -764,7 +812,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       body: Form(
         key: _formKey,
         child: Stepper(
-          type: StepperType.vertical,
+          type: StepperType.horizontal,
           currentStep: _currentStep,
           onStepContinue: () {
             if (_currentStep < steps.length - 1) {
