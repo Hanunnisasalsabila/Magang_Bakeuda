@@ -61,8 +61,12 @@ export class DetailTujuanInputDto {
 }
 
 export class LampiranInputDto {
-  @IsString() jenis_dokumen: string;
-  @IsString() url_file: string;
+  @IsOptional() @IsArray() url_ktp?: string[];
+  @IsOptional() @IsArray() url_sertifikat?: string[];
+  @IsOptional() @IsArray() url_ajb?: string[];
+  @IsOptional() @IsArray() url_imb?: string[];
+  @IsOptional() @IsArray() url_pendukung_lokasi?: string[];
+  @IsOptional() @IsArray() url_surat_kuasa?: string[];
 }
 
 export class SubmitTransaksiDto {
@@ -89,8 +93,7 @@ export class SubmitTransaksiDto {
   detail_tujuan?: DetailTujuanInputDto[];
 
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
+  @ValidateNested()
   @Type(() => LampiranInputDto)
-  lampiran?: LampiranInputDto[];
+  lampiran?: LampiranInputDto;
 }

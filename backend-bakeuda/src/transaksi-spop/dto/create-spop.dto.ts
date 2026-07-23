@@ -63,8 +63,12 @@ export class ObjekPajakTempDto {
 }
 
 export class LampiranDto {
-  @IsString() jenis_dokumen: string;
-  @IsString() url_file: string;
+  @IsOptional() @IsArray() url_ktp?: string[];
+  @IsOptional() @IsArray() url_sertifikat?: string[];
+  @IsOptional() @IsArray() url_ajb?: string[];
+  @IsOptional() @IsArray() url_imb?: string[];
+  @IsOptional() @IsArray() url_pendukung_lokasi?: string[];
+  @IsOptional() @IsArray() url_surat_kuasa?: string[];
 }
 
 export class CreateSpopDto {
@@ -89,10 +93,9 @@ export class CreateSpopDto {
   objek_pajak_sementara: ObjekPajakTempDto;
 
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
+  @ValidateNested()
   @Type(() => LampiranDto)
-  lampiran?: LampiranDto[];
+  lampiran?: LampiranDto;
 
   @IsOptional()
   @IsArray()

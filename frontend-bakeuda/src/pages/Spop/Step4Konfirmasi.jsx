@@ -28,7 +28,7 @@ export default function Step4Konfirmasi() {
   const [showBangunanModal, setShowBangunanModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [jenisDokumenUpload, setJenisDokumenUpload] = useState('Sertifikat/KTP/Lainnya');
+  const [jenisDokumenUpload, setJenisDokumenUpload] = useState('KTP');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
   const [previewImage, setPreviewImage] = useState(null);
@@ -391,16 +391,10 @@ export default function Step4Konfirmasi() {
       });
       const fileUrl = uploadRes.data.url_file || uploadRes.data.url;
       
-      setFormData(prev => {
-        // Find existing for this type unless it's general
-        if (jenisDokumenUpload !== 'Sertifikat/KTP/Lainnya') {
-            const exist = prev.lampiran.find(l => l.jenis_dokumen === jenisDokumenUpload);
-            if (exist) {
-                return { ...prev, lampiran: prev.lampiran.map(l => l.jenis_dokumen === jenisDokumenUpload ? { ...l, url_file: fileUrl } : l) };
-            }
-        }
-        return { ...prev, lampiran: [...prev.lampiran, { jenis_dokumen: jenisDokumenUpload, url_file: fileUrl }] };
-      });
+      setFormData(prev => ({
+        ...prev, 
+        lampiran: [...prev.lampiran, { jenis_dokumen: jenisDokumenUpload, url_file: fileUrl }] 
+      }));
       setToast({ show: true, message: 'Dokumen berhasil diunggah', type: 'success' });
     } catch (error) {
       console.error('Upload error:', error);
@@ -561,9 +555,11 @@ export default function Step4Konfirmasi() {
                   onChange={(e) => setJenisDokumenUpload(e.target.value)}
                   className="h-12 border border-outline-variant rounded-lg pl-4 pr-10 bg-white shadow-sm focus:border-primary focus:ring-1 focus:ring-primary font-bold text-sm w-full sm:w-auto outline-none"
                 >
-                  <option value="Sertifikat/KTP/Lainnya">Dokumen Umum (KTP/Sertifikat)</option>
-                  <option value="SURAT_KUASA">Surat Kuasa</option>
-                  <option value="DENAH_LOKASI">Denah Lokasi</option>
+                  <option value="KTP">KTP</option>
+                  <option value="Sertifikat Hak Milik">Sertifikat Hak Milik</option>
+                  <option value="Akte Jual Beli">Akte Jual Beli</option>
+                  <option value="Izin Mendirikan Bangunan">Izin Mendirikan Bangunan</option>
+                  <option value="Dokumen Pendukung Lokasi">Dokumen Pendukung Lokasi</option>
                 </select>
               </div>
 

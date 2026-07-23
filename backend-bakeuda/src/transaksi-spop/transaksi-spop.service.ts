@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
+import { OracleWriteService } from '../oracle/oracle-write.service.js';
 import { 
   StatusAjuan, 
   JenisTransaksi, 
@@ -30,6 +31,7 @@ export class TransaksiSpopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
+    private readonly oracleWriteService: OracleWriteService,
   ) {}
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
@@ -99,10 +101,15 @@ export class TransaksiSpopService {
           }))
         } : undefined,
         lampiran: dto.lampiran ? {
-          create: dto.lampiran.map((l) => ({
-            ...l,
-            uploaded_by: currentUser.id_user
-          }))
+          create: {
+            url_ktp: dto.lampiran.url_ktp || [],
+            url_sertifikat: dto.lampiran.url_sertifikat || [],
+            url_ajb: dto.lampiran.url_ajb || [],
+            url_imb: dto.lampiran.url_imb || [],
+            url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+            url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+            uploaded_by: currentUser.id_user,
+          }
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -185,10 +192,15 @@ export class TransaksiSpopService {
               }))
             } : undefined,
             lampiran: dto.lampiran ? {
-              create: dto.lampiran.map((l) => ({
-                ...l,
-                uploaded_by: currentUser.id_user
-              }))
+              create: {
+                url_ktp: dto.lampiran.url_ktp || [],
+                url_sertifikat: dto.lampiran.url_sertifikat || [],
+                url_ajb: dto.lampiran.url_ajb || [],
+                url_imb: dto.lampiran.url_imb || [],
+                url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+                url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+                uploaded_by: currentUser.id_user,
+              }
             } : undefined
           }
         });
@@ -306,6 +318,23 @@ export class TransaksiSpopService {
       throw new ForbiddenException('Akses ditolak');
     }
 
+    if (transaksi.lampiran) {
+      const l: any = transaksi.lampiran;
+      const mappedLampiran = [];
+      const mapItem = (urls: any, type: string) => {
+        if (Array.isArray(urls)) {
+          urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
+        }
+      };
+      mapItem(l.url_ktp, 'KTP');
+      mapItem(l.url_sertifikat, 'SERTIFIKAT_HAK_MILIK');
+      mapItem(l.url_ajb, 'AKTE_JUAL_BELI');
+      mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
+      mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
+      mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
+      (transaksi as any).lampiran = mappedLampiran;
+    }
+
     return { success: true, data: transaksi };
   }
 
@@ -411,7 +440,51 @@ export class TransaksiSpopService {
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'DISETUJUI', currentUser.id_user, 'Disetujui, data dieksekusi');
 
+    // WRITE-THROUGH KE ORACLE
+    try {
+      await this.syncToOracle(hasil);
+    } catch (oracleError) {
+      console.error("Gagal write-through ke Oracle:", oracleError);
+      // Optional: Anda bisa memutuskan apakah kegagalan Oracle membatalkan transaksi Postgres
+      // Untuk write-through strict, bisa di-throw error di sini. 
+      // Saat ini kita biarkan sukses di Postgres, dan catat error.
+      await this.catatRiwayat(idTransaksi, 'DISETUJUI', 'DISETUJUI', currentUser.id_user, 'WARNING: Sinkronisasi ke Oracle Gagal');
+    }
+
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
+  }
+
+  /**
+   * Helper untuk Write-Through ke Oracle
+   */
+  private async syncToOracle(hasilEksekusi: any) {
+    const nopsToSync: string[] = [];
+    
+    if (hasilEksekusi.nop_baru) {
+      if (Array.isArray(hasilEksekusi.nop_baru)) {
+        nopsToSync.push(...hasilEksekusi.nop_baru);
+      } else {
+        nopsToSync.push(hasilEksekusi.nop_baru);
+      }
+    }
+    if (hasilEksekusi.nop) {
+      nopsToSync.push(hasilEksekusi.nop);
+    }
+
+    // Ambil data terbaru dari Prisma lalu push ke Oracle
+    for (const nop of nopsToSync) {
+      const objekPajak = await this.prisma.objekPajak.findUnique({
+        where: { nop },
+        include: { subjek_pajak: true }
+      });
+      
+      if (objekPajak) {
+        if (objekPajak.subjek_pajak) {
+          await this.oracleWriteService.writeSubjekPajak(objekPajak.subjek_pajak);
+        }
+        await this.oracleWriteService.writeObjekPajak(objekPajak);
+      }
+    }
   }
 
   async tolak(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
@@ -619,6 +692,12 @@ export class TransaksiSpopService {
       let no_bng = 1;
       for (const bngRaw of t.data_bangunan_json as any[]) {
         const bng = bngRaw as any;
+        
+        // Skip pembuatan ulang data bangunan jika LSPOP ditandai sebagai Penghapusan
+        if (bng.jenisTransaksi === 'Penghapusan Data' || bng.jenisTransaksi === 'PENGHAPUSAN' || bng.jenisTransaksi === 'HAPUS') {
+          continue;
+        }
+
         let kode_jpb = '01'; 
         if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
         else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
@@ -868,10 +947,9 @@ export class TransaksiSpopService {
         rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
-        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
-        luas_tanah: finalLuasTanah,
-        luas_bangunan: finalLuasBangunan,
-        koordinat_polygon: t.koordinat_polygon != null ? (t.koordinat_polygon as any) : undefined,
+        jenis_tanah: t.jenis_tanah_baru!,
+        luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
+        luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },
     });
 

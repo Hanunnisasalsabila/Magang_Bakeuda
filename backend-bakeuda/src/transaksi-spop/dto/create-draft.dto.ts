@@ -43,8 +43,12 @@ export class ObjekPajakDraftDto {
 }
 
 export class LampiranDraftDto {
-  @IsOptional() @IsString() jenis_dokumen?: string;
-  @IsOptional() @IsString() url_file?: string;
+  @IsOptional() @IsArray() url_ktp?: string[];
+  @IsOptional() @IsArray() url_sertifikat?: string[];
+  @IsOptional() @IsArray() url_ajb?: string[];
+  @IsOptional() @IsArray() url_imb?: string[];
+  @IsOptional() @IsArray() url_pendukung_lokasi?: string[];
+  @IsOptional() @IsArray() url_surat_kuasa?: string[];
 }
 
 export class CreateDraftDto {
@@ -70,10 +74,9 @@ export class CreateDraftDto {
   objek_pajak_sementara?: ObjekPajakDraftDto;
 
   @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
+  @ValidateNested()
   @Type(() => LampiranDraftDto)
-  lampiran?: LampiranDraftDto[];
+  lampiran?: LampiranDraftDto;
 
   @IsOptional()
   @IsArray()

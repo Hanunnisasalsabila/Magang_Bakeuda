@@ -18,12 +18,15 @@ import {
   assertWilayahAccess,
 } from '../common/wilayah-scope.helper.js';
 
+import { OracleSyncService } from '../oracle/oracle-sync.service.js';
+
 @Injectable()
 export class ObjekPajakService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
     private readonly pbbCalculator: PbbCalculatorService,
+    private readonly oracleSync: OracleSyncService,
   ) {}
 
   // ─────────────────────────────────────────
@@ -116,7 +119,7 @@ export class ObjekPajakService {
   // ─────────────────────────────────────────
 
   async getByNop(nop: string, currentUser: CurrentUser) {
-    const objek = await this.prisma.objekPajak.findUnique({
+    let objek = await this.prisma.objekPajak.findUnique({
       where: { nop },
       include: {
         subjek_pajak: true,
@@ -125,6 +128,24 @@ export class ObjekPajakService {
         wilayah: true,
       },
     });
+    
+    // Lazy Loading (Read-Through Cache)
+    if (!objek && nop.length === 18) {
+      const synced = await this.oracleSync.syncSingleNop(nop);
+      if (synced) {
+        // Coba cari lagi setelah disinkronkan
+        objek = await this.prisma.objekPajak.findUnique({
+          where: { nop },
+          include: {
+            subjek_pajak: true,
+            bumi: true,
+            bangunan: { include: { fasilitas: true } },
+            wilayah: true,
+          },
+        });
+      }
+    }
+
     if (!objek) throw new NotFoundException('Objek pajak tidak ditemukan');
 
     assertWilayahAccess(currentUser, objek.kode_wilayah);
@@ -138,6 +159,15 @@ export class ObjekPajakService {
 
   async search(keyword: string, currentUser: CurrentUser) {
     const scope = buildWilayahScope(currentUser);
+    
+    // Jika keyword berbentuk persis NOP (18 digit angka), coba sinkronkan dulu
+    if (/^\d{18}$/.test(keyword.trim())) {
+      const nop = keyword.trim();
+      const existing = await this.prisma.objekPajak.findUnique({ where: { nop } });
+      if (!existing) {
+        await this.oracleSync.syncSingleNop(nop);
+      }
+    }
 
     const results = await this.prisma.objekPajak.findMany({
       where: {

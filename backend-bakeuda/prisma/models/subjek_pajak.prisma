@@ -34,6 +34,10 @@ model SubjekPajak {
   updated_at         DateTime  @updatedAt
   created_by         String // FK → users.id_user
 
+  // ── Metadata Sync Oracle ──
+  oracle_synced_at DateTime? // Kapan terakhir disync dari Oracle
+  oracle_source    Boolean   @default(false) // true = data berasal dari Oracle sync
+
   // ── Relasi ──
   wilayah     Wilayah      @relation(fields: [kode_wilayah], references: [kode_wilayah])
   user        User         @relation("CreatedByUser", fields: [created_by], references: [id_user])
