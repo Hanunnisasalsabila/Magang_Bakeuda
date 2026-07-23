@@ -7,7 +7,8 @@ import 'login_screen.dart';
 import 'dart:ui';
 
 class ChangePasswordScreen extends StatefulWidget {
-  const ChangePasswordScreen({super.key});
+  final bool isForced;
+  const ChangePasswordScreen({super.key, this.isForced = false});
 
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
@@ -113,13 +114,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () async {
-            // User cannot skip forced password change, they must logout
-            await _authService.logout();
-            if (!context.mounted) return;
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
+            if (widget.isForced) {
+              // User cannot skip forced password change, they must logout
+              await _authService.logout();
+              if (!context.mounted) return;
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            } else {
+              Navigator.pop(context);
+            }
           },
         ),
       ),

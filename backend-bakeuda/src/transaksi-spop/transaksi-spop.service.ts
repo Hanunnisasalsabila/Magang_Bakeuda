@@ -2,18 +2,18 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
 import { OracleWriteService } from '../oracle/oracle-write.service.js';
-import { 
-  StatusAjuan, 
-  JenisTransaksi, 
-  Prisma, 
-  TransaksiSpop, 
-  Pekerjaan, 
-  StatusWp, 
-  KondisiBangunan, 
-  JenisKonstruksi, 
-  JenisAtap, 
-  JenisDinding, 
-  JenisLantai, 
+import {
+  StatusAjuan,
+  JenisTransaksi,
+  Prisma,
+  TransaksiSpop,
+  Pekerjaan,
+  StatusWp,
+  KondisiBangunan,
+  JenisKonstruksi,
+  JenisAtap,
+  JenisDinding,
+  JenisLantai,
   JenisLangitLangit,
   BahanPagar
 } from '@prisma/client';
@@ -32,7 +32,7 @@ export class TransaksiSpopService {
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
     private readonly oracleWriteService: OracleWriteService,
-  ) {}
+  ) { }
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
     if (!asDraft) {
@@ -109,7 +109,7 @@ export class TransaksiSpopService {
             url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
             url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
             uploaded_by: currentUser.id_user,
-          }
+          } as any
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -200,7 +200,7 @@ export class TransaksiSpopService {
                 url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
                 url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
                 uploaded_by: currentUser.id_user,
-              }
+              } as any
             } : undefined
           }
         });
@@ -491,7 +491,7 @@ export class TransaksiSpopService {
    */
   private async syncToOracle(hasilEksekusi: any) {
     const nopsToSync: string[] = [];
-    
+
     if (hasilEksekusi.nop_baru) {
       if (Array.isArray(hasilEksekusi.nop_baru)) {
         nopsToSync.push(...hasilEksekusi.nop_baru);
@@ -509,7 +509,7 @@ export class TransaksiSpopService {
         where: { nop },
         include: { subjek_pajak: true }
       });
-      
+
       if (objekPajak) {
         if (objekPajak.subjek_pajak) {
           await this.oracleWriteService.writeSubjekPajak(objekPajak.subjek_pajak);
@@ -705,7 +705,7 @@ export class TransaksiSpopService {
           created_by: transaksiUserId,
         }
       });
-      nikSubjek = nikToSave;
+      return nikToSave;
     }
     return nikSubjek || '0000000000000000';
   }
