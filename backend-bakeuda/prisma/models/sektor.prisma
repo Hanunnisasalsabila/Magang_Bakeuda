@@ -1,0 +1,7 @@
+model Sektor {
+  kode_sektor String    @id @db.VarChar(2)
+  nama_sektor String    @db.VarChar(100)
+  wilayah     Wilayah[]
+
+  @@map("sektor")
+}

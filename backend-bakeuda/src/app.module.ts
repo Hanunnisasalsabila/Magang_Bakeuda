@@ -7,6 +7,7 @@ import { AppService } from './app.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
+import { OracleModule } from './oracle/oracle.module.js';
 import { WilayahModule } from './wilayah/wilayah.module.js';
 import { SubjekPajakModule } from './subjek-pajak/subjek-pajak.module.js';
 import { ObjekPajakModule } from './objek-pajak/objek-pajak.module.js';
@@ -28,6 +29,7 @@ import { ActivitiesModule } from './activities/activities.module.js';
     PrismaModule,
     AuthModule,
     UsersModule,
+    OracleModule,
     WilayahModule,
     SubjekPajakModule,
     ObjekPajakModule,

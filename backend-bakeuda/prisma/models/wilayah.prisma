@@ -24,6 +24,9 @@ model Wilayah {
   objek_pajak  ObjekPajak[]
   subjek_pajak SubjekPajak[]
 
+  kode_sektor String? @db.VarChar(2)
+  sektor      Sektor? @relation(fields: [kode_sektor], references: [kode_sektor])
+
   @@unique([kode_propinsi, kode_dati2, kode_kecamatan, kode_kelurahan])
   @@index([kode_kecamatan])
   @@map("wilayah")

@@ -15,8 +15,8 @@ export class PrismaService
       adapter,
       log:
         process.env.NODE_ENV === 'development'
-          ? ['query', 'error', 'warn']
-          : ['error'],
+          ? ['query', 'warn']
+          : [],
     });
   }
 
