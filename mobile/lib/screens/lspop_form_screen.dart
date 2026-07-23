@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
@@ -209,26 +210,42 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
     );
   }
 
-  List<Step> _buildSteps() {
+  List<Step> _buildSteps(ThemeData theme) {
+    BoxDecoration cardDecoration = BoxDecoration(
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(color: theme.colorScheme.shadow.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+      ],
+      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+    );
+
     return [
       Step(
-        title: const Text('Induk (SPOP)'),
+        title: const Text('Induk'),
         isActive: _currentStep >= 0,
         state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           children: [
             CustomTextField(controller: _noFormulirController, label: 'No. Formulir SPOP', hintText: 'Nomor Formulir', keyboardType: TextInputType.number),
             const SizedBox(height: 12),
             _buildDropdown('Jenis Transaksi', _jenisTransaksi, _jenisTransaksiOptions, (v) => setState(() => _jenisTransaksi = v!)),
             CustomTextField(controller: _jumlahBngController, label: 'Jumlah Bangunan', hintText: 'Total bangunan di objek ini', keyboardType: TextInputType.number),
           ],
+         ),
         ),
       ),
       Step(
-        title: const Text('Rincian Bangunan'),
+        title: const Text('Rincian'),
         isActive: _currentStep >= 1,
         state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           children: [
             _buildDropdown('Jenis Penggunaan', _jenisPenggunaan, _penggunaanOptions, (v) => setState(() => _jenisPenggunaan = v!)),
             Row(children: [
@@ -245,28 +262,36 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
             const SizedBox(height: 12),
             CustomTextField(controller: _dayaListrikController, label: 'Daya Listrik (Watt)', keyboardType: TextInputType.number),
           ],
+         ),
         ),
       ),
       Step(
-        title: const Text('Material Bangunan'),
+        title: const Text('Material'),
         isActive: _currentStep >= 2,
         state: _currentStep > 2 ? StepState.complete : StepState.indexed,
-        content: Column(
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           children: [
             _buildDropdown('Kondisi Bangunan', _kondisi, _kondisiOptions, (v) => setState(() => _kondisi = v!)),
             _buildDropdown('Jenis Konstruksi', _konstruksi, _konstruksiOptions, (v) => setState(() => _konstruksi = v!)),
             _buildDropdown('Material Atap', _atap, _atapOptions, (v) => setState(() => _atap = v!)),
             _buildDropdown('Material Dinding', _dinding, _dindingOptions, (v) => setState(() => _dinding = v!)),
             _buildDropdown('Material Lantai', _lantai, _lantaiOptions, (v) => setState(() => _lantai = v!)),
-            _buildDropdown('Langit-langit', _langitLangit, _langitOptions, (v) => setState(() => _langitLangit = v!)),
+            _buildDropdown('Langit-Langit', _langitLangit, _langitOptions, (v) => setState(() => _langitLangit = v!)),
           ],
+         ),
         ),
       ),
       Step(
         title: const Text('Fasilitas'),
         isActive: _currentStep >= 3,
-        state: StepState.indexed,
-        content: Column(
+        state: _currentStep == 3 ? StepState.indexed : StepState.indexed,
+        content: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: cardDecoration,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Isi fasilitas yang tersedia (kosongkan jika tidak ada):', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -281,6 +306,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
             const SizedBox(height: 12),
             CustomTextField(controller: _panjangPagarController, label: 'Panjang Pagar (m)', keyboardType: TextInputType.number),
           ],
+         ),
         ),
       ),
     ];
@@ -289,7 +315,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final steps = _buildSteps();
+    final steps = _buildSteps(theme);
 
     return Scaffold(
       appBar: AppBar(
@@ -297,53 +323,62 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
-      body: Form(
-        key: _formKey,
-        child: Stepper(
-          type: StepperType.vertical,
-          currentStep: _currentStep,
-          onStepContinue: () {
-            if (_currentStep < steps.length - 1) {
-              setState(() => _currentStep += 1);
-            } else {
-              _submitForm();
-            }
-          },
-          onStepCancel: () {
-            if (_currentStep > 0) setState(() => _currentStep -= 1);
-          },
-          onStepTapped: (step) => setState(() => _currentStep = step),
-          controlsBuilder: (context, details) {
-            final isLastStep = _currentStep == steps.length - 1;
-            return Container(
-              margin: const EdgeInsets.only(top: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: CustomButton(
-                      text: isLastStep ? 'Simpan LSPOP' : 'Lanjut',
-                      onPressed: details.onStepContinue,
-                      isLoading: isLastStep && _isLoading,
-                    ),
-                  ),
-                  if (_currentStep > 0) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: details.onStepCancel,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      body: Container(
+        color: theme.colorScheme.surfaceContainerLowest,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            canvasColor: Colors.transparent,
+          ),
+          child: Form(
+            key: _formKey,
+            child: Stepper(
+              type: StepperType.horizontal,
+              elevation: 0,
+              currentStep: _currentStep,
+              onStepContinue: () {
+                if (_currentStep < steps.length - 1) {
+                  setState(() => _currentStep += 1);
+                } else {
+                  _submitForm();
+                }
+              },
+              onStepCancel: () {
+                if (_currentStep > 0) setState(() => _currentStep -= 1);
+              },
+              onStepTapped: (step) => setState(() => _currentStep = step),
+              controlsBuilder: (context, details) {
+                final isLastStep = _currentStep == steps.length - 1;
+                return Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomButton(
+                          text: isLastStep ? 'Simpan LSPOP' : 'Lanjut',
+                          onPressed: details.onStepContinue,
+                          isLoading: isLastStep && _isLoading,
                         ),
-                        child: const Text('Kembali'),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-          steps: steps,
+                      if (_currentStep > 0) ...[
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: details.onStepCancel,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: const Text('Kembali'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+              steps: steps,
+            ).animate().fadeIn(duration: 400.ms),
+          ),
         ),
       ),
     );

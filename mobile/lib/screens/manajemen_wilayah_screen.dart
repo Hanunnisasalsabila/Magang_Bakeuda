@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
 import '../services/objek_pajak_service.dart';
@@ -288,7 +289,7 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
                                 ],
                               ),
                             ),
-                          );
+                          ).animate().fade(duration: 400.ms, delay: ((index % 15) * 50).ms).slideY(begin: 0.1, duration: 400.ms, curve: Curves.easeOutQuad);
                         },
                       ),
                     ),
