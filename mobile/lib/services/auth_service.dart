@@ -4,7 +4,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/user.dart';
 
 class AuthService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio()..interceptors.add(LogInterceptor(
+    request: true,
+    requestHeader: true,
+    requestBody: true,
+    responseHeader: true,
+    responseBody: true,
+    error: true,
+  ));
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   String get _baseUrl {
