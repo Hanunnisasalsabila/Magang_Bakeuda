@@ -149,7 +149,7 @@ export const SpopProvider = ({ children }) => {
           
           latitude: detailTujuan.latitude || '',
           longitude: detailTujuan.longitude || '',
-          koordinat_polygon: detailTujuan.koordinat_polygon || [],
+          koordinat_polygon: typeof detailTujuan.koordinat_polygon === 'string' ? JSON.parse(detailTujuan.koordinat_polygon) : (detailTujuan.koordinat_polygon || []),
           batasUtara: detailTujuan.batas_utara || '',
           batasSelatan: detailTujuan.batas_selatan || '',
           batasTimur: detailTujuan.batas_timur || '',
@@ -307,8 +307,9 @@ export const SpopProvider = ({ children }) => {
       }];
     } else {
       detail_tujuan = [{
-        nik_calon_subjek: mergedData.nik || undefined,
+        nik_calon_subjek: isPerubahanData ? undefined : (mergedData.nik || undefined),
         calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
+        nop_generated: rawNop.length >= 18 ? rawNop : undefined,
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: (parseFloat(mergedData.luasBangunan) > 0) ? Number(mergedData.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
@@ -383,6 +384,9 @@ export const SpopProvider = ({ children }) => {
       tahun_pajak: new Date().getFullYear(),
       tanggal_pengajuan: new Date().toISOString(),
       catatan_pengaju: mergedData.catatanPengaju || undefined,
+      nama_pengaju: (mergedData.transaksi === 'PECAH' && mergedData.pecahanList?.length > 0) 
+        ? (mergedData.pecahanList[0].nama || undefined) 
+        : (mergedData.nama || undefined),
       menggunakan_kuasa: mergedData.isKuasa,
       nop_bersama: rawNopBersama.length >= 18 ? rawNopBersama : undefined,
       detail_asal: detail_asal.length > 0 ? detail_asal : undefined,

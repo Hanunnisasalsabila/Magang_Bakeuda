@@ -102,7 +102,7 @@ export default function DraftSPOP() {
                 <tr className="bg-surface-container-low text-on-surface text-sm uppercase tracking-wide border-b border-outline-variant">
                   <th className="p-4 font-bold">No</th>
                   <th className="p-4 font-bold">Jenis Layanan</th>
-                  <th className="p-4 font-bold">Subjek Pajak</th>
+                  <th className="p-4 font-bold">Identitas (Nama / NOP)</th>
                   <th className="p-4 font-bold">Dibuat Pada</th>
                   <th className="p-4 font-bold">Status</th>
                   <th className="p-4 font-bold text-center">Aksi</th>
@@ -114,7 +114,16 @@ export default function DraftSPOP() {
                     <td className="p-4 text-sm font-medium">{idx + 1}</td>
                     <td className="p-4 text-sm font-semibold">{draft.jenis_transaksi?.replace('_', ' ')}</td>
                     <td className="p-4">
-                      <p className="text-sm font-bold text-on-surface">{draft.nama_pengaju || 'Belum Diisi'}</p>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-bold text-on-surface">
+                          {draft.nama_pengaju || 'Nama Belum Diisi'}
+                        </span>
+                        <span className="text-xs text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded w-fit">
+                          {draft.jenis_transaksi === 'BARU'
+                            ? (draft.detail_tujuan?.[0]?.nik_calon_subjek ? `NIK: ${draft.detail_tujuan[0].nik_calon_subjek}` : 'SPOP Baru (NOP dari Bakeuda)')
+                            : (draft.detail_tujuan?.[0]?.nop_generated || draft.detail_asal?.[0]?.nop_asal || draft.nop_bersama || draft.no_sppt_lama || 'NOP Belum Diisi')}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-4 text-sm text-on-surface-variant">
                       {new Date(draft.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}

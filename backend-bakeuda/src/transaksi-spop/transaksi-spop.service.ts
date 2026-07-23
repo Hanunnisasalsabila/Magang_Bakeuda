@@ -13,7 +13,8 @@ import {
   JenisAtap, 
   JenisDinding, 
   JenisLantai, 
-  JenisLangitLangit 
+  JenisLangitLangit,
+  BahanPagar
 } from '@prisma/client';
 import { SubmitTransaksiDto } from './dto/submit-transaksi.dto.js';
 import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
@@ -256,6 +257,7 @@ export class TransaksiSpopService {
     const result = await this.prisma.transaksiSpop.findMany({
       where,
       include: {
+        detail_asal: true,
         detail_tujuan: true,
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         reviewer: { select: { nama_lengkap: true } },
@@ -624,9 +626,32 @@ export class TransaksiSpopService {
             id_bangunan: createdBng.id_bangunan,
             jumlah_ac_split: bng.acSplit ? parseInt(bng.acSplit) : 0,
             jumlah_ac_window: bng.acWindow ? parseInt(bng.acWindow) : 0,
-            ac_sentral: bng.acSentral === 'Ada',
+            ac_sentral: bng.acSentral === '1' || bng.acSentral === 'Ada' || bng.acSentral === true,
             luas_kolam_renang: bng.kolamRenangLuas ? parseFloat(bng.kolamRenangLuas) : 0,
             kolam_diplester: bng.kolamRenangFinishing === 'Diplester',
+            kolam_dengan_pelapis: bng.kolamRenangFinishing === 'Dengan Pelapis',
+            perkerasan_ringan: bng.halamanRingan ? parseFloat(bng.halamanRingan) : 0,
+            perkerasan_sedang: bng.halamanSedang ? parseFloat(bng.halamanSedang) : 0,
+            perkerasan_berat: bng.halamanBerat ? parseFloat(bng.halamanBerat) : 0,
+            perkerasan_dengan_penutup: bng.halamanPenutupLantai ? parseFloat(bng.halamanPenutupLantai) : 0,
+            tenis_beton_dgn_lampu: bng.lapanganTenisLampuBeton ? parseInt(bng.lapanganTenisLampuBeton) : 0,
+            tenis_beton_tanpa_lampu: bng.lapanganTenisTanpaLampuBeton ? parseInt(bng.lapanganTenisTanpaLampuBeton) : 0,
+            tenis_aspal_dgn_lampu: bng.lapanganTenisLampuAspal ? parseInt(bng.lapanganTenisLampuAspal) : 0,
+            tenis_aspal_tanpa_lampu: bng.lapanganTenisTanpaLampuAspal ? parseInt(bng.lapanganTenisTanpaLampuAspal) : 0,
+            tenis_tanah_rumput_dgn_lampu: bng.lapanganTenisLampuTanah ? parseInt(bng.lapanganTenisLampuTanah) : 0,
+            tenis_tanah_rumput_tanpa_lampu: bng.lapanganTenisTanpaLampuTanah ? parseInt(bng.lapanganTenisTanpaLampuTanah) : 0,
+            lift_penumpang: bng.liftPenumpang ? parseInt(bng.liftPenumpang) : 0,
+            lift_kapsul: bng.liftKapsul ? parseInt(bng.liftKapsul) : 0,
+            lift_barang: bng.liftBarang ? parseInt(bng.liftBarang) : 0,
+            tangga_berjalan_lbr_kurang_080m: bng.tanggaBerjalanKecil ? parseInt(bng.tanggaBerjalanKecil) : 0,
+            tangga_berjalan_lbr_lebih_080m: bng.tanggaBerjalanBesar ? parseInt(bng.tanggaBerjalanBesar) : 0,
+            panjang_pagar_m: bng.panjangPagar ? parseFloat(bng.panjangPagar) : 0,
+            bahan_pagar: bng.bahanPagar === 'Bata/Batako' ? BahanPagar.BATA_BATAKO : (bng.bahanPagar === 'Baja/Besi' ? BahanPagar.BAJA_BESI : null),
+            hydrant_ada: bng.pemadamHydrant === '1' || bng.pemadamHydrant === true,
+            sprinkler_ada: bng.pemadamSprinkler === '1' || bng.pemadamSprinkler === true,
+            fire_alarm_ada: bng.pemadamFireAl === '1' || bng.pemadamFireAl === true,
+            jumlah_saluran_pabx: bng.saluranPabx ? parseInt(bng.saluranPabx) : 0,
+            kedalaman_sumur_artesis_m: bng.sumurArtesis ? parseFloat(bng.sumurArtesis) : 0,
           }
         });
         no_bng++;

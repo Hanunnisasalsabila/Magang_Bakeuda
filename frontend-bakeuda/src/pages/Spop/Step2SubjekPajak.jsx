@@ -135,6 +135,20 @@ export default function Step2SubjekPajak() {
     }
   };
 
+  const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      await saveDraft();
+      navigate('/draft-spop');
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+      setToast({ show: true, message: 'Gagal menyimpan draft SPOP', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSave = async () => {
     // Validasi Frontend
     let hasError = false;
@@ -566,6 +580,9 @@ export default function Step2SubjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
+        <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
+          Simpan Draft
+        </button>
         <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>

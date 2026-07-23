@@ -41,7 +41,7 @@ const formatNopString = (val) => {
   return formatted;
 };
 
-function MapClickHandler({ koordinatPolygon, setFormData }) {
+function MapEventsHandler({ koordinatPolygon, setFormData }) {
   useMapEvents({
     click(e) {
       setFormData(prev => {
@@ -54,6 +54,19 @@ function MapClickHandler({ koordinatPolygon, setFormData }) {
         };
       });
     },
+    moveend(e) {
+      const center = e.target.getCenter();
+      setFormData(prev => {
+        if (!prev.koordinat_polygon || prev.koordinat_polygon.length === 0) {
+          return {
+            ...prev,
+            latitude: center.lat.toString(),
+            longitude: center.lng.toString()
+          };
+        }
+        return prev;
+      });
+    }
   });
   return null;
 }
@@ -86,7 +99,7 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
         maxZoom={22}
       />
       <MapUpdater center={center} referencePoint={referencePoint} searchBoundary={searchBoundary} />
-      <MapClickHandler koordinatPolygon={koordinatPolygon} setFormData={setFormData} />
+      <MapEventsHandler koordinatPolygon={koordinatPolygon} setFormData={setFormData} />
 
       {searchBoundary && (
         <GeoJSON
@@ -491,6 +504,20 @@ export default function Step3ObjekPajak() {
 
 
   
+  const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      await saveDraft();
+      navigate('/draft-spop');
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+      setToast({ show: true, message: 'Gagal menyimpan draft SPOP', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSave = async () => {
     let hasError = false;
     const newErrors = {};
@@ -1077,7 +1104,10 @@ export default function Step3ObjekPajak() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
+          Simpan Draft
+        </button>
+        <button type="button" onClick={() => navigate(formData.transaksi === 'PERUBAHAN_DATA' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">

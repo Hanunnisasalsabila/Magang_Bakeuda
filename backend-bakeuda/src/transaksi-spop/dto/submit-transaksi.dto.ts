@@ -57,6 +57,7 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsString() batas_barat?: string;
 
   @IsOptional() @IsArray() data_bangunan_json?: any[];
+  @IsOptional() @IsString() nop_generated?: string;
 }
 
 export class LampiranInputDto {

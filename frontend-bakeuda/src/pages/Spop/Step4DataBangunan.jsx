@@ -88,19 +88,103 @@ export default function Step4DataBangunan() {
   );
 
   const applyDataToForm = (data) => {
-    setFormData(prev => ({ ...prev, ...data }));
-    setHasAC(parseFloat(data.acSplit || 0) > 0 || parseFloat(data.acWindow || 0) > 0 || parseFloat(data.acSentral || 0) > 0);
-    setHasKolamRenang(parseFloat(data.kolamRenangLuas || 0) > 0);
-    setHasHalaman(parseFloat(data.halamanRingan || 0) > 0 || parseFloat(data.halamanSedang || 0) > 0 || parseFloat(data.halamanBerat || 0) > 0);
-    setHasPagar(parseFloat(data.panjangPagar || 0) > 0);
+    // Mapping from snake_case to camelCase for backwards compatibility
+    const mappedData = { ...data };
+    
+    // Rincian Data Bangunan
+    if (data.kode_jpb || data.jenis_penggunaan_bangunan || data.penggunaan) mappedData.jenisPenggunaan = data.kode_jpb || data.jenis_penggunaan_bangunan || data.penggunaan;
+    if (data.luas_bangunan || data.luas) mappedData.luasBangunan = data.luas_bangunan || data.luas;
+    if (data.jumlah_lantai !== undefined || data.jumlahLantai !== undefined) mappedData.jumlahLantai = data.jumlah_lantai || data.jumlahLantai;
+    if (data.tahun_dibangun || data.tahun || data.tahunDibangun) mappedData.tahunDibangun = data.tahun_dibangun || data.tahun || data.tahunDibangun;
+    if (data.tahun_direnovasi || data.tahunRenovasi || data.tahun_renovasi) mappedData.tahunDirenovasi = data.tahun_direnovasi || data.tahunRenovasi || data.tahun_renovasi;
+    if (data.daya_listrik_watt !== undefined || data.daya_listrik !== undefined || data.listrik !== undefined) mappedData.dayaListrik = data.daya_listrik_watt || data.daya_listrik || data.listrik;
+    if (data.kondisi_bangunan || data.kondisi) mappedData.kondisi = data.kondisi_bangunan || data.kondisi;
+    if (data.jenis_konstruksi || data.konstruksi) mappedData.konstruksi = data.jenis_konstruksi || data.konstruksi;
+    if (data.jenis_atap || data.atap) mappedData.atap = data.jenis_atap || data.atap;
+    if (data.kode_dinding || data.dinding) mappedData.dinding = data.kode_dinding || data.dinding;
+    if (data.kode_lantai || data.lantai) mappedData.lantai = data.kode_lantai || data.lantai;
+    if (data.kode_langit_langit || data.langit_langit || data.langitLangit) mappedData.langitLangit = data.kode_langit_langit || data.langit_langit || data.langitLangit;
+
+    // Mapping fasilitas
+    if (data.fasilitas) {
+      mappedData.acSplit = data.fasilitas.jumlah_ac_split || '';
+      mappedData.acWindow = data.fasilitas.jumlah_ac_window || '';
+      mappedData.acSentral = data.fasilitas.ac_sentral ? '1' : '';
+      
+      mappedData.kolamRenangLuas = data.fasilitas.luas_kolam_renang || '';
+      mappedData.kolamRenangFinishing = data.fasilitas.kolam_dengan_pelapis ? 'Dengan Pelapis' : (data.fasilitas.kolam_diplester ? 'Diplester' : '');
+      
+      mappedData.halamanRingan = data.fasilitas.perkerasan_ringan || '';
+      mappedData.halamanSedang = data.fasilitas.perkerasan_sedang || '';
+      mappedData.halamanBerat = data.fasilitas.perkerasan_berat || '';
+      mappedData.halamanPenutupLantai = data.fasilitas.perkerasan_dengan_penutup || '';
+      
+      mappedData.panjangPagar = data.fasilitas.panjang_pagar_m || '';
+      mappedData.bahanPagar = data.fasilitas.bahan_pagar || '';
+      
+      mappedData.lapanganTenisLampuBeton = data.fasilitas.tenis_beton_dgn_lampu || '';
+      mappedData.lapanganTenisLampuAspal = data.fasilitas.tenis_aspal_dgn_lampu || '';
+      mappedData.lapanganTenisLampuTanah = data.fasilitas.tenis_tanah_rumput_dgn_lampu || '';
+      mappedData.lapanganTenisTanpaLampuBeton = data.fasilitas.tenis_beton_tanpa_lampu || '';
+      mappedData.lapanganTenisTanpaLampuAspal = data.fasilitas.tenis_aspal_tanpa_lampu || '';
+      mappedData.lapanganTenisTanpaLampuTanah = data.fasilitas.tenis_tanah_rumput_tanpa_lampu || '';
+      
+      mappedData.liftPenumpang = data.fasilitas.lift_penumpang || '';
+      mappedData.liftKapsul = data.fasilitas.lift_kapsul || '';
+      mappedData.liftBarang = data.fasilitas.lift_barang || '';
+      mappedData.tanggaBerjalanKecil = data.fasilitas.tangga_berjalan_lbr_kurang_080m || '';
+      mappedData.tanggaBerjalanBesar = data.fasilitas.tangga_berjalan_lbr_lebih_080m || '';
+      
+      mappedData.pemadamHydrant = data.fasilitas.hydrant_ada ? '1' : '';
+      mappedData.pemadamSprinkler = data.fasilitas.sprinkler_ada ? '1' : '';
+      mappedData.pemadamFireAl = data.fasilitas.fire_alarm_ada ? '1' : '';
+      
+      mappedData.saluranPabx = data.fasilitas.jumlah_saluran_pabx || '';
+      mappedData.sumurArtesis = data.fasilitas.kedalaman_sumur_artesis_m || '';
+    }
+
+    // Pastikan nilai dari DB benar-benar cocok dengan Option Radio
+    const radioOptions = {
+       jenisPenggunaan: ['Perumahan', 'Perkantoran Swasta', 'Pabrik', 'Toko/Apotik/Pasar/Ruko', 'Rumah Sakit/Klinik', 'Olah Raga/Rekreasi', 'Hotel/Wisma', 'Bengkel/Gudang/Pertanian', 'Gedung Pemerintah', 'Lain-lain', 'Bng Tidak Kena Pajak', 'Bangunan Parkir', 'Apartemen', 'Pompa Bensin', 'Tangki Minyak', 'Gedung Sekolah'],
+       kondisi: ['Sangat Baik', 'Baik', 'Sedang', 'Jelek'],
+       konstruksi: ['Baja', 'Beton', 'Batu Bata', 'Kayu'],
+       atap: ['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng'],
+       dinding: ['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding'],
+       lantai: ['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen'],
+       langitLangit: ['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']
+    };
+
+    const normalizeString = (str) => String(str).toLowerCase().replace(/_/g, ' ').replace(/[^a-z0-9]/g, '');
+
+    Object.keys(radioOptions).forEach(field => {
+      if (mappedData[field]) {
+         if (field === 'jenisPenggunaan' && !isNaN(mappedData[field])) {
+           const mapJpb = { '01': 'Perumahan', '02': 'Perkantoran Swasta', '03': 'Pabrik', '04': 'Toko/Apotik/Pasar/Ruko', '05': 'Rumah Sakit/Klinik', '06': 'Olah Raga/Rekreasi', '07': 'Hotel/Wisma', '08': 'Bengkel/Gudang/Pertanian', '09': 'Gedung Pemerintah', '10': 'Lain-lain', '11': 'Bng Tidak Kena Pajak', '12': 'Bangunan Parkir', '13': 'Apartemen', '14': 'Pompa Bensin', '15': 'Tangki Minyak', '16': 'Gedung Sekolah' };
+           const strVal = String(mappedData[field]).padStart(2, '0');
+           if (mapJpb[strVal]) mappedData[field] = mapJpb[strVal];
+         }
+         
+         const dbValNorm = normalizeString(mappedData[field]);
+         const match = radioOptions[field].find(opt => normalizeString(opt) === dbValNorm);
+         if (match) {
+            mappedData[field] = match;
+         }
+      }
+    });
+
+    setFormData(prev => ({ ...prev, ...mappedData }));
+    setHasAC(parseFloat(mappedData.acSplit || 0) > 0 || parseFloat(mappedData.acWindow || 0) > 0 || parseFloat(mappedData.acSentral || 0) > 0);
+    setHasKolamRenang(parseFloat(mappedData.kolamRenangLuas || 0) > 0);
+    setHasHalaman(parseFloat(mappedData.halamanRingan || 0) > 0 || parseFloat(mappedData.halamanSedang || 0) > 0 || parseFloat(mappedData.halamanBerat || 0) > 0);
+    setHasPagar(parseFloat(mappedData.panjangPagar || 0) > 0);
     setHasLapanganTenis(
-      parseFloat(data.lapanganTenisLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisLampuTanah || 0) > 0 ||
-      parseFloat(data.lapanganTenisTanpaLampuBeton || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuAspal || 0) > 0 || parseFloat(data.lapanganTenisTanpaLampuTanah || 0) > 0
+      parseFloat(mappedData.lapanganTenisLampuBeton || 0) > 0 || parseFloat(mappedData.lapanganTenisLampuAspal || 0) > 0 || parseFloat(mappedData.lapanganTenisLampuTanah || 0) > 0 ||
+      parseFloat(mappedData.lapanganTenisTanpaLampuBeton || 0) > 0 || parseFloat(mappedData.lapanganTenisTanpaLampuAspal || 0) > 0 || parseFloat(mappedData.lapanganTenisTanpaLampuTanah || 0) > 0
     );
-    setHasLiftEskalator(parseFloat(data.liftPenumpang || 0) > 0 || parseFloat(data.liftKapsul || 0) > 0 || parseFloat(data.liftBarang || 0) > 0 || parseFloat(data.tanggaBerjalanKecil || 0) > 0 || parseFloat(data.tanggaBerjalanBesar || 0) > 0);
-    setHasPemadam(parseFloat(data.pemadamHydrant || 0) > 0 || parseFloat(data.pemadamSprinkler || 0) > 0 || parseFloat(data.pemadamFireAl || 0) > 0);
-    setHasPabx(parseFloat(data.saluranPabx || 0) > 0);
-    setHasSumur(parseFloat(data.sumurArtesis || 0) > 0);
+    setHasLiftEskalator(parseFloat(mappedData.liftPenumpang || 0) > 0 || parseFloat(mappedData.liftKapsul || 0) > 0 || parseFloat(mappedData.liftBarang || 0) > 0 || parseFloat(mappedData.tanggaBerjalanKecil || 0) > 0 || parseFloat(mappedData.tanggaBerjalanBesar || 0) > 0);
+    setHasPemadam(parseFloat(mappedData.pemadamHydrant || 0) > 0 || parseFloat(mappedData.pemadamSprinkler || 0) > 0 || parseFloat(mappedData.pemadamFireAl || 0) > 0);
+    setHasPabx(parseFloat(mappedData.saluranPabx || 0) > 0);
+    setHasSumur(parseFloat(mappedData.sumurArtesis || 0) > 0);
   };
 
   useEffect(() => {
@@ -360,10 +444,14 @@ export default function Step4DataBangunan() {
     });
 
     Object.keys(sanitizedData).forEach(key => {
-      if (sanitizedData[key] === '') {
+      if (sanitizedData[key] === '' || sanitizedData[key] === null || sanitizedData[key] === undefined) {
         delete sanitizedData[key];
       }
     });
+
+    if (sanitizedData.fasilitas) {
+      delete sanitizedData.fasilitas;
+    }
     
     // Add form structure attributes expected by backend
     sanitizedData.noFormulir = nop;
@@ -387,15 +475,20 @@ export default function Step4DataBangunan() {
     }
 
     setIsSubmitting(true);
-    const sanitizedData = getSanitizedData();
-    
-    // Cek apakah form bangunan saat ini ada isinya selain atribut metadata
-    const hasData = Object.keys(sanitizedData).some(k => !['noFormulir', 'jenisTransaksi', 'jumlahBng', 'bangunanM2'].includes(k));
-    
-    // Jika ada isinya, ikut sertakan dalam draft
-    const newBangunanList = hasData ? [...bangunanList, sanitizedData] : bangunanList;
-    
-    await submitToServer(newBangunanList, true);
+    try {
+      const sanitizedData = getSanitizedData();
+      const hasData = Object.keys(sanitizedData).some(k => !['noFormulir', 'jenisTransaksi', 'jumlahBng', 'bangunanM2'].includes(k));
+      const newBangunanList = hasData ? [...bangunanList, sanitizedData] : bangunanList;
+      
+      setCtxFormData(prev => ({ ...prev, data_bangunan_json: newBangunanList }));
+      await saveDraft({ data_bangunan_json: newBangunanList });
+      navigate('/draft-spop');
+    } catch (err) {
+      console.error(err);
+      setToast({ show: true, message: 'Gagal menyimpan draft.', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -853,14 +946,21 @@ export default function Step4DataBangunan() {
           </section>
 
           {/* Action Buttons */}
-          <div className="pt-8 border-t border-outline-variant flex justify-end items-center gap-4">
+          <div className="pt-8 border-t border-outline-variant flex justify-end items-center gap-3">
             <button
               type="button"
               onClick={handleSaveDraft}
               disabled={isSubmitting}
-              className={`px-8 py-3 rounded-full font-bold transition-all border-2 border-outline-variant text-on-surface hover:bg-surface-container-low active:scale-95 flex items-center justify-center gap-2`}
+              className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2"
             >
               Simpan Draft
+            </button>
+            <button 
+              type="button" 
+              onClick={() => navigate(`/spop/objek-pajak/${currentId}`)} 
+              className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2"
+            >
+              Kembali
             </button>
             <button
               type="button"

@@ -37,6 +37,28 @@ export default function Step1InformasiUmum() {
       const obj = res.data?.data;
       if (obj) {
         setNopData(obj);
+        // Pre-fill form data for PERUBAHAN_DATA so Step 3 is populated
+        if (formData.transaksi === 'PERUBAHAN_DATA' || formData.transaksi === 'MUTASI') {
+          setFormData(prev => ({
+            ...prev,
+            luasTanah: obj.luas_tanah ? obj.luas_tanah.toString() : prev.luasTanah,
+            jumlahBangunan: obj.jumlah_bangunan ? obj.jumlah_bangunan.toString() : prev.jumlahBangunan,
+            alamatObjek: obj.jalan_op || prev.alamatObjek,
+            blokKavObjek: obj.blok_kav_no_op || prev.blokKavObjek,
+            noPersil: obj.no_persil || prev.noPersil,
+            rtObjek: obj.rt_op || prev.rtObjek,
+            rwObjek: obj.rw_op || prev.rwObjek,
+            jenisTanah: obj.jenis_tanah || prev.jenisTanah,
+            latitude: obj.latitude || prev.latitude,
+            longitude: obj.longitude || prev.longitude,
+            koordinat_polygon: obj.koordinat_polygon ? (typeof obj.koordinat_polygon === 'string' ? JSON.parse(obj.koordinat_polygon) : obj.koordinat_polygon) : prev.koordinat_polygon,
+            batasUtara: obj.batas_utara || prev.batasUtara,
+            batasSelatan: obj.batas_selatan || prev.batasSelatan,
+            batasTimur: obj.batas_timur || prev.batasTimur,
+            batasBarat: obj.batas_barat || prev.batasBarat,
+            data_bangunan_json: (obj.bangunan && obj.bangunan.length > 0) ? obj.bangunan : prev.data_bangunan_json
+          }));
+        }
       } else {
         setNopError('Data objek pajak tidak ditemukan untuk NOP ini.');
       }
@@ -93,6 +115,20 @@ export default function Step1InformasiUmum() {
     });
   };
 
+  const handleSaveDraft = async () => {
+    setIsSubmitting(true);
+    try {
+      await saveDraft();
+      navigate('/draft-spop');
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+      setToast({ show: true, message: 'Gagal menyimpan draft SPOP', type: 'error' });
+      setTimeout(() => setToast({ show: false, message: '', type: 'error' }), 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSave = async () => {
     // Validasi Frontend
     if (!formData.transaksi) {
@@ -115,6 +151,8 @@ export default function Step1InformasiUmum() {
       if (savedId) {
         if (formData.transaksi === 'HAPUS') {
           navigate(`/spop/konfirmasi/${savedId}`);
+        } else if (formData.transaksi === 'PERUBAHAN_DATA') {
+          navigate(`/spop/objek-pajak/${savedId}`);
         } else {
           navigate(`/spop/subjek-pajak/${savedId}`);
         }
@@ -175,6 +213,20 @@ export default function Step1InformasiUmum() {
                       checked={formData.kategoriTransaksi === t.val}
                       onChange={(e) => {
                         handleTextChange('kategoriTransaksi', e);
+                        
+                        // Clear prefilled data to prevent lingering data when switching categories
+                        setFormData(prev => ({
+                          ...prev,
+                          luasTanah: '', jumlahBangunan: '', alamatObjek: '',
+                          blokKavObjek: '', noPersil: '', rtObjek: '', rwObjek: '',
+                          jenisTanah: '', latitude: '', longitude: '', koordinat_polygon: [],
+                          batasUtara: '', batasSelatan: '', batasTimur: '', batasBarat: '',
+                          data_bangunan_json: [],
+                          nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '',
+                          email: '', alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '',
+                          kecamatan: '', kabupaten: '', kodePos: ''
+                        }));
+
                         if (e.target.value === 'hapus') {
                           handleTextChange('transaksi', { target: { value: 'HAPUS' } });
                         } else {
@@ -475,6 +527,9 @@ export default function Step1InformasiUmum() {
       )}
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
+        <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
+          Simpan Draft
+        </button>
         <button type="button" onClick={() => navigate('/dashboard-desa')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
