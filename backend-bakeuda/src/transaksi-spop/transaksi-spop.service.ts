@@ -320,7 +320,7 @@ export class TransaksiSpopService {
 
     if (transaksi.lampiran) {
       const l: any = transaksi.lampiran;
-      const mappedLampiran = [];
+      const mappedLampiran: any[] = [];
       const mapItem = (urls: any, type: string) => {
         if (Array.isArray(urls)) {
           urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
@@ -673,7 +673,7 @@ export class TransaksiSpopService {
           created_by: transaksiUserId,
         }
       });
-      nikSubjek = nikToSave;
+      return nikToSave;
     }
     return nikSubjek || '0000000000000000';
   }
