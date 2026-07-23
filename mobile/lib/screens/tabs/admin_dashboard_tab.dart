@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import '../../services/dashboard_service.dart';
 import '../daftar_objek_pajak_screen.dart';
 import 'verifikasi_spop_tab.dart';
+import 'riwayat_spop_tab.dart';
 
 class AdminDashboardTab extends StatefulWidget {
-  const AdminDashboardTab({super.key});
+  final VoidCallback onNavigateToVerification;
+  final VoidCallback onNavigateToHistory;
+
+  const AdminDashboardTab({
+    super.key,
+    required this.onNavigateToVerification,
+    required this.onNavigateToHistory,
+  });
 
   @override
   State<AdminDashboardTab> createState() => _AdminDashboardTabState();
@@ -208,21 +216,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Scaffold(
-                appBar: AppBar(
-                  title: const Text('Antrean Verifikasi'),
-                  backgroundColor: const Color(0xFF0C2A5B),
-                  foregroundColor: Colors.white,
-                ),
-                body: const VerifikasiSpopTab(),
-              ),
-            ),
-          );
-        },
+        onPressed: widget.onNavigateToVerification,
         icon: const Icon(Icons.check_circle_outline, size: 20),
         label: const Text('Mulai verifikasi'),
         style: ElevatedButton.styleFrom(
@@ -335,21 +329,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               ),
             ),
             InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Scaffold(
-                      appBar: AppBar(
-                        title: const Text('Antrean Verifikasi'),
-                        backgroundColor: const Color(0xFF0C2A5B),
-                        foregroundColor: Colors.white,
-                      ),
-                      body: const VerifikasiSpopTab(),
-                    ),
-                  ),
-                );
-              },
+              onTap: widget.onNavigateToHistory,
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                 child: Text(

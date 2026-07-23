@@ -60,7 +60,10 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
 
   List<Widget> get _pages {
     return [
-      const AdminDashboardTab(),
+      AdminDashboardTab(
+        onNavigateToVerification: () => setState(() => _currentIndex = 1),
+        onNavigateToHistory: () => setState(() => _currentIndex = 2),
+      ),
       const VerifikasiSpopTab(),
       const RiwayatSpopTab(),
       Scaffold(
@@ -133,15 +136,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           preferredSize: const Size.fromHeight(3),
           child: Container(height: 3, color: _kGold),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
-            ),
-            onPressed: () => setState(() => _currentIndex = 2),
-          ),
-        ],
+        actions: const [],
       ),
       drawer: Drawer(
         child: ListView(
