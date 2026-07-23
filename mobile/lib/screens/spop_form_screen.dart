@@ -10,9 +10,12 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
+import '../utils/formatters.dart';
+import '../widgets/selectable_card.dart';
 
 class SpopFormScreen extends StatefulWidget {
-  const SpopFormScreen({super.key});
+  final String? idTransaksi;
+  const SpopFormScreen({super.key, this.idTransaksi});
 
   @override
   State<SpopFormScreen> createState() => _SpopFormScreenState();
@@ -24,12 +27,75 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isSavingDraft = false;
+  Map<String, dynamic>? _fetchedObjekPajak;
 
-  // Step 1 - Data Transaksi
-  String _jenisLayanan = 'BARU';
+  // Step 1 - Kategori & Jenis
+  String _selectedKategori = 'BARU'; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
+  String _jenisLayanan = 'BARU'; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
+  
   final _nopUtamaController = TextEditingController();
-  final _nopAsalController = TextEditingController();
+  final List<TextEditingController> _nopAsalControllers = [TextEditingController()];
+  final _nopBersamaController = TextEditingController();
   final _noSpptLamaController = TextEditingController();
+  final _alasanHapusController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    if (widget.idTransaksi != null) {
+      _loadDraftData();
+    }
+  }
+
+  Future<void> _loadDraftData() async {
+    setState(() => _isLoading = true);
+    try {
+      final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
+      setState(() {
+        _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        
+        final nopAsalList = d['detail_asal'] as List?;
+        if (nopAsalList != null && nopAsalList.isNotEmpty) {
+           _nopAsalControllers.clear();
+           for (var asal in nopAsalList) {
+             _nopAsalControllers.add(TextEditingController(text: asal['nop_asal'] ?? ''));
+           }
+        }
+        if (_nopAsalControllers.isEmpty) {
+           _nopAsalControllers.add(TextEditingController());
+        }
+        
+        final tujuanList = d['detail_tujuan'] as List?;
+        if (tujuanList != null && tujuanList.isNotEmpty) {
+           final tujuan = tujuanList[0];
+           final subjek = tujuan['calon_subjek_json'];
+           if (subjek != null) {
+              _namaWpController.text = subjek['nama_subjek'] ?? '';
+              _nikController.text = subjek['nik'] ?? '';
+              _npwpController.text = subjek['npwp'] ?? '';
+              _noHpController.text = subjek['no_hp'] ?? '';
+              _alamatWpController.text = subjek['alamat_jalan'] ?? '';
+              _rtController.text = subjek['rt'] ?? '';
+              _rwController.text = subjek['rw'] ?? '';
+              _kelurahanWpController.text = subjek['kelurahan'] ?? '';
+              _kecamatanWpController.text = subjek['kecamatan'] ?? '';
+              _kodePosController.text = subjek['kode_pos'] ?? '';
+           }
+           _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
+           _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
+           _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
+           _rtOpController.text = tujuan['rt_op_baru'] ?? '';
+           _rwOpController.text = tujuan['rw_op_baru'] ?? '';
+           _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
+           _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
+        }
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat draft: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   // Map States
   final MapController _mapController = MapController();
@@ -37,13 +103,6 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   bool _isMapSearching = false;
   List<LatLng> _searchBoundary = [];
   LatLng? _searchReferencePoint;
-
-  final List<Map<String, String>> _jenisOptions = [
-    {'label': 'Pendaftaran Baru', 'value': 'BARU'},
-    {'label': 'Mutasi', 'value': 'MUTASI'},
-    {'label': 'Perubahan Data', 'value': 'PERUBAHAN_DATA'},
-    {'label': 'Penghapusan', 'value': 'HAPUS'},
-  ];
 
   // Step 2 - Data Subjek Pajak
   final _namaWpController = TextEditingController();
@@ -63,19 +122,19 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _kodePosController = TextEditingController();
 
   final List<Map<String, String>> _statusWpOptions = [
-    {'label': 'Pemilik', 'value': 'PEMILIK'},
-    {'label': 'Penyewa', 'value': 'PENYEWA'},
-    {'label': 'Pengelola', 'value': 'PENGELOLA'},
     {'label': 'Pemakai', 'value': 'PEMAKAI'},
+    {'label': 'Pemilik', 'value': 'PEMILIK'},
+    {'label': 'Pengelola', 'value': 'PENGELOLA'},
+    {'label': 'Penyewa', 'value': 'PENYEWA'},
     {'label': 'Sengketa', 'value': 'SENGKETA'},
   ];
   final List<Map<String, String>> _pekerjaanOptions = [
+    {'label': 'Lainnya', 'value': 'LAINNYA'},
+    {'label': 'Nelayan', 'value': 'NELAYAN'},
     {'label': 'PNS', 'value': 'PNS'},
     {'label': 'Pegawai Swasta', 'value': 'PEGAWAI_SWASTA'},
-    {'label': 'Wiraswasta', 'value': 'WIRASWASTA'},
     {'label': 'Petani', 'value': 'PETANI'},
-    {'label': 'Nelayan', 'value': 'NELAYAN'},
-    {'label': 'Lainnya', 'value': 'LAINNYA'},
+    {'label': 'Wiraswasta', 'value': 'WIRASWASTA'},
   ];
 
   // Step 3 - Data Objek Pajak
@@ -96,8 +155,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _lngController = TextEditingController(text: '109.3663');
 
   final List<Map<String, String>> _jenisTanahOptions = [
-    {'label': 'Tanah + Bangunan', 'value': 'TANAH_DAN_BANGUNAN'},
     {'label': 'Kavling Siap Bangun', 'value': 'TANAH_KOSONG'},
+    {'label': 'Tanah + Bangunan', 'value': 'TANAH_DAN_BANGUNAN'},
     {'label': 'Tanah Kosong', 'value': 'TANAH_KOSONG'},
   ];
 
@@ -107,8 +166,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   @override
   void dispose() {
     _nopUtamaController.dispose();
-    _nopAsalController.dispose();
+    for (var c in _nopAsalControllers) { c.dispose(); }
+    _nopBersamaController.dispose();
     _noSpptLamaController.dispose();
+    _alasanHapusController.dispose();
     _namaWpController.dispose();
     _nikController.dispose();
     _npwpController.dispose();
@@ -145,8 +206,6 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     try {
       final queryText = val.toLowerCase().contains('purbalingga') ? val : '$val Purbalingga';
       final dio = Dio();
-      
-      // Check Photon
       final res = await dio.get('https://photon.komoot.io/api/', queryParameters: {
         'q': queryText,
         'lat': -7.3888,
@@ -161,8 +220,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         final lat = (geom['coordinates'][1] as num).toDouble();
         final lon = (geom['coordinates'][0] as num).toDouble();
         
-        final isArea = props['osm_type'] == 'R'; // Relation (boundary)
-        
+        final isArea = props['osm_type'] == 'R';
         List<LatLng> bounds = [];
         if (isArea) {
           final nomRes = await dio.get('https://nominatim.openstreetmap.org/lookup', queryParameters: {
@@ -173,11 +231,9 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           if (nomRes.data is List && nomRes.data.isNotEmpty) {
             final geojson = nomRes.data[0]['geojson'];
             if (geojson != null && (geojson['type'] == 'Polygon' || geojson['type'] == 'MultiPolygon')) {
-              // Parse GeoJSON coordinates
               List coords = geojson['type'] == 'MultiPolygon' 
                   ? geojson['coordinates'][0][0] 
                   : geojson['coordinates'][0];
-                  
               bounds = coords.map<LatLng>((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble())).toList();
             }
           }
@@ -187,7 +243,6 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           if (bounds.isNotEmpty) {
             _searchBoundary = bounds;
             _searchReferencePoint = null;
-            // Calculate center
             double centerLat = bounds.map((e) => e.latitude).reduce((a, b) => a + b) / bounds.length;
             double centerLng = bounds.map((e) => e.longitude).reduce((a, b) => a + b) / bounds.length;
             _mapController.move(LatLng(centerLat, centerLng), 14.0);
@@ -210,24 +265,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     LocationPermission permission;
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Layanan lokasi tidak aktif.')));
-      return;
-    }
+    if (!serviceEnabled) return;
 
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak.')));
-        return;
-      }
+      if (permission == LocationPermission.denied) return;
     }
-    
-    if (permission == LocationPermission.deniedForever) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Izin lokasi ditolak permanen.')));
-      return;
-    } 
+    if (permission == LocationPermission.deniedForever) return;
 
     setState(() => _isMapSearching = true);
     try {
@@ -244,13 +289,97 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
+  Future<void> _fetchNopData() async {
+    final rawNop = _nopUtamaController.text.replaceAll('.', '').trim();
+    if (rawNop.length < 18) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('NOP harus 18 digit!'), backgroundColor: Colors.orange),
+        );
+      }
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    try {
+      final obj = await _spopService.getObjekPajakByNop(rawNop);
+      if (obj != null) {
+        // Auto-fill Data Objek
+        setState(() {
+          _fetchedObjekPajak = obj;
+          if (obj['luas_tanah'] != null) _luasTanahController.text = obj['luas_tanah'].toString();
+          if (obj['jalan_op'] != null) _jalanOpController.text = obj['jalan_op'].toString();
+          if (obj['blok_kav_no_op'] != null) _blokKavController.text = obj['blok_kav_no_op'].toString();
+          if (obj['rt_op'] != null) _rtOpController.text = obj['rt_op'].toString();
+          if (obj['rw_op'] != null) _rwOpController.text = obj['rw_op'].toString();
+          if (obj['jenis_tanah'] != null) _jenisTanah = obj['jenis_tanah'].toString();
+          if (obj['latitude'] != null) _latController.text = obj['latitude'].toString();
+          if (obj['longitude'] != null) _lngController.text = obj['longitude'].toString();
+          if (obj['batas_utara'] != null) _batasUtaraController.text = obj['batas_utara'].toString();
+          if (obj['batas_selatan'] != null) _batasSelatanController.text = obj['batas_selatan'].toString();
+          if (obj['batas_timur'] != null) _batasTimurController.text = obj['batas_timur'].toString();
+          if (obj['batas_barat'] != null) _batasBaratController.text = obj['batas_barat'].toString();
+          
+          if (obj['koordinat_polygon'] != null) {
+             _polygonPoints.clear();
+             try {
+               final polyList = obj['koordinat_polygon'] is String ? null : obj['koordinat_polygon'] as List;
+               if (polyList != null) {
+                 for (var point in polyList) {
+                   _polygonPoints.add(LatLng((point['lat'] as num).toDouble(), (point['lng'] as num).toDouble()));
+                 }
+               }
+             } catch (_) {}
+          }
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('✅ Data Objek Pajak berhasil ditemukan & diisi otomatis'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        setState(() {
+          _fetchedObjekPajak = null;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Data tidak ditemukan untuk NOP $rawNop'), backgroundColor: Theme.of(context).colorScheme.error),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mencari NOP: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Map<String, dynamic> _buildPayload() {
-    return {
+    final payload = <String, dynamic>{
       'jenis_layanan': _jenisLayanan,
-      if (_nopUtamaController.text.isNotEmpty) 'nop_utama': _nopUtamaController.text,
-      if (_nopAsalController.text.isNotEmpty) 'nop_asal': [_nopAsalController.text],
-      if (_noSpptLamaController.text.isNotEmpty) 'no_sppt_lama': _noSpptLamaController.text,
-      'subjek_pajak': {
+    };
+    
+    final nop = _nopUtamaController.text.replaceAll('.', '');
+    if (nop.isNotEmpty) payload['nop_utama'] = nop;
+    
+    if (_jenisLayanan == 'PECAH' || _jenisLayanan == 'GABUNG') {
+      final nopAsal = _nopAsalControllers.map((c) => c.text.replaceAll('.', '').trim()).where((e) => e.isNotEmpty).toList();
+      if (nopAsal.isNotEmpty) payload['nop_asal'] = nopAsal;
+    }
+    
+    final nopBersama = _nopBersamaController.text.replaceAll('.', '');
+    if (nopBersama.isNotEmpty) payload['nop_bersama'] = nopBersama;
+    
+    if (_noSpptLamaController.text.isNotEmpty) payload['no_sppt_lama'] = _noSpptLamaController.text;
+    
+    if (_jenisLayanan == 'HAPUS') {
+      payload['catatan_pengaju'] = _alasanHapusController.text;
+    } else {
+      payload['subjek_pajak'] = {
         'nama': _namaWpController.text,
         'nik': _nikController.text,
         'status_wp': _statusWp,
@@ -264,8 +393,9 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         if (_kecamatanWpController.text.isNotEmpty) 'kecamatan': _kecamatanWpController.text,
         'kabupaten': _kabupatenWpController.text,
         if (_kodePosController.text.isNotEmpty) 'kode_pos': _kodePosController.text,
-      },
-      'objek_pajak_sementara': {
+      };
+      
+      payload['objek_pajak_sementara'] = {
         'jenis_tanah': _jenisTanah,
         'luas_tanah': double.tryParse(_luasTanahController.text) ?? 0.0,
         'jalan_op': _jalanOpController.text,
@@ -281,9 +411,12 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         if (_latController.text.isNotEmpty) 'latitude': _latController.text,
         if (_lngController.text.isNotEmpty) 'longitude': _lngController.text,
         if (_polygonPoints.isNotEmpty) 'koordinat_polygon': _polygonPoints.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
-      },
-      if (_lampiran.isNotEmpty) 'lampiran': _lampiran,
-    };
+      };
+    }
+    
+    if (_lampiran.isNotEmpty) payload['lampiran'] = _lampiran;
+    
+    return payload;
   }
 
   Future<void> _saveDraft() async {
@@ -309,7 +442,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Periksa kembali isian wajib')));
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       await _spopService.submitSpop(_buildPayload());
@@ -361,505 +497,915 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
-  Widget _buildDropdown(String label, String value, List<Map<String, String>> options, Function(String?) onChanged) {
-    final sortedOptions = List<Map<String, String>>.from(options)
-      ..sort((a, b) => a['label']!.compareTo(b['label']!));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        initialValue: value,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_selectedKategori == 'PENGHAPUSAN') {
+        if (_alasanHapusController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alasan Penghapusan wajib diisi')));
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Melewati form Subjek & Objek Tanah...'), duration: Duration(seconds: 1)),
+        );
+        setState(() => _currentStep = 3); // Jump to Lampiran
+      } else if (_jenisLayanan == 'MUTASI') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaksi Mutasi: Melewati form Objek Tanah...'), duration: Duration(seconds: 1)),
+        );
+        setState(() => _currentStep = 1);
+      } else {
+        setState(() => _currentStep = 1);
+      }
+    } else if (_currentStep == 1) {
+      if (_jenisLayanan == 'MUTASI') {
+        setState(() => _currentStep = 3); // Jump to Lampiran
+      } else {
+        setState(() => _currentStep = 2);
+      }
+    } else if (_currentStep == 2) {
+      setState(() => _currentStep = 3);
+    } else if (_currentStep == 3) {
+      setState(() => _currentStep = 4); // Konfirmasi
+    } else if (_currentStep == 4) {
+      _submitForm();
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep == 4) {
+      setState(() => _currentStep = 3);
+    } else if (_currentStep == 3) {
+      if (_selectedKategori == 'PENGHAPUSAN') {
+        setState(() => _currentStep = 0);
+      } else if (_jenisLayanan == 'MUTASI') {
+        setState(() => _currentStep = 1);
+      } else {
+        setState(() => _currentStep = 2);
+      }
+    } else if (_currentStep == 2) {
+      setState(() => _currentStep = 1);
+    } else if (_currentStep == 1) {
+      setState(() => _currentStep = 0);
+    }
+  }
+
+  String _getStepTitle() {
+    switch (_currentStep) {
+      case 0: return 'Data Transaksi (1/5)';
+      case 1: return 'Data Subjek Pajak (2/5)';
+      case 2: return 'Data Objek Pajak (3/5)';
+      case 3: return 'Lampiran Pendukung (4/5)';
+      case 4: return 'Konfirmasi Akhir (5/5)';
+      default: return '';
+    }
+  }
+
+  Widget _buildStep0() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Pilih Jenis Transaksi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 16),
+        SelectableCard(
+          title: 'Perekaman Baru',
+          subtitle: 'Mendaftarkan objek pajak yang belum terdata',
+          icon: Icons.add_circle_outline,
+          isSelected: _selectedKategori == 'BARU',
+          onTap: () => setState(() {
+            _selectedKategori = 'BARU';
+            _jenisLayanan = 'BARU'; // default Murni
+            _fetchedObjekPajak = null;
+          }),
         ),
-        items: sortedOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
-        onChanged: onChanged,
+        const SizedBox(height: 12),
+        SelectableCard(
+          title: 'Pemutakhiran Data',
+          subtitle: 'Memperbarui data objek pajak lama',
+          icon: Icons.refresh,
+          isSelected: _selectedKategori == 'PEMUTAKHIRAN',
+          onTap: () => setState(() {
+            _selectedKategori = 'PEMUTAKHIRAN';
+            _jenisLayanan = 'MUTASI'; // default Mutasi
+            _fetchedObjekPajak = null;
+          }),
+        ),
+        const SizedBox(height: 12),
+        SelectableCard(
+          title: 'Penghapusan Data',
+          subtitle: 'Menghapus data objek dari sistem',
+          icon: Icons.delete_outline,
+          isSelected: _selectedKategori == 'PENGHAPUSAN',
+          onTap: () => setState(() {
+            _selectedKategori = 'PENGHAPUSAN';
+            _jenisLayanan = 'HAPUS';
+            _fetchedObjekPajak = null;
+          }),
+        ),
+        const SizedBox(height: 24),
+        
+        AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          child: _buildDynamicFields(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDynamicFields() {
+    if (_selectedKategori == 'BARU') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Kondisi Pendaftaran (Pilih salah satu):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Murni'),
+                selected: _jenisLayanan == 'BARU',
+                selectedColor: const Color(0xFFE8F1F2),
+                labelStyle: TextStyle(color: _jenisLayanan == 'BARU' ? const Color(0xFF0F2C59) : Colors.black87),
+                onSelected: (val) { if (val) setState(() => _jenisLayanan = 'BARU'); },
+              ),
+              ChoiceChip(
+                label: const Text('Hasil Pemecahan'),
+                selected: _jenisLayanan == 'PECAH',
+                selectedColor: const Color(0xFFE8F1F2),
+                labelStyle: TextStyle(color: _jenisLayanan == 'PECAH' ? const Color(0xFF0F2C59) : Colors.black87),
+                onSelected: (val) { if (val) setState(() => _jenisLayanan = 'PECAH'); },
+              ),
+              ChoiceChip(
+                label: const Text('Hasil Penggabungan'),
+                selected: _jenisLayanan == 'GABUNG',
+                selectedColor: const Color(0xFFE8F1F2),
+                labelStyle: TextStyle(color: _jenisLayanan == 'GABUNG' ? const Color(0xFF0F2C59) : Colors.black87),
+                onSelected: (val) { if (val) setState(() => _jenisLayanan = 'GABUNG'); },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text('INFORMASI TAMBAHAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+          const Divider(),
+          if (_jenisLayanan == 'PECAH' || _jenisLayanan == 'GABUNG') ...[
+            const SizedBox(height: 12),
+            const Text('NOP Asal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+            const SizedBox(height: 8),
+            ..._nopAsalControllers.asMap().entries.map((entry) {
+              int idx = entry.key;
+              TextEditingController ctrl = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomTextField(
+                        controller: ctrl,
+                        label: 'NOP Asal ${idx + 1}',
+                        hintText: 'Misal: 33.03.010...',
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [NopInputFormatter()],
+                      ),
+                    ),
+                    if (_nopAsalControllers.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            _nopAsalControllers.removeAt(idx);
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              );
+            }),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _nopAsalControllers.add(TextEditingController());
+                });
+              },
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Tambah NOP Asal'),
+            ),
+          ],
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _nopBersamaController,
+            label: 'NOP BERSAMA (Opsional)',
+            hintText: 'Masukkan 18 digit NOP',
+            keyboardType: TextInputType.number,
+            inputFormatters: [NopInputFormatter()],
+          ),
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _noSpptLamaController,
+            label: 'NO. SPPT LAMA (Opsional)',
+          ),
+        ],
+      );
+    } else if (_selectedKategori == 'PEMUTAKHIRAN') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Jenis Pemutakhiran (Pilih salah satu):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Balik Nama / Jual Beli (Mutasi)'),
+                selected: _jenisLayanan == 'MUTASI',
+                selectedColor: const Color(0xFFE8F1F2),
+                labelStyle: TextStyle(color: _jenisLayanan == 'MUTASI' ? const Color(0xFF0F2C59) : Colors.black87),
+                onSelected: (val) { if (val) setState(() { _jenisLayanan = 'MUTASI'; _fetchedObjekPajak = null; }); },
+              ),
+              ChoiceChip(
+                label: const Text('Ralat Luas / Alamat (Perubahan Data)'),
+                selected: _jenisLayanan == 'PERUBAHAN_DATA',
+                selectedColor: const Color(0xFFE8F1F2),
+                labelStyle: TextStyle(color: _jenisLayanan == 'PERUBAHAN_DATA' ? const Color(0xFF0F2C59) : Colors.black87),
+                onSelected: (val) { if (val) setState(() { _jenisLayanan = 'PERUBAHAN_DATA'; _fetchedObjekPajak = null; }); },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          CustomTextField(
+            controller: _nopUtamaController,
+            label: 'NOP UTAMA',
+            hintText: 'Masukkan 18 digit NOP',
+            keyboardType: TextInputType.number,
+            inputFormatters: [NopInputFormatter()],
+            validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+          ),
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _nopBersamaController,
+            label: 'NOP BERSAMA (Opsional)',
+            hintText: 'Masukkan 18 digit NOP',
+            keyboardType: TextInputType.number,
+            inputFormatters: [NopInputFormatter()],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _fetchNopData,
+              icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.search),
+              label: Text(_isLoading ? 'Mencari...' : 'Cari Data Objek Pajak'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F2C59), foregroundColor: Colors.white),
+            ),
+          ),
+          if (_fetchedObjekPajak != null) ...[
+            const SizedBox(height: 16),
+            _buildDataPreviewCard(),
+          ],
+          const SizedBox(height: 24),
+          const Text('INFORMASI TAMBAHAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+          const Divider(),
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _noSpptLamaController,
+            label: 'NO. SPPT LAMA (Opsional)',
+          ),
+        ],
+      );
+    } else if (_selectedKategori == 'PENGHAPUSAN') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CustomTextField(
+            controller: _nopUtamaController,
+            label: 'NOP UTAMA',
+            hintText: 'Masukkan 18 digit NOP',
+            keyboardType: TextInputType.number,
+            inputFormatters: [NopInputFormatter()],
+            validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+          ),
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _nopBersamaController,
+            label: 'NOP BERSAMA (Opsional)',
+            hintText: 'Masukkan 18 digit NOP',
+            keyboardType: TextInputType.number,
+            inputFormatters: [NopInputFormatter()],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _fetchNopData,
+              icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.search),
+              label: Text(_isLoading ? 'Mencari...' : 'Cari Data Objek Pajak'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F2C59), foregroundColor: Colors.white),
+            ),
+          ),
+          if (_fetchedObjekPajak != null) ...[
+            const SizedBox(height: 16),
+            _buildDataPreviewCard(),
+          ],
+          const SizedBox(height: 24),
+          const Text('ALASAN PENGHAPUSAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+          const Divider(),
+          const SizedBox(height: 12),
+          CustomTextField(
+            controller: _alasanHapusController,
+            label: 'Tuliskan alasan lengkap mengapa NOP ini diajukan untuk dihapus...',
+            maxLines: 4,
+          ),
+        ],
+      );
+    }
+    return const SizedBox();
+  }
+
+  Widget _buildDataPreviewCard() {
+    final obj = _fetchedObjekPajak!;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F8F1),
+        border: Border.all(color: Colors.green.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text('Data Objek Pajak Ditemukan', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green.shade800)),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('NOP', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(_nopUtamaController.text, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Alamat Objek Pajak', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(obj['jalan_op']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Status', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
+                      child: Text('Aktif', style: TextStyle(fontSize: 12, color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Subjek Pajak (NIK)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(obj['subjek_pajak']?['nik']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Luas Tanah / Bangunan', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text('${obj['luas_tanah'] ?? '-'} m² / ${obj['total_luas_bangunan'] ?? obj['luas_bangunan'] ?? '-'} m²', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Jenis Tanah', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(obj['jenis_tanah']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  List<Step> _buildSteps(ThemeData theme) {
-    BoxDecoration cardDecoration = BoxDecoration(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(color: theme.colorScheme.shadow.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+  // --- Skipped Step 1 to 3 code for brevity, will paste them in next ---
+
+  Widget _buildStep1() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(controller: _namaWpController, label: 'Nama Wajib Pajak *', validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _nikController, label: 'NIK (16 digit) *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _npwpController, label: 'NPWP', keyboardType: TextInputType.number)),
+        ]),
+        const SizedBox(height: 12),
+        CustomTextField(controller: _noHpController, label: 'Nomor HP', keyboardType: TextInputType.phone),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _statusWp,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: 'Status WP', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+              items: _statusWpOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v) => setState(() => _statusWp = v!),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _pekerjaan,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: 'Pekerjaan', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+              items: _pekerjaanOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v) => setState(() => _pekerjaan = v!),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        CustomTextField(controller: _alamatWpController, label: 'Alamat (Jalan) *', maxLines: 2, validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _rtController, label: 'RT *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
+          const SizedBox(width: 8),
+          Expanded(child: CustomTextField(controller: _rwController, label: 'RW *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: CustomTextField(controller: _kelurahanWpController, label: 'Kelurahan *', validator: (v) => v!.isEmpty ? '*' : null)),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _kecamatanWpController, label: 'Kecamatan')),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _kodePosController, label: 'Kode Pos', keyboardType: TextInputType.number)),
+        ]),
       ],
-      border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
     );
+  }
 
-    return [
-      Step(
-        title: const Text('Transaksi'),
-        isActive: _currentStep >= 0,
-        state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: cardDecoration,
-          child: Column(
-          children: [
-            _buildDropdown('Jenis Layanan', _jenisLayanan, _jenisOptions, (v) => setState(() => _jenisLayanan = v!)),
-            CustomTextField(controller: _nopUtamaController, label: 'NOP Utama (18 digit)', hintText: 'Kosongkan jika pendaftaran baru', keyboardType: TextInputType.number),
-            const SizedBox(height: 12),
-            CustomTextField(controller: _nopAsalController, label: 'NOP Asal (Pecah/Gabung)', hintText: 'Opsional', keyboardType: TextInputType.number),
-            const SizedBox(height: 12),
-            CustomTextField(controller: _noSpptLamaController, label: 'No. SPPT Lama', hintText: 'Opsional'),
-          ],
-        ),
-      ),
-      ),
-      Step(
-        title: const Text('Subjek'),
-        isActive: _currentStep >= 1,
-        state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: cardDecoration,
-          child: Column(
-          children: [
-            CustomTextField(controller: _namaWpController, label: 'Nama Wajib Pajak *', validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _nikController, label: 'NIK (16 digit) *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _npwpController, label: 'NPWP', keyboardType: TextInputType.number)),
-            ]),
-            const SizedBox(height: 12),
-            CustomTextField(controller: _noHpController, label: 'Nomor HP', keyboardType: TextInputType.phone),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _buildDropdown('Status WP', _statusWp, _statusWpOptions, (v) => setState(() => _statusWp = v!))),
-              const SizedBox(width: 12),
-              Expanded(child: _buildDropdown('Pekerjaan', _pekerjaan, _pekerjaanOptions, (v) => setState(() => _pekerjaan = v!))),
-            ]),
-            CustomTextField(controller: _alamatWpController, label: 'Alamat (Jalan) *', maxLines: 2, validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _rtController, label: 'RT *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
-              const SizedBox(width: 8),
-              Expanded(child: CustomTextField(controller: _rwController, label: 'RW *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
-              const SizedBox(width: 8),
-              Expanded(flex: 2, child: CustomTextField(controller: _kelurahanWpController, label: 'Kelurahan *', validator: (v) => v!.isEmpty ? '*' : null)),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _kecamatanWpController, label: 'Kecamatan')),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _kodePosController, label: 'Kode Pos', keyboardType: TextInputType.number)),
-            ]),
-          ],
-        ),
-      ),
-      ),
-      Step(
-        title: const Text('Objek'),
-        isActive: _currentStep >= 2,
-        state: _currentStep > 2 ? StepState.complete : StepState.indexed,
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: cardDecoration,
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              Expanded(flex: 2, child: _buildDropdown('Jenis Tanah', _jenisTanah, _jenisTanahOptions, (v) => setState(() => _jenisTanah = v!))),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _luasTanahController, label: 'Luas (m²) *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
-            ]),
-            CustomTextField(controller: _jalanOpController, label: 'Alamat Objek (Jalan) *', maxLines: 2, validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _blokKavController, label: 'Blok/Kav/No')),
-              const SizedBox(width: 8),
-              Expanded(child: CustomTextField(controller: _rtOpController, label: 'RT')),
-              const SizedBox(width: 8),
-              Expanded(child: CustomTextField(controller: _rwOpController, label: 'RW')),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _kelurahanOpController, label: 'Kelurahan Objek *', validator: (v) => v!.isEmpty ? '*' : null)),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _kecamatanOpController, label: 'Kecamatan Objek *', validator: (v) => v!.isEmpty ? '*' : null)),
-            ]),
-            const SizedBox(height: 12),
-            const Text('Batas-batas Tanah:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _batasUtaraController, label: 'Utara')),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _batasSelatanController, label: 'Selatan')),
-            ]),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: CustomTextField(controller: _batasTimurController, label: 'Timur')),
-              const SizedBox(width: 12),
-              Expanded(child: CustomTextField(controller: _batasBaratController, label: 'Barat')),
-            ]),
-            const SizedBox(height: 12),
-            const SizedBox(height: 12),
-            const Text('Cari Lokasi / Nama Jalan:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _mapSearchController,
-                    decoration: InputDecoration(
-                      hintText: 'Misal: Purbalingga Lor',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    ),
-                    onSubmitted: (_) => _searchLocation(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _isMapSearching ? null : _searchLocation,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: _isMapSearching ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Cari'),
-                ),
-              ],
+  Widget _buildStep2() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Expanded(
+            flex: 2,
+            child: DropdownButtonFormField<String>(
+              value: _jenisTanah,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: 'Jenis Tanah', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+              items: _jenisTanahOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v) => setState(() => _jenisTanah = v!),
             ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _isMapSearching ? null : _getCurrentLocation,
-                icon: const Icon(Icons.my_location, size: 18),
-                label: const Text('Lokasi Saya'),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _luasTanahController, label: 'Luas (m²) *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
+        ]),
+        const SizedBox(height: 12),
+        CustomTextField(controller: _jalanOpController, label: 'Alamat Objek (Jalan) *', maxLines: 2, validator: (v) => v!.isEmpty ? 'Wajib diisi' : null),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _blokKavController, label: 'Blok/Kav/No')),
+          const SizedBox(width: 8),
+          Expanded(child: CustomTextField(controller: _rtOpController, label: 'RT')),
+          const SizedBox(width: 8),
+          Expanded(child: CustomTextField(controller: _rwOpController, label: 'RW')),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _kelurahanOpController, label: 'Kelurahan Objek *', validator: (v) => v!.isEmpty ? '*' : null)),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _kecamatanOpController, label: 'Kecamatan Objek *', validator: (v) => v!.isEmpty ? '*' : null)),
+        ]),
+        const SizedBox(height: 12),
+        const Text('Batas-batas Tanah:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _batasUtaraController, label: 'Utara')),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _batasSelatanController, label: 'Selatan')),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: CustomTextField(controller: _batasTimurController, label: 'Timur')),
+          const SizedBox(width: 12),
+          Expanded(child: CustomTextField(controller: _batasBaratController, label: 'Barat')),
+        ]),
+        const SizedBox(height: 12),
+        const Text('Cari Lokasi / Nama Jalan:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _mapSearchController,
+                decoration: InputDecoration(
+                  hintText: 'Misal: Purbalingga Lor',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                onSubmitted: (_) => _searchLocation(),
               ),
             ),
-            const SizedBox(height: 8),
-            Container(
-              height: 300,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _isMapSearching ? null : _searchLocation,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: _isMapSearching ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Cari'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _isMapSearching ? null : _getCurrentLocation,
+            icon: const Icon(Icons.my_location, size: 18),
+            label: const Text('Lokasi Saya'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            children: [
+              ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
-                        initialZoom: 15.0,
-                        maxZoom: 22.0,
-                        onTap: (tapPosition, point) {
-                          setState(() {
-                            _polygonPoints.add(point);
-                            if (_polygonPoints.length == 1) {
-                              _latController.text = point.latitude.toString();
-                              _lngController.text = point.longitude.toString();
-                            }
-                          });
-                        },
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate: _isSatellite 
-                              ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
-                              : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-                          userAgentPackageName: 'com.example.magang_bakeuda',
-                          maxZoom: 22,
-                        ),
-                        if (_searchBoundary.isNotEmpty)
-                          PolygonLayer(
-                            polygons: [
-                              Polygon(
-                                points: _searchBoundary,
-                                color: Colors.blue.withOpacity(0.1),
-                                borderColor: Colors.blue,
-                                borderStrokeWidth: 2,
-                              )
-                            ],
-                          ),
-                        if (_searchReferencePoint != null)
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: _searchReferencePoint!,
-                                width: 40,
-                                height: 40,
-                                child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
-                              )
-                            ],
-                          ),
-                        if (_polygonPoints.isNotEmpty)
-                          PolygonLayer(
-                            polygons: [
-                              Polygon(
-                                points: _polygonPoints,
-                                color: Colors.blue.withOpacity(0.3),
-                                borderColor: Colors.blue,
-                                borderStrokeWidth: 2,
-                              )
-                            ],
-                          ),
-                        if (_polygonPoints.isNotEmpty)
-                          MarkerLayer(
-                            markers: _polygonPoints.map((p) => Marker(
-                              point: p,
-                              width: 12,
-                              height: 12,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.blue, width: 2),
-                                ),
-                              ),
-                            )).toList(),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: FloatingActionButton.small(
-                      onPressed: () => setState(() => _isSatellite = !_isSatellite),
-                      backgroundColor: Theme.of(context).colorScheme.surface,
-                      child: Icon(
-                        _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
-                    _polygonPoints.removeLast();
-                    if (_polygonPoints.isNotEmpty) {
-                      _latController.text = _polygonPoints.first.latitude.toString();
-                      _lngController.text = _polygonPoints.first.longitude.toString();
-                    } else {
-                      _latController.text = '';
-                      _lngController.text = '';
-                    }
-                  }),
-                  icon: const Icon(Icons.undo, size: 18),
-                  label: const Text('Batal Titik Terakhir'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange.shade50, 
-                    foregroundColor: Colors.orange.shade800,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
-                    _polygonPoints.clear();
-                    _latController.text = '';
-                    _lngController.text = '';
-                  }),
-                  icon: const Icon(Icons.delete, size: 18),
-                  label: const Text('Hapus Semua'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade50, 
-                    foregroundColor: Colors.red,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (_polygonPoints.isNotEmpty) ...[
-              const Text('Lihat di Peta Eksternal:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final url = Uri.parse('https://www.google.com/maps?q=${_latController.text},${_lngController.text}');
-                      if (await canLaunchUrl(url)) await launchUrl(url);
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: const LatLng(-7.3878, 109.3620), // Purbalingga default
+                    initialZoom: 15.0,
+                    maxZoom: 22.0,
+                    onTap: (tapPosition, point) {
+                      setState(() {
+                        _polygonPoints.add(point);
+                        if (_polygonPoints.length == 1) {
+                          _latController.text = point.latitude.toString();
+                          _lngController.text = point.longitude.toString();
+                        }
+                      });
                     },
-                    icon: const Icon(Icons.map, size: 18),
-                    label: const Text('Google Maps'),
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final lats = _polygonPoints.map((p) => p.latitude).toList();
-                      final lngs = _polygonPoints.map((p) => p.longitude).toList();
-                      final centerLat = lats.reduce((a, b) => a + b) / lats.length;
-                      final centerLng = lngs.reduce((a, b) => a + b) / lngs.length;
-                      
-                      final coordStr = '$centerLat, $centerLng';
-                      await Clipboard.setData(ClipboardData(text: coordStr));
-                      
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Koordinat $coordStr disalin! Paste di pencarian BHUMI.'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-
-                      final url = Uri.parse('https://bhumi.atrbpn.go.id/peta');
-                      if (await canLaunchUrl(url)) await launchUrl(url);
-                    },
-                    icon: const Icon(Icons.public, size: 18),
-                    label: const Text('BHUMI ATR/BPN'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text('Daftar Titik Koordinat Poligon:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _polygonPoints.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final point = _polygonPoints[index];
-                    return ListTile(
-                      dense: true,
-                      leading: CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                        child: Text('${index + 1}', style: TextStyle(fontSize: 12, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                  children: [
+                    TileLayer(
+                      urlTemplate: _isSatellite 
+                          ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                          : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                      userAgentPackageName: 'com.example.magang_bakeuda',
+                      maxZoom: 22,
+                    ),
+                    if (_searchBoundary.isNotEmpty)
+                      PolygonLayer(
+                        polygons: [
+                          Polygon(
+                            points: _searchBoundary,
+                            color: Colors.blue.withOpacity(0.1),
+                            borderColor: Colors.blue,
+                            borderStrokeWidth: 2,
+                          )
+                        ],
                       ),
-                      title: Text('${point.latitude}, ${point.longitude}', style: const TextStyle(fontSize: 13, fontFamily: 'monospace')),
-                    );
-                  },
+                    if (_searchReferencePoint != null)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: _searchReferencePoint!,
+                            width: 40,
+                            height: 40,
+                            child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                          )
+                        ],
+                      ),
+                    if (_polygonPoints.isNotEmpty)
+                      PolygonLayer(
+                        polygons: [
+                          Polygon(
+                            points: _polygonPoints,
+                            color: Colors.blue.withOpacity(0.3),
+                            borderColor: Colors.blue,
+                            borderStrokeWidth: 2,
+                          )
+                        ],
+                      ),
+                    if (_polygonPoints.isNotEmpty)
+                      MarkerLayer(
+                        markers: _polygonPoints.map((p) => Marker(
+                          point: p,
+                          width: 12,
+                          height: 12,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.blue, width: 2),
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+                  ],
                 ),
               ),
-            ] else ...[
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: CustomTextField(controller: _latController, label: 'Latitude')),
-                const SizedBox(width: 12),
-                Expanded(child: CustomTextField(controller: _lngController, label: 'Longitude')),
-              ]),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: FloatingActionButton.small(
+                  onPressed: () => setState(() => _isSatellite = !_isSatellite),
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  child: Icon(
+                    _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
             ],
-          ],
+          ),
         ),
-      ),
-      ),
-      Step(
-        title: const Text('Lampiran'),
-        isActive: _currentStep >= 3,
-        state: _currentStep == 3 ? StepState.indexed : StepState.indexed,
-        content: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: cardDecoration,
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        const SizedBox(height: 8),
+        Row(
           children: [
-            Text('Unggah dokumen pendukung (KTP, Sertifikat Tanah, dll)', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 12),
-            // Uploaded files list
-            ..._lampiran.map((l) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.file_present, color: Colors.green),
-              title: Text(l['jenis_dokumen'] ?? '-', style: const TextStyle(fontSize: 13)),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () => setState(() => _lampiran.remove(l)),
-              ),
-            )),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _isLoading ? null : _pickFile,
-              icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.upload_file),
-              label: Text(_isLoading ? 'Mengunggah...' : 'Pilih & Unggah Berkas'),
+            ElevatedButton.icon(
+              onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
+                _polygonPoints.removeLast();
+                if (_polygonPoints.isNotEmpty) {
+                  _latController.text = _polygonPoints.first.latitude.toString();
+                  _lngController.text = _polygonPoints.first.longitude.toString();
+                } else {
+                  _latController.text = '';
+                  _lngController.text = '';
+                }
+              }),
+              icon: const Icon(Icons.undo, size: 18),
+              label: const Text('Batal Titik Terakhir'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade50, foregroundColor: Colors.orange.shade800),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: _polygonPoints.isEmpty ? null : () => setState(() {
+                _polygonPoints.clear();
+                _latController.text = '';
+                _lngController.text = '';
+              }),
+              icon: const Icon(Icons.delete, size: 18),
+              label: const Text('Hapus Semua'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade50, foregroundColor: Colors.red),
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        if (_polygonPoints.isNotEmpty) ...[
+          const Text('Lihat di Peta Eksternal:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse('https://www.google.com/maps?q=${_latController.text},${_lngController.text}');
+                  if (await canLaunchUrl(url)) await launchUrl(url);
+                },
+                icon: const Icon(Icons.map, size: 18),
+                label: const Text('Google Maps'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final lats = _polygonPoints.map((p) => p.latitude).toList();
+                  final lngs = _polygonPoints.map((p) => p.longitude).toList();
+                  final centerLat = lats.reduce((a, b) => a + b) / lats.length;
+                  final centerLng = lngs.reduce((a, b) => a + b) / lngs.length;
+                  final coordStr = '$centerLat, $centerLng';
+                  await Clipboard.setData(ClipboardData(text: coordStr));
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Koordinat disalin!'), backgroundColor: Colors.green));
+                  final url = Uri.parse('https://bhumi.atrbpn.go.id/peta');
+                  if (await canLaunchUrl(url)) await launchUrl(url);
+                },
+                icon: const Icon(Icons.public, size: 18),
+                label: const Text('BHUMI ATR/BPN'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ] else ...[
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: CustomTextField(controller: _latController, label: 'Latitude')),
+            const SizedBox(width: 12),
+            Expanded(child: CustomTextField(controller: _lngController, label: 'Longitude')),
+          ]),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStep3() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Unggah dokumen pendukung (KTP, Sertifikat Tanah, dll)', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 12),
+        ..._lampiran.map((l) => ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.file_present, color: Colors.green),
+          title: Text(l['jenis_dokumen'] ?? '-', style: const TextStyle(fontSize: 13)),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () => setState(() => _lampiran.remove(l)),
+          ),
+        )),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _isLoading ? null : _pickFile,
+          icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.upload_file),
+          label: Text(_isLoading ? 'Mengunggah...' : 'Pilih & Unggah Berkas'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep4() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Text(
+              'RESI PENGAJUAN SPOP',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF0F2C59)),
+            ),
+          ),
+          const Divider(thickness: 1, height: 24),
+          _buildResiRow('Jenis Layanan', _jenisLayanan),
+          _buildResiRow('Kategori', _selectedKategori),
+          if (_nopUtamaController.text.isNotEmpty) _buildResiRow('NOP Utama', _nopUtamaController.text),
+          if (_nopAsalControllers.any((c) => c.text.isNotEmpty)) _buildResiRow('NOP Asal', _nopAsalControllers.map((c) => c.text).where((t) => t.isNotEmpty).join(', ')),
+          if (_alasanHapusController.text.isNotEmpty) _buildResiRow('Alasan Hapus', _alasanHapusController.text),
+          if (_selectedKategori != 'PENGHAPUSAN') ...[
+            const Divider(height: 24),
+            _buildResiRow('Wajib Pajak', _namaWpController.text),
+            _buildResiRow('NIK', _nikController.text),
+            _buildResiRow('Alamat WP', _alamatWpController.text),
+          ],
+          const Divider(height: 24),
+          const Text('Lampiran Terunggah:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+          const SizedBox(height: 8),
+          if (_lampiran.isEmpty) const Text('- Belum ada lampiran', style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic)),
+          ..._lampiran.map((l) => Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 16),
+              const SizedBox(width: 8),
+              Expanded(child: Text(l['jenis_dokumen'] ?? '-', style: const TextStyle(fontSize: 13))),
+            ],
+          )),
+        ],
       ),
-    ];
+    );
+  }
+
+  Widget _buildResiRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(flex: 2, child: Text(label, style: const TextStyle(fontSize: 13, color: Colors.grey))),
+          const Text(': ', style: TextStyle(fontSize: 13, color: Colors.grey)),
+          Expanded(flex: 3, child: Text(value.isEmpty ? '-' : value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentStepWidget() {
+    switch (_currentStep) {
+      case 0: return _buildStep0();
+      case 1: return _buildStep1();
+      case 2: return _buildStep2();
+      case 3: return _buildStep3();
+      case 4: return _buildStep4();
+      default: return const SizedBox();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final steps = _buildSteps(theme);
+    final isLastStep = _currentStep == 4;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F9FC), // Off-White background
       appBar: AppBar(
-        title: const Text('Formulir SPOP'),
-        backgroundColor: theme.colorScheme.surface,
+        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16)),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F2C59), // Navy Blue
         elevation: 0,
         actions: [
           TextButton.icon(
             onPressed: _isSavingDraft ? null : _saveDraft,
             icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined, size: 18),
             label: const Text('Draft'),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F2C59)),
           ),
         ],
       ),
       body: Form(
         key: _formKey,
-        child: Stepper(
-          type: StepperType.horizontal,
-          currentStep: _currentStep,
-          onStepContinue: () {
-            if (_currentStep < steps.length - 1) {
-              setState(() => _currentStep += 1);
-            } else {
-              _submitForm();
-            }
-          },
-          onStepCancel: () {
-            if (_currentStep > 0) setState(() => _currentStep -= 1);
-          },
-          onStepTapped: (step) => setState(() => _currentStep = step),
-          controlsBuilder: (context, details) {
-            final isLastStep = _currentStep == steps.length - 1;
-            return Container(
-              margin: const EdgeInsets.only(top: 20),
+        child: Column(
+          children: [
+            // Linear Progress Indicator
+            LinearProgressIndicator(
+              value: (_currentStep + 1) / 5,
+              backgroundColor: Colors.grey.shade200,
+              color: const Color(0xFF0F2C59),
+              minHeight: 4,
+            ),
+            
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 2))],
+                  ),
+                  child: _buildCurrentStepWidget(),
+                ),
+              ),
+            ),
+            
+            // Sticky Bottom Footer
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
+              ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: CustomButton(
-                      text: isLastStep ? 'Kirim SPOP' : 'Lanjut',
-                      onPressed: details.onStepContinue,
-                      isLoading: isLastStep && _isLoading,
-                    ),
-                  ),
                   if (_currentStep > 0) ...[
-                    const SizedBox(width: 12),
                     Expanded(
+                      flex: 1,
                       child: OutlinedButton(
-                        onPressed: details.onStepCancel,
+                        onPressed: _prevStep,
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          foregroundColor: const Color(0xFF0F2C59),
+                          side: const BorderSide(color: Color(0xFF0F2C59)),
                         ),
                         child: const Text('Kembali'),
                       ),
                     ),
+                    const SizedBox(width: 12),
                   ],
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: (_isLoading || _isSavingDraft) ? null : _nextStep,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: const Color(0xFF0F2C59),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            isLastStep ? 'Simpan & Ajukan' : (_selectedKategori == 'PENGHAPUSAN' && _currentStep == 0 ? 'Lanjut Konfirmasi Penghapusan' : 'Selanjutnya'),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                    ),
+                  ),
                 ],
               ),
-            );
-          },
-          steps: steps,
+            ),
+          ],
         ),
       ),
     );
   }
 }
+

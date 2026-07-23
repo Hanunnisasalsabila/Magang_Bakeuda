@@ -17,6 +17,19 @@ class TransaksiSpopService {
     return data.cast<Map<String, dynamic>>();
   }
 
+  // ─── Fetch Data Objek Pajak By NOP (Untuk Auto-fill) ───
+  Future<Map<String, dynamic>?> getObjekPajakByNop(String nop) async {
+    try {
+      final resp = await _dio.get('/objek-pajak/$nop');
+      if (resp.data != null && resp.data['data'] != null) {
+        return resp.data['data'] as Map<String, dynamic>;
+      }
+    } catch (e) {
+      // Return null jika tidak ditemukan atau error
+    }
+    return null;
+  }
+
   // ─── Daftar transaksi milik desa yang login (alias getAntrean tanpa filter) ───
   Future<List<Map<String, dynamic>>> getTransaksiSaya({int page = 1, int limit = 20}) async {
     final resp = await _dio.get('/transaksi-spop');
@@ -102,6 +115,12 @@ class TransaksiSpopService {
     return resp.data as Map<String, dynamic>;
   }
 
+  // ─── Hapus Draft SPOP ───
+  Future<Map<String, dynamic>> deleteTransaksi(String idTransaksi) async {
+    final resp = await _dio.delete('/transaksi-spop/$idTransaksi');
+    return resp.data as Map<String, dynamic>;
+  }
+
   // ─── Upload lampiran/dokumen ───
   Future<String> uploadFile(String filePath, String fileName) async {
     final formData = FormData.fromMap({
@@ -109,6 +128,12 @@ class TransaksiSpopService {
     });
     final resp = await _dio.post('/transaksi-spop/upload', data: formData);
     return (resp.data['url_file'] ?? '') as String;
+  }
+
+  // ─── Monitoring objek pajak (Stats) ───
+  Future<Map<String, dynamic>> getObjekPajakStats() async {
+    final resp = await _dio.get('/objek-pajak/stats');
+    return resp.data as Map<String, dynamic>;
   }
 
   // ─── Monitoring objek pajak (untuk tab monitoring) ───
@@ -121,7 +146,7 @@ class TransaksiSpopService {
     int limit = 20,
   }) async {
     final params = <String, dynamic>{'page': page, 'limit': limit};
-    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (search != null && search.isNotEmpty) params['q'] = search;
     if (kodeWilayah != null) params['kode_wilayah'] = kodeWilayah;
     if (statusAjuan != null) params['status_ajuan'] = statusAjuan;
     if (statusAktif != null) params['status_aktif'] = statusAktif;

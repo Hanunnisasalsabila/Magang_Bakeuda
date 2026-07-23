@@ -9,6 +9,8 @@ import 'spop_form_screen.dart';
 import 'lspop_form_screen.dart';
 import 'pelacakan_dokumen_screen.dart';
 import 'login_screen.dart';
+import 'draft_spop_screen.dart';
+import 'data_objek_pajak_screen.dart';
 import '../services/auth_service.dart';
 
 const Color _kNavy = Color(0xFF0F2C59);
@@ -32,7 +34,18 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
   @override
   void initState() {
     super.initState();
-    _pages = [const DesaDashboardTab(), const MonitoringPajakTab()];
+    _pages = [
+      DesaDashboardTab(
+        onLihatSemua: () {
+          setState(() => _currentIndex = 1);
+        },
+        onLihatDraf: () {
+          setState(() => _currentIndex = 2);
+        },
+      ),
+      const MonitoringPajakTab(),
+      const DraftSpopScreen(),
+    ];
     _loadUserProfile();
   }
 
@@ -108,6 +121,52 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     );
   }
 
+  Widget _buildDrawerSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Colors.grey.shade500,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isSelected = false,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive
+        ? Colors.red.shade600
+        : (isSelected ? _kNavy : Colors.grey.shade700);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        leading: Icon(icon, color: color, size: 22),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: color,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        tileColor: isSelected
+            ? _kNavy.withValues(alpha: 0.05)
+            : Colors.transparent,
+        onTap: onTap,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -115,6 +174,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        toolbarHeight: 76,
         titleSpacing: 0,
         elevation: 0,
         backgroundColor: _kNavy,
@@ -125,9 +185,9 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
-                padding: const EdgeInsets.all(4),
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -143,8 +203,8 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                     Text(
                       _profileName,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                         color: Colors.white,
                       ),
                       maxLines: 1,
@@ -154,7 +214,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                     Text(
                       _profileEmail,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
                         color: Colors.white70,
                       ),
@@ -169,141 +229,17 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
         ),
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        backgroundColor: Colors.white,
+        child: Column(
           children: [
-            // Header drawer: solid navy formal
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
-              decoration: const BoxDecoration(
-                color: _kNavy,
-                border: Border(bottom: BorderSide(color: _kGold, width: 3)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Image.asset(
-                      'assets/logo-purbalingga.png',
-                      height: 32,
-                      width: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Perangkat Desa',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          _profileEmail,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined, color: _kNavy),
-              title: const Text('Beranda'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 0);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics_outlined, color: _kNavy),
-              title: const Text('Pemantauan PBB-P2'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 1);
-              },
-            ),
-            ExpansionTile(
-              leading: const Icon(Icons.description_outlined, color: _kNavy),
-              title: const Text('Pengajuan SPOP'),
-              childrenPadding: const EdgeInsets.only(left: 16),
-              children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.feed_outlined,
-                    size: 20,
-                    color: _kNavy,
-                  ),
-                  title: const Text('Formulir SPOP (Bumi & Bangunan)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SpopFormScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.domain, size: 20, color: _kNavy),
-                  title: const Text('Formulir LSPOP (Bangunan Khusus)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LspopFormScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_document, color: _kNavy),
-              title: const Text('Draft SPOP'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Draft SPOP belum tersedia.')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.storage_outlined, color: _kNavy),
-              title: const Text('Data Objek Pajak'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PelacakanDokumenScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_outline, color: _kNavy),
-              title: const Text('Profil Pengguna'),
+            InkWell(
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Profil Pengguna')),
                       body: ProfileTab(
                         name: _profileName,
                         username: _profileEmail,
@@ -313,59 +249,234 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                   ),
                 );
               },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.help_outline, color: _kNavy),
-              title: const Text('Bantuan'),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Pusat Bantuan belum tersedia.'),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF0F2C59), Color(0xFF0A1D3D)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                );
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.logout, color: theme.colorScheme.error),
-              title: Text(
-                'Keluar',
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
-              onTap: () async {
-                final authService = AuthService();
-                await authService.logout();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
+                  border: Border(bottom: BorderSide(color: _kGold, width: 4)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/logo-purbalingga.png',
+                        height: 36,
+                        width: 36,
+                      ),
                     ),
-                    (route) => false,
-                  );
-                }
-              },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _profileName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _profileEmail,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(top: 8, bottom: 20),
+                children: [
+                  _buildDrawerSectionTitle('MENU UTAMA'),
+                  _buildDrawerItem(
+                    icon: Icons.dashboard_rounded,
+                    title: 'Beranda',
+                    isSelected: _currentIndex == 0,
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 0);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.analytics_rounded,
+                    title: 'Status Pengajuan PBB-P2',
+                    isSelected: _currentIndex == 1,
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 1);
+                    },
+                  ),
+
+                  _buildDrawerSectionTitle('LAYANAN PAJAK DAERAH'),
+                  ExpansionTile(
+                    leading: const Icon(
+                      Icons.description_rounded,
+                      color: Colors.grey,
+                      size: 22,
+                    ),
+                    title: const Text(
+                      'Pendaftaran SPOP Baru',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    childrenPadding: const EdgeInsets.only(left: 16),
+                    shape: const Border(),
+                    children: [
+                      _buildDrawerItem(
+                        icon: Icons.feed_rounded,
+                        title: 'SPOP Standar (Bumi & Bangunan)',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SpopFormScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildDrawerItem(
+                        icon: Icons.domain_rounded,
+                        title: 'LSPOP (Bangunan Khusus)',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LspopFormScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.folder_special_rounded,
+                    title: 'Draf Dokumen Tersimpan',
+                    isSelected: _currentIndex == 2,
+                    onTap: () {
+                      Navigator.pop(context);
+                      setState(() => _currentIndex = 2);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.storage_rounded,
+                    title: 'Arsip Data Objek Pajak',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DataObjekPajakScreen(
+                            profileName: _profileName,
+                            profileEmail: _profileEmail,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _buildDrawerSectionTitle('PENGATURAN & BANTUAN'),
+                  _buildDrawerItem(
+                    icon: Icons.account_circle_rounded,
+                    title: 'Profil Pengguna',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(
+                              title: const Text('Profil Pengguna'),
+                            ),
+                            body: ProfileTab(
+                              name: _profileName,
+                              username: _profileEmail,
+                              role: _profileRole,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.help_rounded,
+                    title: 'Pusat Bantuan',
+                    onTap: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Pusat Bantuan belum tersedia.'),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Divider(color: Color(0xFFEEEEEE)),
+                  ),
+
+                  _buildDrawerItem(
+                    icon: Icons.logout_rounded,
+                    title: 'Logout',
+                    isDestructive: true,
+                    onTap: () async {
+                      final authService = AuthService();
+                      await authService.logout();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
-      body: PageView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _pages.length,
-        itemBuilder: (context, index) {
-          if (index != _currentIndex) return const SizedBox.shrink();
-          return _pages[index]
-              .animate()
-              .fadeIn(duration: 300.ms)
-              .slideY(
-                begin: 0.05,
-                end: 0,
-                duration: 300.ms,
-                curve: Curves.easeOut,
-              );
-        },
-      ),
+      body: _pages[_currentIndex]
+          .animate(key: ValueKey(_currentIndex))
+          .fadeIn(duration: 300.ms)
+          .slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showFormulirOptions(context),
@@ -385,8 +496,8 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
+                icon: Icons.dashboard_outlined,
+                activeIcon: Icons.dashboard,
                 label: 'Beranda',
                 index: 0,
               ),
@@ -398,14 +509,14 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
               ),
               const SizedBox(width: 48), // Space for FAB
               _buildNavItem(
-                icon: Icons.description_outlined,
-                activeIcon: Icons.description,
-                label: 'Draft',
+                icon: Icons.folder_open,
+                activeIcon: Icons.folder,
+                label: 'Draf',
                 index: 2,
               ),
               _buildNavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
+                icon: Icons.account_circle_outlined,
+                activeIcon: Icons.account_circle,
                 label: 'Profil',
                 index: 3,
               ),
@@ -425,11 +536,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     final isSelected = _currentIndex == index;
     return InkWell(
       onTap: () {
-        if (index == 2) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Draft SPOP belum tersedia.')),
-          );
-        } else if (index == 3) {
+        if (index == 3) {
           Navigator.push(
             context,
             MaterialPageRoute(

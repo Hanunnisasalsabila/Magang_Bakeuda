@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
+import '../pelacakan_dokumen_detail_screen.dart';
+import '../spop_form_screen.dart';
 import '../../services/api_service.dart';
 import '../../services/transaksi_spop_service.dart';
-import '../../services/export_service.dart';
+import '../../services/dashboard_service.dart';
 
 class MonitoringPajakTab extends StatefulWidget {
   const MonitoringPajakTab({super.key});
@@ -14,37 +16,53 @@ class MonitoringPajakTab extends StatefulWidget {
 
 class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
   final _spopService = TransaksiSpopService(ApiService());
+  final _dashboardService = DashboardService();
   final _searchController = TextEditingController();
 
+  Map<String, dynamic>? _stats;
+  List<Map<String, dynamic>> _rawData = [];
   List<Map<String, dynamic>> _data = [];
   bool _isLoading = true;
-  bool _isExporting = false;
   String? _errorMsg;
-  String _selectedFilter = 'Semua';
+  String _selectedFilter = 'Semua Status';
   int _page = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> _filters = ['Semua', 'Aktif', 'Menunggu Verifikasi', 'Ditolak'];
-  final Map<String, bool?> _filterStatusAktif = {
-    'Semua': null,
-    'Aktif': true,
-    'Menunggu Verifikasi': null,
-    'Ditolak': null,
-  };
-  final Map<String, String?> _filterStatusAjuan = {
-    'Semua': null,
-    'Aktif': null,
-    'Menunggu Verifikasi': 'MENUNGGU',
-    'Ditolak': 'DITOLAK',
-  };
+  final List<String> _filters = [
+    'Semua Status',
+    'Menunggu Verifikasi',
+    'Diproses',
+    'Disetujui',
+    'Perlu Revisi',
+    'Draft',
+    'Ditolak'
+  ];
+
+  String _mapFilterToStatusAjuan(String f) {
+    switch (f) {
+      case 'Menunggu Verifikasi': return 'MENUNGGU';
+      case 'Diproses': return 'SEDANG_DITINJAU';
+      case 'Disetujui': return 'DISETUJUI';
+      case 'Perlu Revisi': return 'PERLU_PERBAIKAN';
+      case 'Draft': return 'DRAFT';
+      case 'Ditolak': return 'DITOLAK';
+      default: return '';
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadStats();
     _loadData(reset: true);
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadStats() async {
+    final stats = await _dashboardService.getDashboardStats();
+    if (mounted) setState(() => _stats = stats);
   }
 
   @override
@@ -62,303 +80,446 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
     }
   }
 
-  Future<void> _loadData({bool reset = true}) async {
+  List<Map<String, dynamic>> _mapRawData(List<dynamic> rawList) {
+    List<Map<String, dynamic>> result = [];
+    for (var item in rawList) {
+      if (item is! Map<String, dynamic>) continue;
+      
+      String status = 'Ditolak';
+      final sa = item['status_ajuan']?.toString();
+      if (sa == 'MENUNGGU') status = 'Menunggu Verifikasi';
+      else if (sa == 'PROSES' || sa == 'SEDANG_DITINJAU') status = 'Diproses';
+      else if (sa == 'DISETUJUI') status = 'Disetujui';
+      else if (sa == 'REVISI' || sa == 'PERLU_PERBAIKAN') status = 'Perlu Revisi';
+      else if (sa == 'DRAFT') status = 'Draft';
+
+      final idTransaksi = item['id_transaksi']?.toString() ?? item['id']?.toString() ?? '';
+      final tgl = item['tanggal_pengajuan']?.toString() ?? '';
+
+      if (item['jenis_transaksi'] == 'HAPUS') {
+        final detailAsal = item['detail_asal'] as List<dynamic>?;
+        if (detailAsal == null || detailAsal.isEmpty) continue;
+        for (var asal in detailAsal) {
+          if (asal is! Map<String, dynamic>) continue;
+          final objekAsal = asal['objek_asal'] as Map<String, dynamic>?;
+          
+          String address = 'PENGHAPUSAN OBJEK PAJAK';
+          if (objekAsal != null) {
+            final jalan = objekAsal['jalan_op'] ?? '';
+            final rt = objekAsal['rt_op'] ?? '';
+            final rw = objekAsal['rw_op'] ?? '';
+            address = '$jalan RT $rt/$rw'.trim();
+          }
+
+          result.add({
+            'id': idTransaksi,
+            'id_detail': asal['id_detail_asal'],
+            'nop': asal['nop_asal'] ?? 'Menunggu NOP',
+            'name': item['nama_pengaju'] ?? 'Tanpa Nama',
+            'address': address,
+            'land': objekAsal?['luas_tanah'] ?? 0,
+            'building': objekAsal?['luas_bangunan'] ?? 0,
+            'status': status,
+            'status_ajuan': sa,
+            'date': tgl,
+          });
+        }
+      } else {
+        final detailTujuan = item['detail_tujuan'] as List<dynamic>?;
+        if (detailTujuan == null || detailTujuan.isEmpty) continue;
+        for (var detail in detailTujuan) {
+          if (detail is! Map<String, dynamic>) continue;
+          
+          final calonSubjek = detail['calon_subjek_json'] as Map<String, dynamic>?;
+          String name = 'Tanpa Nama';
+          if (calonSubjek != null && calonSubjek['nama_subjek'] != null) {
+            name = calonSubjek['nama_subjek'];
+          } else if (item['nama_pengaju'] != null) {
+            name = item['nama_pengaju'];
+          }
+
+          final jalan = detail['jalan_op_baru'] ?? '';
+          final rt = detail['rt_op_baru'] != null ? 'RT ${detail['rt_op_baru']}' : '';
+          final rw = detail['rw_op_baru'] != null ? 'RW ${detail['rw_op_baru']}' : '';
+          final kel = detail['kelurahan_op_baru'] ?? '';
+          final address = '$jalan $rt $rw $kel'.trim();
+
+          result.add({
+            'id': idTransaksi,
+            'id_detail': detail['id_detail_tujuan'],
+            'nop': detail['nop_generated'] ?? detail['no_persil_baru'] ?? 'Menunggu NOP',
+            'name': name,
+            'address': address.isEmpty ? '-' : address,
+            'land': detail['luas_tanah_baru'] ?? 0,
+            'building': detail['luas_bangunan_baru'] ?? 0,
+            'status': status,
+            'status_ajuan': sa,
+            'date': tgl,
+          });
+        }
+      }
+    }
+    return result;
+  }
+
+  Future<void> _loadData({bool reset = false}) async {
     if (reset) {
-      setState(() { _isLoading = true; _errorMsg = null; _page = 1; _hasMore = true; });
+      setState(() { _isLoading = true; _errorMsg = null; _page = 1; _hasMore = false; });
     } else {
       setState(() => _isLoadingMore = true);
     }
 
     try {
-      final result = await _spopService.getMonitoringObjekPajak(
-        search: _searchController.text.isNotEmpty ? _searchController.text : null,
-        statusAktif: _filterStatusAktif[_selectedFilter],
-        statusAjuan: _filterStatusAjuan[_selectedFilter],
-        page: _page,
-        limit: 20,
-      );
-
-      final newItems = (result['data'] as List? ?? []).cast<Map<String, dynamic>>();
-      final total = result['total'] as int? ?? 0;
+      if (reset) {
+        final raw = await _spopService.getTransaksiSaya();
+        _rawData = _mapRawData(raw);
+      }
+      
+      var filtered = _rawData;
+      if (_selectedFilter != 'Semua Status') {
+        final mappedStatus = _mapFilterToStatusAjuan(_selectedFilter);
+        filtered = filtered.where((e) => e['status_ajuan'] == mappedStatus).toList();
+      }
+      
+      if (_searchController.text.isNotEmpty) {
+        final search = _searchController.text.toLowerCase();
+        filtered = filtered.where((e) {
+          final s = e['name']?.toString().toLowerCase() ?? '';
+          final n = e['nop']?.toString().toLowerCase() ?? '';
+          final a = e['address']?.toString().toLowerCase() ?? '';
+          return s.contains(search) || n.contains(search) || a.contains(search);
+        }).toList();
+      }
 
       setState(() {
-        if (reset) {
-          _data = newItems;
-        } else {
-          _data.addAll(newItems);
-        }
-        _page++;
-        _hasMore = _data.length < total;
+        _data = filtered;
       });
     } on DioException catch (e) {
-      setState(() { _errorMsg = e.response?.data?['message'] ?? 'Gagal memuat data'; });
+      setState(() => _errorMsg = e.response?.data?['message'] ?? e.message);
     } catch (e) {
-      setState(() { _errorMsg = 'Error: $e'; });
+      setState(() => _errorMsg = e.toString());
     } finally {
       setState(() { _isLoading = false; _isLoadingMore = false; });
     }
   }
 
-  Future<void> _exportPdf() async {
-    setState(() => _isExporting = true);
-    try {
-      // Load all data for export
-      final result = await _spopService.getMonitoringObjekPajak(
-        search: _searchController.text.isNotEmpty ? _searchController.text : null,
-        statusAktif: _filterStatusAktif[_selectedFilter],
-        statusAjuan: _filterStatusAjuan[_selectedFilter],
-        page: 1,
-        limit: 1000,
-      );
-      final allData = (result['data'] as List? ?? []).cast<Map<String, dynamic>>();
-      final file = await ExportService.exportObjekPajakPdf(allData);
-      if (mounted) {
-        final result2 = await showModalBottomSheet<String>(
-          context: context,
-          builder: (ctx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(leading: const Icon(Icons.open_in_new), title: const Text('Buka File'), onTap: () => Navigator.pop(ctx, 'open')),
-                ListTile(leading: const Icon(Icons.share), title: const Text('Bagikan (WhatsApp, dll)'), onTap: () => Navigator.pop(ctx, 'share')),
-              ],
-            ),
-          ),
-        );
-        if (result2 == 'open') await ExportService.openFile(file);
-        if (result2 == 'share') await ExportService.shareFile(file, subject: 'Daftar Objek Pajak – SIPD Purbalingga');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal ekspor PDF: $e')));
-      }
-    } finally {
-      setState(() => _isExporting = false);
-    }
+  Color _getStatusColor(String statusAjuan, ColorScheme colorScheme) {
+    if (statusAjuan == 'DRAFT') return Colors.grey.shade600;
+    if (statusAjuan == 'MENUNGGU') return Colors.blue.shade600;
+    if (statusAjuan == 'PROSES' || statusAjuan == 'SEDANG_DITINJAU') return Colors.orange.shade600;
+    if (statusAjuan == 'REVISI' || statusAjuan == 'PERLU_PERBAIKAN') return Colors.red.shade600;
+    if (statusAjuan == 'DISETUJUI') return Colors.green.shade600;
+    if (statusAjuan == 'DITOLAK') return Colors.red.shade800;
+    return Colors.blue.shade600;
   }
 
-  Future<void> _exportExcel() async {
-    setState(() => _isExporting = true);
-    try {
-      final result = await _spopService.getMonitoringObjekPajak(
-        search: _searchController.text.isNotEmpty ? _searchController.text : null,
-        statusAktif: _filterStatusAktif[_selectedFilter],
-        statusAjuan: _filterStatusAjuan[_selectedFilter],
-        page: 1, limit: 1000,
-      );
-      final allData = (result['data'] as List? ?? []).cast<Map<String, dynamic>>();
-      final file = await ExportService.exportObjekPajakExcel(allData);
-      if (mounted) {
-        final r = await showModalBottomSheet<String>(
-          context: context,
-          builder: (ctx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(leading: const Icon(Icons.open_in_new), title: const Text('Buka File'), onTap: () => Navigator.pop(ctx, 'open')),
-                ListTile(leading: const Icon(Icons.share), title: const Text('Bagikan (WhatsApp, dll)'), onTap: () => Navigator.pop(ctx, 'share')),
-              ],
-            ),
-          ),
-        );
-        if (r == 'open') await ExportService.openFile(file);
-        if (r == 'share') await ExportService.shareFile(file, subject: 'Daftar Objek Pajak – SIPD Purbalingga');
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal ekspor Excel: $e')));
-    } finally {
-      setState(() => _isExporting = false);
-    }
-  }
-
-  Color _getStatusColor(Map<String, dynamic> d, ColorScheme cs) {
-    if (d['status_aktif'] == false) return cs.error;
-    final sa = d['status_ajuan'] as String?;
-    if (sa == 'MENUNGGU' || sa == 'SEDANG_DITINJAU') return Colors.orange;
-    if (sa == 'DITOLAK') return cs.error;
-    return Colors.green;
-  }
-
-  String _getStatusLabel(Map<String, dynamic> d) {
-    if (d['status_aktif'] == false) return 'Tidak Aktif';
-    final sa = d['status_ajuan'] as String?;
-    if (sa == 'MENUNGGU') return 'Menunggu Verifikasi';
-    if (sa == 'SEDANG_DITINJAU') return 'Sedang Ditinjau';
-    if (sa == 'DITOLAK') return 'Ditolak';
-    return 'Aktif';
+  String _getStatusLabelText(String statusAjuan) {
+    if (statusAjuan == 'DRAFT') return 'Draft';
+    if (statusAjuan == 'MENUNGGU') return 'Menunggu Verifikasi';
+    if (statusAjuan == 'PROSES' || statusAjuan == 'SEDANG_DITINJAU') return 'Diproses';
+    if (statusAjuan == 'REVISI' || statusAjuan == 'PERLU_PERBAIKAN') return 'Perlu Revisi';
+    if (statusAjuan == 'DISETUJUI') return 'Disetujui';
+    if (statusAjuan == 'DITOLAK') return 'Ditolak';
+    return 'Ditolak';
   }
 
   String _fmtDate(String? iso) {
     if (iso == null) return '-';
-    try { return DateFormat('dd MMM yyyy', 'id').format(DateTime.parse(iso)); } catch(_) { return iso; }
+    try { return DateFormat('dd MMM yyyy', 'id').format(DateTime.parse(iso).toLocal()); } catch(_) { return iso; }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        // Header & Search
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Monitoring Objek Pajak', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  if (_isExporting)
-                    const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  else
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.download_outlined),
-                      tooltip: 'Ekspor Data',
-                      onSelected: (v) { if (v == 'pdf') _exportPdf(); if (v == 'excel') _exportExcel(); },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'pdf', child: ListTile(leading: Icon(Icons.picture_as_pdf), title: Text('Ekspor PDF'))),
-                        const PopupMenuItem(value: 'excel', child: ListTile(leading: Icon(Icons.table_chart), title: Text('Ekspor Excel'))),
-                      ],
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7F9),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  _loadStats();
+                  await _loadData(reset: true);
+                },
+                color: _kNavy,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _buildFilterSection(theme),
                     ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Cari NOP atau Nama Wajib Pajak...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); _loadData(reset: true); })
-                      : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    _buildListContent(theme),
+                  ],
                 ),
-                onSubmitted: (_) => _loadData(reset: true),
               ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _filters.map((f) {
-                    final isSelected = _selectedFilter == f;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(f),
-                        selected: isSelected,
-                        onSelected: (sel) {
-                          if (sel) { setState(() => _selectedFilter = f); _loadData(reset: true); }
-                        },
-                        selectedColor: theme.colorScheme.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const Color _kNavy = Color(0xFF0F2C59);
+
+  Widget _buildFilterSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Cari NOP/Nama...',
+                prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kNavy),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              onSubmitted: (_) => _loadData(reset: true),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: DropdownButtonFormField<String>(
+              isExpanded: true,
+              value: _selectedFilter,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kNavy),
+                ),
+              ),
+              dropdownColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 20, color: Colors.grey),
+              items: _filters.map((f) {
+                return DropdownMenuItem(value: f, child: Text(f, overflow: TextOverflow.ellipsis));
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedFilter = val);
+                  _loadData(reset: true);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListContent(ThemeData theme) {
+    if (_isLoading) {
+      return const SliverFillRemaining(child: Center(child: CircularProgressIndicator()));
+    }
+    if (_errorMsg != null) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+              const SizedBox(height: 8),
+              Text(_errorMsg!, style: TextStyle(color: theme.colorScheme.error)),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => _loadData(reset: true),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Coba Lagi'),
               ),
             ],
           ),
         ),
+      );
+    }
+    if (_data.isEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text('Tidak ada data ditemukan', style: TextStyle(color: Colors.grey.shade500)),
+            ],
+          ),
+        ),
+      );
+    }
 
-        // List
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _errorMsg != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index >= _data.length) {
+              return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
+            }
+
+            final d = _data[index];
+            final statusAjuan = d['status_ajuan']?.toString() ?? '';
+            final statusColor = _getStatusColor(statusAjuan, theme.colorScheme);
+            final statusLabel = _getStatusLabelText(statusAjuan);
+            final nama = d['name']?.toString() ?? '-';
+            final alamat = d['address']?.toString() ?? '-';
+            final nop = d['nop']?.toString() ?? 'Menunggu NOP';
+            final idTransaksi = d['id']?.toString() ?? '';
+            final luasTanah = d['land']?.toString() ?? '0';
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade300),
+              ),
+              elevation: 0,
+              color: Colors.white,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  if (idTransaksi.isNotEmpty) {
+                    final sa = d['status_ajuan'];
+                    if (sa == 'DRAFT' || sa == 'REVISI' || sa == 'PERLU_PERBAIKAN') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SpopFormScreen(),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PelacakanDokumenDetailScreen(idTransaksi: idTransaksi),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-                          const SizedBox(height: 8),
-                          Text(_errorMsg!, style: TextStyle(color: theme.colorScheme.error)),
-                          const SizedBox(height: 16),
-                          ElevatedButton.icon(onPressed: () => _loadData(reset: true), icon: const Icon(Icons.refresh), label: const Text('Coba Lagi')),
+                          Expanded(
+                            child: Text(
+                              nop,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: _kNavy),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              statusLabel,
+                              style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
+                          ),
                         ],
                       ),
-                    )
-                  : _data.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.inbox_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
-                              const SizedBox(height: 16),
-                              Text('Tidak ada data ditemukan', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-                            ],
+                      const SizedBox(height: 12),
+                      Text(
+                        nama,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        alamat,
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.landscape, size: 14, color: Colors.grey.shade600),
+                                const SizedBox(width: 4),
+                                Text('Tanah $luasTanah m²', style: TextStyle(color: Colors.grey.shade700, fontSize: 12, fontWeight: FontWeight.w500)),
+                              ],
+                            ),
                           ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () => _loadData(reset: true),
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _data.length + (_hasMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index >= _data.length) {
-                                return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()));
-                              }
-
-                              final d = _data[index];
-                              final statusColor = _getStatusColor(d, theme.colorScheme);
-                              final nama = d['subjek_pajak']?['nama_subjek'] ?? '-';
-
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                elevation: 0,
-                                color: theme.colorScheme.surface,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: statusColor.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Text(_getStatusLabel(d), style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                                          ),
-                                          Text(_fmtDate(d['updated_at']), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(d['nop'] ?? '-', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                                      const SizedBox(height: 4),
-                                      Text(nama, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
-                                          const SizedBox(width: 4),
-                                          Expanded(child: Text(d['jalan_op'] ?? '-', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-                                        ],
-                                      ),
-                                    ],
+                          (d['status_ajuan'] == 'DRAFT' || d['status_ajuan'] == 'REVISI' || d['status_ajuan'] == 'PERLU_PERBAIKAN')
+                              ? Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: _kNavy.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
+                                  child: const Icon(
+                                    Icons.edit_document,
+                                    size: 16,
+                                    color: _kNavy,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.chevron_right,
+                                  size: 22,
+                                  color: Colors.grey.shade400,
                                 ),
-                              );
-                            },
-                          ),
-                        ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+          childCount: _data.length + (_hasMore ? 1 : 0),
         ),
-      ],
+      ),
     );
   }
 }
