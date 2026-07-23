@@ -10,6 +10,7 @@ import 'lspop_form_screen.dart';
 import 'pelacakan_dokumen_screen.dart';
 import 'login_screen.dart';
 import 'draft_spop_screen.dart';
+import 'data_objek_pajak_screen.dart';
 import '../services/auth_service.dart';
 
 const Color _kNavy = Color(0xFF0F2C59);
@@ -398,7 +399,10 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const PelacakanDokumenScreen(),
+                          builder: (_) => DataObjekPajakScreen(
+                            profileName: _profileName,
+                            profileEmail: _profileEmail,
+                          ),
                         ),
                       );
                     },
@@ -500,14 +504,14 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
               _buildNavItem(
                 icon: Icons.analytics_outlined,
                 activeIcon: Icons.analytics,
-                label: 'Status Ajuan',
+                label: 'Pantau',
                 index: 1,
               ),
               const SizedBox(width: 48), // Space for FAB
               _buildNavItem(
                 icon: Icons.folder_open,
                 activeIcon: Icons.folder,
-                label: 'Draf Dokumen',
+                label: 'Draf',
                 index: 2,
               ),
               _buildNavItem(

@@ -103,6 +103,12 @@ class TransaksiSpopService {
     return (resp.data['url_file'] ?? '') as String;
   }
 
+  // ─── Monitoring objek pajak (Stats) ───
+  Future<Map<String, dynamic>> getObjekPajakStats() async {
+    final resp = await _dio.get('/objek-pajak/stats');
+    return resp.data as Map<String, dynamic>;
+  }
+
   // ─── Monitoring objek pajak (untuk tab monitoring) ───
   Future<Map<String, dynamic>> getMonitoringObjekPajak({
     String? search,
@@ -113,7 +119,7 @@ class TransaksiSpopService {
     int limit = 20,
   }) async {
     final params = <String, dynamic>{'page': page, 'limit': limit};
-    if (search != null && search.isNotEmpty) params['search'] = search;
+    if (search != null && search.isNotEmpty) params['q'] = search;
     if (kodeWilayah != null) params['kode_wilayah'] = kodeWilayah;
     if (statusAjuan != null) params['status_ajuan'] = statusAjuan;
     if (statusAktif != null) params['status_aktif'] = statusAktif;

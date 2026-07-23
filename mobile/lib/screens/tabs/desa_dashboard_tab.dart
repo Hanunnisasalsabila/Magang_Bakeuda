@@ -117,8 +117,6 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
 
                     _buildStackedStats(theme),
                     const SizedBox(height: 24),
-                    _buildAksesCepat(context, theme),
-                    const SizedBox(height: 24),
                     _buildRecentActivity(theme),
                     const SizedBox(height: 60),
                   ],
@@ -246,93 +244,6 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     );
   }
 
-  Widget _buildAksesCepat(BuildContext context, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Akses Cepat',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildAksesCepatButton(
-                context,
-                icon: Icons.add_circle_outline,
-                label: 'Buat Baru',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen()));
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildAksesCepatButton(
-                context,
-                icon: Icons.folder_open,
-                label: 'Draf Saya',
-                color: Colors.purple,
-                onTap: () {
-                  widget.onLihatDraf?.call();
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildAksesCepatButton(
-                context,
-                icon: Icons.storage,
-                label: 'Data OP',
-                color: Colors.teal,
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PelacakanDokumenScreen()));
-                },
-              ),
-            ),
-          ],
-        )
-      ],
-    );
-  }
-
-  Widget _buildAksesCepatButton(BuildContext context, {required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildRecentActivity(ThemeData theme) {
     return Column(
@@ -396,9 +307,10 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
               // Handle title based on NOP availability
               String nopStr =
                   detail?['nop_generated'] ?? detail?['no_persil_baru'] ?? '';
-              String titleStr = nopStr.isEmpty || nopStr == 'Menunggu NOP'
-                  ? '$type Menunggu NOP'
-                  : '$type No. $nopStr';
+              String titleStr = 'Pengajuan $type';
+              String nopDisplay = nopStr.isEmpty || nopStr == 'Menunggu NOP'
+                  ? '(NOP Belum Tersedia)'
+                  : 'NOP. $nopStr';
 
               // Dynamic description based on status
               String descStr = 'Berkas SPOP sedang diproses dalam antrean.';
@@ -467,14 +379,30 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: Text(
-                                  titleStr,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      titleStr,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      nopDisplay,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontStyle: nopDisplay.contains('Belum Tersedia') ? FontStyle.italic : FontStyle.normal,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(width: 8),

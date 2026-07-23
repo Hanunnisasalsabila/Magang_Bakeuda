@@ -67,25 +67,36 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
         
         final idTransaksi = item['id_transaksi']?.toString() ?? item['id']?.toString() ?? '';
         
-        String name = 'Nama Belum Diisi';
-        String nop = 'Menunggu NOP';
-        
-        if (item['jenis_transaksi'] == 'HAPUS') {
-          final detailAsal = item['detail_asal'] as List<dynamic>?;
-          if (detailAsal != null && detailAsal.isNotEmpty) {
-            final detail = detailAsal[0] as Map<String, dynamic>;
-            name = item['nama_pengaju'] ?? detail['nama_pengaju'] ?? 'Nama Belum Diisi';
-            nop = detail['nop_asal'] ?? 'Menunggu NOP';
+        String name = item['nama_pengaju']?.toString() ?? '';
+        String nop = '';
+
+        final detailTujuan = item['detail_tujuan'] as List<dynamic>?;
+        if (detailTujuan != null && detailTujuan.isNotEmpty) {
+          final detail = detailTujuan[0] as Map<String, dynamic>;
+          if (name.isEmpty) name = detail['nama_pengaju']?.toString() ?? '';
+          if (name.isEmpty && detail['calon_subjek_json'] != null) {
+            try {
+              var subjekData = detail['calon_subjek_json'];
+              if (subjekData is String) {
+                subjekData = jsonDecode(subjekData);
+              }
+              name = subjekData['nama_subjek']?.toString() ?? subjekData['nama']?.toString() ?? '';
+            } catch (e) {
+              debugPrint('Error parsing calon_subjek_json: $e');
+            }
           }
-        } else {
-          final detailTujuan = item['detail_tujuan'] as List<dynamic>?;
-          if (detailTujuan != null && detailTujuan.isNotEmpty) {
-            final detail = detailTujuan[0] as Map<String, dynamic>;
-            name = item['nama_pengaju'] ?? detail['nama_pengaju'] ?? '';
-            if (name.isEmpty) name = detail['calon_subjek_json']?['nama_subjek'] ?? 'Nama Belum Diisi';
-            nop = detail['nop_generated'] ?? detail['no_persil_baru'] ?? 'Menunggu NOP';
-          }
+          nop = detail['nop_generated']?.toString() ?? detail['no_persil_baru']?.toString() ?? '';
         }
+
+        final detailAsal = item['detail_asal'] as List<dynamic>?;
+        if (detailAsal != null && detailAsal.isNotEmpty) {
+          final detail = detailAsal[0] as Map<String, dynamic>;
+          if (name.isEmpty) name = detail['nama_pengaju']?.toString() ?? '';
+          if (nop.isEmpty) nop = detail['nop_asal']?.toString() ?? '';
+        }
+
+        if (name.isEmpty) name = '(Nama Belum Diisi)';
+        if (nop.isEmpty) nop = '(NOP Belum Tersedia)';
         
         mapped.add({
           'id': idTransaksi,
@@ -140,7 +151,20 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
 
   String _fmtDate(String? iso) {
     if (iso == null) return '-';
-    try { return DateFormat('dd MMM yyyy', 'id').format(DateTime.parse(iso).toLocal()); } catch(_) { return iso; }
+    try {
+      final date = DateTime.parse(iso).toLocal();
+      final diff = DateTime.now().difference(date);
+      if (diff.inDays > 0) {
+        return '${diff.inDays} hari lalu';
+      } else if (diff.inHours > 0) {
+        return '${diff.inHours} jam lalu';
+      } else if (diff.inMinutes > 0) {
+        return '${diff.inMinutes} mnt lalu';
+      }
+      return 'Baru saja';
+    } catch (_) {
+      return iso;
+    }
   }
 
   Widget _buildEmptyState() {
@@ -191,7 +215,7 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    d['jenis_transaksi'],
+                    'Pengajuan ${d['jenis_transaksi']}',
                     style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
@@ -216,11 +240,21 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.numbers, size: 14, color: Colors.grey.shade500),
+                Icon(
+                  d['nop'] == '(NOP Belum Tersedia)' ? Icons.pending_outlined : Icons.numbers,
+                  size: 14,
+                  color: Colors.grey.shade500,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   d['nop'],
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontFamily: 'monospace', fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: d['nop'] == '(NOP Belum Tersedia)' ? Colors.grey.shade500 : Colors.grey.shade600,
+                    fontFamily: d['nop'] == '(NOP Belum Tersedia)' ? null : 'monospace',
+                    fontWeight: d['nop'] == '(NOP Belum Tersedia)' ? FontWeight.normal : FontWeight.w600,
+                    fontStyle: d['nop'] == '(NOP Belum Tersedia)' ? FontStyle.italic : FontStyle.normal,
+                  ),
                 ),
               ],
             ),
@@ -240,8 +274,8 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
                 ),
                 Row(
                   children: [
-                    InkWell(
-                      onTap: () async {
+                    TextButton.icon(
+                      onPressed: () async {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -250,27 +284,29 @@ class _DraftSpopScreenState extends State<DraftSpopScreen> {
                         );
                         _loadDrafts(); // Reload after back
                       },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.edit, size: 18, color: Colors.green),
+                      icon: const Icon(Icons.edit_rounded, size: 16),
+                      label: const Text('Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue[700],
+                        backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () => _deleteDraft(d['id']),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                    TextButton.icon(
+                      onPressed: () => _deleteDraft(d['id']),
+                      icon: const Icon(Icons.delete_rounded, size: 16),
+                      label: const Text('Hapus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red[700],
+                        backgroundColor: Colors.red.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],
