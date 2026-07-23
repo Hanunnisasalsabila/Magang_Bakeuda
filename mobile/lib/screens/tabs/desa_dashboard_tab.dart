@@ -2,9 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../services/dashboard_service.dart';
+import '../spop_form_screen.dart';
+import '../pelacakan_dokumen_screen.dart';
 
 class DesaDashboardTab extends StatefulWidget {
-  const DesaDashboardTab({super.key});
+  final VoidCallback? onLihatSemua;
+  final VoidCallback? onLihatDraf;
+  const DesaDashboardTab({super.key, this.onLihatSemua, this.onLihatDraf});
 
   @override
   State<DesaDashboardTab> createState() => _DesaDashboardTabState();
@@ -110,27 +114,13 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${_getGreeting()},',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _profileName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+
                     _buildStackedStats(theme),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
+                    _buildAksesCepat(context, theme),
+                    const SizedBox(height: 24),
                     _buildRecentActivity(theme),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 60),
                   ],
                 ),
               ),
@@ -146,36 +136,48 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
 
     return Column(
       children: [
-        _buildStatCard(
-          title: 'TOTAL SPOP DIKIRIM',
-          value: dikirim,
-          icon: Icons.description_outlined,
-          iconColor: Colors.blue,
-          bgColor: Colors.blue.withValues(alpha: 0.1),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'TOTAL\nDIKIRIM',
+                value: dikirim,
+                icon: Icons.description_outlined,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                title: 'MENUNGGU\nVERIFIKASI',
+                value: menunggu,
+                icon: Icons.hourglass_bottom,
+                color: const Color(0xFFD97706),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        _buildStatCard(
-          title: 'MENUNGGU VERIFIKASI',
-          value: menunggu,
-          icon: Icons.hourglass_bottom,
-          iconColor: const Color(0xFFD97706),
-          bgColor: const Color(0xFFD97706).withValues(alpha: 0.1),
-        ),
-        const SizedBox(height: 12),
-        _buildStatCard(
-          title: 'SPOP DISETUJUI',
-          value: disetujui,
-          icon: Icons.verified_outlined,
-          iconColor: Colors.green,
-          bgColor: Colors.green.withValues(alpha: 0.1),
-        ),
-        const SizedBox(height: 12),
-        _buildStatCard(
-          title: 'SPOP PERLU PERBAIKAN',
-          value: revisi,
-          icon: Icons.edit_outlined,
-          iconColor: Colors.redAccent,
-          bgColor: Colors.redAccent.withValues(alpha: 0.1),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'SPOP\nDISETUJUI',
+                value: disetujui,
+                icon: Icons.verified_outlined,
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                title: 'PERLU\nPERBAIKAN',
+                value: revisi,
+                icon: Icons.edit_outlined,
+                color: Colors.redAccent,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -185,48 +187,149 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     required String title,
     required String value,
     required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
+    required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        color: color.withValues(alpha: 0.05), // Subtle full background tint
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.3), // Colored border
+          width: 1.5,
+        ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                  letterSpacing: 0.5,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Icon(icon, color: color, size: 22),
               ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-            child: Icon(icon, color: iconColor, size: 24),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade800,
+              letterSpacing: 0.5,
+              height: 1.3,
+            ),
+            maxLines: 2,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAksesCepat(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Akses Cepat',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildAksesCepatButton(
+                context,
+                icon: Icons.add_circle_outline,
+                label: 'Buat Baru',
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen()));
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildAksesCepatButton(
+                context,
+                icon: Icons.folder_open,
+                label: 'Draf Saya',
+                color: Colors.purple,
+                onTap: () {
+                  widget.onLihatDraf?.call();
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildAksesCepatButton(
+                context,
+                icon: Icons.storage,
+                label: 'Data OP',
+                color: Colors.teal,
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PelacakanDokumenScreen()));
+                },
+              ),
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _buildAksesCepatButton(BuildContext context, {required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black87), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ],
+        ),
       ),
     );
   }
@@ -248,7 +351,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
             ),
             if (_recentTransactions.isNotEmpty)
               TextButton(
-                onPressed: () {},
+                onPressed: widget.onLihatSemua ?? () {},
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: const Size(50, 30),

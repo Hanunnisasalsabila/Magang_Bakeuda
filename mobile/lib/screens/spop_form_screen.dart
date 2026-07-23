@@ -12,7 +12,8 @@ import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
 
 class SpopFormScreen extends StatefulWidget {
-  const SpopFormScreen({super.key});
+  final String? idTransaksi;
+  const SpopFormScreen({super.key, this.idTransaksi});
 
   @override
   State<SpopFormScreen> createState() => _SpopFormScreenState();
@@ -30,6 +31,54 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _nopUtamaController = TextEditingController();
   final _nopAsalController = TextEditingController();
   final _noSpptLamaController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    if (widget.idTransaksi != null) {
+      _loadDraftData();
+    }
+  }
+
+  Future<void> _loadDraftData() async {
+    setState(() => _isLoading = true);
+    try {
+      final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
+      setState(() {
+        _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        _nopAsalController.text = d['detail_asal']?[0]?['nop_asal'] ?? '';
+        
+        final tujuanList = d['detail_tujuan'] as List?;
+        if (tujuanList != null && tujuanList.isNotEmpty) {
+           final tujuan = tujuanList[0];
+           final subjek = tujuan['calon_subjek_json'];
+           if (subjek != null) {
+              _namaWpController.text = subjek['nama_subjek'] ?? '';
+              _nikController.text = subjek['nik'] ?? '';
+              _npwpController.text = subjek['npwp'] ?? '';
+              _noHpController.text = subjek['no_hp'] ?? '';
+              _alamatWpController.text = subjek['alamat_jalan'] ?? '';
+              _rtController.text = subjek['rt'] ?? '';
+              _rwController.text = subjek['rw'] ?? '';
+              _kelurahanWpController.text = subjek['kelurahan'] ?? '';
+              _kecamatanWpController.text = subjek['kecamatan'] ?? '';
+              _kodePosController.text = subjek['kode_pos'] ?? '';
+           }
+           _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
+           _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
+           _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
+           _rtOpController.text = tujuan['rt_op_baru'] ?? '';
+           _rwOpController.text = tujuan['rw_op_baru'] ?? '';
+           _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
+           _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
+        }
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memuat draft: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   // Map States
   final MapController _mapController = MapController();
