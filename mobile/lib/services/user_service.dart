@@ -39,4 +39,9 @@ class UserService {
     final resp = await _dio.patch('/users/$idUser', data: {'is_active': isActive});
     return resp.data as Map<String, dynamic>;
   }
+
+  Future<List<Map<String, dynamic>>> getWilayah() async {
+    final resp = await _dio.get('/wilayah');
+    return (resp.data['data'] as List).cast<Map<String, dynamic>>();
+  }
 }
