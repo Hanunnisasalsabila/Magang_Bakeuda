@@ -28,32 +28,48 @@ export default function MonitoringObjekPajak() {
 
         const rawList = listRes.data.data;
         const formattedList = rawList.flatMap(item => {
-          if (!item.detail_tujuan || item.detail_tujuan.length === 0) return [];
-          
-          return item.detail_tujuan.map(detail => {
-            const calonSubjek = detail?.calon_subjek_json;
+          let status = 'Ditolak';
+          if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
+          else if (item.status_ajuan === 'PROSES') status = 'Diproses';
+          else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
+          else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
+          else if (item.status_ajuan === 'DRAFT') status = 'Draft';
+
+          if (item.jenis_transaksi === 'HAPUS') {
+            if (!item.detail_asal || item.detail_asal.length === 0) return [];
+            return item.detail_asal.map(asal => {
+              return {
+                id: item.id_transaksi,
+                id_detail: asal?.id_detail_asal,
+                nop: asal?.nop_asal || 'Menunggu NOP',
+                name: (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+                address: asal?.objek_asal ? `${asal.objek_asal.jalan_op || ''} RT ${asal.objek_asal.rt_op || ''}/${asal.objek_asal.rw_op || ''}`.trim() : 'PENGHAPUSAN OBJEK PAJAK',
+                land: asal?.objek_asal?.luas_tanah || 0,
+                building: asal?.objek_asal?.luas_bangunan || 0,
+                status: status,
+                date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+              };
+            });
+          } else {
+            if (!item.detail_tujuan || item.detail_tujuan.length === 0) return [];
             
-            let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
+            return item.detail_tujuan.map(detail => {
+              const calonSubjek = detail?.calon_subjek_json;
+              let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
-            let status = 'Ditolak';
-            if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
-            else if (item.status_ajuan === 'PROSES') status = 'Diproses';
-            else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
-            else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
-            else if (item.status_ajuan === 'DRAFT') status = 'Draft';
-
-            return {
-              id: item.id_transaksi,
-              id_detail: detail?.id_detail_tujuan,
-              nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
-              name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (calonSubjek?.nama || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
-              address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
-              land: detail?.luas_tanah_baru || 0,
-              building: luasBangunan,
-              status: status,
-              date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-            };
-          });
+              return {
+                id: item.id_transaksi,
+                id_detail: detail?.id_detail_tujuan,
+                nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+                name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (calonSubjek?.nama || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+                address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
+                land: detail?.luas_tanah_baru || 0,
+                building: luasBangunan,
+                status: status,
+                date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+              };
+            });
+          }
         });
 
         setSubmissions(formattedList);

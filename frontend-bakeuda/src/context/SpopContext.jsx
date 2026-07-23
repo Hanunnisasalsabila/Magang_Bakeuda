@@ -330,7 +330,7 @@ export const SpopProvider = ({ children }) => {
       detail_tujuan = [{
         nik_calon_subjek: isPerubahanData ? undefined : (mergedData.nik || undefined),
         calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
-        nop_generated: rawNop.length >= 18 ? rawNop : undefined,
+        nop_generated: (isPerubahanData && rawNop.length >= 18 && rawNop !== '330300000000000000') ? rawNop : undefined,
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: (parseFloat(mergedData.luasBangunan) > 0) ? Number(mergedData.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,

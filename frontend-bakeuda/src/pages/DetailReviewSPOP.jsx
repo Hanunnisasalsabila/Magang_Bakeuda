@@ -435,7 +435,7 @@ export default function DetailReviewSPOP() {
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
               <h3 className="text-base font-bold text-blue-900 uppercase m-0">
                 {data.jenis_transaksi === 'BARU' 
-                  ? 'A. NOMOR OBJEK PAJAK (NOP BARU)' 
+                  ? 'A. NOMOR OBJEK PAJAK (NOP)' 
                   : (['PECAH', 'GABUNG'].includes(data.jenis_transaksi) 
                       ? 'A. DATA NOP ASAL (INDUK)' 
                       : 'A. NOMOR OBJEK PAJAK (NOP)')}
@@ -451,8 +451,8 @@ export default function DetailReviewSPOP() {
                     <td className={`p-3 font-mono font-bold text-black tracking-widest ${['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'border-r border-gray-200' : ''}`} colSpan={['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 1 : 3}>
                       {(() => {
                         if (data.jenis_transaksi === 'BARU') {
-                          const generated = detailTujuanList[0]?.nop_generated || detailTujuanList[0]?.no_persil_baru;
-                          return generated || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                          const generated = detailTujuanList[0]?.nop_generated;
+                          return generated || <span className="text-gray-500 italic">Akan digenerate oleh Bakeuda</span>;
                         }
                         return nopAsal !== 'Menunggu NOP' && nopAsal ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
                       })()}
@@ -748,7 +748,7 @@ export default function DetailReviewSPOP() {
                                   <tbody>
                                     <tr className="border-b border-gray-100">
                                       <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Penggunaan</td>
-                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.penggunaan || bgn.jenisPenggunaanBangunan || '-'}</td>
+                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.jenisPenggunaan || bgn.kode_jpb || bgn.jenis_penggunaan_bangunan || bgn.penggunaan || bgn.jenisPenggunaanBangunan || '-'}</td>
                                       <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Konstruksi</td>
                                       <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
                                     </tr>
@@ -806,7 +806,7 @@ export default function DetailReviewSPOP() {
           {/* Lampiran Dokumen */}
           <section className="border border-gray-300">
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-between">
-              <h3 className="text-base font-bold text-blue-900 uppercase m-0">E. LAMPIRAN DOKUMEN</h3>
+              <h3 className="text-base font-bold text-blue-900 uppercase m-0">C. LAMPIRAN DOKUMEN</h3>
             </div>
             <div className="p-0">
               {data.lampiran && data.lampiran.length > 0 ? (
@@ -878,7 +878,7 @@ export default function DetailReviewSPOP() {
       ) : (
         <section className="border border-gray-300 bg-white">
           <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-            <h3 className="text-base font-bold text-blue-900 uppercase m-0">G. Keputusan Verifikasi Bakeuda</h3>
+            <h3 className="text-base font-bold text-blue-900 uppercase m-0">D. Keputusan Verifikasi Bakeuda</h3>
           </div>
           <div className="p-4">
             <p className="text-gray-600 text-sm mb-4">Periksa kembali kesesuaian data digital dengan lampiran yang diunggah sebelum mengambil keputusan. Keputusan bersifat final dan akan diteruskan kepada pemohon.</p>

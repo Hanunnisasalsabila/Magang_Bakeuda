@@ -84,25 +84,46 @@ export class UsersService {
   }
 
   // ─────────────────────────────────────────
-  // Search by Username (case-insensitive, contains)
+  // Get Users (with search, pagination, role)
   // ─────────────────────────────────────────
 
-  async searchByUsername(username: string) {
-    const users = await this.prisma.user.findMany({
-      where: {
-        username: {
-          contains: username,
-          mode: 'insensitive',
-        },
-        role: Role.DESA,
-      },
-      select: safeUserSelect,
-      orderBy: { created_at: 'desc' },
-    });
+  async getUsers(params: {
+    search?: string;
+    role?: string;
+    page: number;
+    limit: number;
+  }) {
+    const { search, role, page, limit } = params;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (role) {
+      where.role = role;
+    }
+
+    if (search) {
+      where.OR = [
+        { username: { contains: search, mode: 'insensitive' } },
+        { nama_lengkap: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        select: safeUserSelect,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
 
     return {
       success: true,
-      total: users.length,
+      total,
+      page,
+      limit,
       data: users,
     };
   }
