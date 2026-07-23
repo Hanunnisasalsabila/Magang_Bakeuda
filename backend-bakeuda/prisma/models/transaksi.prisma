@@ -74,30 +74,30 @@ model DetailTransaksiAsal {
 // ── Detail Transaksi Tujuan ──
 
 model DetailTransaksiTujuan {
-  id_detail_tujuan     String     @id @default(uuid())
+  id_detail_tujuan     String      @id @default(uuid())
   id_transaksi         String // FK → transaksi_spop
-  nik_calon_subjek     String?    @db.VarChar(16)
-  luas_tanah_baru      Decimal    @db.Decimal(10, 2)
-  luas_bangunan_baru   Decimal    @default(0) @db.Decimal(10, 2)
-  jumlah_bangunan_baru Int        @default(0)
-  jenis_tanah_baru     JenisTanah
-  jalan_op_baru        String?    @db.VarChar(255)
-  rt_op_baru           String?    @db.VarChar(5)
-  rw_op_baru           String?    @db.VarChar(5)
-  blok_kav_no_baru     String?    @db.VarChar(50)
-  kode_wilayah_baru    String?    @db.VarChar(10)
-  kode_blok_baru       String?    @db.VarChar(3)
-  kelurahan_op_baru    String?    @db.VarChar(100)
-  kecamatan_op_baru    String?    @db.VarChar(100)
-  no_persil_baru       String?    @db.VarChar(20)
-  nop_generated        String?    @db.VarChar(18)
-  latitude             String?    @db.VarChar(50)
-  longitude            String?    @db.VarChar(50)
+  nik_calon_subjek     String?     @db.VarChar(16)
+  luas_tanah_baru      Decimal     @db.Decimal(10, 2)
+  luas_bangunan_baru   Decimal     @default(0) @db.Decimal(10, 2)
+  jumlah_bangunan_baru Int         @default(0)
+  jenis_tanah_baru     JenisTanah?
+  jalan_op_baru        String?     @db.VarChar(255)
+  rt_op_baru           String?     @db.VarChar(5)
+  rw_op_baru           String?     @db.VarChar(5)
+  blok_kav_no_baru     String?     @db.VarChar(50)
+  kode_wilayah_baru    String?     @db.VarChar(10)
+  kode_blok_baru       String?     @db.VarChar(3)
+  kelurahan_op_baru    String?     @db.VarChar(100)
+  kecamatan_op_baru    String?     @db.VarChar(100)
+  no_persil_baru       String?     @db.VarChar(20)
+  nop_generated        String?     @db.VarChar(18)
+  latitude             String?     @db.VarChar(50)
+  longitude            String?     @db.VarChar(50)
   koordinat_polygon    Json?
-  batas_utara          String?    @db.VarChar(50)
-  batas_selatan        String?    @db.VarChar(50)
-  batas_timur          String?    @db.VarChar(50)
-  batas_barat          String?    @db.VarChar(50)
+  batas_utara          String?     @db.VarChar(50)
+  batas_selatan        String?     @db.VarChar(50)
+  batas_timur          String?     @db.VarChar(50)
+  batas_barat          String?     @db.VarChar(50)
   data_bangunan_json   Json? // Menampung array data LSPOP sementara sebelum verifikasi Bakeuda
   calon_subjek_json    Json? // Menampung draf Subjek Pajak sebelum disetujui
 

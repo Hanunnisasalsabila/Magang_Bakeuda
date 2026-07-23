@@ -120,6 +120,21 @@ export default function ProfilPengguna({ role }) {
       }));
       setIsEditing(false);
       setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
+      
+      // Update localStorage and notify Header
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          userObj.nama_lengkap = editForm.name;
+          userObj.nip = editForm.nip || '';
+          localStorage.setItem('user', JSON.stringify(userObj));
+          window.dispatchEvent(new Event('profileUpdated'));
+        }
+      } catch (e) {
+        console.error('Failed to update localStorage', e);
+      }
+
       api.post('/activities', { type: 'edit', title: 'Memperbarui informasi profil akun' }).catch(() => {});
       // Refresh activities
       const res = await api.get('/activities').catch(() => null);
@@ -137,25 +152,40 @@ export default function ProfilPengguna({ role }) {
       setToast({ show: true, message: 'Konfirmasi kata sandi tidak cocok', type: 'error' });
       return;
     }
-    if (passwordForm.new.length < 6) {
-      setToast({ show: true, message: 'Kata sandi baru minimal 6 karakter', type: 'error' });
+    if (passwordForm.new.length < 8) {
+      setToast({ show: true, message: 'Kata sandi baru minimal 8 karakter', type: 'error' });
       return;
     }
     setIsChangingPwd(true);
     try {
       await api.patch('/auth/change-password', {
-        oldPassword: passwordForm.old,
-        newPassword: passwordForm.new,
+        old_password: passwordForm.old,
+        new_password: passwordForm.new,
       });
       setShowPasswordModal(false);
       setPasswordForm({ old: '', new: '', confirm: '' });
-      setToast({ show: true, message: 'Kata sandi berhasil diubah', type: 'success' });
+      setToast({ show: true, message: 'Kata sandi berhasil diubah. Mengeluarkan sesi Anda demi keamanan...', type: 'success' });
       api.post('/activities', { type: 'edit', title: 'Berhasil mengubah kata sandi akun' }).catch(() => {});
+      
+      // Force logout for security
+      setTimeout(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }, 2500);
       // Refresh activities
       const res = await api.get('/activities').catch(() => null);
       if (res) setActivities(res.data);
     } catch (err) {
-      setToast({ show: true, message: err.response?.data?.message || 'Gagal mengubah kata sandi', type: 'error' });
+      const msg = err.response?.data?.message;
+      let errorMsg = 'Gagal mengubah kata sandi';
+      if (typeof msg === 'string') {
+        errorMsg = msg;
+      } else if (Array.isArray(msg) && msg.length > 0) {
+        if (typeof msg[0] === 'string') errorMsg = msg.join(', ');
+        else if (msg[0].constraints) errorMsg = Object.values(msg[0].constraints)[0];
+      }
+      setToast({ show: true, message: errorMsg, type: 'error' });
     } finally {
       setIsChangingPwd(false);
     }
@@ -202,6 +232,24 @@ export default function ProfilPengguna({ role }) {
     if (isYesterday) return `Kemarin, ${timeString}`;
 
     return `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${timeString}`;
+  };
+
+  const formatNIPInput = (value) => {
+    const clean = value.replace(/\D/g, '');
+    let formatted = '';
+    if (clean.length > 0) {
+      formatted = clean.substring(0, 8);
+    }
+    if (clean.length > 8) {
+      formatted += ' ' + clean.substring(8, 14);
+    }
+    if (clean.length > 14) {
+      formatted += ' ' + clean.substring(14, 15);
+    }
+    if (clean.length > 15) {
+      formatted += ' ' + clean.substring(15, 18);
+    }
+    return formatted;
   };
 
   const getActivityIcon = (type) => {
@@ -310,14 +358,15 @@ export default function ProfilPengguna({ role }) {
                 {isEditing ? (
                   <input
                     type="text"
+                    maxLength={21}
                     value={editForm.nip}
-                    onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })}
-                    placeholder="Masukkan NIP..."
-                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    onChange={(e) => setEditForm({ ...editForm, nip: formatNIPInput(e.target.value) })}
+                    placeholder="Contoh: 19850315 201012 1 002"
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 ) : (
-                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface">
-                    {profileData.nip || '-'}
+                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface tracking-wide">
+                    {profileData.nip && profileData.nip !== '-' ? formatNIPInput(profileData.nip) : '-'}
                   </div>
                 )}
               </div>

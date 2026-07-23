@@ -27,29 +27,33 @@ export default function MonitoringObjekPajak() {
         setStats(statsRes.data.data);
 
         const rawList = listRes.data.data;
-        const formattedList = rawList.map(item => {
-          const detail = item.detail_tujuan?.[0];
-          const calonSubjek = item.calon_subjek_temp;
+        const formattedList = rawList.flatMap(item => {
+          if (!item.detail_tujuan || item.detail_tujuan.length === 0) return [];
           
-          let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
+          return item.detail_tujuan.map(detail => {
+            const calonSubjek = detail?.calon_subjek_json;
+            
+            let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
-          let status = 'Ditolak';
-          if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
-          else if (item.status_ajuan === 'PROSES') status = 'Diproses';
-          else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
-          else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
-          else if (item.status_ajuan === 'DRAFT') status = 'Draft';
+            let status = 'Ditolak';
+            if (item.status_ajuan === 'MENUNGGU') status = 'Menunggu Verifikasi';
+            else if (item.status_ajuan === 'PROSES') status = 'Diproses';
+            else if (item.status_ajuan === 'DISETUJUI') status = 'Disetujui';
+            else if (item.status_ajuan === 'REVISI') status = 'Perlu Revisi';
+            else if (item.status_ajuan === 'DRAFT') status = 'Draft';
 
-          return {
-            id: item.id_transaksi,
-            nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
-            name: calonSubjek?.nama_subjek_pajak || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
-            address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
-            land: detail?.luas_tanah_baru || 0,
-            building: luasBangunan,
-            status: status,
-            date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-          };
+            return {
+              id: item.id_transaksi,
+              id_detail: detail?.id_detail_tujuan,
+              nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+              name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (calonSubjek?.nama || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+              address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
+              land: detail?.luas_tanah_baru || 0,
+              building: luasBangunan,
+              status: status,
+              date: new Date(item.tanggal_pengajuan).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+            };
+          });
         });
 
         setSubmissions(formattedList);
@@ -90,139 +94,139 @@ export default function MonitoringObjekPajak() {
 
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto w-full space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h2 className="text-blue-900 font-bold text-3xl">Pemantauan PBB-P2</h2>
-          <p className="text-on-surface-variant max-w-2xl mt-1 text-sm md:text-base">
-            Rekapitulasi dan pelacakan status pengajuan Pajak Bumi dan Bangunan Perdesaan dan Perkotaan (PBB-P2).
+          <h1 className="text-3xl text-primary font-bold">Status Pengajuan SPOP</h1>
+          <p className="text-sm font-body-md text-on-surface-variant mt-1 max-w-2xl">
+            Pantau perkembangan dan status verifikasi berkas pengajuan Anda saat ini.
           </p>
         </div>
       </div>
 
       {/* Stats Overview (Clean Professional Design) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Total Pengajuan</p>
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                description
-              </span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Total Berkas Masuk</p>
+            <div className="p-1.5 rounded-full bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">receipt_long</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {loading ? '...' : stats.totalDikirim.toLocaleString()}
           </p>
-          <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">trending_up</span>
-            Total SPOP yang pernah diajukan
+          <p className="text-[10px] text-gray-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">trending_up</span>
+            Semua surat yang pernah Anda kirim
           </p>
         </div>
         
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Disetujui</p>
-            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                check_circle
-              </span>
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Sudah Selesai</p>
+            <div className="p-1.5 rounded-full bg-green-50 text-green-600 ring-1 ring-inset ring-green-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">verified</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {loading ? '...' : stats.disetujui.toLocaleString()}
           </p>
-          <p className="text-xs text-on-surface-variant mt-2">
-            Telah diverifikasi Bakeuda
+          <p className="text-[10px] text-gray-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">check_circle</span>
+            Surat telah diterima dan disahkan
           </p>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Perlu Revisi</p>
-            <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                warning
-              </span>
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Perlu Diperbaiki</p>
+            <div className="p-1.5 rounded-full bg-red-50 text-red-600 ring-1 ring-inset ring-red-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">edit_document</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {loading ? '...' : stats.perluPerbaikan.toLocaleString()}
           </p>
-          <p className="text-xs text-error font-medium mt-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">error</span>
-            Membutuhkan perbaikan segera
+          <p className="text-[10px] text-red-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">error</span>
+            Ada data yang salah, mohon cek kembali
           </p>
         </div>
       </div>
 
       {/* Filters & Search Controls */}
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Cari Nama/NOP/Alamat
-            </label>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-              placeholder="Masukkan kata kunci..."
-            />
+        <div className="flex flex-col md:flex-row gap-4 justify-between md:items-end">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <div className="space-y-1.5 flex-1 w-full">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Cari Nama/NOP/Alamat
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                  className="w-full bg-background border border-outline-variant rounded-lg py-2 pl-9 pr-3 text-sm focus:ring-primary focus:border-primary"
+                  placeholder="Masukkan kata kunci..."
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[250px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Status Verifikasi
+              </label>
+              <select
+                value={statusVerif}
+                onChange={(e) => { setStatusVerif(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              >
+                <option value="Semua Status">Semua Status</option>
+                <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                <option value="Diproses">Diproses</option>
+                <option value="Disetujui">Disetujui</option>
+                <option value="Perlu Revisi">Perlu Revisi</option>
+                <option value="Draft">Draft</option>
+                <option value="Ditolak">Ditolak</option>
+              </select>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Status Verifikasi
-            </label>
-            <select
-              value={statusVerif}
-              onChange={(e) => { setStatusVerif(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="Semua Status">Semua Status</option>
-              <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
-              <option value="Diproses">Diproses</option>
-              <option value="Disetujui">Disetujui</option>
-              <option value="Perlu Revisi">Perlu Revisi</option>
-              <option value="Draft">Draft</option>
-              <option value="Ditolak">Ditolak</option>
-            </select>
-          </div>
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <button
-              onClick={() => {
-                setSearch('');
-                setStatusVerif('Semua Status');
-                setCurrentPage(1);
-              }}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
-            >
-              Reset Filter
-            </button>
-          </div>
+          
+          <button
+            onClick={() => {
+              setSearch('');
+              setStatusVerif('Semua Status');
+              setCurrentPage(1);
+            }}
+            className="bg-white border border-gray-300 rounded-lg px-5 py-2 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2 w-full md:w-auto shrink-0"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            Reset Filter
+          </button>
         </div>
       </div>
 
       {/* Data Table Container */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm flex flex-col w-full overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar w-full">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
-                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant w-[1%] whitespace-nowrap">NOP</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant min-w-[150px]">Subjek Pajak</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-left">Alamat Objek</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Tanah (m²)</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Bgn (m²)</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Tanggal</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant text-center w-[1%] whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/30 text-on-surface">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-on-surface-variant">
+                  <td colSpan="8" className="px-4 py-8 text-center text-on-surface-variant">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <span className="material-symbols-outlined animate-spin text-[32px] text-primary">progress_activity</span>
                       <p className="font-medium text-sm">Memuat data monitoring...</p>
@@ -231,18 +235,19 @@ export default function MonitoringObjekPajak() {
                 </tr>
               ) : paginatedSubmissions.length > 0 ? (
                 paginatedSubmissions.map((obj, i) => (
-                  <tr key={obj.id} className="hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
-                    <td className="px-4 py-3 font-data-mono font-bold text-primary text-xs whitespace-nowrap">{obj.nop}</td>
-                    <td className="px-4 py-3 text-sm font-bold text-on-surface whitespace-nowrap">{obj.name}</td>
-                    <td className="px-4 py-3 text-xs text-on-surface-variant max-w-[200px] truncate" title={obj.address}>{obj.address}</td>
-                    <td className="px-4 py-3 text-sm font-data-mono text-center">{obj.land}</td>
-                    <td className="px-4 py-3 text-sm font-data-mono text-center">{obj.building}</td>
-                    <td className="px-4 py-3 text-center">
+                  <tr key={obj.id_detail || `${obj.id}-${i}`} className="hover:bg-surface-container-low transition-colors border-b border-outline-variant/30">
+                    <td className="px-4 py-3 font-data-mono font-bold text-primary text-xs w-[1%] whitespace-nowrap">{obj.nop}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-on-surface min-w-[150px]">{obj.name}</td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant" title={obj.address}>{obj.address}</td>
+                    <td className="px-4 py-3 text-sm font-data-mono text-center w-[1%] whitespace-nowrap">{obj.land}</td>
+                    <td className="px-4 py-3 text-sm font-data-mono text-center w-[1%] whitespace-nowrap">{obj.building}</td>
+                    <td className="px-4 py-3 text-xs font-data-mono text-center text-on-surface-variant w-[1%] whitespace-nowrap">{obj.date}</td>
+                    <td className="px-4 py-3 text-center w-[1%] whitespace-nowrap">
                       <StatusBadge status={obj.status} />
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap flex items-center justify-center gap-2">
                       <button 
-                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/formulir-spop/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
+                        onClick={() => navigate((obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? `/spop/informasi-umum/${obj.id}` : `/pelacakan-dokumen/${obj.id}`)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
                       >
                         <span className="material-symbols-outlined text-[14px]">{(obj.status === 'Draft' || obj.status === 'Perlu Revisi') ? 'edit' : 'visibility'}</span>
@@ -253,7 +258,7 @@ export default function MonitoringObjekPajak() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center p-8 text-gray-500">
+                  <td colSpan={8} className="text-center p-8 text-gray-500">
                     Tidak ada data pengajuan yang cocok.
                   </td>
                 </tr>

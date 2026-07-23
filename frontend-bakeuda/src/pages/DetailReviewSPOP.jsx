@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../utils/axios';
+import { MapContainer, TileLayer, Polygon, Marker, LayersControl } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
+
+const dotIcon = L.divIcon({
+  className: 'custom-div-icon',
+  html: "<div style='background-color:#EF4444;width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);'></div>",
+  iconSize: [12, 12],
+  iconAnchor: [6, 6]
+});
+
+const createNumberedIcon = (number) => L.divIcon({
+  className: 'custom-numbered-icon',
+  html: `<div style='background-color:#EF4444;color:white;width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;line-height:1;'>${number}</div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
 
 export default function DetailReviewSPOP() {
   const navigate = useNavigate();
@@ -39,7 +56,7 @@ export default function DetailReviewSPOP() {
         let res;
         if (bakeudaFlag) {
           try {
-            res = await api.patch(`/transaksi-spop/${id}/lock`);
+            res = await api.post(`/transaksi-spop/${id}/lock`);
           } catch (err) {
             res = await api.get(`/transaksi-spop/${id}`);
             if (res.data.data.status_ajuan === 'PROSES') {
@@ -50,7 +67,75 @@ export default function DetailReviewSPOP() {
         } else {
           res = await api.get(`/transaksi-spop/${id}`);
         }
-        setData(res.data.data);
+        let fetchedData = res.data.data;
+        
+        // Fetch existing NOP data if transaction is HAPUS to show the data being deleted
+        if (fetchedData.jenis_transaksi === 'HAPUS' && fetchedData.detail_asal?.length > 0) {
+          try {
+            const nopAsal = fetchedData.detail_asal[0].nop_asal;
+            const opRes = await api.get(`/objek-pajak/${nopAsal}`);
+            const opData = opRes.data.data;
+            if (opData) {
+              const subjek = opData.subjek_pajak || {};
+              const bumi = opData.bumi || {};
+              
+              // Mocking detail_tujuan structure so the UI can render it
+              fetchedData.detail_tujuan = [{
+                nik_calon_subjek: subjek.nik,
+                calon_subjek_json: {
+                  nik: subjek.nik,
+                  nama_subjek: subjek.nama_subjek,
+                  npwp: subjek.npwp,
+                  no_hp: subjek.no_telp,
+                  status_wp: subjek.status_pekerjaan,
+                  pekerjaan: subjek.pekerjaan,
+                  email: subjek.email,
+                  alamat_jalan: subjek.jalan_wp,
+                  rt: subjek.rt_wp,
+                  rw: subjek.rw_wp,
+                  kelurahan: subjek.kelurahan_wp,
+                  kecamatan: subjek.kecamatan_wp,
+                  kabupaten: subjek.kabupaten_wp,
+                  kode_pos: subjek.kode_pos_wp,
+                },
+                luas_tanah_baru: bumi.luas_bumi,
+                jenis_tanah_baru: bumi.jenis_bumi,
+                jalan_op_baru: opData.jalan_op,
+                blok_kav_no_baru: opData.blok_kav_no_op,
+                rt_op_baru: opData.rt_op,
+                rw_op_baru: opData.rw_op,
+                kelurahan_op_baru: opData.wilayah?.nama_desa,
+                kecamatan_op_baru: opData.wilayah?.kecamatan,
+                batas_utara: opData.batas_utara,
+                batas_selatan: opData.batas_selatan,
+                batas_timur: opData.batas_timur,
+                batas_barat: opData.batas_barat,
+                jumlah_bangunan_baru: opData.bangunan?.length || 0,
+                latitude: opData.latitude,
+                longitude: opData.longitude,
+                koordinat_polygon: opData.koordinat_polygon,
+                data_bangunan_json: (opData.bangunan || []).map(b => ({
+                  penggunaan: b.jenis_penggunaan_bangunan,
+                  luas_bangunan: b.luas_bangunan,
+                  jumlah_lantai: b.jumlah_lantai,
+                  tahun_dibangun: b.tahun_dibangun,
+                  tahun_direnovasi: b.tahun_direnovasi,
+                  kondisi: b.kondisi_bangunan,
+                  konstruksi: b.jenis_konstruksi,
+                  atap: b.jenis_atap,
+                  dinding: b.dinding,
+                  lantai: b.lantai,
+                  langit_langit: b.langit_langit,
+                  daya_listrik: (b.fasilitas || []).reduce((acc, f) => f.jenis_fasilitas === 'LISTRIK' ? acc + (f.jumlah_satuan || 0) : acc, 0)
+                }))
+              }];
+            }
+          } catch (e) {
+            console.error('Failed to fetch existing NOP data for HAPUS:', e);
+          }
+        }
+        
+        setData(fetchedData);
       } catch (error) {
         console.error('Gagal mengambil detail SPOP:', error);
         setToastMessage('Gagal mengambil data SPOP');
@@ -91,7 +176,7 @@ export default function DetailReviewSPOP() {
 
   const handleCancelReview = async () => {
     try {
-      await api.patch(`/transaksi-spop/${id}/unlock`);
+      await api.post(`/transaksi-spop/${id}/unlock`);
       navigate(-1);
     } catch (error) {
       setToastMessage('Gagal melepas kunci');
@@ -100,6 +185,7 @@ export default function DetailReviewSPOP() {
     }
   };
 
+  const [openPecahan, setOpenPecahan] = useState([0]);
   const [kodeBlok, setKodeBlok] = useState('');
   const [kodeJenisOp, setKodeJenisOp] = useState('0');
   const [allWilayah, setAllWilayah] = useState([]);
@@ -143,13 +229,32 @@ export default function DetailReviewSPOP() {
 
   // Set default wilayah from data
   useEffect(() => {
-    if (data?.detail_tujuan?.[0] && allWilayah.length > 0) {
-      const kec = data.detail_tujuan[0].kecamatan_op_baru;
-      const kel = data.detail_tujuan[0].kelurahan_op_baru;
-      if (kec && !selectedKecamatan) setSelectedKecamatan(kec);
-      if (kel && !selectedKelurahan) setSelectedKelurahan(kel);
+    if (data && allWilayah.length > 0) {
+      let targetKode = data.pengaju?.kode_wilayah;
+      if (data.detail_tujuan?.[0]?.kode_wilayah_baru) {
+        targetKode = data.detail_tujuan[0].kode_wilayah_baru;
+      }
+      
+      if (targetKode) {
+        const matched = allWilayah.find(w => w.kode_wilayah === targetKode);
+        if (matched) {
+          if (!selectedKecamatan) setSelectedKecamatan(matched.kecamatan);
+          if (!selectedKelurahan) setSelectedKelurahan(matched.nama_desa);
+        }
+      }
     }
   }, [data, allWilayah]);
+
+  
+  // Auto-fill kodeBlok for PECAH from NOP Induk
+  useEffect(() => {
+    if (isBakeuda && data?.status_ajuan === 'PROSES' && data?.jenis_transaksi === 'PECAH') {
+      const nopAsal = data?.detail_asal?.[0]?.nop_asal;
+      if (nopAsal && nopAsal.length >= 13 && !kodeBlok) {
+        setKodeBlok(nopAsal.substring(10, 13));
+      }
+    }
+  }, [data, isBakeuda, kodeBlok]);
 
   const handleDecision = async (status) => {
     try {
@@ -180,13 +285,25 @@ export default function DetailReviewSPOP() {
         const wilayahObj = allWilayah.find(w => w.nama_desa === selectedKelurahan && w.kecamatan === selectedKecamatan);
         const kodeWilayah = wilayahObj ? wilayahObj.kode_wilayah : undefined;
 
-        await api.patch(`/transaksi-spop/${id}/verifikasi-bakeuda`, {
-          status_ajuan: status,
-          catatan: decisionNotes,
-          kode_wilayah: status === 'DISETUJUI' ? kodeWilayah : undefined,
-          kode_blok: status === 'DISETUJUI' ? kodeBlok : undefined,
-          kode_jenis_op: status === 'DISETUJUI' ? kodeJenisOp : undefined,
-        });
+        let endpoint = '';
+        const payload = { catatan: decisionNotes, status_ajuan: status };
+
+        if (status === 'DISETUJUI') {
+          endpoint = `/transaksi-spop/${id}/approve`;
+          if (['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi)) {
+            Object.assign(payload, {
+              kode_wilayah: kodeWilayah,
+              kode_blok: kodeBlok,
+              kode_jenis_op: kodeJenisOp,
+            });
+          }
+        } else if (status === 'DITOLAK') {
+          endpoint = `/transaksi-spop/${id}/tolak`;
+        } else if (status === 'REVISI') {
+          endpoint = `/transaksi-spop/${id}/revisi`;
+        }
+
+        await api.post(endpoint, payload);
         setToastMessage(`Verifikasi Bakeuda Berhasil! Status: ${status}`);
         
         setData(prev => ({
@@ -244,9 +361,11 @@ export default function DetailReviewSPOP() {
     );
   }
 
-  const detailTujuan = data.detail_tujuan?.[0] || {};
-  const calonSubjek = detailTujuan.calon_subjek_json || {};
-  const nopDisplay = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
+  const detailTujuanList = data.detail_tujuan || [];
+  const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
+  const nopAsal = data.detail_asal?.[0]?.nop_asal || 'Menunggu NOP';
+  const luasInduk = data.detail_asal?.[0]?.objek_asal?.luas_tanah || '-';
+
   
   // Format Tanggal
   const tglPengajuan = new Date(data.tanggal_pengajuan).toLocaleDateString('id-ID', {
@@ -274,7 +393,7 @@ export default function DetailReviewSPOP() {
               Verifikasi Berkas SPOP PBB-P2
             </h2>
             <p className="text-on-surface-variant mt-1 text-sm">
-              Formulir {data.no_formulir || 'SPOP-A01-2024'} • ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
+              Formulir {data.no_formulir || 'SPOP-A01-2024'} &bull; ID: #{data.id_transaksi.split('-')[0].toUpperCase()}
             </p>
           </div>
         </div>
@@ -309,249 +428,490 @@ export default function DetailReviewSPOP() {
         </div>
       )}
 
-      {/* Button Cancel Review (Bakeuda Only) */}
-      {!lockedByOther && isBakeuda && data.status_ajuan === 'PROSES' && (
-        <div className="flex justify-end mb-4">
-          <button onClick={handleCancelReview} className="text-sm flex items-center gap-2 text-gray-600 hover:text-red-600 font-semibold bg-white border border-gray-200 px-4 py-2 rounded-md shadow-sm transition-colors">
-            <span className="material-symbols-outlined text-[18px]">close</span>
-            Batal Reviu / Kembali
-          </button>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Digital Form Data */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* NOP */}
-          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
-            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant">pin</span>
-              Nomor Objek Pajak (NOP)
-            </h3>
-            <div className="font-mono text-lg font-bold text-on-surface tracking-wider">
-              {nopDisplay}
+      <div className="space-y-6">
+          {/* Blok A Dinamis */}
+          <section className="border border-gray-300">
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+              <h3 className="text-base font-bold text-blue-900 uppercase m-0">
+                {data.jenis_transaksi === 'BARU' 
+                  ? 'A. NOMOR OBJEK PAJAK (NOP BARU)' 
+                  : (['PECAH', 'GABUNG'].includes(data.jenis_transaksi) 
+                      ? 'A. DATA NOP ASAL (INDUK)' 
+                      : 'A. NOMOR OBJEK PAJAK (NOP)')}
+              </h3>
             </div>
-            <p className="text-[11px] text-gray-400 mt-2 italic">
-              *Prov - Kab - Kec - Kel - Blok - No.Urut - Kode
-            </p>
+            <div className="p-0">
+              <table className="w-full text-sm border-collapse">
+                <tbody>
+                  <tr>
+                    <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">
+                      {['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'Nomor Objek Pajak Induk' : 'Nomor Objek Pajak'}
+                    </td>
+                    <td className={`p-3 font-mono font-bold text-black tracking-widest ${['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'border-r border-gray-200' : ''}`} colSpan={['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 1 : 3}>
+                      {(() => {
+                        if (data.jenis_transaksi === 'BARU') {
+                          const generated = detailTujuanList[0]?.nop_generated || detailTujuanList[0]?.no_persil_baru;
+                          return generated || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                        }
+                        return nopAsal !== 'Menunggu NOP' && nopAsal ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                      })()}
+                    </td>
+                    {['PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
+                      <>
+                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700 border-l border-gray-200">Luas Induk (Tanah)</td>
+                        <td className="p-3 font-bold text-black">{luasInduk} M&sup2;</td>
+                      </>
+                    )}
+                  </tr>
+                  <tr className="border-t border-gray-200">
+                    <td className="p-3 bg-gray-50 font-semibold text-gray-700">Format NOP</td>
+                    <td className="p-3 text-gray-500 text-xs italic" colSpan="3">Prov - Kab - Kec - Kel - Blok - No.Urut - Kode</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
-          {/* Subjek Pajak */}
-          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
-            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[20px]">person</span>
-              DATA SUBJEK PAJAK
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
-                    Nama Subjek Pajak
-                  </label>
-                  <div className="font-semibold text-gray-900 text-base">{calonSubjek.nama_subjek || data.nama_pengaju || 'Tidak Diketahui'}</div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
-                    Status Subjek Pajak
-                  </label>
-                  <div className="font-semibold text-blue-700">{calonSubjek.status_subjek || 'Tergantung Berkas'}</div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
-                    NIK / NPWP
-                  </label>
-                  <div className="font-mono font-medium text-sm text-gray-800">
-                    {calonSubjek.nik_npwp || detailTujuan.nik_calon_subjek || '-'}
+          {/* Rincian Tujuan (Looping) */}
+          {detailTujuanList.map((detailTujuan, idx) => {
+            const calonSubjek = detailTujuan.calon_subjek_json || {};
+            const isOpen = openPecahan.includes(idx);
+            
+            const toggleAccordion = () => {
+              if (isOpen) {
+                setOpenPecahan(openPecahan.filter(i => i !== idx));
+              } else {
+                setOpenPecahan([...openPecahan, idx]);
+              }
+            };
+
+            return (
+              <div key={detailTujuan.id_detail_tujuan || idx} className="border border-gray-300 bg-white overflow-hidden shadow-sm">
+                {/* Accordion Header */}
+                <div 
+                  className={`px-4 py-3 cursor-pointer flex justify-between items-center transition-colors ${isOpen ? 'bg-blue-700 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-b border-gray-300'}`}
+                  onClick={toggleAccordion}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+                      expand_more
+                    </span>
+                    <h3 className="text-base font-bold uppercase m-0 flex items-center gap-2">
+                      B. RINCIAN {data.jenis_transaksi === 'PECAH' ? `PECAHAN ${idx + 1}` : 'TUJUAN'} 
+                      {data.jenis_transaksi === 'PECAH' && <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full font-normal">Luas: {detailTujuan.luas_tanah_baru || 0} M&sup2;</span>}
+                    </h3>
                   </div>
+                  {detailTujuan.nop_generated && (
+                    <div className="font-mono text-sm tracking-widest opacity-90">
+                      NOP: {detailTujuan.nop_generated}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-1">
-                    Alamat Objek Pajak
-                  </label>
-                  <div className="font-semibold text-on-surface">{detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'} / RW {detailTujuan.rw_op_baru || '-'}</div>
-                  <div className="text-on-surface-variant text-sm font-medium mt-0.5">
-                    DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
 
-          {/* Data Tanah (Data Baru Comparison) */}
-          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
-            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[20px]">landscape</span>
-              DATA TANAH (DATA BARU)
-            </h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Luas Tanah (m²)</label>
-                <div className="flex items-center gap-3 font-semibold text-lg">
-                  <span className="text-green-700 bg-green-50 px-2 py-1 rounded">{detailTujuan.luas_tanah_baru || 0} m²</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Jenis Tanah</label>
-                <div className="font-semibold text-on-surface text-lg">{detailTujuan.jenis_tanah_baru || '-'}</div>
-              </div>
-            </div>
-          </section>
+                {/* Accordion Body */}
+                {isOpen && (
+                  <div className="animate-fadeIn">
+                    {/* Subjek Pajak */}
+                    <div className="p-0 border-b-4 border-gray-100">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-1.5">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">1. Data Subjek Pajak</h4>
+                      </div>
+                      <table className="w-full text-sm border-collapse">
+                        <tbody>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Nama Subjek Pajak</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{calonSubjek.nama_subjek || data.nama_pengaju || '-'}</td>
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">No. Telepon/HP</td>
+                            <td className="p-3 w-1/4 font-mono text-black">{calonSubjek.no_hp || '-'}</td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Status Subjek</td>
+                            <td className="p-3 font-bold text-black border-r border-gray-100">{calonSubjek.status_wp || calonSubjek.status_subjek || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="3">Alamat WP</td>
+                            <td className="p-3 text-black align-top" rowSpan="3">
+                              {calonSubjek.alamat_jalan || calonSubjek.alamat || '-'}, RT {calonSubjek.rt || '-'}/RW {calonSubjek.rw || '-'}<br />
+                              KEL. {calonSubjek.kelurahan || '-'}, KEC. {calonSubjek.kecamatan || '-'}<br />
+                              KAB. {calonSubjek.kabupaten || 'Purbalingga'} {calonSubjek.kode_pos ? `- ${calonSubjek.kode_pos}` : ''}
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">NIK / NPWP</td>
+                            <td className="p-3 font-mono text-black border-r border-gray-100">{calonSubjek.nik || calonSubjek.npwp || detailTujuan.nik_calon_subjek || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Pekerjaan</td>
+                            <td className="p-3 text-black border-r border-gray-100">{calonSubjek.pekerjaan || '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-          {/* Data Bangunan Table */}
-          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
-            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[20px]">apartment</span>
-              DATA BANGUNAN
-            </h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Jumlah Bangunan</label>
-                <div className="flex items-center gap-3 font-semibold text-lg">
-                  <span>{detailTujuan.jumlah_bangunan_baru || 0}</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-on-surface-variant uppercase mb-2">Luas Bangunan (m²)</label>
-                <div className="font-semibold text-on-surface text-lg">{detailTujuan.luas_bangunan_baru || 0} m²</div>
-              </div>
-            </div>
-          </section>
-        </div>
+                    {/* Data Tanah */}
+                    <div className="p-0 border-b-4 border-gray-100">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-1.5">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">2. Data Objek Pajak (Tanah)</h4>
+                      </div>
+                      <table className="w-full text-sm border-collapse">
+                        <tbody>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Luas Tanah</td>
+                            <td className="p-3 w-1/4 font-bold text-black border-r border-gray-100">{detailTujuan.luas_tanah_baru || 0} M&sup2;</td>
+                            <td className="p-3 w-1/4 bg-gray-50/50 font-semibold text-gray-700 align-top" rowSpan="2">Letak Objek</td>
+                            <td className="p-3 w-1/4 text-black align-top" rowSpan="2">
+                              {detailTujuan.jalan_op_baru || '-'} {detailTujuan.blok_kav_no_baru ? `(Blok/Kav: ${detailTujuan.blok_kav_no_baru})` : ''}<br />
+                              RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br />
+                              DESA {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Jenis Tanah</td>
+                            <td className="p-3 font-bold text-black border-r border-gray-100">{detailTujuan.jenis_tanah_baru || '-'}</td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 align-top">Titik Koordinat</td>
+                            <td className="p-3 border-r border-gray-100 align-top" colSpan="3">
+                              {Array.isArray(detailTujuan.koordinat_polygon) && detailTujuan.koordinat_polygon.length > 0 ? (
+                                <div>
+                                  <div className="flex flex-col gap-2 mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-mono text-xs bg-blue-100 border border-blue-300 px-2 py-1 rounded font-bold text-blue-900">
+                                        {detailTujuan.koordinat_polygon.length} Titik Polygon
+                                      </span>
+                                      <div className="flex gap-4 border-l border-gray-300 pl-3">
+                                        <a
+                                          href={`https://www.google.com/maps?q=${detailTujuan.koordinat_polygon[0].lat},${detailTujuan.koordinat_polygon[0].lng}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                        >
+                                          <span className="material-symbols-outlined text-[14px]">map</span>
+                                          Google Maps
+                                        </a>
+                                        <a
+                                          href="https://bhumi.atrbpn.go.id/peta"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                        >
+                                          <span className="material-symbols-outlined text-[14px]">public</span>
+                                          Portal BHUMI ATR/BPN
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto p-2 bg-gray-50 border border-gray-200 rounded text-[11px] font-mono">
+                                      {detailTujuan.koordinat_polygon.map((p, pIdx) => (
+                                        <span key={pIdx} className="bg-white border border-gray-300 px-1.5 py-0.5 rounded shadow-sm text-gray-700">
+                                          <span className="font-bold text-gray-400 mr-1">P{pIdx+1}:</span>
+                                          {p.lat}, {p.lng}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="border border-gray-300 rounded overflow-hidden h-[260px]">
+                                    <MapContainer 
+                                      center={[detailTujuan.koordinat_polygon[0].lat, detailTujuan.koordinat_polygon[0].lng]} 
+                                      zoom={17} 
+                                      style={{ height: "100%", width: "100%" }}
+                                      scrollWheelZoom={false}
+                                    >
+                                      <LayersControl position="topright">
+                                        <LayersControl.BaseLayer name="Google Satellite" checked>
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                        <LayersControl.BaseLayer name="Google Streets">
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                      </LayersControl>
+                                      <Polygon 
+                                        positions={detailTujuan.koordinat_polygon.map(p => [p.lat, p.lng])} 
+                                        pathOptions={{ color: '#2563eb', fillColor: '#3b82f6', fillOpacity: 0.4, weight: 3 }}
+                                      />
+                                      {detailTujuan.koordinat_polygon.map((p, pIdx) => (
+                                        <Marker
+                                          key={`marker-${pIdx}`}
+                                          position={[p.lat, p.lng]}
+                                          icon={createNumberedIcon(pIdx + 1)}
+                                        />
+                                      ))}
+                                    </MapContainer>
+                                  </div>
+                                </div>
+                              ) : detailTujuan.latitude && detailTujuan.longitude ? (
+                                <div>
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-mono text-xs bg-gray-100 border border-gray-300 px-2 py-1 rounded font-semibold text-gray-800">
+                                      {detailTujuan.latitude}, {detailTujuan.longitude}
+                                    </span>
+                                    <div className="flex gap-4 border-l border-gray-300 pl-3">
+                                      <a
+                                        href={`https://www.google.com/maps?q=${detailTujuan.latitude},${detailTujuan.longitude}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">map</span>
+                                        Google Maps
+                                      </a>
+                                      <a
+                                        href="https://bhumi.atrbpn.go.id/peta"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:underline font-semibold"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">public</span>
+                                        Portal BHUMI ATR/BPN
+                                      </a>
+                                    </div>
+                                  </div>
+                                  <div className="border border-gray-300 rounded overflow-hidden h-[260px]">
+                                    <MapContainer 
+                                      center={[parseFloat(detailTujuan.latitude), parseFloat(detailTujuan.longitude)]} 
+                                      zoom={17} 
+                                      style={{ height: "100%", width: "100%" }}
+                                      scrollWheelZoom={false}
+                                    >
+                                      <LayersControl position="topright">
+                                        <LayersControl.BaseLayer name="Google Satellite" checked>
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                        <LayersControl.BaseLayer name="Google Streets">
+                                          <TileLayer
+                                            url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                                            maxZoom={20}
+                                            subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                                            attribution="&copy; Google Maps"
+                                          />
+                                        </LayersControl.BaseLayer>
+                                      </LayersControl>
+                                      <Marker 
+                                        position={[parseFloat(detailTujuan.latitude), parseFloat(detailTujuan.longitude)]}
+                                        icon={dotIcon}
+                                      />
+                                    </MapContainer>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-xs">Koordinat tidak tersedia</span>
+                              )}
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Batas Utara</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_utara || detailTujuan.batas_utara_nop || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 border-l border-gray-100">Batas Selatan</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_selatan || detailTujuan.batas_selatan_nop || '-'}</td>
+                          </tr>
+                          <tr>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700">Batas Timur</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_timur || detailTujuan.batas_timur_nop || '-'}</td>
+                            <td className="p-3 bg-gray-50/50 font-semibold text-gray-700 border-l border-gray-100">Batas Barat</td>
+                            <td className="p-3 text-black">{detailTujuan.batas_barat || detailTujuan.batas_barat_nop || '-'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
 
-        {/* Right Column: Attachments & Documents */}
-        <div className="lg:col-span-5 space-y-8">
-          <section className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm lg:sticky lg:top-20">
-            <h3 className="text-sm border-b border-gray-200 pb-3 mb-4 flex items-center gap-2 text-gray-800 font-bold uppercase">
-              <span className="material-symbols-outlined text-[20px]">attachment</span>
-              LAMPIRAN DOKUMEN
-            </h3>
-            <div className="space-y-6">
-              {data.lampiran && data.lampiran.length > 0 ? (
-                data.lampiran.map((lamp, idx) => (
-                  <div key={lamp.id_lampiran || idx} className="group border border-outline-variant p-4 rounded-lg hover:border-primary transition-all cursor-pointer">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-primary text-[24px]">description</span>
-                        <div>
-                          <p className="font-bold text-sm text-on-surface">{lamp.jenis_dokumen}</p>
+                    {/* Data Bangunan */}
+                    <div className="p-0">
+                      <div className="bg-blue-50/50 border-y border-gray-200 px-4 py-2 flex justify-between items-center">
+                        <h4 className="text-sm font-bold text-blue-900 m-0">3. Data Bangunan</h4>
+                        <div className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+                          {detailTujuan.jumlah_bangunan_baru || 0} UNIT ({detailTujuan.luas_bangunan_baru || 0} M&sup2;)
                         </div>
                       </div>
-                      <a href={lamp.url_dokumen} target="_blank" rel="noopener noreferrer" className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">
-                        open_in_new
-                      </a>
+                      
+                      <div className="p-0">
+                        {Array.isArray(detailTujuan.data_bangunan_json) && detailTujuan.data_bangunan_json.length > 0 ? (
+                          <div>
+                            {detailTujuan.data_bangunan_json.map((bgn, idx2) => (
+                              <div key={idx2} className={idx2 > 0 ? "border-t-2 border-dashed border-gray-200" : ""}>
+                                <div className="bg-gray-50/30 border-b border-gray-100 px-4 py-1.5">
+                                  <h5 className="font-bold text-gray-800 text-xs uppercase">Bangunan Ke-{idx2 + 1}</h5>
+                                </div>
+                                <table className="w-full text-sm border-collapse">
+                                  <tbody>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Penggunaan</td>
+                                      <td className="p-2 w-1/4 text-black border-r border-gray-100">{bgn.penggunaan || bgn.jenisPenggunaanBangunan || '-'}</td>
+                                      <td className="p-2 w-1/4 bg-gray-50/50 font-semibold text-gray-700">Konstruksi</td>
+                                      <td className="p-2 w-1/4 text-black">{bgn.konstruksi || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Luas Bangunan</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.luas_bangunan || bgn.luasBangunan || 0} M&sup2;</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Atap</td>
+                                      <td className="p-2 text-black">{bgn.atap || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Jumlah Lantai</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.jumlah_lantai || bgn.jumlahLantai || 1}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Dinding</td>
+                                      <td className="p-2 text-black">{bgn.dinding || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Dibangun</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_dibangun || bgn.tahunDibangun || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Lantai</td>
+                                      <td className="p-2 text-black">{bgn.lantai || '-'}</td>
+                                    </tr>
+                                    <tr className="border-b border-gray-100">
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Tahun Renovasi</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.tahun_direnovasi || bgn.tahunDirenovasi || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Langit-Langit</td>
+                                      <td className="p-2 text-black">{bgn.langit_langit || bgn.langitLangit || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Kondisi</td>
+                                      <td className="p-2 text-black border-r border-gray-100">{bgn.kondisi || '-'}</td>
+                                      <td className="p-2 bg-gray-50/50 font-semibold text-gray-700">Daya Listrik</td>
+                                      <td className="p-2 text-black">{bgn.daya_listrik || bgn.dayaListrik || 0} Watt</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          detailTujuan.jumlah_bangunan_baru > 0 && (
+                            <div className="p-4 text-gray-600 text-sm italic">
+                              Catatan: Jumlah bangunan diisi {detailTujuan.jumlah_bangunan_baru} unit, namun rincian formulir LSPOP (Data Bangunan) tidak dilampirkan secara digital.
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="aspect-video bg-surface-variant rounded-lg overflow-hidden relative border border-outline-variant/60 shadow-inner">
-                       <img
-                          alt="Document Preview"
-                          className="w-full h-full object-cover"
-                          src={lamp.url_dokumen}
-                          onError={(e) => { e.target.src = 'https://via.placeholder.com/400x200?text=Dokumen+PDF/File'; }}
-                        />
-                    </div>
+
                   </div>
-                ))
+                )}
+              </div>
+            );
+          })}
+
+          {/* Lampiran Dokumen */}
+          <section className="border border-gray-300">
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-between">
+              <h3 className="text-base font-bold text-blue-900 uppercase m-0">E. LAMPIRAN DOKUMEN</h3>
+            </div>
+            <div className="p-0">
+              {data.lampiran && data.lampiran.length > 0 ? (
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="p-3 text-left font-semibold text-gray-700 w-12 border-r border-gray-200">No.</th>
+                      <th className="p-3 text-left font-semibold text-gray-700 border-r border-gray-200">Jenis Dokumen</th>
+                      <th className="p-3 text-center font-semibold text-gray-700">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.lampiran.map((lamp, idx) => (
+                      <React.Fragment key={lamp.id_dokumen || idx}>
+                        <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                          <td className="p-3 text-center border-r border-gray-200">{idx + 1}</td>
+                          <td className="p-3 font-bold text-gray-800 border-r border-gray-200">{lamp.jenis_dokumen}</td>
+                          <td className="p-3 text-center">
+                            <a href={lamp.url_file} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">
+                              {lamp.url_file?.toLowerCase().endsWith('.pdf') ? 'LIHAT PDF' : 'LIHAT GAMBAR'}
+                            </a>
+                          </td>
+                        </tr>
+                        {lamp.url_file && lamp.url_file.match(/\.(jpeg|jpg|gif|png)$/i) && (
+                          <tr className="border-b border-gray-200">
+                            <td colSpan="3" className="p-4 bg-gray-100 text-center">
+                              <img src={lamp.url_file} alt={lamp.jenis_dokumen} className="max-h-96 mx-auto border border-gray-300 shadow-sm" />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <p className="text-sm text-on-surface-variant italic">Tidak ada lampiran dokumen.</p>
+                <div className="p-4 text-sm text-gray-500 italic text-center">Tidak ada lampiran dokumen.</div>
               )}
             </div>
           </section>
-        </div>
-      </div>
 
-      {/* Verification Action Card or Final Decision */}
+      {/* Verification Action Card */}
       {['DISETUJUI', 'DITOLAK', 'REVISI'].includes(data.status_ajuan) ? (
-        <div className="mt-8 mb-12">
-          <div className={`border p-6 md:p-8 rounded-lg shadow-sm ${data.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200' : (data.status_ajuan === 'REVISI' ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')}`}>
-            <div className="flex items-center gap-3 mb-6 border-b border-black/5 pb-4">
-              <span className={`material-symbols-outlined text-[32px] ${data.status_ajuan === 'DISETUJUI' ? 'text-green-600' : (data.status_ajuan === 'REVISI' ? 'text-amber-600' : 'text-red-600')}`}>
-                {data.status_ajuan === 'DISETUJUI' ? 'verified' : (data.status_ajuan === 'REVISI' ? 'assignment_return' : 'cancel')}
-              </span>
+        <section className="border-2 border-black p-6">
+            <div className="flex items-center gap-3 mb-6 border-b border-black pb-4">
+              <span className={`material-symbols-outlined text-[32px]`}>verified</span>
               <div>
-                <h3 className={`text-xl font-bold ${data.status_ajuan === 'DISETUJUI' ? 'text-green-800' : (data.status_ajuan === 'REVISI' ? 'text-amber-800' : 'text-red-800')}`}>
+                <h3 className="text-xl font-bold uppercase text-black">
                   Berkas {data.status_ajuan === 'DISETUJUI' ? 'Telah Disetujui' : (data.status_ajuan === 'REVISI' ? 'Dikembalikan untuk Revisi' : 'Ditolak Permanen')}
                 </h3>
-                <p className={`text-sm mt-0.5 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-700' : (data.status_ajuan === 'REVISI' ? 'text-amber-700' : 'text-red-700')}`}>Keputusan akhir sudah diberikan oleh pihak Bakeuda.</p>
               </div>
             </div>
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${data.status_ajuan === 'DISETUJUI' ? 'text-green-900' : (data.status_ajuan === 'REVISI' ? 'text-amber-900' : 'text-red-900')}`}>
+            <div className="grid grid-cols-2 gap-6 text-black">
               <div>
-                <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Diverifikasi Oleh</p>
-                <p className="font-semibold text-sm flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[16px] opacity-70">person</span>
-                  {data.verifikator?.nama_lengkap || 'Admin Bakeuda'}
-                </p>
+                <p className="text-[11px] font-bold uppercase mb-1 underline">Diverifikasi Oleh</p>
+                <p className="font-semibold text-sm">{data.verifikator?.nama_lengkap || 'Admin Bakeuda'}</p>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase mb-1 opacity-70 tracking-wider">Waktu Keputusan</p>
-                <p className="font-semibold text-sm flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[16px] opacity-70">schedule</span>
-                  {data.verified_at ? new Date(data.verified_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WIB' : '-'}
-                </p>
+                <p className="text-[11px] font-bold uppercase mb-1 underline">Waktu Keputusan</p>
+                <p className="font-semibold text-sm">{data.verified_at ? new Date(data.verified_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' }) + ' WIB' : '-'}</p>
               </div>
-              <div className="md:col-span-2 mt-2">
-                <p className="text-[11px] font-bold uppercase mb-2 opacity-70 tracking-wider">Catatan Tambahan</p>
-                <div className="bg-white/60 p-4 rounded-md border border-black/5 shadow-inner">
-                  <p className="text-sm whitespace-pre-wrap font-medium">{data.catatan_bakeuda || 'Tidak ada catatan dari verifikator.'}</p>
+              <div className="col-span-2 mt-2">
+                <p className="text-[11px] font-bold uppercase mb-2 underline">Catatan Tambahan</p>
+                <div className="bg-gray-100 p-4 border border-gray-300">
+                  <p className="text-sm">{data.catatan_bakeuda || 'Tidak ada catatan dari verifikator.'}</p>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+        </section>
       ) : (
-        <div className="mt-8 mb-12">
-          <div className="bg-white border border-gray-200 p-6 md:p-8 rounded-lg shadow-sm">
-            <div className="mb-6 border-b border-gray-200 pb-4">
-            <h3 className="text-lg text-gray-900 flex items-center gap-2 font-bold">
-              <span className="material-symbols-outlined text-blue-600">assignment_turned_in</span>
-              Keputusan Verifikasi
-            </h3>
-            <p className="text-on-surface-variant text-sm mt-1">
-              Periksa kembali kesesuaian data digital dengan lampiran yang diunggah. Keputusan yang Anda buat akan langsung diteruskan ke tingkat Kabupaten.
-            </p>
+        <section className="border border-gray-300 bg-white">
+          <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+            <h3 className="text-base font-bold text-blue-900 uppercase m-0">G. Keputusan Verifikasi Bakeuda</h3>
           </div>
+          <div className="p-4">
+            <p className="text-gray-600 text-sm mb-4">Periksa kembali kesesuaian data digital dengan lampiran yang diunggah sebelum mengambil keputusan. Keputusan bersifat final dan akan diteruskan kepada pemohon.</p>
           
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-8 space-y-4">
-              {/* Render untuk Bakeuda */}
+          <div className="space-y-6">
               {isBakeuda && data.status_ajuan === 'PROSES' && ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
-                <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg mb-4">
-                  <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px]">pin</span>
+                <div className="p-4 border border-blue-200 bg-blue-50 mb-4">
+                  <h4 className="font-bold text-blue-900 mb-2 uppercase">
                     Penetapan NOP Baru
                   </h4>
                   <p className="text-sm text-blue-700 mb-4">
                     Pastikan Kecamatan dan Desa sudah benar. Anda hanya perlu mengisi <b>Kode Blok</b>. Nomor Urut akan dihitung otomatis oleh sistem.
                   </p>
                   
-                  {/* Wilayah Input (Dropdown) */}
+                  {/* Wilayah Input (Auto) */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kecamatan *</label>
-                      <select
-                        value={selectedKecamatan}
-                        onChange={(e) => {
-                          setSelectedKecamatan(e.target.value);
-                          setSelectedKelurahan(''); // Reset kelurahan when kecamatan changes
-                        }}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
-                      >
-                        <option value="">-- Pilih Kecamatan --</option>
-                        {kecamatanList.map(kec => <option key={kec} value={kec}>{kec}</option>)}
-                      </select>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kecamatan</label>
+                      <input
+                        type="text"
+                        value={selectedKecamatan || 'Mendeteksi...'}
+                        disabled
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-medium bg-gray-50 text-gray-600"
+                      />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Desa/Kel *</label>
-                      <select
-                        value={selectedKelurahan}
-                        onChange={(e) => setSelectedKelurahan(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
-                        disabled={!selectedKecamatan}
-                      >
-                        <option value="">-- Pilih Desa --</option>
-                        {kelurahanList.map(kel => <option key={kel} value={kel}>{kel}</option>)}
-                      </select>
+                      <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Desa/Kel</label>
+                      <input
+                        type="text"
+                        value={selectedKelurahan || 'Mendeteksi...'}
+                        disabled
+                        className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm font-medium bg-gray-50 text-gray-600"
+                      />
                     </div>
                   </div>
 
@@ -569,14 +929,22 @@ export default function DetailReviewSPOP() {
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Kode Jenis OP</label>
-                      <select
-                        value={kodeJenisOp}
-                        onChange={(e) => setKodeJenisOp(e.target.value)}
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm font-medium bg-white"
-                      >
-                        <option value="0">0 — Bumi</option>
-                        <option value="1">1 — Bangunan</option>
-                      </select>
+                      <div className="flex bg-gray-100 p-1 rounded-md border border-gray-200 mt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setKodeJenisOp('0')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded transition-all ${kodeJenisOp === '0' ? 'bg-white shadow-sm text-blue-700 border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          0 - Bumi
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setKodeJenisOp('1')}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded transition-all ${kodeJenisOp === '1' ? 'bg-white shadow-sm text-blue-700 border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                          1 - Bangunan
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -584,7 +952,12 @@ export default function DetailReviewSPOP() {
                   <div className="mt-3 bg-white border border-dashed border-blue-300 rounded-md px-3 py-2 flex flex-col sm:flex-row sm:items-center gap-1">
                     <span className="text-[11px] font-bold text-blue-500 uppercase">Preview NOP:</span>
                     <span className="font-mono font-bold text-blue-900 ml-0 sm:ml-2">
-                      33.03.XXX.XXX.{kodeBlok || '___'}.AUTO.{kodeJenisOp}
+                      {(() => {
+                        const matched = allWilayah.find(w => w.nama_desa === selectedKelurahan && w.kecamatan === selectedKecamatan);
+                        const kw = matched?.kode_wilayah || '3303XXXXXX';
+                        const fw = `${kw.substring(0,2)}.${kw.substring(2,4)}.${kw.substring(4,7)}.${kw.substring(7,10)}`;
+                        return `${fw}.${kodeBlok || '___'}.AUTO.${kodeJenisOp}`;
+                      })()}
                     </span>
                     <span className="text-[11px] text-gray-400 ml-0 sm:ml-2">(No. Urut otomatis)</span>
                   </div>
@@ -647,53 +1020,46 @@ export default function DetailReviewSPOP() {
                 />
               </div>
             </div>
-            
-            <div className="lg:col-span-4 space-y-3 flex flex-col justify-end">
-              <button
-                onClick={() => handleDecision('DISETUJUI')}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold py-3 px-4 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                Setujui Pengajuan
-              </button>
-              <button
-                onClick={() => handleDecision('REVISI')}
-                className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white font-semibold py-3 px-4 rounded-md hover:bg-amber-600 transition-colors shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[20px]">assignment_return</span>
-                Kembalikan untuk Revisi
-              </button>
-              <button
-                onClick={() => handleDecision('DITOLAK')}
-                className="w-full flex items-center justify-center gap-2 bg-white border border-red-300 text-red-600 font-semibold py-3 px-4 rounded-md hover:bg-red-50 transition-colors shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[20px]">cancel</span>
-                Tolak Permanen
-              </button>
-              <p className="text-xs text-gray-400 text-center px-2 pt-2">
-                Dengan menekan Setujui, Anda bertanggung jawab penuh atas validasi data.
-              </p>
+
+            {/* Action Buttons */}
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => handleDecision('DISETUJUI')}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-50 text-blue-700 font-semibold text-sm py-2.5 px-5 hover:bg-blue-100 transition-colors border border-blue-300 rounded"
+                >
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  Setujui Pengajuan
+                </button>
+                <button
+                  onClick={() => handleDecision('REVISI')}
+                  className="flex-1 flex items-center justify-center gap-2 bg-amber-50 text-amber-700 font-semibold text-sm py-2.5 px-5 hover:bg-amber-100 transition-colors border border-amber-300 rounded"
+                >
+                  <span className="material-symbols-outlined text-[18px]">undo</span>
+                  Kembalikan untuk Revisi
+                </button>
+                <button
+                  onClick={() => handleDecision('DITOLAK')}
+                  className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-700 font-semibold text-sm py-2.5 px-5 hover:bg-red-100 transition-colors border border-red-300 rounded"
+                >
+                  <span className="material-symbols-outlined text-[18px]">cancel</span>
+                  Tolak Permanen
+                </button>
               </div>
+              <p className="text-[10px] text-gray-400 mt-2 text-center">
+                * Keputusan yang diambil bersifat permanen dan tidak dapat dibatalkan.
+              </p>
             </div>
           </div>
-        </div>
+        </section>
       )}
+      </div>
 
       {/* Footer */}
-      <footer className="bg-surface-container-high px-gutter py-8 text-on-surface-variant border-t border-outline-variant rounded-t-xl">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-center md:text-left">
-            © 2026 Badan Keuangan Daerah (BKD) Kabupaten Purbalingga. Hak Cipta Dilindungi.
-          </p>
-          <div className="flex gap-6 text-sm font-label-sm">
-            <a className="hover:text-primary transition-colors" href="#">
-              Panduan Verifikator
-            </a>
-            <a className="hover:text-primary transition-colors" href="#">
-              Bantuan
-            </a>
-          </div>
-        </div>
+      <footer className="mt-12 pt-6 border-t border-gray-300 text-center pb-8">
+        <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">
+          &copy; 2026 Badan Keuangan Daerah (BKD) Kabupaten Purbalingga. Hak Cipta Dilindungi.
+        </p>
       </footer>
 
       {/* Floating Toast Notification */}
@@ -708,3 +1074,4 @@ export default function DetailReviewSPOP() {
     </main>
   );
 }
+

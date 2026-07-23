@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'tabs/admin_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/verifikasi_spop_tab.dart';
@@ -23,11 +24,6 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     const AdminDashboardTab(),
     const VerifikasiSpopTab(),
     const MonitoringPajakTab(),
-    const ProfileTab(
-      name: 'Admin BKD',
-      email: 'admin@purbalingga.go.id',
-      role: 'Admin',
-    ),
   ];
 
 
@@ -188,6 +184,20 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ManajemenWilayahScreen()));
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Profil Pengguna'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(
+                  body: ProfileTab(
+                    name: 'Admin BKD',
+                    email: 'admin@purbalingga.go.id',
+                    role: 'Admin',
+                  ),
+                )));
+              },
+            ),
             const Divider(),
             ListTile(
               leading: Icon(Icons.logout, color: theme.colorScheme.error),
@@ -207,7 +217,14 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           ],
         ),
       ),
-      body: _pages[_currentIndex],
+      body: PageView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _pages.length,
+        itemBuilder: (context, index) {
+          if (index != _currentIndex) return const SizedBox.shrink();
+          return _pages[index].animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
+        },
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -219,7 +236,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: _currentIndex > 2 ? 0 : _currentIndex, // Safe fallback
           onTap: (index) {
             setState(() {
               _currentIndex = index;
@@ -231,26 +248,21 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           unselectedItemColor: theme.colorScheme.onSurfaceVariant,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 10),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_filled),
-              label: 'Home',
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.verified_user_outlined),
-              activeIcon: Icon(Icons.verified_user),
-              label: 'Verifikasi',
+              icon: const Icon(Icons.verified_user_outlined),
+              activeIcon: const Icon(Icons.verified_user).animate(onPlay: (controller) => controller.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 1.seconds),
+              label: 'Antrean',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.analytics_outlined),
               activeIcon: Icon(Icons.analytics),
               label: 'Monitoring',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
             ),
           ],
         ),

@@ -1,15 +1,44 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Catch, ArgumentsHost, HttpException } from '@nestjs/common';
+import { BaseExceptionFilter, HttpAdapterHost } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+
+@Catch()
+class AllExceptionsFilter extends BaseExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    fs.appendFileSync('backend_errors.log', '\n[GLOBAL EXCEPTION] ' + new Date().toISOString() + '\n' + (exception instanceof Error ? exception.stack : String(exception)) + '\n' + (exception instanceof HttpException ? JSON.stringify(exception.getResponse()) : '') + '\n');
+    super.catch(exception, host);
+  }
+}
+
 // Trigger restart for Prisma schema sync
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve uploaded files statically at /uploads
+  const uploadsPath = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath, { recursive: true });
+  app.useStaticAssets(uploadsPath, { 
+    prefix: '/uploads',
+    setHeaders: (res) => {
+      res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+  });
 
   // Global prefix: semua route dimulai dengan /api
   app.setGlobalPrefix('api');
   
   // Enable CORS
   app.enableCors();
+  
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
 
   // ValidationPipe: validasi DTO otomatis
   app.useGlobalPipes(
@@ -18,11 +47,9 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory: (errors) => {
-        const fs = require('fs');
-        fs.writeFileSync('validation_errors.log', JSON.stringify(errors, null, 2));
-        const { BadRequestException } = require('@nestjs/common');
+        fs.appendFileSync('backend_errors.log', JSON.stringify(errors, null, 2) + '\n');
         return new BadRequestException(errors);
-      }
+      },
     }),
   );
 
@@ -38,6 +65,7 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
+// trigger restart
 
 
 

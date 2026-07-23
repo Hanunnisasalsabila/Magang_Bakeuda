@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 
 export default function Step5Status() {
-  const { formData, idTransaksi } = useSpop();
+  const { formData, idTransaksi, completionStatus, loadDraft } = useSpop();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Prevent direct access via URL/Sidebar if they haven't actually submitted
+    if (idTransaksi && !completionStatus[5]) {
+      navigate('/spop/konfirmasi', { replace: true });
+    }
+  }, [completionStatus, navigate, idTransaksi]);
+
+  if (!idTransaksi || !completionStatus[5]) return null;
 
   return (
     <div className="space-y-8 text-center py-10 animate-fadeIn bg-surface-container-low rounded-2xl">
@@ -12,10 +21,22 @@ export default function Step5Status() {
         <span className="material-symbols-outlined text-[56px]">check_circle</span>
       </div>
       <h3 className="text-3xl text-on-surface uppercase font-extrabold tracking-tight">
-        SPOP Berhasil Disimpan / Dikirim
+        {formData.transaksi === 'HAPUS' ? 'Pengajuan Penghapusan Dikirim' : 'SPOP Berhasil Disimpan / Dikirim'}
       </h3>
       <p className="text-lg text-on-surface-variant max-w-lg mx-auto">
-        Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop?.kec || '___'}.${formData.nop?.kel || '___'}.${formData.nop?.blok || '___'}.${formData.nop?.nourut || '____'}.${formData.nop?.kode || '_'}`}</span> telah tersimpan di sistem.
+        {['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi) ? (
+          <span>
+            Pengajuan Perekaman Data Baru SPOP Anda telah tersimpan dan sedang diproses untuk <b>Pembuatan NOP Baru</b>.
+          </span>
+        ) : formData.transaksi === 'HAPUS' ? (
+          <span>
+            Pengajuan Penghapusan Data untuk NOP <span className="font-bold text-primary font-data-mono">{formData.nopAsalList?.[0] || 'Terkait'}</span> telah dikirim ke sistem.
+          </span>
+        ) : (
+          <span>
+            Formulir SPOP Digital untuk NOP <span className="font-bold text-primary font-data-mono">{`33.03.${formData.nop?.kec || '___'}.${formData.nop?.kel || '___'}.${formData.nop?.blok || '___'}.${formData.nop?.nourut || '____'}.${formData.nop?.kode || '_'}`}</span> telah tersimpan di sistem.
+          </span>
+        )}
       </p>
 
       <div className="bg-white border border-outline-variant p-6 rounded-xl max-w-md mx-auto text-left space-y-3 mt-6 shadow-sm">
@@ -32,31 +53,24 @@ export default function Step5Status() {
         </div>
       </div>
 
-      {parseInt(formData.jumlahBangunan) > 0 && (
-        <div className="max-w-lg mx-auto mt-8 p-5 bg-primary/10 border border-primary/20 rounded-xl text-left flex gap-4 items-start shadow-sm">
-          <span className="material-symbols-outlined text-primary text-3xl">home_work</span>
-          <div>
-            <h5 className="font-bold text-on-surface mb-1 text-lg">Penting: Lanjut ke Pendataan Bangunan</h5>
-            <p className="text-sm text-blue-900 leading-relaxed mb-3">
-              Anda mendeklarasikan adanya {formData.jumlahBangunan} unit bangunan. Anda diwajibkan untuk mengisi Lampiran SPOP (LSPOP) untuk mendata spesifikasi bangunan tersebut.
-            </p>
-            <button className="text-sm font-bold bg-white text-primary px-4 py-2 rounded-lg border border-primary/30 hover:bg-blue-100 transition-colors shadow-sm">
-              Menuju Form LSPOP
-            </button>
-          </div>
-        </div>
-      )}
+
 
       <div className="mt-12 flex justify-center gap-4">
         <button
-          onClick={() => navigate('/spop')}
+          onClick={() => {
+            loadDraft(null);
+            navigate('/spop');
+          }}
           className="px-6 py-3 border border-outline-variant text-on-surface font-bold rounded-full hover:bg-surface-container transition-colors flex items-center gap-2"
         >
           <span className="material-symbols-outlined">add_circle</span>
           Buat SPOP Baru
         </button>
         <button
-          onClick={() => navigate('/beranda')}
+          onClick={() => {
+            loadDraft(null);
+            navigate('/beranda');
+          }}
           className="px-6 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
         >
           Kembali ke Beranda

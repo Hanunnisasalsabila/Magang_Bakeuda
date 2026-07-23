@@ -29,6 +29,26 @@ export default function Header({ role, onRoleChange, activePageTitle, onToggleSi
         };
   });
 
+  React.useEffect(() => {
+    const handleProfileUpdate = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserProfile({
+            name: user.nama_lengkap || user.username || 'Admin BKD',
+            role: user.role === 'BAKEUDA' ? 'Verifikator BKD' : 'Perangkat Desa',
+          });
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+  }, []);
+
   const getInitials = (name) => {
     if (!name) return 'U';
     return name

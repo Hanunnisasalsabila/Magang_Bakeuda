@@ -5,8 +5,8 @@ import { JenisTransaksi, JenisTanah, StatusWp, Pekerjaan } from '@prisma/client'
 export class CalonSubjekDto {
   @IsString() nik: string;
   @IsString() nama_subjek: string;
-  @IsEnum(StatusWp) status_wp: StatusWp;
-  @IsEnum(Pekerjaan) pekerjaan: Pekerjaan;
+  @IsOptional() @IsEnum(StatusWp) status_wp?: StatusWp;
+  @IsOptional() @IsEnum(Pekerjaan) pekerjaan?: Pekerjaan;
   @IsOptional() @IsString() npwp?: string;
   @IsOptional() @IsString() no_hp?: string;
   @IsOptional() @IsString() email?: string;
@@ -36,6 +36,7 @@ export class DetailTujuanInputDto {
 
   @IsOptional() @IsNumber() luas_tanah_baru?: number;
   @IsOptional() @IsNumber() luas_bangunan_baru?: number;
+  @IsOptional() @IsNumber() jumlah_bangunan_baru?: number;
   @IsOptional() @IsEnum(JenisTanah) jenis_tanah_baru?: JenisTanah;
 
   @IsOptional() @IsString() jalan_op_baru?: string;
@@ -49,12 +50,14 @@ export class DetailTujuanInputDto {
   @IsOptional() @IsString() kecamatan_op_baru?: string;
   @IsOptional() @IsString() latitude?: string;
   @IsOptional() @IsString() longitude?: string;
+  @IsOptional() @IsArray() koordinat_polygon?: any[];
   @IsOptional() @IsString() batas_utara?: string;
   @IsOptional() @IsString() batas_selatan?: string;
   @IsOptional() @IsString() batas_timur?: string;
   @IsOptional() @IsString() batas_barat?: string;
 
   @IsOptional() @IsArray() data_bangunan_json?: any[];
+  @IsOptional() @IsString() nop_generated?: string;
 }
 
 export class LampiranInputDto {

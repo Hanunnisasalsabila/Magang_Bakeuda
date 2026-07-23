@@ -18,9 +18,9 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
     if (value) {
       let newChars = [];
       charMap.forEach(({ seg, len }) => {
-        const segStr = (value[seg] || '').padEnd(len, '');
+        const segStr = (value[seg] || '').padEnd(len, ' ');
         for (let i = 0; i < len; i++) {
-          newChars.push(segStr[i] || '');
+          newChars.push(segStr[i] === ' ' ? ' ' : (segStr[i] || ' '));
         }
       });
       setChars(newChars);
@@ -37,17 +37,17 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
         refs.current[index + 1]?.focus();
       }
     } else {
-      updateChar(index, '');
+      updateChar(index, ' ');
     }
   };
 
   const handleKeyDown = (e, index) => {
     if (e.key === 'Backspace') {
       e.preventDefault();
-      if (chars[index]) {
-        updateChar(index, '');
+      if (chars[index] && chars[index] !== ' ') {
+        updateChar(index, ' ');
       } else if (index > 4) { // Don't go back into KAB (indices 0-3)
-        updateChar(index - 1, '');
+        updateChar(index - 1, ' ');
         refs.current[index - 1]?.focus();
       }
     } else if (e.key === 'ArrowLeft' && index > 0) {
@@ -69,7 +69,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
     charMap.forEach(({ seg, len }) => {
       let segStr = '';
       for (let i = 0; i < len; i++) {
-        segStr += newChars[cIdx] || '';
+        segStr += newChars[cIdx] || ' ';
         cIdx++;
       }
       newValue[seg] = segStr;
@@ -122,7 +122,7 @@ export default function SegmentedNOPInput({ value, onChange, label, showHeaders,
                         ? 'bg-surface-container-high text-on-surface border-outline cursor-not-allowed select-none'
                         : 'bg-white text-on-surface border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary shadow-sm'
                       }`}
-                    value={chars[currentIndex]}
+                    value={chars[currentIndex] === ' ' ? '' : (chars[currentIndex] || '')}
                     onChange={(e) => handleChange(e, currentIndex)}
                     onKeyDown={(e) => handleKeyDown(e, currentIndex)}
                     readOnly={isReadOnly}

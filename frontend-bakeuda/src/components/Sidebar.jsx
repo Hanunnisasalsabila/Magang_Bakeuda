@@ -11,12 +11,14 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
   // Try to use Spop context, it might be null if not provided
   let completionStatus = { 1: false, 2: false, 3: false, 4: false };
   let spopData = null;
+  let formData = null;
   let idTransaksiCtx = null;
   try {
     const spop = useSpop();
     if (spop) {
       completionStatus = spop.completionStatus;
       spopData = spop.spopData;
+      formData = spop.formData;
       idTransaksiCtx = spop.idTransaksi;
     }
   } catch (e) {
@@ -26,21 +28,44 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
   const currentId = idTransaksiCtx || id_transaksi || '';
   const basePathSpop = currentId ? `/spop` : `/spop`;
 
+  const isHapus = formData?.transaksi === 'HAPUS' || spopData?.jenis_transaksi === 'HAPUS';
+  const isMutasi = formData?.transaksi === 'MUTASI' || spopData?.jenis_transaksi === 'MUTASI';
+  const isPerubahanData = formData?.transaksi === 'PERUBAHAN_DATA' || spopData?.jenis_transaksi === 'PERUBAHAN_DATA';
+
   const spopSubItems = [
     { path: `/spop/detail${currentId ? `/${currentId}` : ''}`, label: 'Detail Pengajuan', step: 0, icon: 'info' },
     { path: `/spop/informasi-umum${currentId ? `/${currentId}` : ''}`, label: 'Informasi Umum', step: 1 },
-    { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
-    { path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 },
-    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 4 },
-    { path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 5 },
   ];
+
+  if (!isHapus && !isPerubahanData) {
+    spopSubItems.push({ path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 });
+  }
+
+  if (!isHapus && !isMutasi) {
+    spopSubItems.push({ path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 });
+  }
+
+  const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
+  const skipDataBangunan = isHapus || isMutasi || jumlahBangunan === 0;
+
+  if (!skipDataBangunan) {
+    spopSubItems.push({ path: `/spop/data-bangunan${currentId ? `/${currentId}` : ''}`, label: 'Data Bangunan', step: 4 });
+  }
+
+  spopSubItems.push(
+    { path: `/spop/konfirmasi${currentId ? `/${currentId}` : ''}`, label: 'Konfirmasi', step: 5 }
+  );
+
+  if (completionStatus[5]) {
+    spopSubItems.push({ path: `/spop/status${currentId ? `/${currentId}` : ''}`, label: 'Verifikasi', step: 6 });
+  }
   
-  const isSpopComplete = completionStatus[1] && completionStatus[2] && completionStatus[3];
-  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, 4);
+  const isSpopComplete = completionStatus[1] && completionStatus[2] && completionStatus[3] && completionStatus[4];
+  const visibleSpopSubItems = isSpopComplete ? spopSubItems : spopSubItems.slice(0, skipDataBangunan ? 4 : 5);
 
   const menuItems = isDesa
     ? [
-        { path: '/dashboard-desa', label: 'Dashboard', icon: 'dashboard' },
+        { path: '/dashboard-desa', label: 'Beranda', icon: 'dashboard' },
         { path: '/monitoring-pajak', label: 'Pemantauan PBB-P2', icon: 'analytics' },
         { 
           label: 'Pengajuan SPOP', 
@@ -48,17 +73,19 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
           basePath: '/spop',
           subItems: visibleSpopSubItems
         },
+        { path: '/draft-spop', label: 'Draft SPOP', icon: 'drafts' },
+        { path: '/riwayat-spop', label: 'Riwayat SPOP', icon: 'history' },
         { path: '/daftar-objek', label: 'Data Objek Pajak', icon: 'database' },
-        { path: '/profil', label: 'Profil Akun', icon: 'person' },
+        { path: '/profil', label: 'Profil Pengguna', icon: 'person' },
       ]
     : [
-        { path: '/dashboard-admin', label: 'Dashboard', icon: 'dashboard' },
-        { path: '/manajemen-akun-desa', label: 'Data Pengguna', icon: 'manage_accounts' },
-        { path: '/manajemen-wilayah', label: 'Data Wilayah', icon: 'map' },
-        { path: '/antrean-verifikasi', label: 'Antrean Validasi', icon: 'fact_check' },
-        { path: '/detail-review', label: 'Verifikasi Berkas', icon: 'rate_review' },
-        { path: '/riwayat-persetujuan', label: 'Riwayat Persetujuan', icon: 'task_alt' },
-        { path: '/profil', label: 'Profil Akun', icon: 'person' },
+        { path: '/dashboard-admin', label: 'Beranda', icon: 'dashboard' },
+        { path: '/manajemen-akun-desa', label: 'Manajemen Pengguna', icon: 'manage_accounts' },
+        { path: '/manajemen-wilayah', label: 'Manajemen Wilayah', icon: 'map' },
+        { path: '/antrean-verifikasi', label: 'Antrean Verifikasi', icon: 'fact_check' },
+        { path: '/detail-review', label: 'Pemeriksaan Berkas', icon: 'rate_review' },
+        { path: '/riwayat-persetujuan', label: 'Riwayat Keputusan', icon: 'task_alt' },
+        { path: '/profil', label: 'Profil Pengguna', icon: 'person' },
       ];
 
   const [openMenus, setOpenMenus] = useState({});

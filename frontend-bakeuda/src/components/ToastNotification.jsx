@@ -9,7 +9,7 @@ export default function ToastNotification({ show, message, type = 'success', onC
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [show, duration, onClose]);
+  }, [show, message, duration, onClose]);
 
   if (!show) return null;
 
@@ -40,7 +40,15 @@ export default function ToastNotification({ show, message, type = 'success', onC
       </span>
       <div>
         <p className="font-bold">{titles[type]}</p>
-        <p className="text-sm opacity-90 max-w-sm">{message}</p>
+        <p className="text-sm opacity-90 max-w-sm">
+          {Array.isArray(message) ? (
+            <ul className="list-disc pl-4">
+              {message.map((msg, i) => <li key={i}>{msg}</li>)}
+            </ul>
+          ) : (
+            message
+          )}
+        </p>
       </div>
       <button 
         className="ml-4 opacity-50 hover:opacity-100 transition-opacity" 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'tabs/desa_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/monitoring_pajak_tab.dart';
@@ -21,12 +22,46 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
   final List<Widget> _pages = [
     const DesaDashboardTab(),
     const MonitoringPajakTab(),
-    const ProfileTab(
-      name: 'Perangkat Desa',
-      email: 'desa@purbalingga.go.id',
-      role: 'Desa',
-    ),
   ];
+
+  void _showFormulirOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Pilih Jenis Formulir', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.description, color: Colors.blue),
+                  title: const Text('Formulir SPOP (Bumi & Bangunan)'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.domain, color: Colors.green),
+                  title: const Text('Formulir LSPOP (Bangunan Khusus)'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LspopFormScreen()));
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    );
+  }
 
 
   @override
@@ -147,37 +182,17 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: const Text('Formulir SPOP'),
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Profil Pengguna'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.domain_add_outlined),
-              title: const Text('Formulir LSPOP'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const LspopFormScreen()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics_outlined),
-              title: const Text('Monitoring Pajak'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _currentIndex = 1; // Switch to Layanan Tab
-                });
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.track_changes_outlined),
-              title: const Text('Pelacakan Dokumen'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const PelacakanDokumenScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const Scaffold(
+                  body: ProfileTab(
+                    name: 'Perangkat Desa',
+                    email: 'desa@purbalingga.go.id',
+                    role: 'Desa',
+                  ),
+                )));
               },
             ),
             const Divider(),
@@ -199,7 +214,14 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           ],
         ),
       ),
-      body: _pages[_currentIndex],
+      body: PageView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _pages.length,
+        itemBuilder: (context, index) {
+          if (index != _currentIndex) return const SizedBox.shrink();
+          return _pages[index].animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut);
+        },
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -211,11 +233,15 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: _currentIndex == 2 ? 1 : _currentIndex, // Safe fallback
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            if (index == 1) {
+              _showFormulirOptions(context);
+            } else if (index == 2) {
+              setState(() => _currentIndex = 1); // Monitoring is index 1 in _pages
+            } else {
+              setState(() => _currentIndex = 0);
+            }
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: theme.colorScheme.surface,
@@ -223,21 +249,27 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           unselectedItemColor: theme.colorScheme.onSurfaceVariant,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home_filled),
-              label: 'Home',
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.description_outlined),
-              activeIcon: Icon(Icons.description),
-              label: 'Layanan',
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_card, color: Colors.white, size: 24),
+              ).animate(onPlay: (controller) => controller.repeat(reverse: true)).scale(begin: const Offset(1, 1), end: const Offset(1.05, 1.05), duration: 1.seconds),
+              label: 'Formulir',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined),
+              activeIcon: Icon(Icons.analytics),
+              label: 'Monitoring',
             ),
           ],
         ),

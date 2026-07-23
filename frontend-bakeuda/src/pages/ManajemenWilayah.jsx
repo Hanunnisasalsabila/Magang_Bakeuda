@@ -181,11 +181,11 @@ export default function ManajemenWilayah() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className=" text-display-lg text-primary tracking-tight">
-            Manajemen Wilayah
+          <h1 className="text-2xl text-primary font-bold">
+            Data Wilayah
           </h1>
-          <p className="text-on-surface-variant font-body-lg mt-1 opacity-80 max-w-3xl">
-            Kelola data referensi wilayah untuk seluruh Kecamatan dan Desa/Kelurahan.
+          <p className="text-sm font-body-md text-on-surface-variant mt-1 max-w-3xl">
+            Atur daftar nama kecamatan dan kelurahan/desa yang terdaftar di sistem.
           </p>
         </div>
         <div className="shrink-0">
@@ -217,32 +217,32 @@ export default function ManajemenWilayah() {
           </div>
           
           <div className="relative w-full sm:w-64 shrink-0">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[20px]">
+              location_on
+            </span>
             <select 
               value={filterKecamatan}
               onChange={(e) => setFilterKecamatan(e.target.value)}
-              style={{ backgroundImage: 'none' }}
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm outline-none appearance-none cursor-pointer"
+              className="w-full pl-10 pr-10 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm cursor-pointer text-ellipsis overflow-hidden whitespace-nowrap appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
             >
-              <option value="">-- Semua Kecamatan --</option>
+              <option value="">Semua Kecamatan</option>
               {KECAMATAN_DATA.map((kec) => (
                 <option key={kec.nama} value={kec.nama}>{kec.nama}</option>
               ))}
             </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">
-              filter_list
-            </span>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto max-h-[60vh] overflow-y-auto relative scrollbar-thin scrollbar-thumb-outline-variant scrollbar-track-transparent">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-white shadow-sm outline outline-1 outline-primary/10">
               <tr className="bg-primary/5 text-primary font-medium text-xs uppercase tracking-wider border-b border-primary/20">
-                <th className="py-2.5 px-4 text-center w-[20%]">Kode Wilayah</th>
-                <th className="py-2.5 px-4 text-left w-[35%]">Nama Desa / Kelurahan</th>
-                <th className="py-2.5 px-4 text-center w-[30%]">Kecamatan</th>
-                <th className="py-2.5 px-4 text-center w-[15%]">Aksi</th>
+                <th className="py-2.5 px-4 text-center w-[25%]">Kode Wilayah</th>
+                <th className="py-2.5 px-4 text-left w-[30%]">Nama Desa / Kelurahan</th>
+                <th className="py-2.5 px-4 text-left w-[30%]">Kecamatan</th>
+                <th className="py-2.5 px-4 text-center w-[15%] whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/50 text-sm">
@@ -283,22 +283,22 @@ export default function ManajemenWilayah() {
                     <td className="py-2.5 px-4 text-left">
                       <p className="font-medium text-on-surface uppercase">{w.nama_desa}</p>
                     </td>
-                    <td className="py-2.5 px-4 text-center">
+                    <td className="py-2.5 px-4 text-left">
                       <span className="text-on-surface">{w.kecamatan}</span>
                     </td>
-                    <td className="py-2.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                    <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                      <div className="flex justify-center gap-2">
                         <button 
                           onClick={() => openEditModal(w)}
                           className="flex items-center justify-center w-8 h-8 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all shadow-sm group/btn"
-                          title="Edit Wilayah"
+                          title="Edit"
                         >
                           <span className="material-symbols-outlined text-[18px] group-hover/btn:scale-110 transition-transform">edit</span>
                         </button>
                         <button 
                           onClick={() => triggerDelete(w.kode_wilayah, w.nama_desa)}
                           className="flex items-center justify-center w-8 h-8 bg-white text-error border border-outline-variant hover:border-error hover:bg-error/5 rounded-lg transition-all shadow-sm group/btn"
-                          title="Hapus Wilayah"
+                          title="Hapus"
                         >
                           <span className="material-symbols-outlined text-[18px] group-hover/btn:scale-110 transition-transform">delete</span>
                         </button>

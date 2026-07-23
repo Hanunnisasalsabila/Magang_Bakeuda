@@ -811,7 +811,7 @@ export default function FormulirSPOP() {
     const isNew = ['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi);
     const finalNop = isNew
       ? 'Akan digenerate oleh Bakeuda'
-      : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}-${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
+      : `${nopObj.prov}.${nopObj.kab}.${nopObj.kec || '000'}.${nopObj.kel || '000'}.${nopObj.blok || '000'}.${nopObj.nourut || '0000'}.${nopObj.kode || '0'}`;
 
     localStorage.setItem('lspop_spop_payload', JSON.stringify(currentPayload));
     localStorage.setItem('lspop_jenis_transaksi', formData.transaksi);
@@ -2058,7 +2058,7 @@ export default function FormulirSPOP() {
                         {['BARU', 'PECAH'].includes(formData.transaksi) ? (
                           <span className="text-on-surface-variant text-sm font-body-md italic">Akan digenerate oleh Bakeuda</span>
                         ) : (
-                          `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}-${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
+                          `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}.${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
                         )}
                       </p>
                     </div>

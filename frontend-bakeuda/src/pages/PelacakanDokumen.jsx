@@ -14,7 +14,40 @@ export default function PelacakanDokumen() {
     const fetchData = async () => {
       try {
         const res = await api.get(`/transaksi-spop/${id}`);
-        setDataTransaksi(res.data.data);
+        let fetchedData = res.data.data;
+        
+        // Fetch existing NOP data if transaction is HAPUS
+        if (fetchedData.jenis_transaksi === 'HAPUS' && fetchedData.detail_asal?.length > 0) {
+          try {
+            const nopAsal = fetchedData.detail_asal[0].nop_asal;
+            const opRes = await api.get(`/objek-pajak/${nopAsal}`);
+            const opData = opRes.data.data;
+            if (opData) {
+              const subjek = opData.subjek_pajak || {};
+              const bumi = opData.bumi || {};
+              
+              // Populate detail_tujuan with existing data so UI can render it
+              fetchedData.detail_tujuan = [{
+                calon_subjek_json: {
+                  no_hp: subjek.no_telp,
+                  alamat_jalan: subjek.jalan_wp,
+                },
+                luas_tanah_baru: bumi.luas_bumi,
+                jalan_op_baru: opData.jalan_op,
+                rt_op_baru: opData.rt_op,
+                rw_op_baru: opData.rw_op,
+                kelurahan_op_baru: opData.wilayah?.nama_desa,
+                kecamatan_op_baru: opData.wilayah?.kecamatan,
+                luas_bangunan_baru: opData.bangunan?.reduce((acc, b) => acc + (b.luas_bangunan || 0), 0) || 0,
+                jumlah_bangunan_baru: opData.bangunan?.length || 0,
+                nop_generated: opData.nop
+              }];
+            }
+          } catch(err) {
+             console.log('Gagal ambil data objek_asal untuk HAPUS');
+          }
+        }
+        setDataTransaksi(fetchedData);
       } catch (err) {
         console.error(err);
         setError('Gagal memuat data pelacakan.');
@@ -49,6 +82,10 @@ export default function PelacakanDokumen() {
 
   const detailTujuan = dataTransaksi.detail_tujuan?.[0] || {};
   const nop = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
+  
+  const calonSubjek = detailTujuan.calon_subjek_json || {};
+
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -97,8 +134,17 @@ export default function PelacakanDokumen() {
     return status;
   };
 
+  let estimatedDate = '-';
+  if (['DISETUJUI', 'SELESAI', 'DITOLAK'].includes(dataTransaksi.status_ajuan)) {
+    estimatedDate = dataTransaksi.updated_at ? `Selesai pada ${formatDate(dataTransaksi.updated_at)}` : '-';
+  } else if (dataTransaksi.tanggal_pengajuan) {
+    const d = new Date(dataTransaksi.tanggal_pengajuan);
+    d.setDate(d.getDate() + 7); // Perkiraan 7 hari kerja
+    estimatedDate = formatDate(d.toISOString());
+  }
+
   return (
-    <main className="p-gutter max-w-screen-lg mx-auto w-full relative">
+    <main className="p-gutter w-full relative">
       {/* Top Header & Back Button */}
       <div className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -167,7 +213,7 @@ export default function PelacakanDokumen() {
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
                    <p className="text-on-surface-variant text-sm font-medium">Tgl Perkiraan Selesai</p>
-                   <p className="font-bold text-on-surface text-sm">-</p>
+                   <p className="font-bold text-on-surface text-sm">{estimatedDate}</p>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
                    <p className="text-on-surface-variant text-sm font-medium">NOP</p>
@@ -189,8 +235,37 @@ export default function PelacakanDokumen() {
                <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
                <p className="font-bold text-on-surface">{dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
                
+               <p className="text-on-surface-variant font-medium">No. Telepon/HP</p>
+               <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.no_hp_pengaju || calonSubjek.no_hp || '-'}</p>
+               
+               <p className="text-on-surface-variant font-medium">Alamat</p>
+               <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.alamat_pengaju || calonSubjek.alamat_jalan || '-'}</p>
+
                <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
                <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
+            </div>
+          </div>
+
+          {/* Card: Detail Objek Pajak */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-700 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">landscape</span>
+              </div>
+              <h3 className="font-bold text-on-surface tracking-wide">Detail Objek Pajak</h3>
+            </div>
+            <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
+               <p className="text-on-surface-variant font-medium">Letak Objek</p>
+               <p className="font-bold text-on-surface">
+                 {detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br/>
+                 KEL. {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
+               </p>
+               
+               <p className="text-on-surface-variant font-medium">Luas Tanah</p>
+               <p className="font-bold text-on-surface">{detailTujuan.luas_tanah_baru || 0} M&sup2;</p>
+               
+               <p className="text-on-surface-variant font-medium">Luas Bangunan</p>
+               <p className="font-bold text-on-surface">{detailTujuan.luas_bangunan_baru || 0} M&sup2; ({detailTujuan.jumlah_bangunan_baru || 0} Unit)</p>
             </div>
           </div>
 
@@ -262,24 +337,27 @@ export default function PelacakanDokumen() {
 
               <div className="space-y-6">
                 {dataTransaksi.riwayat?.map((item, index) => {
-                  const isLast = index === dataTransaksi.riwayat.length - 1;
+                  const statusRiwayat = item.status_baru || item.status_riwayat;
+                  const waktuKejadian = item.created_at || item.waktu_kejadian;
+                  const keterangan = item.catatan || item.keterangan;
+                  
                   return (
-                    <div key={item.id_riwayat} className="relative flex items-start gap-4">
+                    <div key={item.id_riwayat || index} className="relative flex items-start gap-4">
                       {/* Timeline Icon */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ring-4 ring-surface-container-lowest shadow-sm ${getStatusColor(item.status_riwayat)}`}>
-                        <span className="material-symbols-outlined text-[18px]">{getStatusIcon(item.status_riwayat)}</span>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 shrink-0 ring-4 ring-surface-container-lowest shadow-sm ${getStatusColor(statusRiwayat)}`}>
+                        <span className="material-symbols-outlined text-[18px]">{getStatusIcon(statusRiwayat)}</span>
                       </div>
 
                       {/* Content */}
                       <div className="pt-1 pb-2">
-                        <h4 className="font-bold text-on-surface text-sm mb-1">{formatStatus(item.status_riwayat)}</h4>
+                        <h4 className="font-bold text-on-surface text-sm mb-1">{formatStatus(statusRiwayat)}</h4>
                         <div className="flex items-center gap-1.5 text-on-surface-variant text-xs font-medium mb-1.5 opacity-80">
                           <span className="material-symbols-outlined text-[14px]">schedule</span>
-                          {formatDateTime(item.waktu_kejadian)}
+                          {waktuKejadian ? formatDateTime(waktuKejadian) : '-'}
                         </div>
-                        {item.keterangan && (
+                        {keterangan && (
                           <div className="bg-surface-container-low/50 px-3 py-2 rounded-lg text-xs text-on-surface-variant border border-outline-variant/50 mt-1">
-                            {item.keterangan}
+                            {keterangan}
                           </div>
                         )}
                       </div>

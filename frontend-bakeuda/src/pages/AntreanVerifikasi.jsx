@@ -63,14 +63,14 @@ export default function AntreanVerifikasi() {
         }
 
         const formatted = allData.map(item => {
-          const nopRaw = item.detail_tujuan[0]?.nop_generated || item.detail_tujuan[0]?.no_persil_baru || '..................';
-          const parts = nopRaw.replace(/\D/g, '');
-          const prov = parts.substring(0,2) || '33';
-          const kab = parts.substring(2,4) || '03';
-          const kec = parts.substring(4,7) || '000';
-          const kel = parts.substring(7,10) || '000';
-
-          const nopFormatted = `${prov}.${kab}.${kec}.${kel}.000-0000.0`;
+          const nopRaw = item.detail_tujuan[0]?.nop_generated || '..................';
+          const clean = nopRaw.replace(/\D/g, '');
+          let nopFormatted = nopRaw;
+          if (clean.length === 18) {
+            nopFormatted = `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+          } else if (nopRaw.includes('...')) {
+            nopFormatted = 'Menunggu penetapan';
+          }
 
           // Tentukan status badge dan aksi
           let badgeStatus = 'Menunggu Verifikasi';
@@ -80,11 +80,11 @@ export default function AntreanVerifikasi() {
 
           if (item.status_ajuan === 'PROSES') {
             if (item.locked_by === myId) {
-              badgeStatus = 'Anda Sedang Mereviu';
+              badgeStatus = 'Sedang Anda Verifikasi';
               isLockedByMe = true;
             } else {
               lockedByName = item.reviewer?.nama_lengkap || 'Admin Lain';
-              badgeStatus = `Sedang direviu oleh ${lockedByName}`;
+              badgeStatus = `Sedang diverifikasi oleh ${lockedByName}`;
               isLockedByOther = true;
             }
           }
@@ -92,9 +92,9 @@ export default function AntreanVerifikasi() {
           return {
             id: item.id_transaksi,
             nop: nopFormatted,
-            name: item.nama_pengaju || 'Tanpa Nama',
+            name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
-            address: item.detail_tujuan[0]?.jenis_tanah_baru || '-',
+            address: item.detail_tujuan[0]?.jalan_op_baru || item.detail_tujuan[0]?.jenis_tanah_baru?.replace('_', ' ') || '-',
             rtRw: '',
             kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || '-',
             kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || '-',
@@ -124,7 +124,7 @@ export default function AntreanVerifikasi() {
   }, []);
 
   const handleUnlock = async (id) => {
-    if (!window.confirm("Apakah Anda yakin ingin melepas kunci reviu admin lain?")) return;
+    if (!window.confirm("Apakah Anda yakin ingin melepas kunci verifikasi admin lain?")) return;
     try {
       await api.patch(`/transaksi-spop/${id}/unlock`);
       // Force refresh data
@@ -159,9 +159,9 @@ export default function AntreanVerifikasi() {
       <div className="mb-section-gap">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl text-primary font-bold">Daftar Antrean Validasi SPOP</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Daftar tunggu verifikasi dan validasi dokumen SPOP PBB-P2
+            <h1 className="text-3xl text-primary font-bold">Antrean Berkas Masuk</h1>
+            <p className="text-sm font-body-md text-on-surface-variant mt-1">
+              Daftar berkas SPOP yang baru dikirimkan oleh desa dan menunggu untuk Anda periksa.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -176,81 +176,82 @@ export default function AntreanVerifikasi() {
 
       {/* Filters & Search */}
       <section className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant mb-6 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kecamatan
-            </label>
-            <select
-              value={kecamatan}
-              onChange={(e) => setKecamatan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
-            >
-              <option value="Semua Kecamatan">Semua Kecamatan</option>
-              {kecamatanList.map(kec => (
-                <option key={kec} value={kec}>{kec}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Kelurahan/Desa
-            </label>
-            <select
-              value={kelurahan}
-              onChange={(e) => setKelurahan(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
-            >
-              <option value="Semua Desa">Semua Desa</option>
-              {kelurahanList.map(kel => (
-                <option key={kel} value={kel}>{kel}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Cari NOP/Subjek Pajak
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={handleSearchChange}
-                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
-                placeholder="Masukkan NOP atau Nama..."
-              />
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
-                search
-              </span>
+        <div className="flex flex-col md:flex-row gap-4 justify-between md:items-end">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <div className="space-y-1.5 flex-1 w-full">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Cari NOP/Subjek Pajak
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
+                  search
+                </span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={handleSearchChange}
+                  className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 pl-10 text-sm focus:ring-primary focus:border-primary text-on-surface"
+                  placeholder="Masukkan NOP atau Nama..."
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[220px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Kecamatan
+              </label>
+              <select
+                value={kecamatan}
+                onChange={(e) => setKecamatan(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
+              >
+                <option value="Semua Kecamatan">Semua Kecamatan</option>
+                {kecamatanList.map(kec => (
+                  <option key={kec} value={kec}>{kec}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[220px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Kelurahan/Desa
+              </label>
+              <select
+                value={kelurahan}
+                onChange={(e) => setKelurahan(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-lg h-10 px-3 text-sm focus:ring-primary focus:border-primary text-on-surface"
+              >
+                <option value="Semua Desa">Semua Desa</option>
+                {kelurahanList.map(kel => (
+                  <option key={kel} value={kel}>{kel}</option>
+                ))}
+              </select>
             </div>
           </div>
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <button
-              onClick={() => {
-                setKecamatan('Semua Kecamatan');
-                setKelurahan('Semua Desa');
-                setSearch('');
-              }}
-              className="w-full bg-background border border-outline-variant rounded-lg h-10 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none flex items-center justify-center"
-            >
-              Reset Filter
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setKecamatan('Semua Kecamatan');
+              setKelurahan('Semua Desa');
+              setSearch('');
+            }}
+            className="bg-white border border-gray-300 rounded-lg px-5 h-10 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2 shrink-0 w-full md:w-auto"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            Reset Filter
+          </button>
         </div>
       </section>
 
       {/* Data Table Card */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto custom-scrollbar w-full">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Desa/Kelurahan</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Tanggal Kirim</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">NOP</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[20%]">Subjek Pajak</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[25%]">Alamat Objek</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Desa/Kelurahan</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Tanggal Kirim</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant text-center w-[10%]">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
@@ -271,8 +272,12 @@ export default function AntreanVerifikasi() {
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="font-mono text-sm font-bold text-gray-800">
-                        {item.nop}
+                      <div className="font-mono text-sm font-bold text-primary whitespace-nowrap">
+                        {item.nop === 'Menunggu penetapan' ? (
+                          <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>
+                        ) : (
+                          item.nop
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -291,10 +296,10 @@ export default function AntreanVerifikasi() {
                       <p className={`text-[12px] ${item.urgent ? 'text-red-600' : 'text-on-surface-variant'}`}>{item.time}</p>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex flex-col items-center justify-center gap-2">
                         {item.isLockedByOther ? (
                           <>
-                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full border border-gray-200">
+                            <span className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
                               🔒 {item.status}
                             </span>
                             <button
@@ -308,19 +313,19 @@ export default function AntreanVerifikasi() {
                         ) : (
                           <>
                             {item.isLockedByMe && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full border border-blue-200 mb-1">
-                                🔵 {item.status}
+                              <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-200 whitespace-nowrap">
+                                🔵 Sedang Anda Verifikasi
                               </span>
                             )}
                             <button
                               onClick={() => navigate('/detail-review/' + item.id)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm w-full ${
+                              className={`px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm w-full whitespace-nowrap ${
                                 item.isLockedByMe 
                                   ? 'bg-blue-600 text-white hover:bg-blue-700' 
                                   : 'bg-blue-600 text-white hover:bg-blue-700'
                               }`}
                             >
-                              {item.isLockedByMe ? 'Lanjut Reviu' : 'Tinjau Berkas'}
+                              {item.isLockedByMe ? 'Lanjut Verifikasi' : 'Periksa Berkas'}
                             </button>
                           </>
                         )}

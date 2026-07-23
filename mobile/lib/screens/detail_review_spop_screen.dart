@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
 
 class DetailReviewSpopScreen extends StatefulWidget {
   final String idTransaksi;
+  final bool isReadOnly;
 
-  const DetailReviewSpopScreen({super.key, required this.idTransaksi});
+  const DetailReviewSpopScreen({super.key, required this.idTransaksi, this.isReadOnly = false});
 
   @override
   State<DetailReviewSpopScreen> createState() => _DetailReviewSpopScreenState();
@@ -20,6 +23,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
   bool _isLoading = true;
   bool _isProcessing = false;
   String? _errorMsg;
+  bool _isSatellite = true;
 
   @override
   void initState() {
@@ -31,6 +35,26 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
     setState(() { _isLoading = true; _errorMsg = null; });
     try {
       final data = await _spopService.getDetailTransaksi(widget.idTransaksi);
+      
+      // Mapping untuk transaksi HAPUS
+      if ((data['jenis_transaksi'] == 'HAPUS' || data['jenis_transaksi'] == 'MUTASI') && data['detail_asal'] != null && (data['detail_asal'] as List).isNotEmpty) {
+        data['detail_tujuan'] = (data['detail_asal'] as List).map((asal) => {
+          'id_objek_pajak': asal['id_objek_pajak'],
+          'nik_calon_subjek': asal['nik_subjek_pajak'],
+          'calon_subjek_json': {
+            'nama': asal['subjek_pajak']?['nama_wp'],
+            'alamat': asal['subjek_pajak']?['alamat_wp'],
+          }
+        }).toList();
+
+        data['objek_pajak_sementara'] = (data['detail_asal'] as List).map((asal) => {
+          'id_objek_pajak': asal['id_objek_pajak'],
+          'jalan_op': asal['objek_pajak']?['jalan_op'],
+          'luas_bumi': asal['objek_pajak']?['luas_bumi'],
+          'kelas_bumi': asal['objek_pajak']?['kelas_bumi'],
+        }).toList();
+      }
+
       setState(() { _transaksi = data; });
     } on DioException catch (e) {
       setState(() { _errorMsg = e.response?.data?['message'] ?? 'Gagal memuat detail'; });
@@ -244,12 +268,89 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                           'Alamat': _fmt(tx['detail_tujuan'][0]['calon_subjek_json']?['alamat']),
                         }),
 
+                      // Peta Lokasi
+                      if (tx?['objek_pajak_sementara'] != null && (tx!['objek_pajak_sementara'] as List).isNotEmpty && tx['objek_pajak_sementara'][0]['koordinat_polygon'] != null)
+                        Builder(
+                          builder: (context) {
+                            final List polyRaw = tx['objek_pajak_sementara'][0]['koordinat_polygon'];
+                            final points = polyRaw.map((e) => LatLng(double.parse(e['lat'].toString()), double.parse(e['lng'].toString()))).toList();
+                            if (points.isEmpty) return const SizedBox.shrink();
+                            
+                            // Hitung bounding box center
+                            double sumLat = 0, sumLng = 0;
+                            for (var p in points) { sumLat += p.latitude; sumLng += p.longitude; }
+                            final center = LatLng(sumLat / points.length, sumLng / points.length);
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('3. Lokasi Objek', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                                const SizedBox(height: 12),
+                                Container(
+                                  height: 250,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: FlutterMap(
+                                          options: MapOptions(
+                                            initialCenter: center,
+                                            initialZoom: 16.0,
+                                            maxZoom: 22.0,
+                                            interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+                                          ),
+                                          children: [
+                                            TileLayer(
+                                              urlTemplate: _isSatellite 
+                                                  ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                                                  : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                                              userAgentPackageName: 'com.example.magang_bakeuda',
+                                              maxZoom: 22,
+                                            ),
+                                            PolygonLayer(
+                                              polygons: [
+                                                Polygon(
+                                                  points: points,
+                                                  color: Colors.blue.withOpacity(0.3),
+                                                  borderColor: Colors.blue,
+                                                  borderStrokeWidth: 2,
+                                                )
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 10,
+                                        right: 10,
+                                        child: FloatingActionButton.small(
+                                          onPressed: () => setState(() => _isSatellite = !_isSatellite),
+                                          backgroundColor: theme.colorScheme.surface,
+                                          child: Icon(
+                                            _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                              ],
+                            );
+                          }
+                        ),
+
                       // Riwayat
                       if (tx?['riwayat_pelacakan'] != null && (tx!['riwayat_pelacakan'] as List).isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('3. Riwayat Proses', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                            Text('4. Riwayat Proses', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                             const SizedBox(height: 12),
                             ...((tx['riwayat_pelacakan'] as List).map((r) => ListTile(
                               dense: true,
@@ -264,7 +365,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                     ],
                   ),
                 ),
-      bottomNavigationBar: canVerify
+      bottomNavigationBar: (!widget.isReadOnly && canVerify)
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

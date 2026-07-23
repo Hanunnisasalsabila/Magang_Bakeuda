@@ -5,10 +5,13 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import StatusBadge from '../components/StatusBadge';
+import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
+import logoPurbalingga from '../assets/logo-purbalingga.png';
 
 export default function DaftarObjekPajak() {
   const navigate = useNavigate();
+  const { loadDraft } = useSpop();
   const [statusVerif, setStatusVerif] = useState('Semua Status');
   const [search, setSearch] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -19,6 +22,8 @@ export default function DaftarObjekPajak() {
   // States untuk Popup (Modal) & Notifikasi (Toast)
   const [selectedObject, setSelectedObject] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [printModal, setPrintModal] = useState({ show: false, obj: null });
+  const [printConfig, setPrintConfig] = useState({ namaPejabat: '', jabatan: 'Kepala Badan Keuangan Daerah', nip: '', nomorSurat: '' });
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -44,8 +49,12 @@ export default function DaftarObjekPajak() {
           nop: item.nop,
           name: item.subjek_pajak?.nama_subjek || 'Tanpa Nama',
           address: item.jalan_op || '-',
+          rt_rw: (item.rt_op || item.rw_op) ? `RT ${item.rt_op || '-'} / RW ${item.rw_op || '-'}` : '-',
+          kecamatan: item.wilayah?.kecamatan || '-',
+          kelurahan: item.wilayah?.nama_desa || '-',
           land: Number(item.luas_tanah || 0),
           building: Number(item.luas_bangunan || 0),
+          njop: Number(item.total_njop || 0),
           status: item.status_aktif ? 'Aktif' : 'Nonaktif'
         }));
 
@@ -145,28 +154,164 @@ export default function DaftarObjekPajak() {
 
   const handleCetakSPPT = (obj) => {
     if (!obj) return;
-    showToast('Sedang mencetak Salinan SPPT...');
-    const doc = new jsPDF('portrait');
-    doc.setFontSize(16);
-    doc.text('SURAT PEMBERITAHUAN PAJAK TERHUTANG', 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text('PAJAK BUMI DAN BANGUNAN', 105, 28, { align: 'center' });
-    doc.text('KABUPATEN PURBALINGGA', 105, 34, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.text(`NOP: ${obj.nop}`, 20, 50);
-    doc.text(`NAMA WAJIB PAJAK: ${obj.name}`, 20, 60);
-    doc.text(`ALAMAT WAJIB PAJAK: ${obj.address}`, 20, 70);
-    doc.text(`LETAK OBJEK PAJAK: ${obj.address}`, 20, 80);
-    doc.text(`LUAS BUMI: ${obj.land} m2`, 20, 90);
-    doc.text(`LUAS BANGUNAN: ${obj.building} m2`, 20, 100);
+    setPrintModal({ show: true, obj });
+    setPrintConfig({ namaPejabat: '', jabatan: 'Kepala Badan Keuangan Daerah', nip: '', nomorSurat: '' });
+  };
 
-    doc.text(`TANGGAL CETAK: ${new Date().toLocaleDateString('id-ID')}`, 20, 120);
-    
-    doc.save(`SPPT_${obj.nop}.pdf`);
-    showToast('SPPT berhasil diunduh');
+  const generatePDF = () => {
+    const obj = printModal.obj;
+    if (!obj) return;
+    const { namaPejabat, nip, nomorSurat } = printConfig;
+    const jabatan = 'Kepala Badan Keuangan Daerah';
+    showToast('Sedang menyiapkan dokumen...');
+
+    const doc = new jsPDF('portrait', 'mm', 'a4');
+    const pageW = 210;
+    const mL = 25;  // margin kiri
+    const mR = 185; // margin kanan
+    const cW = mR - mL; // lebar konten
+
+    // ── KOP SURAT ────────────────────────────────────────────────
+    const logoImg = new Image();
+    logoImg.src = logoPurbalingga;
+    doc.addImage(logoImg, 'PNG', mL, 8, 25, 25);
+
+    doc.setFont('times', 'bold');
+    doc.setFontSize(13);
+    doc.text('PEMERINTAH KABUPATEN PURBALINGGA', pageW / 2 + 5, 15, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('BADAN KEUANGAN DAERAH', pageW / 2 + 5, 23, { align: 'center' });
+    doc.setFont('times', 'normal');
+    doc.setFontSize(8.5);
+    doc.text('Jl. Let. Jend. S. Parman No.1, Purbalingga, Jawa Tengah 53311', pageW / 2 + 5, 29, { align: 'center' });
+    doc.text('Telp. (0281) 891012  |  Fax. (0281) 891042  |  bakeuda.purbalinggakab.go.id', pageW / 2 + 5, 34, { align: 'center' });
+
+    // Garis kop ganda (tebal + tipis)
+    doc.setLineWidth(1.5);
+    doc.line(mL, 38, mR, 38);
+    doc.setLineWidth(0.5);
+    doc.line(mL, 40, mR, 40);
+
+    // ── JUDUL SURAT ──────────────────────────────────────────────
+    doc.setFont('times', 'bold');
+    doc.setFontSize(12);
+    doc.text('SURAT KETERANGAN', pageW / 2, 50, { align: 'center' });
+    // Garis bawah judul (underline manual)
+    const jW = doc.getTextWidth('SURAT KETERANGAN');
+    doc.setLineWidth(0.5);
+    doc.line(pageW / 2 - jW / 2, 51.5, pageW / 2 + jW / 2, 51.5);
+
+    // Nomor surat
+    doc.setFont('times', 'normal');
+    doc.setFontSize(10.5);
+    const tahun = new Date().getFullYear();
+    const bulanRomawi = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()];
+    const nomorDisplay = nomorSurat
+      ? `NOMOR : 900.1 / ${nomorSurat} / BKD-PBB / ${bulanRomawi} / ${tahun}`
+      : `NOMOR : 900.1 / ......... / BKD-PBB / ${bulanRomawi} / ${tahun}`;
+    doc.text(nomorDisplay, pageW / 2, 57, { align: 'center' });
+
+    // ── PARAGRAF PEMBUKA ─────────────────────────────────────────
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    const paraJabatan = jabatan || 'Kepala Badan Keuangan Daerah';
+    const paraOpening = `Yang bertanda tangan di bawah ini, ${paraJabatan} Kabupaten Purbalingga, dengan ini menerangkan bahwa data Objek Pajak Bumi dan Bangunan Perdesaan dan Perkotaan (PBB-P2) adalah sebagai berikut :`;
+    const openingLines = doc.splitTextToSize(paraOpening, cW);
+    doc.text(openingLines, mL, 65);
+    let y = 65 + openingLines.length * 6 + 4;
+
+    // ── DATA FIELDS ───────────────────────────────────────────────
+    const LBL_X  = mL + 8;   // indent label
+    const COL_X  = mL + 58;  // posisi titik dua
+    const VAL_X  = mL + 62;  // posisi nilai
+    const fs = 11;
+
+    const drawField = (label, value, yPos) => {
+      doc.setFont('times', 'normal');
+      doc.setFontSize(fs);
+      doc.text(label, LBL_X, yPos);
+      doc.text(':', COL_X, yPos);
+      // wrap nilai jika panjang
+      const valLines = doc.splitTextToSize(value || '-', mR - VAL_X);
+      doc.text(valLines, VAL_X, yPos);
+      return yPos + valLines.length * 6.5;
+    };
+
+    y = drawField('Nama Wajib Pajak', obj.name || '-', y);
+    y = drawField('No. Objek Pajak (NOP)', obj.nop, y);
+    y = drawField('Luas Tanah / Bumi', `${obj.land.toLocaleString('id-ID')} m²`, y);
+    y = drawField('Luas Bangunan', `${obj.building.toLocaleString('id-ID')} m²`, y);
+
+    // Alamat (multi-baris)
+    const alamatFull = [
+      obj.address,
+      obj.rt_rw && obj.rt_rw !== '-' ? obj.rt_rw : null,
+      obj.kelurahan ? `Desa ${obj.kelurahan}` : null,
+      obj.kecamatan ? `Kecamatan ${obj.kecamatan}` : null,
+      'Kabupaten Purbalingga',
+    ].filter(Boolean).join(', ');
+    y = drawField('Alamat Objek Pajak', alamatFull, y);
+    y = drawField('Status', obj.status, y);
+
+    y += 3;
+
+    // ── PARAGRAF BADAN ────────────────────────────────────────────
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    const paraBody = `Adalah benar bahwa Objek Pajak tersebut terdaftar dalam administrasi Pajak Bumi dan Bangunan Perdesaan dan Perkotaan (PBB-P2) pada Badan Keuangan Daerah Kabupaten Purbalingga dengan Nomor Objek Pajak (NOP) ${obj.nop} atas nama ${obj.name || '...'}.`;
+    const bodyLines = doc.splitTextToSize(paraBody, cW);
+    doc.text(bodyLines, mL, y);
+    y += bodyLines.length * 6 + 5;
+
+    // ── PARAGRAF PENUTUP ──────────────────────────────────────────
+    const paraClose = 'Demikian surat keterangan ini dibuat dengan sebenarnya, dan untuk dapat digunakan sebagaimana mestinya.';
+    const closeLines = doc.splitTextToSize(paraClose, cW);
+    doc.text(closeLines, mL, y);
+    y += closeLines.length * 6 + 8;
+
+    // ── TANDA TANGAN ──────────────────────────────────────────────
+    const tglStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11);
+    doc.text(`Purbalingga, ${tglStr}`, mR, y, { align: 'right' });
+    y += 5;
+    doc.setFont('times', 'bold');
+    doc.text(paraJabatan, mR, y, { align: 'right' });
+    doc.text('Kabupaten Purbalingga,', mR, y + 5.5, { align: 'right' });
+
+    y += 38;
+    if (namaPejabat) {
+      doc.setFont('times', 'bold');
+      doc.setFontSize(11);
+      doc.text(namaPejabat, mR, y, { align: 'right' });
+      // tidak ada garis bawah
+    }
+    if (nip) {
+      doc.setFont('times', 'normal');
+      doc.setFontSize(10);
+      doc.text(`NIP. ${nip}`, mR, y + 6, { align: 'right' });
+    } else {
+      doc.setFont('times', 'normal');
+      doc.setFontSize(10);
+      doc.text('NIP.', mR, y + 6, { align: 'right' });
+    }
+
+    // ── FOOTER ────────────────────────────────────────────────────
+    doc.setLineWidth(0.4);
+    doc.line(mL, 277, mR, 277);
+    doc.setFont('times', 'italic');
+    doc.setFontSize(7.5);
+    doc.text(
+      `Dicetak: ${new Date().toLocaleString('id-ID')}  |  Dokumen ini diterbitkan oleh Badan Keuangan Daerah (BKD) Kabupaten Purbalingga`,
+      pageW / 2, 281, { align: 'center' }
+    );
+
+    doc.save(`SuratKeterangan_${obj.nop}.pdf`);
+    showToast('Surat Keterangan berhasil diunduh');
+    setPrintModal({ show: false, obj: null });
     setSelectedObject(null);
   };
+
 
   React.useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -177,11 +322,11 @@ export default function DaftarObjekPajak() {
   return (
     <main className="p-gutter max-w-screen-2xl mx-auto w-full space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h2 className=" text-blue-900 font-bold text-3xl">Daftar Objek Pajak</h2>
-          <p className="text-on-surface-variant max-w-2xl mt-1 text-sm md:text-base">
-            Daftar keseluruhan informasi Objek Pajak Bumi dan Bangunan (PBB) yang terdaftar di wilayah Kabupaten Purbalingga.
+          <h1 className="text-3xl text-primary font-bold">Data Objek Pajak</h1>
+          <p className="text-sm font-body-md text-on-surface-variant mt-1 max-w-2xl">
+            Lihat seluruh daftar Objek Pajak Bumi dan Bangunan (PBB) yang tercatat di Kabupaten Purbalingga.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -217,7 +362,10 @@ export default function DaftarObjekPajak() {
           </div>
           
           <button
-            onClick={() => navigate('/formulir-spop')}
+            onClick={() => {
+              loadDraft(null);
+              navigate('/spop');
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
@@ -226,100 +374,102 @@ export default function DaftarObjekPajak() {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Total Objek Pajak</p>
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                domain
-              </span>
+      {/* Stats Overview (Clean Professional Design) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Semua Objek Pajak</p>
+            <div className="p-1.5 rounded-full bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">domain</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {stats.total.toLocaleString('id-ID')}
           </p>
-          <p className="text-xs text-primary font-medium mt-2 flex items-center gap-1">
-            Total tercatat di sistem
+          <p className="text-[10px] text-gray-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">info</span>
+            Seluruh objek yang tercatat di sistem
           </p>
         </div>
         
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Status Aktif</p>
-            <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                verified
-              </span>
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Pajak Aktif</p>
+            <div className="p-1.5 rounded-full bg-green-50 text-green-600 ring-1 ring-inset ring-green-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">verified</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {stats.aktif.toLocaleString('id-ID')}
           </p>
-          <p className="text-xs text-on-surface-variant mt-2">
-            Objek pajak tertagih
+          <p className="text-[10px] text-gray-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">check_circle</span>
+            Objek pajak yang saat ini aktif tertagih
           </p>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Nonaktif</p>
-            <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error">
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                visibility_off
-              </span>
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Pajak Nonaktif</p>
+            <div className="p-1.5 rounded-full bg-red-50 text-red-600 ring-1 ring-inset ring-red-200/50 shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[14px] block">visibility_off</span>
             </div>
           </div>
-          <p className="text-3xl text-on-surface font-black">
+          <p className="text-3xl font-extrabold text-gray-900 leading-none">
             {stats.nonaktif.toLocaleString('id-ID')}
           </p>
-          <p className="text-xs text-on-surface-variant mt-2">
-            Objek pajak dinonaktifkan
+          <p className="text-[10px] text-gray-500 font-medium mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[12px]">cancel</span>
+            Objek pajak yang statusnya dinonaktifkan
           </p>
         </div>
       </div>
 
       {/* Filters & Search Controls */}
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Cari Nama/NOP/Alamat
-            </label>
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-              placeholder="Ketik kata kunci..."
-            />
+        <div className="flex flex-col md:flex-row gap-4 justify-between md:items-end">
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <div className="space-y-1.5 flex-1 w-full">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Cari Nama/NOP/Alamat
+              </label>
+              <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-background border border-outline-variant rounded-lg py-2 pl-9 pr-3 text-sm focus:ring-primary focus:border-primary"
+                  placeholder="Ketik kata kunci..."
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[250px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Status Verifikasi
+              </label>
+              <select
+                value={statusVerif}
+                onChange={(e) => setStatusVerif(e.target.value)}
+                className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              >
+                <option>Semua Status</option>
+                <option>Aktif</option>
+                <option>Nonaktif</option>
+              </select>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-              Status Verifikasi
-            </label>
-            <select
-              value={statusVerif}
-              onChange={(e) => setStatusVerif(e.target.value)}
-              className="w-full bg-background border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option>Semua Status</option>
-              <option>Aktif</option>
-              <option>Nonaktif</option>
-            </select>
-          </div>
-          <div className="space-y-1.5 flex flex-col justify-end">
-            <button
-              onClick={() => {
-                setSearch('');
-                setStatusVerif('Semua Status');
-              }}
-              className="w-full bg-background border border-outline-variant rounded-lg py-2 text-primary font-label-sm hover:bg-surface-container-lowest active:bg-blue-100 active:border-blue-200 transition-colors font-semibold focus:outline-none"
-            >
-              Reset Filter
-            </button>
-          </div>
+          
+          <button
+            onClick={() => {
+              setSearch('');
+              setStatusVerif('Semua Status');
+            }}
+            className="bg-white border border-gray-300 rounded-lg px-5 py-2 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2 w-full md:w-auto shrink-0"
+          >
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            Reset Filter
+          </button>
         </div>
       </div>
 
@@ -372,14 +522,14 @@ export default function DaftarObjekPajak() {
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <StatusBadge status={obj.status} />
                     </td>
-                    <td className="px-4 pl-6 py-3 text-left whitespace-nowrap">
-                      <div className="flex items-center justify-start gap-2">
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => setSelectedObject(obj)}
-                          className="px-3 py-1.5 bg-primary/10 text-primary-dark border border-primary/20 hover:border-primary hover:bg-primary/20 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center justify-center gap-1.5"
+                          title="Lihat Detail"
+                          className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white rounded-md transition-colors shadow-sm"
                         >
-                          <span className="material-symbols-outlined text-[16px]">visibility</span>
-                          Detail
+                          <span className="material-symbols-outlined text-[18px]">visibility</span>
                         </button>
                       </div>
                     </td>
@@ -492,67 +642,110 @@ export default function DaftarObjekPajak() {
       {selectedObject && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-scrim/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden scale-in">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-outline-variant bg-surface-container-low/30 flex items-center justify-between">
+            {/* Modal Header - Official Style */}
+            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[24px]">real_estate_agent</span>
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 shadow-sm border border-blue-200">
+                  <span className="material-symbols-outlined text-[20px]">description</span>
                 </div>
                 <div>
-                  <h3 className=" text-on-surface font-black text-xl leading-tight">Detail Objek Pajak</h3>
-                  <p className="text-sm font-data-mono text-primary font-bold mt-1">NOP: {selectedObject.nop}</p>
+                  <h3 className="text-gray-900 font-bold text-lg uppercase tracking-wide">Informasi Objek Pajak</h3>
+                  <p className="text-sm font-data-mono text-gray-500 font-medium mt-0.5">NOP: <span className="text-blue-700 font-bold">{selectedObject.nop}</span></p>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedObject(null)}
-                className="w-10 h-10 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition-colors"
+                className="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
               >
-                <span className="material-symbols-outlined">close</span>
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/50">
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Subjek Pajak (Pemilik)</p>
-                  <p className="text-base font-bold text-on-surface">{selectedObject.name}</p>
-                </div>
-                <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/50">
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Status Pajak</p>
-                  <div className="mt-1">
-                    <StatusBadge status={selectedObject.status} />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-surface-container p-4 rounded-xl border border-outline-variant/50">
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Alamat Objek Pajak</p>
-                <p className="text-sm text-on-surface leading-relaxed">{selectedObject.address}</p>
-                <p className="text-xs text-primary font-bold mt-2">Kec. {selectedObject.kecamatan}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant flex flex-col items-center justify-center text-center">
-                  <span className="material-symbols-outlined text-primary mb-2">landscape</span>
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Luas Tanah</p>
-                  <p className="text-lg font-data-mono font-bold text-on-surface mt-1">{selectedObject.land.toLocaleString()} m²</p>
-                </div>
-                <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant flex flex-col items-center justify-center text-center">
-                  <span className="material-symbols-outlined text-secondary mb-2">home_work</span>
-                  <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Luas Bangunan</p>
-                  <p className="text-lg font-data-mono font-bold text-on-surface mt-1">{selectedObject.building.toLocaleString()} m²</p>
+            {/* Modal Body - Formal Table Layout */}
+            <div className="p-0 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6">
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <table className="w-full text-sm text-left">
+                    <tbody>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">person</span> 
+                            Nama Pemilik
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.name}</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">info</span> 
+                            Status Pajak
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5"><StatusBadge status={selectedObject.status} /></td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">signpost</span> 
+                            Alamat Jalan
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900">
+                          {selectedObject.address}
+                          {selectedObject.rt_rw !== '-' && <span className="text-gray-500"> ({selectedObject.rt_rw})</span>}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">location_city</span> 
+                            Desa / Kelurahan
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.kelurahan || '-'}</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">holiday_village</span> 
+                            Kecamatan
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.kecamatan || '-'}</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">landscape</span> 
+                            Luas Tanah
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900 font-data-mono">{selectedObject.land.toLocaleString()} m²</td>
+                      </tr>
+                      <tr>
+                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[15px] text-gray-400">home_work</span> 
+                            Luas Bangunan
+                          </div>
+                        </th>
+                        <td className="px-4 py-2.5 text-gray-900 font-data-mono">{selectedObject.building.toLocaleString()} m²</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer (Aksi Lanjutan) */}
-            <div className="p-5 border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center">
-              <div className="flex items-center gap-2">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center gap-4">
+              <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
                 <button 
                   onClick={() => handleCetakSPPT(selectedObject)}
                   disabled={selectedObject.status === 'Nonaktif'}
-                  className="px-4 py-2 bg-surface-container-high border border-outline-variant text-primary font-bold rounded-lg hover:bg-surface-container-highest transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
                   title={selectedObject.status === 'Nonaktif' ? "Objek Nonaktif tidak bisa dicetak SPPT" : "Cetak Tagihan Pajak"}
                 >
                   <span className="material-symbols-outlined text-[18px]">print</span>
@@ -560,22 +753,123 @@ export default function DaftarObjekPajak() {
                 </button>
                 <button 
                   onClick={() => {
-                    navigate('/formulir-spop');
+                    loadDraft(null);
+                    navigate('/spop');
                     setSelectedObject(null);
                   }}
                   disabled={selectedObject.status === 'Nonaktif'}
-                  className="px-4 py-2 bg-primary/10 text-primary-dark font-bold rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
                 >
                   <span className="material-symbols-outlined text-[18px]">edit_document</span>
                   Ajukan Perubahan
                 </button>
               </div>
-              
-              <button 
-                onClick={() => setSelectedObject(null)}
-                className="px-6 py-2 bg-surface-container-highest text-on-surface font-bold rounded-lg hover:bg-outline-variant/30 transition-colors text-sm"
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========== Modal Pre-Cetak PDF ========== */}
+      {printModal.show && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPrintModal({ show: false, obj: null })} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="bg-blue-50/80 border-b border-blue-100 px-6 py-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-blue-500 text-[22px]">print</span>
+              </div>
+              <div>
+                <h3 className="text-blue-900 font-bold text-base">Cetak Salinan Data</h3>
+                <p className="text-blue-600/80 text-xs mt-0.5">Lengkapi form sebelum mengunduh PDF</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Nomor Urut Surat <span className="text-gray-400 font-normal normal-case">(opsional)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 whitespace-nowrap font-mono bg-gray-100 px-2 py-2.5 rounded-lg border border-gray-200">
+                    900.1 /
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={printConfig.nomorSurat}
+                    onChange={e => setPrintConfig(p => ({ ...p, nomorSurat: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="mis. 123"
+                    className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-xs text-gray-400 whitespace-nowrap font-mono bg-gray-100 px-2 py-2.5 rounded-lg border border-gray-200">
+                    / BKD-PBB / {['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()]} / {new Date().getFullYear()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1.5">Format nomor: <span className="font-mono">900.1 / {printConfig.nomorSurat || '...'} / BKD-PBB / {['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()]} / {new Date().getFullYear()}</span></p>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Nama Pejabat Penandatangan <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={printConfig.namaPejabat}
+                  onChange={e => setPrintConfig(p => ({ ...p, namaPejabat: e.target.value }))}
+                  placeholder="Contoh: Drs. Ahmad Fauzi, M.Si."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Jabatan</label>
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg">
+                  <span className="material-symbols-outlined text-[16px] text-gray-400">lock</span>
+                  <span className="text-sm text-gray-600 font-medium">Kepala Badan Keuangan Daerah</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  NIP <span className="text-gray-400 font-normal normal-case">(opsional, maks. 18 digit)</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={printConfig.nip}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 18);
+                    setPrintConfig(p => ({ ...p, nip: val }));
+                  }}
+                  placeholder="Contoh: 197001011999031001"
+                  maxLength={18}
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    printConfig.nip && printConfig.nip.length < 18 ? 'border-amber-400' : 'border-gray-300'
+                  }`}
+                />
+                <div className="flex justify-between mt-1">
+                  {printConfig.nip && printConfig.nip.length < 18 && printConfig.nip.length > 0 && (
+                    <span className="text-xs text-amber-600">NIP biasanya 18 digit</span>
+                  )}
+                  <span className="text-xs text-gray-400 ml-auto">{printConfig.nip.length}/18</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 italic">Kosongkan ruang tanda tangan fisik — cetak dokumen ini lalu tandatangani dengan tanda tangan basah.</p>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => setPrintModal({ show: false, obj: null })}
+                className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Tutup
+                Batal
+              </button>
+              <button
+                onClick={generatePDF}
+                disabled={!printConfig.namaPejabat.trim()}
+                className="px-5 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">download</span>
+                Unduh PDF
               </button>
             </div>
           </div>

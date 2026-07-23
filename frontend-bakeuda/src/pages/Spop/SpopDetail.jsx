@@ -11,6 +11,12 @@ export default function SpopDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    if (!loading && !idTransaksi) {
+      navigate('/spop/informasi-umum', { replace: true });
+    }
+  }, [loading, idTransaksi, navigate]);
+
   if (loading || !idTransaksi) {
     return (
       <div className="flex justify-center items-center h-64">
