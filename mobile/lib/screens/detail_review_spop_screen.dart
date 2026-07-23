@@ -451,8 +451,29 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                       vertical: 8.0,
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'JENIS AJUAN',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            Text(
+                              _labelJenis(tx?['jenis_transaksi']),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -482,8 +503,15 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                   const SizedBox(height: 16),
                   const Divider(thickness: 2),
 
-                  _buildBlueHeader('A. NOMOR OBJEK PAJAK (NOP BARU)'),
-                  _buildDataRow('Nomor Objek Pajak', _fmt(tx?['nop_bersama'])),
+                  _buildBlueHeader('A. NOMOR OBJEK PAJAK (NOP)'),
+                  _buildDataRow(
+                    'Nomor Objek Pajak',
+                    tx?['nop_bersama'] != null 
+                        ? tx!['nop_bersama']
+                        : ((['BARU', 'PECAH', 'GABUNG'].contains(tx?['jenis_transaksi']))
+                            ? 'Akan digenerate oleh Bakeuda'
+                            : _fmt(tx?['detail_asal']?.isNotEmpty == true ? tx!['detail_asal'][0]['nop_asal'] : null)),
+                  ),
                   _buildDataRow(
                     'Format NOP',
                     'Prov - Kab - Kec - Kel - Blok - No.Urut - Kode',
