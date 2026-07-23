@@ -364,7 +364,7 @@ export default function DetailReviewSPOP() {
   const detailTujuanList = data.detail_tujuan || [];
   const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
   const nopAsal = data.detail_asal?.[0]?.nop_asal || 'Menunggu NOP';
-  const luasInduk = data.detail_asal?.[0]?.objek_asal?.luas_bumi || '-';
+  const luasInduk = data.detail_asal?.[0]?.objek_asal?.luas_tanah || '-';
 
   
   // Format Tanggal
@@ -430,11 +430,15 @@ export default function DetailReviewSPOP() {
 
 
       <div className="space-y-6">
-          {/* NOP */}
+          {/* Blok A Dinamis */}
           <section className="border border-gray-300">
             <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
               <h3 className="text-base font-bold text-blue-900 uppercase m-0">
-                {data.jenis_transaksi !== 'BARU' ? 'A. DATA NOP ASAL (INDUK)' : 'A. NOMOR OBJEK PAJAK (NOP)'}
+                {data.jenis_transaksi === 'BARU' 
+                  ? 'A. NOMOR OBJEK PAJAK (NOP BARU)' 
+                  : (['PECAH', 'GABUNG'].includes(data.jenis_transaksi) 
+                      ? 'A. DATA NOP ASAL (INDUK)' 
+                      : 'A. NOMOR OBJEK PAJAK (NOP)')}
               </h3>
             </div>
             <div className="p-0">
@@ -442,21 +446,21 @@ export default function DetailReviewSPOP() {
                 <tbody>
                   <tr>
                     <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">
-                      {data.jenis_transaksi !== 'BARU' ? 'Nomor Objek Pajak Induk' : 'Nomor Objek Pajak'}
+                      {['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'Nomor Objek Pajak Induk' : 'Nomor Objek Pajak'}
                     </td>
-                    <td className="p-3 font-mono font-bold text-black tracking-widest border-r border-gray-200">
-                      {data.jenis_transaksi !== 'BARU' ? (nopAsal !== 'Menunggu NOP' ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>) : (detailTujuanList[0]?.nop_generated || 'Akan digenerate oleh Bakeuda')}
+                    <td className={`p-3 font-mono font-bold text-black tracking-widest ${['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'border-r border-gray-200' : ''}`} colSpan={['PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 1 : 3}>
+                      {(() => {
+                        if (data.jenis_transaksi === 'BARU') {
+                          const generated = detailTujuanList[0]?.nop_generated || detailTujuanList[0]?.no_persil_baru;
+                          return generated || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                        }
+                        return nopAsal !== 'Menunggu NOP' && nopAsal ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                      })()}
                     </td>
-                    {data.jenis_transaksi !== 'BARU' && (
+                    {['PECAH', 'GABUNG'].includes(data.jenis_transaksi) && (
                       <>
-                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700">Luas Induk (Tanah)</td>
+                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700 border-l border-gray-200">Luas Induk (Tanah)</td>
                         <td className="p-3 font-bold text-black">{luasInduk} M&sup2;</td>
-                      </>
-                    )}
-                    {data.jenis_transaksi === 'BARU' && (
-                      <>
-                        <td className="p-3 w-1/4 bg-gray-50 font-semibold text-gray-700"></td>
-                        <td className="p-3 font-bold text-black"></td>
                       </>
                     )}
                   </tr>
