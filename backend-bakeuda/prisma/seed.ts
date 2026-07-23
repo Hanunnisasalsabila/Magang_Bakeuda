@@ -17,10 +17,10 @@ async function main() {
   const wilayahDataRaw = fs.readFileSync(wilayahDataPath, 'utf8');
   const wilayahData = JSON.parse(wilayahDataRaw);
 
-  console.log(`🗺️ Menghapus data lama...`);
-  // await prisma.user.deleteMany({});
-  // await prisma.pejabatDesa.deleteMany({});
-  // await prisma.wilayah.deleteMany({});
+  console.log(`🗺️ Menghapus data akun admin lama...`);
+  await prisma.user.deleteMany({
+    where: { role: Role.BAKEUDA }
+  });
 
   console.log(`🗺️ Menyimpan ${wilayahData.length} data wilayah...`);
   for (const w of wilayahData) {
@@ -45,7 +45,6 @@ async function main() {
   // LOGIKA 1: SUPER ADMIN (BAKEUDA)
   // Super Admin jumlahnya terbatas (biasanya hanya 1 atau beberapa orang di dinas pusat).
   // Mereka tidak terikat wilayah tertentu (kode_wilayah = null).
-  // Oleh karena itu, akun mereka biasanya di-hardcode (dibuat manual) saat awal aplikasi berdiri.
   // ==========================================
   const adminPassword = await bcrypt.hash('AdminBakeuda2026!', 10);
 
@@ -127,6 +126,7 @@ async function main() {
   }
 
   console.log('✅ Berhasil men-generate ribuan akun Perangkat Desa.');
+
   console.log('--- SEEDING SELESAI ---');
 }
 

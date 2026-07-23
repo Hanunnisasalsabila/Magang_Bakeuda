@@ -1,19 +1,21 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
-import {
-  StatusAjuan,
-  JenisTransaksi,
-  Prisma,
-  TransaksiSpop,
-  Pekerjaan,
-  StatusWp,
-  KondisiBangunan,
-  JenisKonstruksi,
-  JenisAtap,
-  JenisDinding,
-  JenisLantai,
-  JenisLangitLangit
+import { OracleWriteService } from '../oracle/oracle-write.service.js';
+import { 
+  StatusAjuan, 
+  JenisTransaksi, 
+  Prisma, 
+  TransaksiSpop, 
+  Pekerjaan, 
+  StatusWp, 
+  KondisiBangunan, 
+  JenisKonstruksi, 
+  JenisAtap, 
+  JenisDinding, 
+  JenisLantai, 
+  JenisLangitLangit,
+  BahanPagar
 } from '@prisma/client';
 import { SubmitTransaksiDto } from './dto/submit-transaksi.dto.js';
 import { VerifikasiBakeudaDto } from './dto/verifikasi-bakeuda.dto.js';
@@ -29,7 +31,8 @@ export class TransaksiSpopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
-  ) { }
+    private readonly oracleWriteService: OracleWriteService,
+  ) {}
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
     if (!asDraft) {
@@ -98,10 +101,15 @@ export class TransaksiSpopService {
           }))
         } : undefined,
         lampiran: dto.lampiran ? {
-          create: dto.lampiran.map((l) => ({
-            ...l,
-            uploaded_by: currentUser.id_user
-          }))
+          create: {
+            url_ktp: dto.lampiran.url_ktp || [],
+            url_sertifikat: dto.lampiran.url_sertifikat || [],
+            url_ajb: dto.lampiran.url_ajb || [],
+            url_imb: dto.lampiran.url_imb || [],
+            url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+            url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+            uploaded_by: currentUser.id_user,
+          }
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -136,6 +144,15 @@ export class TransaksiSpopService {
     }
 
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
+
+    if (dto.detail_asal && dto.detail_asal.length > 0) {
+      for (const asal of dto.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
+        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
+      }
+    }
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -175,10 +192,15 @@ export class TransaksiSpopService {
               }))
             } : undefined,
             lampiran: dto.lampiran ? {
-              create: dto.lampiran.map((l) => ({
-                ...l,
-                uploaded_by: currentUser.id_user
-              }))
+              create: {
+                url_ktp: dto.lampiran.url_ktp || [],
+                url_sertifikat: dto.lampiran.url_sertifikat || [],
+                url_ajb: dto.lampiran.url_ajb || [],
+                url_imb: dto.lampiran.url_imb || [],
+                url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
+                url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
+                uploaded_by: currentUser.id_user,
+              }
             } : undefined
           }
         });
@@ -220,6 +242,15 @@ export class TransaksiSpopService {
 
     this.validateByJenisTransaksi(transaksi.jenis_transaksi, dtoForValidation);
 
+    if (transaksi.detail_asal && transaksi.detail_asal.length > 0) {
+      for (const asal of transaksi.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
+        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
+      }
+    }
+
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'MENUNGGU' },
@@ -256,6 +287,7 @@ export class TransaksiSpopService {
     const result = await this.prisma.transaksiSpop.findMany({
       where,
       include: {
+        detail_asal: true,
         detail_tujuan: true,
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         reviewer: { select: { nama_lengkap: true } },
@@ -284,6 +316,23 @@ export class TransaksiSpopService {
     if (!transaksi) throw new NotFoundException('Detail transaksi tidak ditemukan');
     if (currentUser.role === 'DESA' && (transaksi as any).pengaju?.kode_wilayah !== currentUser.kode_wilayah) {
       throw new ForbiddenException('Akses ditolak');
+    }
+
+    if (transaksi.lampiran) {
+      const l: any = transaksi.lampiran;
+      const mappedLampiran = [];
+      const mapItem = (urls: any, type: string) => {
+        if (Array.isArray(urls)) {
+          urls.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
+        }
+      };
+      mapItem(l.url_ktp, 'KTP');
+      mapItem(l.url_sertifikat, 'SERTIFIKAT_HAK_MILIK');
+      mapItem(l.url_ajb, 'AKTE_JUAL_BELI');
+      mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
+      mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
+      mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
+      (transaksi as any).lampiran = mappedLampiran;
     }
 
     return { success: true, data: transaksi };
@@ -414,7 +463,51 @@ export class TransaksiSpopService {
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'DISETUJUI', currentUser.id_user, 'Disetujui, data dieksekusi');
 
+    // WRITE-THROUGH KE ORACLE
+    try {
+      await this.syncToOracle(hasil);
+    } catch (oracleError) {
+      console.error("Gagal write-through ke Oracle:", oracleError);
+      // Optional: Anda bisa memutuskan apakah kegagalan Oracle membatalkan transaksi Postgres
+      // Untuk write-through strict, bisa di-throw error di sini. 
+      // Saat ini kita biarkan sukses di Postgres, dan catat error.
+      await this.catatRiwayat(idTransaksi, 'DISETUJUI', 'DISETUJUI', currentUser.id_user, 'WARNING: Sinkronisasi ke Oracle Gagal');
+    }
+
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
+  }
+
+  /**
+   * Helper untuk Write-Through ke Oracle
+   */
+  private async syncToOracle(hasilEksekusi: any) {
+    const nopsToSync: string[] = [];
+    
+    if (hasilEksekusi.nop_baru) {
+      if (Array.isArray(hasilEksekusi.nop_baru)) {
+        nopsToSync.push(...hasilEksekusi.nop_baru);
+      } else {
+        nopsToSync.push(hasilEksekusi.nop_baru);
+      }
+    }
+    if (hasilEksekusi.nop) {
+      nopsToSync.push(hasilEksekusi.nop);
+    }
+
+    // Ambil data terbaru dari Prisma lalu push ke Oracle
+    for (const nop of nopsToSync) {
+      const objekPajak = await this.prisma.objekPajak.findUnique({
+        where: { nop },
+        include: { subjek_pajak: true }
+      });
+      
+      if (objekPajak) {
+        if (objekPajak.subjek_pajak) {
+          await this.oracleWriteService.writeSubjekPajak(objekPajak.subjek_pajak);
+        }
+        await this.oracleWriteService.writeObjekPajak(objekPajak);
+      }
+    }
   }
 
   async tolak(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
@@ -429,6 +522,22 @@ export class TransaksiSpopService {
 
   async mintaRevisi(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
+
+    const transaksi = await this.prisma.transaksiSpop.findUnique({
+      where: { id_transaksi: idTransaksi },
+      include: { detail_asal: true },
+    });
+
+    if (transaksi?.jenis_transaksi === 'HAPUS' && transaksi.detail_asal?.length > 0) {
+      for (const asal of transaksi.detail_asal) {
+        if (!asal.nop_asal) continue;
+        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
+        if (objek && !objek.status_aktif) {
+          throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif. Transaksi HAPUS ini tidak dapat direvisi, silakan TOLAK ajuan ini.`);
+        }
+      }
+    }
+
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'REVISI', catatan_bakeuda: catatan, locked_by: null, locked_at: null },
@@ -606,6 +715,11 @@ export class TransaksiSpopService {
       let no_bng = 1;
       for (const bngRaw of t.data_bangunan_json as any[]) {
         const bng = bngRaw as any;
+        // Skip pembuatan ulang data bangunan jika LSPOP ditandai sebagai Penghapusan
+        if (bng.jenisTransaksi === 'Penghapusan Data' || bng.jenisTransaksi === 'PENGHAPUSAN' || bng.jenisTransaksi === 'HAPUS') {
+          continue;
+        }
+
         let kode_jpb = '01';
         if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
         else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
@@ -647,9 +761,32 @@ export class TransaksiSpopService {
             id_bangunan: createdBng.id_bangunan,
             jumlah_ac_split: bng.acSplit ? parseInt(bng.acSplit) : 0,
             jumlah_ac_window: bng.acWindow ? parseInt(bng.acWindow) : 0,
-            ac_sentral: bng.acSentral === 'Ada',
+            ac_sentral: bng.acSentral === '1' || bng.acSentral === 'Ada' || bng.acSentral === true,
             luas_kolam_renang: bng.kolamRenangLuas ? parseFloat(bng.kolamRenangLuas) : 0,
             kolam_diplester: bng.kolamRenangFinishing === 'Diplester',
+            kolam_dengan_pelapis: bng.kolamRenangFinishing === 'Dengan Pelapis',
+            perkerasan_ringan: bng.halamanRingan ? parseFloat(bng.halamanRingan) : 0,
+            perkerasan_sedang: bng.halamanSedang ? parseFloat(bng.halamanSedang) : 0,
+            perkerasan_berat: bng.halamanBerat ? parseFloat(bng.halamanBerat) : 0,
+            perkerasan_dengan_penutup: bng.halamanPenutupLantai ? parseFloat(bng.halamanPenutupLantai) : 0,
+            tenis_beton_dgn_lampu: bng.lapanganTenisLampuBeton ? parseInt(bng.lapanganTenisLampuBeton) : 0,
+            tenis_beton_tanpa_lampu: bng.lapanganTenisTanpaLampuBeton ? parseInt(bng.lapanganTenisTanpaLampuBeton) : 0,
+            tenis_aspal_dgn_lampu: bng.lapanganTenisLampuAspal ? parseInt(bng.lapanganTenisLampuAspal) : 0,
+            tenis_aspal_tanpa_lampu: bng.lapanganTenisTanpaLampuAspal ? parseInt(bng.lapanganTenisTanpaLampuAspal) : 0,
+            tenis_tanah_rumput_dgn_lampu: bng.lapanganTenisLampuTanah ? parseInt(bng.lapanganTenisLampuTanah) : 0,
+            tenis_tanah_rumput_tanpa_lampu: bng.lapanganTenisTanpaLampuTanah ? parseInt(bng.lapanganTenisTanpaLampuTanah) : 0,
+            lift_penumpang: bng.liftPenumpang ? parseInt(bng.liftPenumpang) : 0,
+            lift_kapsul: bng.liftKapsul ? parseInt(bng.liftKapsul) : 0,
+            lift_barang: bng.liftBarang ? parseInt(bng.liftBarang) : 0,
+            tangga_berjalan_lbr_kurang_080m: bng.tanggaBerjalanKecil ? parseInt(bng.tanggaBerjalanKecil) : 0,
+            tangga_berjalan_lbr_lebih_080m: bng.tanggaBerjalanBesar ? parseInt(bng.tanggaBerjalanBesar) : 0,
+            panjang_pagar_m: bng.panjangPagar ? parseFloat(bng.panjangPagar) : 0,
+            bahan_pagar: bng.bahanPagar === 'Bata/Batako' ? BahanPagar.BATA_BATAKO : (bng.bahanPagar === 'Baja/Besi' ? BahanPagar.BAJA_BESI : null),
+            hydrant_ada: bng.pemadamHydrant === '1' || bng.pemadamHydrant === true,
+            sprinkler_ada: bng.pemadamSprinkler === '1' || bng.pemadamSprinkler === true,
+            fire_alarm_ada: bng.pemadamFireAl === '1' || bng.pemadamFireAl === true,
+            jumlah_saluran_pabx: bng.saluranPabx ? parseInt(bng.saluranPabx) : 0,
+            kedalaman_sumur_artesis_m: bng.sumurArtesis ? parseFloat(bng.sumurArtesis) : 0,
           }
         });
         no_bng++;
@@ -832,10 +969,9 @@ export class TransaksiSpopService {
         rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
-        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
-        luas_tanah: finalLuasTanah,
-        luas_bangunan: finalLuasBangunan,
-        koordinat_polygon: t.koordinat_polygon != null ? (t.koordinat_polygon as any) : undefined,
+        jenis_tanah: t.jenis_tanah_baru!,
+        luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
+        luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },
     });
 

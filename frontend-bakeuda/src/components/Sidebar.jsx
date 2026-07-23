@@ -29,21 +29,24 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
   const basePathSpop = currentId ? `/spop` : `/spop`;
 
   const isHapus = formData?.transaksi === 'HAPUS' || spopData?.jenis_transaksi === 'HAPUS';
+  const isMutasi = formData?.transaksi === 'MUTASI' || spopData?.jenis_transaksi === 'MUTASI';
+  const isPerubahanData = formData?.transaksi === 'PERUBAHAN_DATA' || spopData?.jenis_transaksi === 'PERUBAHAN_DATA';
 
   const spopSubItems = [
     { path: `/spop/detail${currentId ? `/${currentId}` : ''}`, label: 'Detail Pengajuan', step: 0, icon: 'info' },
     { path: `/spop/informasi-umum${currentId ? `/${currentId}` : ''}`, label: 'Informasi Umum', step: 1 },
   ];
 
-  if (!isHapus) {
-    spopSubItems.push(
-      { path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 },
-      { path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 }
-    );
+  if (!isHapus && !isPerubahanData) {
+    spopSubItems.push({ path: `/spop/subjek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Subjek Pajak', step: 2 });
+  }
+
+  if (!isHapus && !isMutasi) {
+    spopSubItems.push({ path: `/spop/objek-pajak${currentId ? `/${currentId}` : ''}`, label: 'Objek Pajak', step: 3 });
   }
 
   const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
-  const skipDataBangunan = isHapus || jumlahBangunan === 0;
+  const skipDataBangunan = isHapus || isMutasi || jumlahBangunan === 0;
 
   if (!skipDataBangunan) {
     spopSubItems.push({ path: `/spop/data-bangunan${currentId ? `/${currentId}` : ''}`, label: 'Data Bangunan', step: 4 });
@@ -70,6 +73,8 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
           basePath: '/spop',
           subItems: visibleSpopSubItems
         },
+        { path: '/draft-spop', label: 'Draft SPOP', icon: 'drafts' },
+        { path: '/riwayat-spop', label: 'Riwayat SPOP', icon: 'history' },
         { path: '/daftar-objek', label: 'Data Objek Pajak', icon: 'database' },
         { path: '/profil', label: 'Profil Pengguna', icon: 'person' },
       ]

@@ -49,7 +49,7 @@ model TransaksiSpop {
   objek_bersama ObjekPajak?             @relation("ObjekBersama", fields: [nop_bersama], references: [nop])
   detail_asal   DetailTransaksiAsal[]
   detail_tujuan DetailTransaksiTujuan[]
-  lampiran      LampiranDokumen[]
+  lampiran      LampiranDokumen?
   riwayat       RiwayatPelacakan[]
   sppt          Sppt[]                  @relation("TransaksiAsalSppt")
 

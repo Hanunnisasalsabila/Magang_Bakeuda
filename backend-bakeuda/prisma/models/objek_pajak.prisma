@@ -90,6 +90,12 @@ model ObjekPajak {
   nonaktif_at       DateTime?
   created_at        DateTime  @default(now())
   koordinat_polygon Json?
+  nip_pendata       String?   @db.VarChar(25)
+  nip_pemeriksa     String?   @db.VarChar(25)
+
+  // ── Metadata Sync Oracle ──
+  oracle_synced_at DateTime? // Kapan terakhir disync dari Oracle
+  oracle_source    Boolean   @default(false) // true = data berasal dari Oracle sync
 
   // ── Relasi ──
   wilayah       Wilayah               @relation(fields: [kode_wilayah], references: [kode_wilayah])
@@ -124,6 +130,11 @@ model ObjekBumi {
   keterangan_blokir String?  @db.VarChar(150)
   tahun_blokir      String?  @db.VarChar(4)
   updated_at        DateTime @updatedAt
+  nip_pendata       String?  @db.VarChar(25)
+  nip_pemeriksa     String?  @db.VarChar(25)
+
+  // ── Metadata Sync Oracle ──
+  oracle_synced_at DateTime? // Kapan terakhir disync dari Oracle
 
   objek_pajak ObjekPajak @relation(fields: [nop], references: [nop], onDelete: Cascade)
 
@@ -154,9 +165,13 @@ model ObjekBangunan {
   kode_langit_langit    JenisLangitLangit?
   nilai_sistem_bangunan Decimal?           @db.Decimal(15, 2)
   tanggal_pendataan     DateTime           @default(now())
-  nip_pendata           String?            @db.VarChar(20)
+  nip_pendata           String?            @db.VarChar(25)
+  nip_pemeriksa         String?            @db.VarChar(25)
   keterangan_jpb        String?            @db.VarChar(50)
   created_at            DateTime           @default(now())
+
+  // ── Metadata Sync Oracle ──
+  oracle_synced_at DateTime? // Kapan terakhir disync dari Oracle
 
   objek_pajak   ObjekPajak                        @relation(fields: [nop], references: [nop], onDelete: Cascade)
   referensi_jpb ReferensiJenisPenggunaanBangunan? @relation(fields: [kode_jpb], references: [kode_jpb])
