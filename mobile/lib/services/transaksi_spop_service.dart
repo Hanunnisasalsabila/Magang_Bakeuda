@@ -17,6 +17,19 @@ class TransaksiSpopService {
     return data.cast<Map<String, dynamic>>();
   }
 
+  // ─── Fetch Data Objek Pajak By NOP (Untuk Auto-fill) ───
+  Future<Map<String, dynamic>?> getObjekPajakByNop(String nop) async {
+    try {
+      final resp = await _dio.get('/objek-pajak/$nop');
+      if (resp.data != null && resp.data['data'] != null) {
+        return resp.data['data'] as Map<String, dynamic>;
+      }
+    } catch (e) {
+      // Return null jika tidak ditemukan atau error
+    }
+    return null;
+  }
+
   // ─── Daftar transaksi milik desa yang login (alias getAntrean tanpa filter) ───
   Future<List<Map<String, dynamic>>> getTransaksiSaya({int page = 1, int limit = 20}) async {
     final resp = await _dio.get('/transaksi-spop');
