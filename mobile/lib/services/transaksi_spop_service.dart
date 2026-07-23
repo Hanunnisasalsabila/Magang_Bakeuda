@@ -49,16 +49,21 @@ class TransaksiSpopService {
 
   // ─── Submit SPOP baru (langsung ajukan, bukan draft) ───
   Future<Map<String, dynamic>> submitSpop(Map<String, dynamic> payload) async {
-    // is_draft = false agar langsung masuk antrean
-    payload['is_draft'] = false;
-    final resp = await _dio.post('/transaksi-spop', data: payload);
-    return resp.data as Map<String, dynamic>;
+    final draftResp = await _dio.post('/transaksi-spop', data: payload);
+    final String idTransaksi = draftResp.data['data']['id_transaksi'];
+    final submitResp = await _dio.post('/transaksi-spop/$idTransaksi/submit');
+    return submitResp.data as Map<String, dynamic>;
   }
 
   // ─── Simpan sebagai draft ───
-  Future<Map<String, dynamic>> saveDraft(Map<String, dynamic> payload) async {
-    final resp = await _dio.post('/transaksi-spop/draft', data: payload);
-    return resp.data as Map<String, dynamic>;
+  Future<Map<String, dynamic>> saveDraft(Map<String, dynamic> payload, {String? existingId}) async {
+    if (existingId != null && existingId.isNotEmpty) {
+      final resp = await _dio.post('/transaksi-spop/draft/$existingId', data: payload);
+      return resp.data as Map<String, dynamic>;
+    } else {
+      final resp = await _dio.post('/transaksi-spop', data: payload);
+      return resp.data as Map<String, dynamic>;
+    }
   }
 
   // ─── Ajukan draft ke BKD ───
