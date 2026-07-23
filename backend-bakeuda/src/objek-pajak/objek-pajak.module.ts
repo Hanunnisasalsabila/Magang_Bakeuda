@@ -4,9 +4,10 @@ import { ObjekPajakService } from './objek-pajak.service.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
 import { PbbCalculatorService } from '../lib/pbb-calculator.js';
+import { OracleModule } from '../oracle/oracle.module.js';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, OracleModule],
   controllers: [ObjekPajakController],
   providers: [ObjekPajakService, NopGeneratorService, PbbCalculatorService],
 })

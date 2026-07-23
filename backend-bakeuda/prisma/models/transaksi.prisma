@@ -19,28 +19,28 @@ enum StatusAjuan {
 // ── Transaksi SPOP ──
 
 model TransaksiSpop {
-  id_transaksi       String         @id @default(uuid())
-  no_formulir        String?        @db.VarChar(20)
-  id_user            String // FK → users.id_user (pengaju DESA)
-  nip_pemeriksa_desa String?        @db.VarChar(25) // NIP Lurah
-  url_dokumen_fisik  String?        @db.VarChar(500) // Foto kertas form
-  tahun_pajak        Int // YEAR disimpan sebagai Int
-  jenis_transaksi    JenisTransaksi
-  nop_bersama        String?        @db.VarChar(18)
-  no_sppt_lama       String?        @db.VarChar(20)
-  nama_pengaju       String?        @db.VarChar(100)
-  menggunakan_kuasa  Boolean        @default(false)
-  tanggal_pengajuan  DateTime // DATE → DateTime di Prisma
-  status_ajuan       StatusAjuan    @default(DRAFT)
-  id_verifikator     String? // FK → users.id_user (verifikator BAKEUDA)
-  verified_at        DateTime?
-  catatan_bakeuda    String? // TEXT
-  peringatan_validasi String? @db.VarChar(500) // Warning otomatis dari sistem (khusus PECAH), terpisah dari catatan_bakeuda
-  catatan_pengaju    String?        @db.VarChar(500)
-  locked_by          String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
-  locked_at          DateTime?
-  created_at         DateTime       @default(now())
-  updated_at         DateTime       @updatedAt
+  id_transaksi        String         @id @default(uuid())
+  no_formulir         String?        @db.VarChar(20)
+  id_user             String // FK → users.id_user (pengaju DESA)
+  nip_pemeriksa_desa  String?        @db.VarChar(25) // NIP Lurah
+  url_dokumen_fisik   String?        @db.VarChar(500) // Foto kertas form
+  tahun_pajak         Int // YEAR disimpan sebagai Int
+  jenis_transaksi     JenisTransaksi
+  nop_bersama         String?        @db.VarChar(18)
+  no_sppt_lama        String?        @db.VarChar(20)
+  nama_pengaju        String?        @db.VarChar(100)
+  menggunakan_kuasa   Boolean        @default(false)
+  tanggal_pengajuan   DateTime // DATE → DateTime di Prisma
+  status_ajuan        StatusAjuan    @default(DRAFT)
+  id_verifikator      String? // FK → users.id_user (verifikator BAKEUDA)
+  verified_at         DateTime?
+  catatan_bakeuda     String? // TEXT
+  peringatan_validasi String?        @db.VarChar(500) // Warning otomatis dari sistem (khusus PECAH), terpisah dari catatan_bakeuda
+  catatan_pengaju     String?        @db.VarChar(500)
+  locked_by           String? // FK → users.id_user (Admin Bakeuda yang sedang mereviu)
+  locked_at           DateTime?
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
 
   // ── Relasi ──
   pengaju       User                    @relation("PengajuUser", fields: [id_user], references: [id_user])

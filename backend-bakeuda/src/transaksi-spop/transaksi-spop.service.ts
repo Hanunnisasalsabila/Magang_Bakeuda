@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
+import { OracleWriteService } from '../oracle/oracle-write.service.js';
 import { 
   StatusAjuan, 
   JenisTransaksi, 
@@ -28,6 +29,7 @@ export class TransaksiSpopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
+    private readonly oracleWriteService: OracleWriteService,
   ) {}
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
@@ -65,14 +67,14 @@ export class TransaksiSpopService {
     const transaksi = await this.prisma.transaksiSpop.create({
       data: {
         id_user: currentUser.id_user,
-        tahun_pajak: dto.tahun_pajak,
-        jenis_transaksi: dto.jenis_transaksi,
+        tahun_pajak: dto.tahun_pajak as number,
+        jenis_transaksi: dto.jenis_transaksi as JenisTransaksi,
         no_sppt_lama: dto.no_sppt_lama,
         nama_pengaju: dto.nama_pengaju,
         no_formulir: dto.no_formulir,
         nop_bersama: dto.nop_bersama,
         menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-        tanggal_pengajuan: new Date(dto.tanggal_pengajuan),
+        tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan) : new Date(),
         status_ajuan: statusAjuan,
         peringatan_validasi: peringatanValidasi,
         detail_asal: dto.detail_asal ? {
@@ -84,6 +86,9 @@ export class TransaksiSpopService {
         detail_tujuan: dto.detail_tujuan ? {
           create: dto.detail_tujuan.map((t) => ({
             ...t,
+            luas_tanah_baru: t.luas_tanah_baru ?? 0,
+            luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
+            jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
             calon_subjek_json: t.calon_subjek_json as any,
             data_bangunan_json: t.data_bangunan_json as any
           }))
@@ -114,6 +119,8 @@ export class TransaksiSpopService {
     };
   }
 
+
+
   async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
     const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi }});
     if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
@@ -126,74 +133,7 @@ export class TransaksiSpopService {
 
     this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
 
-    // Hitung ulang peringatan validasi — bisa jadi null kalau luas sudah diperbaiki, atau baru muncul kalau editnya bikin tambah selisih
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
-      await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
-      await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
-
-      await tx.transaksiSpop.update({
-        where: { id_transaksi },
-        data: {
-          id_user: currentUser.id_user,
-          tahun_pajak: dto.tahun_pajak as number,
-          jenis_transaksi: dto.jenis_transaksi as JenisTransaksi,
-          no_sppt_lama: dto.no_sppt_lama,
-          nama_pengaju: dto.nama_pengaju,
-          no_formulir: dto.no_formulir,
-          nop_bersama: dto.nop_bersama,
-          menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-          peringatan_validasi: peringatanValidasi,
-          tanggal_pengajuan: new Date(dto.tanggal_pengajuan as string),
-          status_ajuan: statusAjuan,
-          catatan_pengaju: dto.catatan_pengaju,
-          detail_asal: dto.detail_asal ? {
-            create: dto.detail_asal.map((a) => ({
-              nop_asal: a.nop_asal,
-              nonaktifkan_saat_disetujui: this.shouldDeactivateAsal(dto.jenis_transaksi as string)
-            }))
-          } : undefined,
-          detail_tujuan: dto.detail_tujuan ? {
-            create: dto.detail_tujuan.map((t) => ({
-              ...t,
-              luas_tanah_baru: t.luas_tanah_baru ?? 0,
-              luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
-              jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG',
-              calon_subjek_json: t.calon_subjek_json as any,
-              data_bangunan_json: t.data_bangunan_json as any
-            }))
-          } : undefined,
-          lampiran: dto.lampiran ? {
-            create: dto.lampiran.map((l) => ({
-              ...l,
-              uploaded_by: currentUser.id_user
-            }))
-          } : undefined
-        },
-        include: { detail_asal: true, detail_tujuan: true },
-      });
-    } catch (error) {
-      throw new BadRequestException('PRISMA ERROR: ' + error.message);
-    }
-
-    await this.catatRiwayat(transaksi.id_transaksi, null, transaksi.status_ajuan, currentUser.id_user, 'Pengajuan dibuat');
-
-    return { success: true, message: 'Pengajuan berhasil dibuat', data: transaksi };
-  }
-
-  async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
-    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi }});
-    if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
-    if (existing.id_user !== currentUser.id_user && currentUser.role !== 'BAKEUDA') {
-       throw new ForbiddenException('Akses ditolak');
-    }
-    if (existing.status_ajuan !== 'DRAFT' && existing.status_ajuan !== 'REVISI') {
-       throw new BadRequestException('Hanya pengajuan berstatus DRAFT atau REVISI yang bisa diupdate');
-    }
-
-    this.validateJumlahDetail(dto.jenis_transaksi, dto.detail_asal, dto.detail_tujuan);
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -211,8 +151,9 @@ export class TransaksiSpopService {
             no_formulir: dto.no_formulir,
             nop_bersama: dto.nop_bersama,
             menggunakan_kuasa: dto.menggunakan_kuasa ?? false,
-            tanggal_pengajuan: new Date(dto.tanggal_pengajuan as string),
+            tanggal_pengajuan: dto.tanggal_pengajuan ? new Date(dto.tanggal_pengajuan) : undefined,
             catatan_pengaju: dto.catatan_pengaju,
+            peringatan_validasi: peringatanValidasi,
             detail_asal: dto.detail_asal ? {
               create: dto.detail_asal.map((a) => ({
                 nop_asal: a.nop_asal,
@@ -238,8 +179,9 @@ export class TransaksiSpopService {
           }
         });
       });
-    } catch (error) {
-      throw new BadRequestException('PRISMA ERROR: ' + error.message);
+    } catch (error: any) {
+      console.error("PRISMA ERROR:", error);
+      throw new BadRequestException('PRISMA ERROR: ' + (error.message || String(error)));
     }
 
     const updated = await this.prisma.transaksiSpop.findUnique({
@@ -425,7 +367,51 @@ export class TransaksiSpopService {
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'DISETUJUI', currentUser.id_user, 'Disetujui, data dieksekusi');
 
+    // WRITE-THROUGH KE ORACLE
+    try {
+      await this.syncToOracle(hasil);
+    } catch (oracleError) {
+      console.error("Gagal write-through ke Oracle:", oracleError);
+      // Optional: Anda bisa memutuskan apakah kegagalan Oracle membatalkan transaksi Postgres
+      // Untuk write-through strict, bisa di-throw error di sini. 
+      // Saat ini kita biarkan sukses di Postgres, dan catat error.
+      await this.catatRiwayat(idTransaksi, 'DISETUJUI', 'DISETUJUI', currentUser.id_user, 'WARNING: Sinkronisasi ke Oracle Gagal');
+    }
+
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
+  }
+
+  /**
+   * Helper untuk Write-Through ke Oracle
+   */
+  private async syncToOracle(hasilEksekusi: any) {
+    const nopsToSync: string[] = [];
+    
+    if (hasilEksekusi.nop_baru) {
+      if (Array.isArray(hasilEksekusi.nop_baru)) {
+        nopsToSync.push(...hasilEksekusi.nop_baru);
+      } else {
+        nopsToSync.push(hasilEksekusi.nop_baru);
+      }
+    }
+    if (hasilEksekusi.nop) {
+      nopsToSync.push(hasilEksekusi.nop);
+    }
+
+    // Ambil data terbaru dari Prisma lalu push ke Oracle
+    for (const nop of nopsToSync) {
+      const objekPajak = await this.prisma.objekPajak.findUnique({
+        where: { nop },
+        include: { subjek_pajak: true }
+      });
+      
+      if (objekPajak) {
+        if (objekPajak.subjek_pajak) {
+          await this.oracleWriteService.writeSubjekPajak(objekPajak.subjek_pajak);
+        }
+        await this.oracleWriteService.writeObjekPajak(objekPajak);
+      }
+    }
   }
 
   async tolak(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
@@ -509,6 +495,8 @@ export class TransaksiSpopService {
     const hasil = validasiSelisihLuasPecah(Number(objekAsal.luas_tanah), totalLuasTujuan);
 
     return hasil.ada_selisih ? hasil.pesan : null;
+  }
+
   private validateByJenisTransaksi(jenis: JenisTransaksi, dto: SubmitTransaksiDto) {
     const tujuan = dto.detail_tujuan?.[0];
 
@@ -614,6 +602,12 @@ export class TransaksiSpopService {
       let no_bng = 1;
       for (const bngRaw of t.data_bangunan_json as any[]) {
         const bng = bngRaw as any;
+        
+        // Skip pembuatan ulang data bangunan jika LSPOP ditandai sebagai Penghapusan
+        if (bng.jenisTransaksi === 'Penghapusan Data' || bng.jenisTransaksi === 'PENGHAPUSAN' || bng.jenisTransaksi === 'HAPUS') {
+          continue;
+        }
+
         let kode_jpb = '01'; 
         if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
         else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
@@ -687,7 +681,7 @@ export class TransaksiSpopService {
         blok_kav_no: t.blok_kav_no_baru,
         rw_op: t.rw_op_baru,
         rt_op: t.rt_op_baru,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru!,
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? 0,
         jumlah_bangunan: t.jumlah_bangunan_baru ?? 0,
@@ -725,7 +719,7 @@ export class TransaksiSpopService {
       data: {
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? undefined,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru ?? undefined,
         jalan_op: t.jalan_op_baru ?? undefined,
       },
     });
@@ -760,7 +754,7 @@ export class TransaksiSpopService {
           kode_jenis_op: '1',
           nik_subjek: nikSubjek,
           jalan_op: t.jalan_op_baru ?? '',
-          jenis_tanah: t.jenis_tanah_baru,
+          jenis_tanah: t.jenis_tanah_baru!,
           luas_tanah: t.luas_tanah_baru,
           luas_bangunan: t.luas_bangunan_baru ?? 0,
         },
@@ -819,7 +813,7 @@ export class TransaksiSpopService {
         rw_op: t.rw_op_baru || objekAsalPertama?.rw_op || undefined,
         rt_op: t.rt_op_baru || objekAsalPertama?.rt_op || undefined,
         no_persil: t.no_persil_baru || undefined,
-        jenis_tanah: t.jenis_tanah_baru,
+        jenis_tanah: t.jenis_tanah_baru!,
         luas_tanah: totalLuasTanah,       // ← AUTO-HITUNG, bukan lagi t.luas_tanah_baru
         luas_bangunan: totalLuasBangunan, // ← AUTO-HITUNG juga
       },

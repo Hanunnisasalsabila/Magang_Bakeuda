@@ -1,0 +1,14 @@
+model SyncLog {
+  id            String    @id @default(uuid())
+  table_name    String    @db.VarChar(50)
+  sync_type     String    @db.VarChar(20) // "FULL" | "DELTA" | "SINGLE"
+  status        String    @db.VarChar(20) // "SUCCESS" | "FAILED" | "IN_PROGRESS"
+  rows_synced   Int       @default(0)
+  started_at    DateTime  @default(now())
+  completed_at  DateTime?
+  error_message String?
+  triggered_by  String    @default("SYSTEM") // "SYSTEM" | "MANUAL" | user ID
+
+  @@index([table_name, started_at])
+  @@map("sync_log")
+}

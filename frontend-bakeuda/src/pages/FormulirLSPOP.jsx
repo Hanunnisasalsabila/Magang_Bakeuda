@@ -12,6 +12,10 @@ export default function FormulirLSPOP() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isBakeuda = user && user.role === 'BAKEUDA';
+
   const [idTransaksi, setIdTransaksi] = useState(null);
   const [bangunanList, setBangunanList] = useState([]);
   const [isDraft, setIsDraft] = useState(false);
@@ -152,7 +156,7 @@ export default function FormulirLSPOP() {
       setSpopTransaksi(spopTx);
       if (['BARU', 'PECAH', 'GABUNG'].includes(spopTx)) {
         setFormData(prev => ({ ...prev, jenisTransaksi: 'Perekaman Data' }));
-      } else if (spopTx === 'PENGHAPUSAN') {
+      } else if (spopTx === 'HAPUS') {
         setFormData(prev => ({ ...prev, jenisTransaksi: 'Penghapusan Data' }));
       }
     }
@@ -351,7 +355,7 @@ export default function FormulirLSPOP() {
     
     // Add form structure attributes expected by backend
     sanitizedData.noFormulir = nop;
-    sanitizedData.jenisTransaksi = localStorage.getItem('lspop_jenis_transaksi') || 'BARU';
+    sanitizedData.jenisTransaksi = formData.jenisTransaksi || 'Perekaman Data';
     sanitizedData.jumlahBng = totalBangunan.toString();
     sanitizedData.bangunanM2 = sanitizedData.luasBangunan ? sanitizedData.luasBangunan.toString() : '0';
 
@@ -560,27 +564,30 @@ export default function FormulirLSPOP() {
             <select 
               value={formData.jenisTransaksi} 
               onChange={(e) => handleTextChange('jenisTransaksi', e)} 
-              disabled={['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(spopTransaksi)}
-              className={`w-full h-10 border border-outline-variant rounded px-3 text-sm ${['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(spopTransaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : ''}`}
+              disabled={['BARU', 'PECAH', 'GABUNG', 'HAPUS'].includes(spopTransaksi)}
+              className={`w-full h-10 border border-outline-variant rounded px-3 text-sm ${['BARU', 'PECAH', 'GABUNG', 'HAPUS'].includes(spopTransaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : ''}`}
             >
               {['BARU', 'PECAH', 'GABUNG'].includes(spopTransaksi) && (
                 <option value="Perekaman Data">Perekaman Data</option>
               )}
-              {['MUTASI', 'PERUBAHAN'].includes(spopTransaksi) && (
+              {['MUTASI', 'PERUBAHAN_DATA'].includes(spopTransaksi) && (
                 <>
                   <option value="Perekaman Data">Perekaman Data</option>
                   <option value="Pemutakhiran Data">Pemutakhiran Data</option>
                   <option value="Penghapusan Data">Penghapusan Data</option>
+                  {isBakeuda && <option value="Penilaian Individual">Penilaian Individual</option>}
                 </>
               )}
-              {spopTransaksi === 'PENGHAPUSAN' && (
+              {spopTransaksi === 'HAPUS' && (
                 <option value="Penghapusan Data">Penghapusan Data</option>
               )}
               {!spopTransaksi && (
                 <>
+                  <option value="">Pilih SPOP Induk terlebih dahulu</option>
                   <option value="Perekaman Data">Perekaman Data</option>
                   <option value="Pemutakhiran Data">Pemutakhiran Data</option>
                   <option value="Penghapusan Data">Penghapusan Data</option>
+                  {isBakeuda && <option value="Penilaian Individual">Penilaian Individual</option>}
                 </>
               )}
             </select>
