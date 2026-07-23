@@ -18,9 +18,9 @@ async function main() {
   const wilayahData = JSON.parse(wilayahDataRaw);
 
   console.log(`🗺️ Menghapus data lama...`);
-  await prisma.user.deleteMany({});
-  await prisma.pejabatDesa.deleteMany({});
-  await prisma.wilayah.deleteMany({});
+  // await prisma.user.deleteMany({});
+  // await prisma.pejabatDesa.deleteMany({});
+  // await prisma.wilayah.deleteMany({});
 
   console.log(`🗺️ Menyimpan ${wilayahData.length} data wilayah...`);
   for (const w of wilayahData) {
@@ -50,11 +50,24 @@ async function main() {
   const adminPassword = await bcrypt.hash('AdminBakeuda2026!', 10);
 
   await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: { password_hash: adminPassword }, // Pastikan update passwordnya sesuai WA teman
+    where: { username: 'admin1' },
+    update: { password_hash: adminPassword },
     create: {
-      nama_lengkap: 'Super Admin Utama BAKEUDA',
-      username: 'admin',
+      nama_lengkap: 'Super Admin Bakeuda 1',
+      username: 'admin1',
+      password_hash: adminPassword,
+      role: Role.BAKEUDA,
+      is_active: true,
+      force_change_password: true,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { username: 'admin2' },
+    update: { password_hash: adminPassword },
+    create: {
+      nama_lengkap: 'Super Admin Bakeuda 2',
+      username: 'admin2',
       password_hash: adminPassword,
       role: Role.BAKEUDA,
       is_active: true,
@@ -71,7 +84,9 @@ async function main() {
   // Kita buatkan sistem otomatis (generator) berdasarkan daftar wilayah.
   // ==========================================
   // Hapus semua akun DESA lama agar tidak terjadi duplikasi saat re-seed
-  await prisma.user.deleteMany({ where: { role: Role.DESA } });
+  // await prisma.user.deleteMany({
+  //   where: { role: Role.DESA },
+  // });
   await prisma.pejabatDesa.deleteMany();
 
   console.log('👥 Sedang men-generate akun perangkat desa (1 akun per desa = 239 Akun)...');

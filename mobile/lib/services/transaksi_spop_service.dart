@@ -54,15 +54,37 @@ class TransaksiSpopService {
     return resp.data as Map<String, dynamic>;
   }
 
-  // ─── Approve / tolak oleh verifikator (BAKEUDA) ───
-  Future<Map<String, dynamic>> verifikasiSpop(String idTransaksi, {
-    required bool disetujui,
-    String? catatan,
+  // ─── Approve (BAKEUDA) ───
+  Future<Map<String, dynamic>> approveSpop(
+    String idTransaksi, {
+    String? kodeWilayah,
+    String? kodeBlok,
+    String? kodeJenisOp,
   }) async {
-    final resp = await _dio.patch('/transaksi-spop/$idTransaksi/verifikasi-bakeuda', data: {
-      'disetujui': disetujui,
-      if (catatan != null && catatan.isNotEmpty) 'catatan': catatan,
-    });
+    final payload = <String, dynamic>{};
+    if (kodeWilayah != null) payload['kode_wilayah'] = kodeWilayah;
+    if (kodeBlok != null) payload['kode_blok'] = kodeBlok;
+    if (kodeJenisOp != null) payload['kode_jenis_op'] = kodeJenisOp;
+    
+    final resp = await _dio.post('/transaksi-spop/$idTransaksi/approve', data: payload);
+    return resp.data as Map<String, dynamic>;
+  }
+
+  // ─── Tolak Permanen (BAKEUDA) ───
+  Future<Map<String, dynamic>> tolakSpop(String idTransaksi, String catatan) async {
+    final resp = await _dio.post('/transaksi-spop/$idTransaksi/tolak', data: {'catatan': catatan});
+    return resp.data as Map<String, dynamic>;
+  }
+
+  // ─── Revisi (BAKEUDA) ───
+  Future<Map<String, dynamic>> revisiSpop(String idTransaksi, String catatan) async {
+    final resp = await _dio.post('/transaksi-spop/$idTransaksi/revisi', data: {'catatan': catatan});
+    return resp.data as Map<String, dynamic>;
+  }
+
+  // ─── Unlock SPOP (Bakeuda) ───
+  Future<Map<String, dynamic>> unlockSpop(String idTransaksi) async {
+    final resp = await _dio.patch('/transaksi-spop/$idTransaksi/unlock');
     return resp.data as Map<String, dynamic>;
   }
 
