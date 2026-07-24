@@ -28,6 +28,79 @@ extension _Step1Extension on _SpopFormScreenState {
           },
         ),
         const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: CheckboxListTile(
+            value: _menggunakanKuasa,
+            onChanged: (val) {
+              updateFormState(() {
+                _menggunakanKuasa = val ?? false;
+                if (!_menggunakanKuasa) {
+                  _lampiran.removeWhere((l) => l['jenis_dokumen'] == 'Surat Kuasa');
+                }
+              });
+            },
+            title: const Text('Bertindak Selaku Kuasa (Bukan Pemilik Langsung)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+        ),
+        if (_menggunakanKuasa) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Wajib Lampirkan Surat Kuasa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+                      const SizedBox(height: 4),
+                      const Text('Karena Anda bertindak selaku kuasa, silakan unggah dokumen surat kuasa di sini (Maks 2MB).', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                      const SizedBox(height: 8),
+                      if (_lampiran.any((l) => l['jenis_dokumen'] == 'Surat Kuasa'))
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
+                          child: const Text('✅ Surat Kuasa Terunggah', style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold)),
+                        )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: _isLoading ? null : () => _pickFile('Surat Kuasa'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.blue.shade300, style: BorderStyle.solid),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.upload_file, color: Colors.blue.shade700, size: 24),
+                        const SizedBox(height: 4),
+                        Text('Unggah File', style: TextStyle(fontSize: 10, color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
         Row(children: [
           Expanded(child: CustomTextField(controller: _nikController, label: 'NIK (16 digit) *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(16), FilteringTextInputFormatter.digitsOnly], validator: (v) {
             if (v == null || v.isEmpty) return 'Wajib diisi';

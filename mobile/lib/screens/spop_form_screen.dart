@@ -117,6 +117,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
       setState(() {
         _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        _menggunakanKuasa = d['menggunakan_kuasa'] ?? false;
         
         final nopAsalList = d['detail_asal'] as List?;
         if (nopAsalList != null && nopAsalList.isNotEmpty) {
@@ -224,6 +225,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   LatLng? _searchReferencePoint;
 
   // Step 2 - Data Subjek Pajak
+  bool _menggunakanKuasa = false;
   final _namaWpController = TextEditingController();
   final _nikController = TextEditingController();
   final _npwpController = TextEditingController();
@@ -738,7 +740,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         'tahun_pajak': DateTime.now().year,
         'tanggal_pengajuan': DateTime.now().toIso8601String(),
         'nama_pengaju': _pecahanList.isNotEmpty ? (_pecahanList[0]['namaWp'] ?? 'TANPA NAMA') : 'TANPA NAMA',
-        'menggunakan_kuasa': false,
+        'menggunakan_kuasa': _menggunakanKuasa,
         if (nopBersama.length >= 18) 'nop_bersama': nopBersama,
         if (_noSpptLamaController.text.isNotEmpty) 'no_sppt_lama': _noSpptLamaController.text,
         if (detailAsal.isNotEmpty) 'detail_asal': detailAsal,
@@ -852,7 +854,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       'tanggal_pengajuan': DateTime.now().toIso8601String(),
       if (_alasanHapusController.text.isNotEmpty) 'catatan_pengaju': _alasanHapusController.text,
       'nama_pengaju': _namaWpController.text.isEmpty ? 'TANPA NAMA' : _namaWpController.text,
-      'menggunakan_kuasa': false,
+      'menggunakan_kuasa': _menggunakanKuasa,
       if (nopBersama.length >= 18) 'nop_bersama': nopBersama,
       if (_noSpptLamaController.text.isNotEmpty) 'no_sppt_lama': _noSpptLamaController.text,
       if (detailAsal.isNotEmpty) 'detail_asal': detailAsal,
@@ -932,7 +934,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
-  Future<void> _pickFile() async {
+  Future<void> _pickFile([String? forcedJenisDokumen]) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
@@ -944,7 +946,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       try {
         final url = await _spopService.uploadFile(file.path!, file.name);
         setState(() {
-          _lampiran.add({'jenis_dokumen': _selectedJenisDokumen, 'url_file': url});
+          _lampiran.add({'jenis_dokumen': forcedJenisDokumen ?? _selectedJenisDokumen, 'url_file': url});
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1073,6 +1075,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         setState(() => _currentStep = 4);
       }
     } else if (_currentStep == 4) {
+      if (_menggunakanKuasa && !_lampiran.any((l) => l['jenis_dokumen'] == 'Surat Kuasa')) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda bertindak selaku kuasa, wajib melampirkan Surat Kuasa'), backgroundColor: Colors.orange));
+        return;
+      }
       setState(() => _currentStep = 5);
     } else if (_currentStep == 5) {
       _submitForm();
