@@ -144,6 +144,8 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       const SizedBox(height: 12),
       Row(children: [
         Expanded(child: DropdownButtonFormField<String>(
+      isExpanded: true,
+          key: ValueKey('statusWp_${_currentPecahanIdx}'),
           initialValue: p['statusWp'] as String,
           decoration: _dec('Status WP'),
           items: _statusWpOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 13)))).toList(),
@@ -151,6 +153,8 @@ extension _StepPecahanExtension on _SpopFormScreenState {
         )),
         const SizedBox(width: 12),
         Expanded(child: DropdownButtonFormField<String>(
+      isExpanded: true,
+          key: ValueKey('pekerjaan_${_currentPecahanIdx}'),
           initialValue: p['pekerjaan'] as String,
           decoration: _dec('Pekerjaan'),
           items: _pekerjaanOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 13)))).toList(),
@@ -185,6 +189,8 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ]),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
+      isExpanded: true,
+        key: ValueKey('kec_${_currentPecahanIdx}'),
         initialValue: _kecamatans.contains(kec) ? kec : null,
         decoration: _dec('Kecamatan *'),
         items: _kecamatans.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(fontSize: 13)))).toList(),
@@ -193,6 +199,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
+      isExpanded: true,
         key: ValueKey('kel_wp_${_currentPecahanIdx}_$kec'),
         initialValue: kelurahans.contains(p['kelurahan'] as String) ? p['kelurahan'] as String : null,
         decoration: _dec('Kelurahan/Desa *'),
@@ -238,6 +245,8 @@ extension _StepPecahanExtension on _SpopFormScreenState {
         )),
         const SizedBox(width: 12),
         Expanded(child: DropdownButtonFormField<String>(
+      isExpanded: true,
+          key: ValueKey('jenisTanah_${_currentPecahanIdx}'),
           initialValue: p['jenisTanah'] as String,
           decoration: _dec('Jenis Tanah'),
           items: _jenisTanahOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 12)))).toList(),
@@ -269,19 +278,22 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ]),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
+      isExpanded: true,
+        key: ValueKey('kecOp_${_currentPecahanIdx}'),
         initialValue: _kecamatans.contains(kecOp) ? kecOp : null,
         decoration: _dec('Kecamatan Objek *'),
         items: _kecamatans.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(fontSize: 13)))).toList(),
-        onChanged: (v) { _setP('kecamatanOp', v ?? ''); _setP('kelurahanOp', ''); },
+        onChanged: _isOpWilayahPatented ? null : (v) { _setP('kecamatanOp', v ?? ''); _setP('kelurahanOp', ''); },
         validator: (v) => (v == null || v.isEmpty) ? 'Wajib' : null,
       ),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
-        key: ValueKey('kel_op_${_currentPecahanIdx}_$kecOp'),
+      isExpanded: true,
+        key: ValueKey('kelOp_${_currentPecahanIdx}_$kecOp'),
         initialValue: kelurahansOp.contains(p['kelurahanOp'] as String) ? p['kelurahanOp'] as String : null,
         decoration: _dec('Kelurahan/Desa Objek *'),
         items: kelurahansOp.map((k) => DropdownMenuItem(value: k, child: Text(k, style: const TextStyle(fontSize: 13)))).toList(),
-        onChanged: (v) => _setP('kelurahanOp', v ?? ''),
+        onChanged: _isOpWilayahPatented ? null : (v) => _setP('kelurahanOp', v ?? ''),
         validator: (v) => (v == null || v.isEmpty) ? 'Wajib' : null,
       ),
       const SizedBox(height: 12),
@@ -291,6 +303,151 @@ extension _StepPecahanExtension on _SpopFormScreenState {
         const SizedBox(width: 12),
         Expanded(child: TextFormField(key: ValueKey('lng_${_currentPecahanIdx}'), initialValue: p['lng'] as String, decoration: _dec('Longitude'), keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), onChanged: (v) => _setP('lng', v))),
       ]),
+      const SizedBox(height: 12),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('Pilih Titik Peta (Opsional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    final poly = p['koordinatPolygon'] as List;
+                    if (poly.isNotEmpty) {
+                      poly.removeLast();
+                      if (poly.isNotEmpty) {
+                        p['lat'] = poly.first['lat'].toString();
+                        p['lng'] = poly.first['lng'].toString();
+                      } else {
+                        p['lat'] = '';
+                        p['lng'] = '';
+                      }
+                    }
+                  });
+                },
+                icon: const Icon(Icons.undo, size: 16, color: Colors.orange),
+                label: const Text('Undo', style: TextStyle(color: Colors.orange, fontSize: 12)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    (p['koordinatPolygon'] as List).clear();
+                    p['lat'] = '';
+                    p['lng'] = '';
+                  });
+                },
+                icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                label: const Text('Reset', style: TextStyle(color: Colors.red, fontSize: 12)),
+              ),
+            ],
+          )
+        ],
+      ),
+      Container(
+        height: 250,
+        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
+        child: Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: const LatLng(-7.3878, 109.3620), 
+                  initialZoom: 15.0,
+                  maxZoom: 22.0,
+                  onTap: (tapPosition, point) {
+                    setState(() {
+                      final poly = p['koordinatPolygon'] as List;
+                      poly.add({'lat': point.latitude, 'lng': point.longitude});
+                      if (poly.length == 1) {
+                        p['lat'] = point.latitude.toString();
+                        p['lng'] = point.longitude.toString();
+                      }
+                    });
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate: _isSatellite 
+                        ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+                        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+                    userAgentPackageName: 'com.example.magang_bakeuda',
+                    maxZoom: 22,
+                  ),
+                  if ((p['koordinatPolygon'] as List).isNotEmpty)
+                    PolygonLayer(
+                      polygons: [
+                        Polygon(
+                          points: (p['koordinatPolygon'] as List).map((e) => LatLng(e['lat'] as double, e['lng'] as double)).toList(),
+                          color: Colors.blue.withOpacity(0.3),
+                          borderColor: Colors.blue,
+                          borderStrokeWidth: 2,
+                        )
+                      ],
+                    ),
+                  if ((p['koordinatPolygon'] as List).isNotEmpty)
+                    MarkerLayer(
+                      markers: (p['koordinatPolygon'] as List).map((e) => Marker(
+                        point: LatLng(e['lat'] as double, e['lng'] as double),
+                        width: 12, height: 12,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.blue, width: 2),
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: FloatingActionButton.small(
+                onPressed: () => setState(() => _isSatellite = !_isSatellite),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                child: Icon(
+                  _isSatellite ? Icons.map_outlined : Icons.satellite_alt_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      if ((p['koordinatPolygon'] as List).isNotEmpty) ...[
+        const SizedBox(height: 16),
+        const Text('DAFTAR TITIK KOORDINAT POLIGON', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0D47A1))),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: MaterialStateProperty.all(Colors.blue.shade50),
+                columnSpacing: 24,
+                headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87),
+                dataTextStyle: const TextStyle(fontSize: 12, color: Colors.black87),
+                columns: const [
+                  DataColumn(label: Text('Titik')),
+                  DataColumn(label: Text('Latitude')),
+                  DataColumn(label: Text('Longitude')),
+                ],
+                rows: (p['koordinatPolygon'] as List).asMap().entries.map((e) => DataRow(cells: [
+                  DataCell(Text('${e.key + 1}', style: const TextStyle(fontWeight: FontWeight.bold))),
+                  DataCell(Text('${e.value['lat']}')),
+                  DataCell(Text('${e.value['lng']}')),
+                ])).toList(),
+              ),
+            ),
+          ),
+        ),
+      ],
       const SizedBox(height: 12),
       // Batas
       ExpansionTile(
@@ -351,6 +508,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       final cv = b[key]?.toString();
       final sv = items.contains(cv) ? cv : items.first;
       return DropdownButtonFormField<String>(
+      isExpanded: true,
         key: ValueKey('bdd_${_currentPecahanIdx}_${_currentPecahanBangunanIdx}_$key'),
         initialValue: sv,
         decoration: _dec(label),
@@ -488,6 +646,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       const Text('Upload dokumen pendukung khusus untuk pecahan ini.', style: TextStyle(color: Colors.grey, fontSize: 12)),
       const SizedBox(height: 16),
       DropdownButtonFormField<String>(
+      isExpanded: true,
         initialValue: jenisDokumenOpts.contains(selectedJenis) ? selectedJenis : jenisDokumenOpts.first,
         decoration: _dec('Jenis Dokumen'),
         items: jenisDokumenOpts.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 13)))).toList(),
@@ -599,3 +758,4 @@ extension _StepPecahanExtension on _SpopFormScreenState {
   Widget _sectionTitle(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F2C59)));
   Widget _sectionSubtitle(String text) => Column(children: [Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)), const Divider()]);
 }
+

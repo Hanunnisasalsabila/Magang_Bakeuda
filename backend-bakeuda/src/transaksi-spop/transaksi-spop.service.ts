@@ -63,6 +63,25 @@ export class TransaksiSpopService {
       }
     }
 
+    if (dto.detail_asal?.length) {
+      const nopAsalList = dto.detail_asal.map(a => a.nop_asal).filter(Boolean);
+      if (nopAsalList.length > 0) {
+        const found = await this.prisma.objekPajak.findMany({
+          where: { nop: { in: nopAsalList } },
+          select: { nop: true, status_aktif: true }
+        });
+        const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
+        for (const n of nopAsalList) {
+          if (!foundNops.has(n)) {
+            throw new BadRequestException(`NOP Asal (${n}) tidak terdaftar di database.`);
+          }
+          if (foundNops.get(n) === false) {
+            throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
+          }
+        }
+      }
+    }
+
     // Validasi soft warning selisih luas — KHUSUS PECAH (GABUNG tidak perlu, luas dihitung otomatis)
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
@@ -101,15 +120,10 @@ export class TransaksiSpopService {
           }))
         } : undefined,
         lampiran: dto.lampiran ? {
-          create: {
-            url_ktp: dto.lampiran.url_ktp || [],
-            url_sertifikat: dto.lampiran.url_sertifikat || [],
-            url_ajb: dto.lampiran.url_ajb || [],
-            url_imb: dto.lampiran.url_imb || [],
-            url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
-            url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
-            uploaded_by: currentUser.id_user,
-          } as any
+          create: dto.lampiran.map((l) => ({
+            ...l,
+            uploaded_by: currentUser.id_user
+          }))
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -131,6 +145,29 @@ export class TransaksiSpopService {
     };
   }
 
+  async deleteDraft(id_transaksi: string, currentUser: CurrentUser) {
+    const existing = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi } });
+    if (!existing) throw new NotFoundException('Transaksi tidak ditemukan');
+    if (existing.id_user !== currentUser.id_user && currentUser.role !== 'BAKEUDA') {
+      throw new ForbiddenException('Akses ditolak');
+    }
+    if (existing.status_ajuan !== 'DRAFT') {
+      throw new BadRequestException('Hanya pengajuan berstatus DRAFT yang bisa dihapus');
+    }
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.detailTransaksiTujuan.deleteMany({ where: { id_transaksi } });
+        await tx.detailTransaksiAsal.deleteMany({ where: { id_transaksi } });
+        await tx.lampiranDokumen.deleteMany({ where: { id_transaksi } });
+        await tx.riwayatPelacakan.deleteMany({ where: { id_transaksi } });
+        await tx.transaksiSpop.delete({ where: { id_transaksi } });
+      });
+      return { message: 'Draft berhasil dihapus' };
+    } catch (error) {
+      throw new BadRequestException('Gagal menghapus draft: ' + error.message);
+    }
+  }
 
 
   async saveDraft(id_transaksi: string, dto: SubmitTransaksiDto, currentUser: CurrentUser) {
@@ -145,12 +182,22 @@ export class TransaksiSpopService {
 
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
-    if (dto.detail_asal && dto.detail_asal.length > 0) {
-      for (const asal of dto.detail_asal) {
-        if (!asal.nop_asal) continue;
-        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
-        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
-        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
+    if (dto.detail_asal?.length) {
+      const nopAsalList = dto.detail_asal.map(a => a.nop_asal).filter(Boolean);
+      if (nopAsalList.length > 0) {
+        const found = await this.prisma.objekPajak.findMany({
+          where: { nop: { in: nopAsalList } },
+          select: { nop: true, status_aktif: true }
+        });
+        const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
+        for (const n of nopAsalList) {
+          if (!foundNops.has(n)) {
+            throw new BadRequestException(`NOP Asal (${n}) tidak terdaftar di database.`);
+          }
+          if (foundNops.get(n) === false) {
+            throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
+          }
+        }
       }
     }
 
@@ -192,15 +239,10 @@ export class TransaksiSpopService {
               }))
             } : undefined,
             lampiran: dto.lampiran ? {
-              create: {
-                url_ktp: dto.lampiran.url_ktp || [],
-                url_sertifikat: dto.lampiran.url_sertifikat || [],
-                url_ajb: dto.lampiran.url_ajb || [],
-                url_imb: dto.lampiran.url_imb || [],
-                url_pendukung_lokasi: dto.lampiran.url_pendukung_lokasi || [],
-                url_surat_kuasa: dto.lampiran.url_surat_kuasa || [],
-                uploaded_by: currentUser.id_user,
-              } as any
+              create: dto.lampiran.map((l) => ({
+                ...l,
+                uploaded_by: currentUser.id_user
+              }))
             } : undefined
           }
         });
@@ -242,15 +284,6 @@ export class TransaksiSpopService {
 
     this.validateByJenisTransaksi(transaksi.jenis_transaksi, dtoForValidation);
 
-    if (transaksi.detail_asal && transaksi.detail_asal.length > 0) {
-      for (const asal of transaksi.detail_asal) {
-        if (!asal.nop_asal) continue;
-        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
-        if (!objek) throw new BadRequestException(`NOP asal ${asal.nop_asal} tidak ditemukan`);
-        if (!objek.status_aktif) throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif, tidak bisa diajukan transaksi`);
-      }
-    }
-
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'MENUNGGU' },
@@ -287,7 +320,13 @@ export class TransaksiSpopService {
     const result = await this.prisma.transaksiSpop.findMany({
       where,
       include: {
-        detail_asal: true,
+        detail_asal: {
+          include: {
+            objek_asal: {
+              include: { subjek_pajak: { include: { wilayah: true } }, wilayah: true }
+            }
+          }
+        },
         detail_tujuan: true,
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         reviewer: { select: { nama_lengkap: true } },
@@ -304,7 +343,11 @@ export class TransaksiSpopService {
       include: {
         detail_tujuan: true,
         detail_asal: {
-          include: { objek_asal: true }
+          include: { 
+            objek_asal: {
+              include: { subjek_pajak: { include: { wilayah: true } }, wilayah: true }
+            }
+          }
         },
         pengaju: { select: { nama_lengkap: true, kode_wilayah: true } },
         lampiran: true,
@@ -316,32 +359,6 @@ export class TransaksiSpopService {
     if (!transaksi) throw new NotFoundException('Detail transaksi tidak ditemukan');
     if (currentUser.role === 'DESA' && (transaksi as any).pengaju?.kode_wilayah !== currentUser.kode_wilayah) {
       throw new ForbiddenException('Akses ditolak');
-    }
-
-    if (transaksi.lampiran) {
-      let l: any = transaksi.lampiran;
-      if (typeof l === 'string') {
-        try { l = JSON.parse(l); } catch(e) {}
-      }
-      const mappedLampiran: any[] = [];
-      const mapItem = (urls: any, type: string) => {
-        if (!urls) return;
-        let parsed = urls;
-        if (typeof parsed === 'string') {
-          try { parsed = JSON.parse(parsed); } catch(e) {}
-        }
-        if (Array.isArray(parsed)) {
-          parsed.forEach(u => mappedLampiran.push({ jenis_dokumen: type, url_file: u, id_lampiran: Math.random().toString(36).substring(7) }));
-        }
-      };
-      mapItem(l.url_ktp, 'KTP');
-      mapItem(l.url_sertifikat, 'SERTIFIKAT_HAK_MILIK');
-      mapItem(l.url_ajb, 'AKTE_JUAL_BELI');
-      mapItem(l.url_imb, 'IZIN_MENDIRIKAN_BANGUNAN');
-      mapItem(l.url_pendukung_lokasi, 'DOKUMEN_PENDUKUNG_LOKASI');
-      mapItem(l.url_surat_kuasa, 'SURAT_KUASA');
-      
-      return { success: true, data: { ...transaksi, lampiran: mappedLampiran } };
     }
 
     return { success: true, data: transaksi };
@@ -357,30 +374,7 @@ export class TransaksiSpopService {
       this.prisma.transaksiSpop.count({ where: { ...baseWhere, status_ajuan: StatusAjuan.REVISI } })
     ]);
 
-    // Calculate weekly trends (Sen, Sel, Rab, Kam, Jum)
-    const today = new Date();
-    // Go to Monday of this week
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const weeklyData = await this.prisma.transaksiSpop.findMany({
-      where: {
-        ...baseWhere,
-        created_at: { gte: startOfWeek }
-      },
-      select: { created_at: true }
-    });
-
-    const weeklyTrends = [0, 0, 0, 0, 0];
-    weeklyData.forEach(t => {
-      const day = t.created_at.getDay(); // 1 = Monday, 5 = Friday
-      if (day >= 1 && day <= 5) {
-        weeklyTrends[day - 1]++;
-      }
-    });
-
-    return { success: true, data: { totalDikirim, menunggu, disetujui, perluPerbaikan, weeklyTrends } };
+    return { success: true, data: { totalDikirim, menunggu, disetujui, perluPerbaikan } };
   }
 
   async lockForReview(idTransaksi: string, currentUser: CurrentUser) {
@@ -531,22 +525,6 @@ export class TransaksiSpopService {
 
   async mintaRevisi(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
-
-    const transaksi = await this.prisma.transaksiSpop.findUnique({
-      where: { id_transaksi: idTransaksi },
-      include: { detail_asal: true },
-    });
-
-    if (transaksi?.jenis_transaksi === 'HAPUS' && transaksi.detail_asal?.length > 0) {
-      for (const asal of transaksi.detail_asal) {
-        if (!asal.nop_asal) continue;
-        const objek = await this.prisma.objekPajak.findUnique({ where: { nop: asal.nop_asal } });
-        if (objek && !objek.status_aktif) {
-          throw new BadRequestException(`NOP asal ${asal.nop_asal} sudah nonaktif. Transaksi HAPUS ini tidak dapat direvisi, silakan TOLAK ajuan ini.`);
-        }
-      }
-    }
-
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'REVISI', catatan_bakeuda: catatan, locked_by: null, locked_at: null },
@@ -705,7 +683,7 @@ export class TransaksiSpopService {
           created_by: transaksiUserId,
         }
       });
-      return nikToSave;
+      nikSubjek = nikToSave;
     }
     return nikSubjek || '0000000000000000';
   }
@@ -724,6 +702,7 @@ export class TransaksiSpopService {
       let no_bng = 1;
       for (const bngRaw of t.data_bangunan_json as any[]) {
         const bng = bngRaw as any;
+
         // Skip pembuatan ulang data bangunan jika LSPOP ditandai sebagai Penghapusan
         if (bng.jenisTransaksi === 'Penghapusan Data' || bng.jenisTransaksi === 'PENGHAPUSAN' || bng.jenisTransaksi === 'HAPUS') {
           continue;

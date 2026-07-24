@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { OracleService } from './oracle.service.js';
@@ -204,9 +205,14 @@ export class OracleSyncService implements OnModuleInit {
       } catch (e) {
         this.logger.error(`[BACKFILL] Failed at ${table} offset ${offset}`, e);
       }
-      return; // Hanya proses 1 tabel per siklus 5 menit agar tidak berat
     }
-    this.logger.log('[BACKFILL] All tables are fully backfilled!');
+    this.logger.log('[BACKFILL] Backfill cycle finished for all tables!');
+  }
+
+  @Cron(CronExpression.EVERY_30_MINUTES)
+  async handleAutomaticBackfill() {
+    this.logger.log('Running automatic backfill via Cron (Every 30 Minutes)');
+    await this.backfillSync('CRON');
   }
 
 

@@ -15,7 +15,7 @@ export default function PelacakanDokumen() {
       try {
         const res = await api.get(`/transaksi-spop/${id}`);
         let fetchedData = res.data.data;
-        
+
         // Fetch existing NOP data if transaction is HAPUS
         if (fetchedData.jenis_transaksi === 'HAPUS' && fetchedData.detail_asal?.length > 0) {
           try {
@@ -25,7 +25,7 @@ export default function PelacakanDokumen() {
             if (opData) {
               const subjek = opData.subjek_pajak || {};
               const bumi = opData.bumi || {};
-              
+
               // Populate detail_tujuan with existing data so UI can render it
               fetchedData.detail_tujuan = [{
                 calon_subjek_json: {
@@ -43,8 +43,8 @@ export default function PelacakanDokumen() {
                 nop_generated: opData.nop
               }];
             }
-          } catch(err) {
-             console.log('Gagal ambil data objek_asal untuk HAPUS');
+          } catch (err) {
+            console.log('Gagal ambil data objek_asal untuk HAPUS');
           }
         }
         setDataTransaksi(fetchedData);
@@ -82,7 +82,7 @@ export default function PelacakanDokumen() {
 
   const detailTujuan = dataTransaksi.detail_tujuan?.[0] || {};
   const nop = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
-  
+
   const calonSubjek = detailTujuan.calon_subjek_json || {};
 
 
@@ -118,7 +118,7 @@ export default function PelacakanDokumen() {
 
   const formatDateTime = (dateString) => {
     const d = new Date(dateString);
-    return d.toLocaleDateString('id-ID', { 
+    return d.toLocaleDateString('id-ID', {
       day: 'numeric', month: 'short', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     }) + ' WIB';
@@ -148,7 +148,7 @@ export default function PelacakanDokumen() {
       {/* Top Header & Back Button */}
       <div className="mb-8 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => navigate('/monitoring-pajak')}
             className="w-10 h-10 rounded-full bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
@@ -162,27 +162,26 @@ export default function PelacakanDokumen() {
             </p>
           </div>
         </div>
-        
+
         {/* Status Badge */}
-        <div className={`px-4 py-2 rounded-full flex items-center gap-2 border shadow-sm font-bold text-sm tracking-wide ${
-          dataTransaksi.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200 text-green-700' :
+        <div className={`px-4 py-2 rounded-full flex items-center gap-2 border shadow-sm font-bold text-sm tracking-wide ${dataTransaksi.status_ajuan === 'DISETUJUI' ? 'bg-green-50 border-green-200 text-green-700' :
           dataTransaksi.status_ajuan === 'DITOLAK' ? 'bg-red-50 border-red-200 text-red-700' :
-          dataTransaksi.status_ajuan === 'REVISI' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
-          'bg-blue-50 border-blue-200 text-blue-700'
-        }`}>
-           <span className="material-symbols-outlined text-[18px]">
-             {dataTransaksi.status_ajuan === 'DISETUJUI' ? 'verified' : 
-              dataTransaksi.status_ajuan === 'DITOLAK' ? 'cancel' : 
-              dataTransaksi.status_ajuan === 'REVISI' ? 'error' : 'pending'}
-           </span>
-           {dataTransaksi.status_ajuan}
+            dataTransaksi.status_ajuan === 'REVISI' ? 'bg-yellow-50 border-yellow-200 text-yellow-800' :
+              'bg-blue-50 border-blue-200 text-blue-700'
+          }`}>
+          <span className="material-symbols-outlined text-[18px]">
+            {dataTransaksi.status_ajuan === 'DISETUJUI' ? 'verified' :
+              dataTransaksi.status_ajuan === 'DITOLAK' ? 'cancel' :
+                dataTransaksi.status_ajuan === 'REVISI' ? 'error' : 'pending'}
+          </span>
+          {dataTransaksi.status_ajuan}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
         {/* Left Column (Details) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          
+
           {/* Card: Detail Pelayanan */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
             <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
@@ -204,20 +203,20 @@ export default function PelacakanDokumen() {
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-[140px_1fr] items-start">
-                   <p className="text-on-surface-variant text-sm font-medium">Jenis Pajak</p>
-                   <p className="font-bold text-on-surface text-sm">PBB-P2</p>
+                  <p className="text-on-surface-variant text-sm font-medium">Jenis Pajak</p>
+                  <p className="font-bold text-on-surface text-sm">PBB-P2</p>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
-                   <p className="text-on-surface-variant text-sm font-medium">Jenis Pelayanan</p>
-                   <p className="font-bold text-on-surface text-sm bg-primary/10 text-primary px-2 py-0.5 rounded inline-flex w-fit">{dataTransaksi.jenis_transaksi}</p>
+                  <p className="text-on-surface-variant text-sm font-medium">Jenis Pelayanan</p>
+                  <p className="font-bold text-on-surface text-sm bg-primary/10 text-primary px-2 py-0.5 rounded inline-flex w-fit">{dataTransaksi.jenis_transaksi}</p>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
-                   <p className="text-on-surface-variant text-sm font-medium">Tgl Perkiraan Selesai</p>
-                   <p className="font-bold text-on-surface text-sm">{estimatedDate}</p>
+                  <p className="text-on-surface-variant text-sm font-medium">Tgl Perkiraan <br /> Selesai</p>
+                  <p className="font-bold text-on-surface text-sm">{estimatedDate}</p>
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
-                   <p className="text-on-surface-variant text-sm font-medium">NOP</p>
-                   <p className="font-data-mono font-bold text-on-surface text-sm">{nop}</p>
+                  <p className="text-on-surface-variant text-sm font-medium">NOP</p>
+                  <p className="font-data-mono font-bold text-on-surface text-sm">{nop}</p>
                 </div>
               </div>
             </div>
@@ -232,17 +231,17 @@ export default function PelacakanDokumen() {
               <h3 className="font-bold text-on-surface tracking-wide">Detail Pemohon</h3>
             </div>
             <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
-               <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
-               <p className="font-bold text-on-surface">{dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
-               
-               <p className="text-on-surface-variant font-medium">No. Telepon/HP</p>
-               <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.no_hp_pengaju || calonSubjek.no_hp || '-'}</p>
-               
-               <p className="text-on-surface-variant font-medium">Alamat</p>
-               <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.alamat_pengaju || calonSubjek.alamat_jalan || '-'}</p>
+              <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
+              <p className="font-bold text-on-surface">{dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
 
-               <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
-               <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
+              <p className="text-on-surface-variant font-medium">No. Telepon/HP</p>
+              <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.no_hp_pengaju || calonSubjek.no_hp || '-'}</p>
+
+              <p className="text-on-surface-variant font-medium">Alamat</p>
+              <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.alamat_pengaju || calonSubjek.alamat_jalan || '-'}</p>
+
+              <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
+              <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
             </div>
           </div>
 
@@ -255,17 +254,17 @@ export default function PelacakanDokumen() {
               <h3 className="font-bold text-on-surface tracking-wide">Detail Objek Pajak</h3>
             </div>
             <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
-               <p className="text-on-surface-variant font-medium">Letak Objek</p>
-               <p className="font-bold text-on-surface">
-                 {detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br/>
-                 KEL. {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
-               </p>
-               
-               <p className="text-on-surface-variant font-medium">Luas Tanah</p>
-               <p className="font-bold text-on-surface">{detailTujuan.luas_tanah_baru || 0} M&sup2;</p>
-               
-               <p className="text-on-surface-variant font-medium">Luas Bangunan</p>
-               <p className="font-bold text-on-surface">{detailTujuan.luas_bangunan_baru || 0} M&sup2; ({detailTujuan.jumlah_bangunan_baru || 0} Unit)</p>
+              <p className="text-on-surface-variant font-medium">Letak Objek</p>
+              <p className="font-bold text-on-surface">
+                {detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br />
+                KEL. {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
+              </p>
+
+              <p className="text-on-surface-variant font-medium">Luas Tanah</p>
+              <p className="font-bold text-on-surface">{detailTujuan.luas_tanah_baru || 0} M&sup2;</p>
+
+              <p className="text-on-surface-variant font-medium">Luas Bangunan</p>
+              <p className="font-bold text-on-surface">{detailTujuan.luas_bangunan_baru || 0} M&sup2; ({detailTujuan.jumlah_bangunan_baru || 0} Unit)</p>
             </div>
           </div>
 
@@ -295,10 +294,10 @@ export default function PelacakanDokumen() {
                           {lampiran.jenis_dokumen.replace(/_/g, ' ').toLowerCase()}
                         </td>
                         <td className="px-6 py-3 text-center">
-                          <a 
-                            href={lampiran.url_file} 
-                            target="_blank" 
-                            rel="noreferrer" 
+                          <a
+                            href={lampiran.url_file}
+                            target="_blank"
+                            rel="noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-colors rounded-lg font-bold text-xs"
                           >
                             <span className="material-symbols-outlined text-[14px]">download</span>
@@ -330,7 +329,7 @@ export default function PelacakanDokumen() {
               </div>
               <h3 className="font-bold text-on-surface tracking-wide">Riwayat Pelacakan</h3>
             </div>
-            
+
             <div className="p-6 relative">
               {/* Vertical Line */}
               <div className="absolute left-[39px] top-10 bottom-10 w-[2px] bg-outline-variant/40 rounded-full"></div>
@@ -340,7 +339,7 @@ export default function PelacakanDokumen() {
                   const statusRiwayat = item.status_baru || item.status_riwayat;
                   const waktuKejadian = item.created_at || item.waktu_kejadian;
                   const keterangan = item.catatan || item.keterangan;
-                  
+
                   return (
                     <div key={item.id_riwayat || index} className="relative flex items-start gap-4">
                       {/* Timeline Icon */}

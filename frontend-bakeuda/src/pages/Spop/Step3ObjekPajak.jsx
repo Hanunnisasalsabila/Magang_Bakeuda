@@ -28,7 +28,7 @@ const formatNopString = (val) => {
   if (!val) return '';
   let digits = val.replace(/\D/g, '');
   if (digits.length > 18) digits = digits.substring(0, 18);
-  
+
   let formatted = '';
   if (digits.length > 0) formatted += digits.substring(0, 2);
   if (digits.length > 2) formatted += '.' + digits.substring(2, 4);
@@ -37,7 +37,7 @@ const formatNopString = (val) => {
   if (digits.length > 10) formatted += '.' + digits.substring(10, 13);
   if (digits.length > 13) formatted += '.' + digits.substring(13, 17);
   if (digits.length > 17) formatted += '.' + digits.substring(17, 18);
-  
+
   return formatted;
 };
 
@@ -155,9 +155,10 @@ export default function Step3ObjekPajak() {
   const navigate = useNavigate();
 
   const isPecah = formData.transaksi === 'PECAH';
+  const isGabung = formData.transaksi === 'GABUNG';
   const [activeTab, setActiveTab] = useState(0);
   const [luasInduk, setLuasInduk] = useState(0);
-  
+
   const currentData = isPecah ? (formData.pecahanList?.[activeTab] || {}) : formData;
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export default function Step3ObjekPajak() {
         if (user.kode_wilayah) {
           const needsGlobal = !formData.kecamatanObjek && !formData.kelurahanObjek;
           const needsPecahan = isPecah && formData.pecahanList?.some(p => !p.kecamatanObjek || !p.kelurahanObjek);
-          
+
           if (needsGlobal || needsPecahan) {
             api.get('/wilayah').then(res => {
               const wData = res.data.data;
@@ -209,27 +210,27 @@ export default function Step3ObjekPajak() {
     setFormData(prev => {
       const isPecahLocal = prev.transaksi === 'PECAH';
       if (typeof updater === 'function') {
-         if (isPecahLocal) {
-            const newList = [...(prev.pecahanList || [])];
-            if (newList[activeTab]) {
-               const fakePrev = { ...prev, koordinat_polygon: newList[activeTab].koordinat_polygon, latitude: newList[activeTab].latitude, longitude: newList[activeTab].longitude };
-               const result = updater(fakePrev);
-               newList[activeTab] = { ...newList[activeTab], koordinat_polygon: result.koordinat_polygon, latitude: result.latitude, longitude: result.longitude };
-            }
-            return { ...prev, pecahanList: newList };
-         } else {
-            return updater(prev);
-         }
+        if (isPecahLocal) {
+          const newList = [...(prev.pecahanList || [])];
+          if (newList[activeTab]) {
+            const fakePrev = { ...prev, koordinat_polygon: newList[activeTab].koordinat_polygon, latitude: newList[activeTab].latitude, longitude: newList[activeTab].longitude };
+            const result = updater(fakePrev);
+            newList[activeTab] = { ...newList[activeTab], koordinat_polygon: result.koordinat_polygon, latitude: result.latitude, longitude: result.longitude };
+          }
+          return { ...prev, pecahanList: newList };
+        } else {
+          return updater(prev);
+        }
       } else {
-         if (isPecahLocal) {
-            const newList = [...(prev.pecahanList || [])];
-            if (newList[activeTab]) {
-               newList[activeTab] = { ...newList[activeTab], koordinat_polygon: updater.koordinat_polygon, latitude: updater.latitude, longitude: updater.longitude };
-            }
-            return { ...prev, pecahanList: newList };
-         } else {
-            return { ...prev, ...updater };
-         }
+        if (isPecahLocal) {
+          const newList = [...(prev.pecahanList || [])];
+          if (newList[activeTab]) {
+            newList[activeTab] = { ...newList[activeTab], koordinat_polygon: updater.koordinat_polygon, latitude: updater.latitude, longitude: updater.longitude };
+          }
+          return { ...prev, pecahanList: newList };
+        } else {
+          return { ...prev, ...updater };
+        }
       }
     });
   };
@@ -245,9 +246,21 @@ export default function Step3ObjekPajak() {
   }, [formData.transaksi, idTransaksi, navigate]);
 
   // Auto-fill Luas Tanah and Alamat for GABUNG
+  // Map state
+  const initialLat = formData.latitude ? parseFloat(formData.latitude) : -7.38883;
+  const initialLng = formData.longitude ? parseFloat(formData.longitude) : 109.36647;
+  const [currentPosition, setCurrentPosition] = useState([initialLat, initialLng]);
+  const [referencePoint, setReferencePoint] = useState(null);
+  const [searchBoundary, setSearchBoundary] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimeoutRef = useRef(null);
+
   useEffect(() => {
     const fetchDataGabung = async () => {
-      
+
       if (formData.transaksi === 'PECAH' && formData.nopAsalList?.length > 0) {
         const rawNop = formData.nopAsalList[0];
         const cleanNop = String(rawNop).replace(/\D/g, '');
@@ -337,17 +350,6 @@ export default function Step3ObjekPajak() {
     fetchDataGabung();
   }, [formData.transaksi, formData.nopAsalList]);
 
-  // Map state
-  const initialLat = formData.latitude ? parseFloat(formData.latitude) : -7.38883;
-  const initialLng = formData.longitude ? parseFloat(formData.longitude) : 109.36647;
-  const [currentPosition, setCurrentPosition] = useState([initialLat, initialLng]);
-  const [referencePoint, setReferencePoint] = useState(null);
-  const [searchBoundary, setSearchBoundary] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchTimeoutRef = useRef(null);
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -417,7 +419,7 @@ export default function Step3ObjekPajak() {
           const queryText = `${formData.kelurahanObjek}, ${formData.kecamatanObjek}, Purbalingga`;
           const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1&lat=-7.3888&lon=109.3637`);
           const data = await response.json();
-          
+
           if (data && data.features && data.features.length > 0) {
             const feature = data.features[0];
             const [lon, lat] = feature.geometry.coordinates;
@@ -475,7 +477,7 @@ export default function Step3ObjekPajak() {
           setCurrentPosition(coords);
           setReferencePoint(coords);
           setSearchBoundary(null);
-        }, 
+        },
         (error) => {
           alert('Gagal mendapatkan lokasi Anda. Pastikan izin lokasi (GPS) aktif di browser Anda.');
         },
@@ -486,7 +488,7 @@ export default function Step3ObjekPajak() {
     }
   };
 
-  
+
   const handleTextChange = (field, e) => {
     const val = typeof e === 'object' && e !== null && e.target ? e.target.value : e;
     if (isPecah) {
@@ -503,7 +505,7 @@ export default function Step3ObjekPajak() {
   };
 
 
-  
+
   const handleSaveDraft = async () => {
     setIsSubmitting(true);
     try {
@@ -523,11 +525,13 @@ export default function Step3ObjekPajak() {
     const newErrors = {};
 
     const validateData = (data, prefix = '') => {
+      if (!data.alamatObjek) { newErrors[`${prefix}alamatObjek`] = 'Alamat Objek wajib diisi'; hasError = true; }
       if (!data.rtObjek) { newErrors[`${prefix}rtObjek`] = 'RT wajib diisi'; hasError = true; }
       if (!data.rwObjek) { newErrors[`${prefix}rwObjek`] = 'RW wajib diisi'; hasError = true; }
       if (!data.kecamatanObjek) { newErrors[`${prefix}kecamatanObjek`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahanObjek) { newErrors[`${prefix}kelurahanObjek`] = 'Kelurahan wajib dipilih'; hasError = true; }
       if (!data.luasTanah || parseFloat(data.luasTanah) <= 0) { newErrors[`${prefix}luasTanah`] = 'Luas Tanah wajib diisi'; hasError = true; }
+      if (!data.koordinat_polygon || data.koordinat_polygon.length === 0) { newErrors[`${prefix}denahLokasi`] = 'Sket / Denah Lokasi wajib digambar pada peta'; hasError = true; }
     };
 
     if (isPecah) {
@@ -536,7 +540,7 @@ export default function Step3ObjekPajak() {
         validateData(p, `pecahan_${idx}_`);
         totalLuasPecahan += parseFloat(p.luasTanah || 0);
       });
-      
+
       setErrors(newErrors);
 
       if (hasError) {
@@ -572,7 +576,7 @@ export default function Step3ObjekPajak() {
         } else {
           hasBangunan = parseInt(formData.jumlahBangunan, 10) > 0;
         }
-        
+
         if (hasBangunan) {
           navigate(`/spop/data-bangunan/${savedId}`);
         } else {
@@ -612,11 +616,10 @@ export default function Step3ObjekPajak() {
                   <button
                     type="button"
                     onClick={() => setActiveTab(idx)}
-                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
-                      activeTab === idx 
-                        ? 'bg-primary text-white shadow-md' 
-                        : 'bg-white text-on-surface hover:bg-primary/10'
-                    }`}
+                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === idx
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-white text-on-surface hover:bg-primary/10'
+                      }`}
                   >
                     Pecahan {idx + 1}
                     {Object.keys(errors).some(k => k.startsWith(`pecahan_${idx}_`)) && (
@@ -630,9 +633,8 @@ export default function Step3ObjekPajak() {
               const totalPecahan = formData.pecahanList?.reduce((acc, p) => acc + parseFloat(p.luasTanah || 0), 0) || 0;
               const isExceed = totalPecahan > luasInduk;
               return (
-                <div className={`mt-3 p-3 border rounded-lg text-sm flex flex-col gap-1 ${
-                  isExceed ? 'bg-error-container border-error text-on-error-container' : 'bg-blue-50 border-blue-200 text-blue-800'
-                }`}>
+                <div className={`mt-3 p-3 border rounded-lg text-sm flex flex-col gap-1 ${isExceed ? 'bg-error-container border-error text-on-error-container' : 'bg-blue-50 border-blue-200 text-blue-800'
+                  }`}>
                   <div className="flex justify-between items-center">
                     <span className="font-bold">Total Luas Induk: {luasInduk} m²</span>
                     <span className={isExceed ? 'font-bold text-error' : ''}>Total Pecahan: {totalPecahan} m²</span>
@@ -663,7 +665,7 @@ export default function Step3ObjekPajak() {
             />
           </div>
           <div className="md:col-span-3 space-y-1">
-            <label className="font-label-sm text-primary block">JALAN (ALAMAT OBJEK PAJAK)</label>
+            <label className="font-label-sm text-primary block">ALAMAT OBJEK PAJAK <span className="text-error text-red-500">*</span></label>
             <input
               type="text"
               maxLength={255}
@@ -690,7 +692,7 @@ export default function Step3ObjekPajak() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm text-on-surface-variant font-bold">RW</label>
+            <label className="text-sm text-on-surface-variant font-bold">RW <span className="text-error text-red-500">*</span></label>
             <input
               type="text"
               maxLength={3}
@@ -702,7 +704,7 @@ export default function Step3ObjekPajak() {
             {getError('rwObjek') && <p className="text-error text-[12px]">{getError('rwObjek')}</p>}
           </div>
           <div className="space-y-1">
-            <label className="text-sm text-on-surface-variant font-bold">RT</label>
+            <label className="text-sm text-on-surface-variant font-bold">RT <span className="text-error text-red-500">*</span></label>
             <input
               type="text"
               maxLength={3}
@@ -773,8 +775,13 @@ export default function Step3ObjekPajak() {
               type="text"
               inputMode="decimal"
               value={currentData.luasTanah}
-              onChange={(e) => handleTextChange('luasTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '') } })}
-              className={`w-full h-12 border ${getError('luasTanah') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none`}
+              readOnly={isGabung || formData.transaksi === 'PERUBAHAN_DATA'}
+              onChange={(e) => {
+                if (!isGabung && formData.transaksi !== 'PERUBAHAN_DATA') {
+                  handleTextChange('luasTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '') } })
+                }
+              }}
+              className={`w-full h-12 border ${getError('luasTanah') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono shadow-sm outline-none ${isGabung || formData.transaksi === 'PERUBAHAN_DATA' ? 'bg-surface-container-low cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
               placeholder="Contoh: 150"
             />
             {getError('luasTanah') && <p className="text-error text-[12px]">{getError('luasTanah')}</p>}
@@ -814,8 +821,8 @@ export default function Step3ObjekPajak() {
                         setFormData(prev => {
                           const newList = [...(prev.pecahanList || [])];
                           if (newList[activeTab]) {
-                            newList[activeTab] = { 
-                              ...newList[activeTab], 
+                            newList[activeTab] = {
+                              ...newList[activeTab],
                               jenisTanah: newVal,
                               jumlahBangunan: newVal !== 'TANAH_BANGUNAN' ? '0' : newList[activeTab].jumlahBangunan
                             };
@@ -935,7 +942,7 @@ export default function Step3ObjekPajak() {
           <div className="flex items-center gap-3">
             <div className="w-1 bg-primary h-8 rounded-full"></div>
             <h4 className="font-headline-md text-headline-md font-bold text-on-surface uppercase">
-              SKET / DENAH LOKASI (KOORDINAT MAPS)
+              SKET / DENAH LOKASI (KOORDINAT MAPS) <span className="text-error">*</span>
             </h4>
           </div>
           {getError('denahLokasi') && <p className="text-error font-bold text-sm">*{getError('denahLokasi')}</p>}

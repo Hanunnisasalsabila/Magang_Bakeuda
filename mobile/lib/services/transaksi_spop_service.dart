@@ -55,6 +55,12 @@ class TransaksiSpopService {
     return submitResp.data as Map<String, dynamic>;
   }
 
+  // ─── Submit SPOP (Finalisasi dari DRAFT menjadi MENUNGGU) ───
+  Future<Map<String, dynamic>> submitDraft(String idTransaksi) async {
+    final submitResp = await _dio.post('/transaksi-spop/$idTransaksi/submit');
+    return submitResp.data as Map<String, dynamic>;
+  }
+
   // ─── Simpan sebagai draft ───
   Future<Map<String, dynamic>> saveDraft(Map<String, dynamic> payload, {String? existingId}) async {
     if (existingId != null && existingId.isNotEmpty) {

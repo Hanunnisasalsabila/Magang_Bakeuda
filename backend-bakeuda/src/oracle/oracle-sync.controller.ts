@@ -17,4 +17,10 @@ export class OracleSyncController {
     const since = sinceStr ? new Date(sinceStr) : undefined;
     return await this.syncService.deltaSync(since, 'MANUAL_API');
   }
+
+  @Post('backfill')
+  async triggerBackfillSync() {
+    await this.syncService.backfillSync('MANUAL_API');
+    return { success: true, message: 'Backfill step triggered' };
+  }
 }
