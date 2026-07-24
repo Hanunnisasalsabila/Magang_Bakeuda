@@ -6,7 +6,7 @@ import 'tabs/desa_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/monitoring_pajak_tab.dart';
 import 'spop_form_screen.dart';
-import 'lspop_form_screen.dart';
+
 import 'pelacakan_dokumen_screen.dart';
 import 'login_screen.dart';
 import 'draft_spop_screen.dart';
@@ -84,55 +84,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     }
   }
 
-  void _showFormulirOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Pilih Jenis Formulir',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.description, color: Colors.blue),
-                  title: const Text('Formulir SPOP (Bumi & Bangunan)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SpopFormScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.domain, color: Colors.green),
-                  title: const Text('Formulir LSPOP (Bangunan Khusus)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LspopFormScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   Widget _buildDrawerSectionTitle(String title) {
     return Padding(
@@ -392,19 +344,6 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                           );
                         },
                       ),
-                      _buildDrawerItem(
-                        icon: Icons.domain_rounded,
-                        title: 'LSPOP (Bangunan Khusus)',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LspopFormScreen(),
-                            ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                   _buildDrawerItem(
@@ -504,7 +443,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           .slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFormulirOptions(context),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen())),
         backgroundColor: _kNavy,
         elevation: 4,
         shape: const CircleBorder(),
