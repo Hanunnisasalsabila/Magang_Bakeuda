@@ -1,16 +1,32 @@
 part of '../spop_form_screen.dart';
 
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
+
 extension _Step1Extension on _SpopFormScreenState {
   Widget _buildStep1() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CustomTextField(controller: _namaWpController, label: 'Nama Wajib Pajak *', validator: (v) {
-          if (v == null || v.isEmpty) return 'Wajib diisi';
-          if (v.length < 3 || v.length > 100) return 'Nama 3-100 karakter';
-          if (!RegExp(r"^[a-zA-Z\s\.,']+$").hasMatch(v)) return 'Format nama tidak valid';
-          return null;
-        }),
+        CustomTextField(
+          controller: _namaWpController,
+          label: 'Nama Wajib Pajak *',
+          textCapitalization: TextCapitalization.characters,
+          inputFormatters: [UpperCaseTextFormatter()],
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Wajib diisi';
+            if (v.length < 3 || v.length > 100) return 'Nama 3-100 karakter';
+            if (!RegExp(r"^[a-zA-Z\s\.,']+$").hasMatch(v)) return 'Format nama tidak valid';
+            return null;
+          },
+        ),
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: CustomTextField(controller: _nikController, label: 'NIK (16 digit) *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(16), FilteringTextInputFormatter.digitsOnly], validator: (v) {
@@ -35,20 +51,18 @@ extension _Step1Extension on _SpopFormScreenState {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(
-            child: DropdownButtonFormField<String>(
+            child: CustomDropdown<String>(
+              label: 'Status WP',
               value: _statusWp,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: 'Status WP', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: _statusWpOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
               onChanged: (v) => updateFormState(() => _statusWp = v!),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonFormField<String>(
+            child: CustomDropdown<String>(
+              label: 'Pekerjaan',
               value: _pekerjaan,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: 'Pekerjaan', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: _pekerjaanOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
               onChanged: (v) => updateFormState(() => _pekerjaan = v!),
             ),
@@ -66,10 +80,9 @@ extension _Step1Extension on _SpopFormScreenState {
           const SizedBox(width: 8),
           Expanded(child: CustomTextField(controller: _rwController, label: 'RW *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.isEmpty ? 'Wajib' : null, hintText: '001')),
           const SizedBox(width: 8),
-          Expanded(flex: 2, child: DropdownButtonFormField<String>(
+          Expanded(flex: 2, child: CustomDropdown<String>(
+            label: 'Kecamatan *',
             value: _getValidKecamatan(_kecamatanWpController.text),
-            isExpanded: true,
-            decoration: InputDecoration(labelText: 'Kecamatan *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.grey))),
             items: _kecamatans.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis))).toList(),
             onChanged: (v) => updateFormState(() {
               _kecamatanWpController.text = v ?? '';
@@ -80,10 +93,9 @@ extension _Step1Extension on _SpopFormScreenState {
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: DropdownButtonFormField<String>(
+          Expanded(child: CustomDropdown<String>(
+            label: 'Kelurahan *',
             value: _getValidKelurahan(_kecamatanWpController.text, _kelurahanWpController.text),
-            isExpanded: true,
-            decoration: InputDecoration(labelText: 'Kelurahan *', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.grey))),
             items: _getValidKecamatan(_kecamatanWpController.text) != null
                 ? WilayahData.data.where((e) => e['kecamatan'] == _getValidKecamatan(_kecamatanWpController.text)).map((e) => e['nama_desa']!).toSet().toList().map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis))).toList()
                 : [],
