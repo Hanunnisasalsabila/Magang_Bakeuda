@@ -27,6 +27,19 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
   int _currentIndex = 0;
 
   List<Widget> _pages = [];
+
+  String get _currentTabTitle {
+    switch (_currentIndex) {
+      case 0:
+        return 'Sistem Informasi Pajak Daerah';
+      case 1:
+        return 'Pemantauan Objek Pajak';
+      case 2:
+        return 'Pengelolaan Draf SPOP';
+      default:
+        return '';
+    }
+  }
   String _profileName = 'Perangkat Desa';
   String _profileEmail = 'desa@purbalingga.go.id';
   String _profileRole = 'DESA';
@@ -199,24 +212,36 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _profileName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 16,
                         color: Colors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       _profileEmail,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 11,
                         fontWeight: FontWeight.w400,
                         color: Colors.white70,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      _currentTabTitle,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _kGold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

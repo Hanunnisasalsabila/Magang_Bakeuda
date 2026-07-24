@@ -120,19 +120,29 @@ class _DataObjekPajakScreenState extends State<DataObjekPajakScreen> {
                       widget.profileName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                        fontSize: 16,
                         color: Colors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       widget.profileEmail,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 11,
                         fontWeight: FontWeight.w400,
                         color: Colors.white70,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 1),
+                    const Text(
+                      'Arsip Objek Pajak',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFE8B831),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
