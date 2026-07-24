@@ -19,6 +19,7 @@ import { PejabatDesaModule } from './pejabat-desa/pejabat-desa.module.js';
 import { ReferensiDbkbModule } from './referensi-dbkb/referensi-dbkb.module.js';
 import { ReferensiNilaiFasilitasModule } from './referensi-nilai-fasilitas/referensi-nilai-fasilitas.module.js';
 import { ActivitiesModule } from './activities/activities.module.js';
+import { NotifikasiModule } from './notifikasi/notifikasi.module.js';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ActivitiesModule } from './activities/activities.module.js';
     ReferensiDbkbModule,
     ReferensiNilaiFasilitasModule,
     ActivitiesModule,
+    NotifikasiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

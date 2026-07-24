@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -142,8 +143,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                _pecahanList.add({
                   'namaWp': subjek['nama_subjek'] ?? '',
                   'nik': subjek['nik'] ?? '',
-                  'statusWp': subjek['status_wp'] ?? 'PEMILIK',
-                  'pekerjaan': subjek['pekerjaan'] ?? 'LAINNYA',
+                  'statusWp': subjek['status_wp'],
+                  'pekerjaan': subjek['pekerjaan'],
                   'npwp': subjek['npwp'] ?? '',
                   'noHp': subjek['no_hp'] ?? '',
                   'alamatWp': subjek['alamat_jalan'] ?? '',
@@ -151,7 +152,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                   'rw': subjek['rw'] ?? '',
                   'kelurahan': subjek['kelurahan'] ?? '',
                   'kecamatan': subjek['kecamatan'] ?? '',
-                  'kabupaten': subjek['kabupaten'] ?? 'Purbalingga',
+                  'kabupaten': subjek['kabupaten'] ?? '',
                   'kodePos': subjek['kode_pos'] ?? '',
                   
                   'luasTanah': t['luas_tanah_baru']?.toString() ?? '',
@@ -232,14 +233,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _noHpController = TextEditingController();
   final List<LatLng> _polygonPoints = [];
   
-  String _statusWp = 'PEMILIK';
-  String _pekerjaan = 'PNS';
+  String? _statusWp;
+  String? _pekerjaan;
   final _alamatWpController = TextEditingController();
   final _rtController = TextEditingController();
   final _rwController = TextEditingController();
   final _kelurahanWpController = TextEditingController();
   final _kecamatanWpController = TextEditingController();
-  final _kabupatenWpController = TextEditingController(text: 'Purbalingga');
+  final _kabupatenWpController = TextEditingController();
   final _kodePosController = TextEditingController();
 
   final List<Map<String, String>> _statusWpOptions = [
@@ -304,7 +305,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       _pecahanList.add({
         'namaWp': '', 'nik': '', 'statusWp': 'PEMILIK', 'pekerjaan': 'LAINNYA',
         'npwp': '', 'noHp': '', 'alamatWp': '', 'rt': '', 'rw': '',
-        'kelurahan': '', 'kecamatan': '', 'kabupaten': 'Purbalingga', 'kodePos': '',
+        'kelurahan': '', 'kecamatan': '', 'kabupaten': '', 'kodePos': '',
         'luasTanah': '', 'jenisTanah': 'TANAH_BANGUNAN', 'jalanOp': '',
         'blokKav': '', 'rtOp': '', 'rwOp': '', 'kelurahanOp': _isOpWilayahPatented ? _kelurahanOpController.text : '',
         'kecamatanOp': _isOpWilayahPatented ? _kecamatanOpController.text : '', 'batasUtara': '', 'batasSelatan': '',
@@ -680,7 +681,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
             if ((p['rt'] as String).isNotEmpty) 'rt': p['rt'],
             if ((p['rw'] as String).isNotEmpty) 'rw': p['rw'],
             'kelurahan': p['kelurahan'],
-            'kabupaten': p['kabupaten'] ?? 'Purbalingga',
+            'kabupaten': p['kabupaten'] ?? '',
             if ((p['kecamatan'] as String).isNotEmpty) 'kecamatan': p['kecamatan'],
             if ((p['npwp'] as String).isNotEmpty) 'npwp': p['npwp'],
             if ((p['noHp'] as String).isNotEmpty) 'no_hp': p['noHp'],
@@ -776,7 +777,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       if (_rtController.text.isNotEmpty) 'rt': _rtController.text,
       if (_rwController.text.isNotEmpty) 'rw': _rwController.text,
       'kelurahan': _kelurahanWpController.text,
-      'kabupaten': _kabupatenWpController.text.isEmpty ? 'Purbalingga' : _kabupatenWpController.text,
+      'kabupaten': _kabupatenWpController.text,
       if (_kecamatanWpController.text.isNotEmpty) 'kecamatan': _kecamatanWpController.text,
       if (_kodePosController.text.isNotEmpty) 'kode_pos': _kodePosController.text,
     };
@@ -935,33 +936,65 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   Future<void> _pickFile([String? forcedJenisDokumen]) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      allowMultiple: false,
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeri / File Document'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                      allowMultiple: false,
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _processPickedFile(result.files.single.path!, result.files.single.name, forcedJenisDokumen);
+                    }
+                  }),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Kamera'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final ImagePicker picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    _processPickedFile(image.path, image.name, forcedJenisDokumen);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (result != null && result.files.single.path != null) {
-      final file = result.files.single;
-      setState(() => _isLoading = true);
-      try {
-        final url = await _spopService.uploadFile(file.path!, file.name);
-        setState(() {
-          _lampiran.add({'jenis_dokumen': forcedJenisDokumen ?? _selectedJenisDokumen, 'url_file': url});
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ ${file.name} berhasil diunggah')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+  }
+
+  Future<void> _processPickedFile(String path, String name, String? forcedJenisDokumen) async {
+    setState(() => _isLoading = true);
+    try {
+      final url = await _spopService.uploadFile(path, name);
+      setState(() {
+        _lampiran.add({'jenis_dokumen': forcedJenisDokumen ?? _selectedJenisDokumen, 'url_file': url});
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ $name berhasil diunggah')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal unggah: $e'), backgroundColor: Theme.of(context).colorScheme.error),
           );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -1267,6 +1300,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         foregroundColor: Colors.white,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: Colors.white.withValues(alpha: 0.2),
+            height: 1.0,
+          ),
+        ),
         actions: [
           TextButton.icon(
             onPressed: _isSavingDraft ? null : _saveDraft,
@@ -1310,7 +1350,9 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 color: Colors.white,
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))],
               ),
-              child: Row(
+              child: SafeArea(
+                top: false,
+                child: Row(
                 children: [
                   if (_currentStep > 0 || _isPecahMode) ...[
                     Expanded(
@@ -1348,6 +1390,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),

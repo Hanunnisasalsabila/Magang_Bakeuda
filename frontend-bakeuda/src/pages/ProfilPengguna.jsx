@@ -368,23 +368,25 @@ export default function ProfilPengguna({ role }) {
                   </div>
                 )}
               </div>
-              <div className="space-y-1">
-                <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">NIP</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    maxLength={21}
-                    value={editForm.nip}
-                    onChange={(e) => setEditForm({ ...editForm, nip: formatNIPInput(e.target.value) })}
-                    placeholder="Contoh: 19850315 201012 1 002"
-                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                  />
-                ) : (
-                  <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface tracking-wide">
-                    {profileData.nip && profileData.nip !== '-' ? formatNIPInput(profileData.nip) : '-'}
-                  </div>
-                )}
-              </div>
+              {!isDesa && (
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">NIP</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      maxLength={21}
+                      value={editForm.nip}
+                      onChange={(e) => setEditForm({ ...editForm, nip: formatNIPInput(e.target.value) })}
+                      placeholder="Contoh: 19850315 201012 1 002"
+                      className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                  ) : (
+                    <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface tracking-wide">
+                      {profileData.nip && profileData.nip !== '-' ? formatNIPInput(profileData.nip) : '-'}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Username</label>
                 <div className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant flex items-center gap-1.5">
@@ -430,7 +432,7 @@ export default function ProfilPengguna({ role }) {
                 </button>
                 <button
                   onClick={handleSaveProfile}
-                  disabled={isSaving || !editForm.name || (editForm.name === profileData.name && editForm.nip === (!profileData.nip || profileData.nip === '-' ? '' : profileData.nip))}
+                  disabled={isSaving || !editForm.name || (editForm.name === profileData.name && (isDesa || editForm.nip === (!profileData.nip || profileData.nip === '-' ? '' : profileData.nip)))}
                   className="px-5 py-2 font-semibold text-sm rounded-lg transition-all shadow-sm flex items-center gap-2 bg-primary text-on-primary hover:bg-primary/90 active:scale-95 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isSaving && <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>}

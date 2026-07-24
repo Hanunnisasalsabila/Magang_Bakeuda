@@ -89,7 +89,11 @@ extension _Step2Extension on _SpopFormScreenState {
                   LengthLimitingTextInputFormatter(3),
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                validator: (v) => v == null || v.isEmpty ? 'Wajib' : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Wajib';
+                  if (v.length < 2) return 'Min 2 digit';
+                  return null;
+                },
                 hintText: '001',
               ),
             ),
@@ -103,7 +107,11 @@ extension _Step2Extension on _SpopFormScreenState {
                   LengthLimitingTextInputFormatter(3),
                   FilteringTextInputFormatter.digitsOnly,
                 ],
-                validator: (v) => v == null || v.isEmpty ? 'Wajib' : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Wajib';
+                  if (v.length < 2) return 'Min 2 digit';
+                  return null;
+                },
                 hintText: '001',
               ),
             ),

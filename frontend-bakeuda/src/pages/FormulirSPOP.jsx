@@ -106,7 +106,7 @@ export default function FormulirSPOP() {
     rw: '',
     kelurahan: '',
     kecamatan: '',
-    kabupaten: 'Purbalingga',
+    kabupaten: '',
     kodePos: '',
     luasTanah: '',
     jenisTanah: '',
@@ -603,8 +603,8 @@ export default function FormulirSPOP() {
         newErrors.npwp = 'NPWP harus 15 atau 16 digit angka';
       }
 
-      if (formData.noTelp && !/^(08|62)\d{8,13}$/.test(formData.noTelp)) {
-        newErrors.noTelp = 'No. HP harus diawali 08/62, total 10-15 digit angka';
+      if (formData.noTelp && !/^(08|62)\d{8,11}$/.test(formData.noTelp)) {
+        newErrors.noTelp = 'No. HP harus diawali 08/62, total 10-13 digit angka';
       }
 
       const alamatVal = (formData.alamat || '').trim();
@@ -758,7 +758,7 @@ export default function FormulirSPOP() {
         kode_pos: formData.kodePos || undefined,
         kelurahan: formData.kelurahan || '',
         kecamatan: formData.kecamatan || undefined,
-        kabupaten: formData.kabupaten || 'Purbalingga'
+        kabupaten: formData.kabupaten || ''
       },
       objek_pajak_sementara: {
         jalan_op: formData.alamatObjek || '',
@@ -1350,7 +1350,7 @@ export default function FormulirSPOP() {
                       </div>
                       <input
                         type="text"
-                        maxLength={13} // Total 15 (08 + 13)
+                        maxLength={11} // Total 13 (08 + 11)
                         value={formData.noTelp.startsWith('08') ? formData.noTelp.substring(2) : formData.noTelp.startsWith('62') ? formData.noTelp.substring(2) : formData.noTelp}
                         onChange={(e) => {
                           let val = e.target.value.replace(/\D/g, '');

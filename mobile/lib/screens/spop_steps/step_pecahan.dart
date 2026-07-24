@@ -713,36 +713,68 @@ extension _StepPecahanExtension on _SpopFormScreenState {
   }
 
   Future<void> _pickFilePecahan() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      allowMultiple: false,
-    );
-    if (result != null && result.files.single.path != null) {
-      final file = result.files.single;
-      updateFormState(() => _isLoading = true);
-      try {
-        final url = await _spopService.uploadFile(file.path!, file.name);
-        final jenis = _cp['selectedJenisDokumen'] as String? ?? 'KTP';
-        final updated = List<Map<String, dynamic>>.from(
-          (_cp['lampiran'] as List).map((e) => Map<String, dynamic>.from(e as Map)),
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeri / File Document'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                      allowMultiple: false,
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _processPickedFilePecahan(result.files.single.path!, result.files.single.name);
+                    }
+                  }),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Kamera'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final ImagePicker picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    _processPickedFilePecahan(image.path, image.name);
+                  }
+                },
+              ),
+            ],
+          ),
         );
-        updated.add({'jenis_dokumen': jenis, 'url_file': url});
-        updateFormState(() => _pecahanList[_currentPecahanIdx - 1]['lampiran'] = updated);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ ${file.name} diunggah untuk Pecahan $_currentPecahanIdx')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal unggah: $e'), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) updateFormState(() => _isLoading = false);
+      },
+    );
+  }
+
+  Future<void> _processPickedFilePecahan(String path, String name) async {
+    updateFormState(() => _isLoading = true);
+    try {
+      final url = await _spopService.uploadFile(path, name);
+      final jenis = _cp['selectedJenisDokumen'] as String? ?? 'KTP';
+      final updated = List<Map<String, dynamic>>.from(
+        (_cp['lampiran'] as List).map((e) => Map<String, dynamic>.from(e as Map)),
+      );
+      updated.add({'jenis_dokumen': jenis, 'url_file': url});
+      updateFormState(() => _pecahanList[_currentPecahanIdx - 1]['lampiran'] = updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ $name diunggah untuk Pecahan $_currentPecahanIdx')),
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal unggah: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) updateFormState(() => _isLoading = false);
     }
   }
 

@@ -531,8 +531,10 @@ class _ProfileTabState extends State<ProfileTab> {
                     children: [
                       _buildInfoRow('NAMA LENGKAP', realName, isLocked: false),
                       Divider(height: 1, color: Colors.grey.shade200),
-                      _buildInfoRow('NIP', nip, isLocked: false),
-                      Divider(height: 1, color: Colors.grey.shade200),
+                      if (isBakeuda) ...[
+                        _buildInfoRow('NIP', nip, isLocked: false),
+                        Divider(height: 1, color: Colors.grey.shade200),
+                      ],
                       _buildInfoRow('USERNAME', username, isLocked: true),
                       Divider(height: 1, color: Colors.grey.shade200),
                       _buildInfoRow(

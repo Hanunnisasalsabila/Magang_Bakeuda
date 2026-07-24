@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
 import { OracleWriteService } from '../oracle/oracle-write.service.js';
+import { NotifikasiService } from '../notifikasi/notifikasi.service.js';
 import {
   StatusAjuan,
   JenisTransaksi,
@@ -32,6 +33,7 @@ export class TransaksiSpopService {
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
     private readonly oracleWriteService: OracleWriteService,
+    private readonly notifikasiService: NotifikasiService,
   ) { }
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
@@ -143,6 +145,18 @@ export class TransaksiSpopService {
       currentUser.id_user,
       peringatanValidasi ? `Pengajuan dibuat — ${peringatanValidasi}` : 'Pengajuan dibuat',
     );
+
+    if (!asDraft) {
+      const bakeudaAdmins = await this.prisma.user.findMany({ where: { role: 'BAKEUDA', is_active: true } });
+      for (const admin of bakeudaAdmins) {
+        await this.notifikasiService.create({
+          user_id: admin.id_user,
+          title: 'Pengajuan SPOP Baru',
+          message: `Desa telah mengajukan transaksi SPOP baru.`,
+          type: 'SPOP_SUBMITTED'
+        });
+      }
+    }
 
     return {
       success: true,
@@ -485,11 +499,15 @@ export class TransaksiSpopService {
       await this.syncToOracle(hasil);
     } catch (oracleError) {
       console.error("Gagal write-through ke Oracle:", oracleError);
-      // Optional: Anda bisa memutuskan apakah kegagalan Oracle membatalkan transaksi Postgres
-      // Untuk write-through strict, bisa di-throw error di sini. 
-      // Saat ini kita biarkan sukses di Postgres, dan catat error.
       await this.catatRiwayat(idTransaksi, 'DISETUJUI', 'DISETUJUI', currentUser.id_user, 'WARNING: Sinkronisasi ke Oracle Gagal');
     }
+
+    await this.notifikasiService.create({
+      user_id: transaksi.id_user,
+      title: 'SPOP Disetujui',
+      message: `Pengajuan SPOP Anda telah disetujui oleh Bakeuda.`,
+      type: 'SPOP_APPROVED'
+    });
 
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
   }
@@ -539,11 +557,22 @@ export class TransaksiSpopService {
 
   async mintaRevisi(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
+    const transaksi = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi: idTransaksi } });
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'REVISI', catatan_bakeuda: catatan, locked_by: null, locked_at: null },
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'REVISI', currentUser.id_user, catatan);
+
+    if (transaksi) {
+      await this.notifikasiService.create({
+        user_id: transaksi.id_user,
+        title: 'SPOP Perlu Revisi',
+        message: `Bakeuda meminta revisi pada pengajuan Anda: ${catatan}`,
+        type: 'SPOP_REJECTED'
+      });
+    }
+
     return { success: true, data: updated };
   }
 

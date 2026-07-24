@@ -12,6 +12,10 @@ import 'login_screen.dart';
 import 'draft_spop_screen.dart';
 import 'data_objek_pajak_screen.dart';
 import '../services/auth_service.dart';
+import '../services/notifikasi_service.dart';
+import '../services/api_service.dart';
+import 'notifikasi_screen.dart';
+import 'dart:async';
 
 const Color _kNavy = Color(0xFF0F2C59);
 const Color _kGold = Color(0xFFE8B831);
@@ -44,6 +48,10 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
   String _profileEmail = 'desa@purbalingga.go.id';
   String _profileRole = 'DESA';
 
+  final _notifikasiService = NotifikasiService(ApiService());
+  int _unreadNotifCount = 0;
+  Timer? _notifTimer;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +68,8 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
       const DraftSpopScreen(),
     ];
     _loadUserProfile();
+    _fetchUnreadNotif();
+    _notifTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchUnreadNotif());
   }
 
   Future<void> _loadUserProfile() async {
@@ -132,7 +142,22 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     );
   }
 
+  Future<void> _fetchUnreadNotif() async {
+    try {
+      final res = await _notifikasiService.getNotifikasi();
+      if (res['success']) {
+        if (mounted) setState(() => _unreadNotifCount = res['data']['unreadCount']);
+      }
+    } catch (e) {
+      // ignore error on polling
+    }
+  }
+
   @override
+  void dispose() {
+    _notifTimer?.cancel();
+    super.dispose();
+  }
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -145,6 +170,36 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
         backgroundColor: _kNavy,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiScreen()))
+                      .then((_) => _fetchUnreadNotif());
+                },
+              ),
+              if (_unreadNotifCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_unreadNotifCount',
+                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
         title: Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: Row(

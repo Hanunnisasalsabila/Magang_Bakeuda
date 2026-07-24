@@ -281,7 +281,7 @@ function AppContent() {
 
   // Get active page title based on current path
   const currentPath = location.pathname;
-  let activePageTitle = 'SIPD Purbalingga';
+  let activePageTitle = 'SIMPBB Purbalingga';
   for (const [path, title] of Object.entries(pageTitles)) {
     if (currentPath.startsWith(path)) {
       activePageTitle = title;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -24,27 +25,28 @@ class CustomButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (isLoading) ...[
+        if (isLoading)
           SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.onPrimary),
+            child: CupertinoActivityIndicator(
+              color: theme.colorScheme.onPrimary,
+              radius: 10,
+            ),
+          )
+        else ...[
+          if (icon != null) ...[
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            text,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(width: 12),
-        ] else if (icon != null) ...[
-          Icon(icon, size: 20),
-          const SizedBox(width: 8),
         ],
-        Text(
-          isLoading ? 'Memproses...' : text,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
-        ),
       ],
     );
 

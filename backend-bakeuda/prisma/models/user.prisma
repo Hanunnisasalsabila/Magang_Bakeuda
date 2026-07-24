@@ -26,6 +26,7 @@ model User {
   sppt_digenerate        Sppt[]             @relation("GeneratedByUser")
   aktivitas_user         UserActivity[]
   riwayat_pelacakan      RiwayatPelacakan[] @relation("RiwayatUser")
+  notifikasi             Notifikasi[]       @relation("NotifikasiUser")
 
   @@map("users")
 }

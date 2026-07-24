@@ -1,0 +1,13 @@
+model Notifikasi {
+  id         String   @id @default(uuid())
+  user_id    String
+  title      String
+  message    String   @db.Text
+  is_read    Boolean  @default(false)
+  type       String   @default("INFO")
+  created_at DateTime @default(now())
+
+  user       User     @relation("NotifikasiUser", fields: [user_id], references: [id_user], onDelete: Cascade)
+
+  @@map("notifikasi")
+}

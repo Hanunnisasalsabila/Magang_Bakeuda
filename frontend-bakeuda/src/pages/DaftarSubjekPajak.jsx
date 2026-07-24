@@ -195,17 +195,16 @@ export default function DaftarSubjekPajak() {
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => {
-                          if (!obj.nik || obj.nik.trim() === '') {
-                            alert('Subjek pajak ini tidak memiliki NIK sehingga detail tidak dapat ditampilkan.');
+                          if (!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.') {
+                            alert('Subjek pajak ini tidak memiliki NIK yang valid sehingga detail tidak dapat ditampilkan.');
                           } else {
-                            // Use query parameter to safely pass ANY weird string from Oracle (like '.' or slashes)
                             navigate(`/detail-subjek?nik=${encodeURIComponent(obj.nik)}`);
                           }
                         }}
-                        title={!obj.nik || obj.nik.trim() === '' ? 'NIK Kosong' : 'Detail Subjek'}
-                        disabled={!obj.nik || obj.nik.trim() === ''}
+                        title={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.' ? 'NIK Tidak Valid' : 'Detail Subjek'}
+                        disabled={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'}
                         className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none mx-auto ${
-                          !obj.nik || obj.nik.trim() === ''
+                          !obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'
                             ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
                             : 'bg-background border border-outline-variant text-primary hover:bg-surface-container-lowest hover:border-primary'
                         }`}

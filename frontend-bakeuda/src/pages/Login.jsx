@@ -58,7 +58,7 @@ export default function Login({ onLoginSuccess }) {
             alt="Logo Purbalingga" 
             className="w-20 h-20 mx-auto mb-4 object-contain drop-shadow-sm"
           />
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">SIPD Purbalingga</h2>
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">SIMPBB Purbalingga</h2>
           <p className="text-gray-500 text-sm mt-1 font-medium">Sistem Pajak Bumi Bangunan</p>
         </div>
 
@@ -123,12 +123,11 @@ export default function Login({ onLoginSuccess }) {
             }`}
           >
             {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Memproses...</span>
-              </>
+              <svg className="w-5 h-5 text-white/90 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
             ) : (
-              <span>Masuk ke Sistem</span>
+              <span>Masuk</span>
             )}
           </button>
         </form>

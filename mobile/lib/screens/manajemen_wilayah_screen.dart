@@ -14,6 +14,7 @@ class ManajemenWilayahScreen extends StatefulWidget {
 }
 
 class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
+  static const Color _kNavy = Color(0xFF0F172A);
   static const String _semuaKecamatan = 'Semua Kecamatan';
 
   final _wilayahService = WilayahService(ApiService());
@@ -525,6 +526,9 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
         ),
       ),
       body: _buildBody(theme),
+      bottomNavigationBar: (!_isLoading && _errorMsg == null && _filteredData.isNotEmpty)
+          ? _buildPaginationControls((_filteredData.length / _itemsPerPage).ceil())
+          : null,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showFormDialog,
         backgroundColor: _kNavy,
@@ -597,58 +601,70 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
               ],
             ),
           )
-        : Column(
-            children: [
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _loadData,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                    itemCount: paginatedData.length,
-                    itemBuilder: (context, index) {
-                      final w = paginatedData[index];
-                      return _buildWilayahCard(theme, w, index);
-                    },
-                  ),
-                ),
-              ),
-              _buildPaginationControls(totalPages),
-              const SizedBox(height: 80), // Padding for FAB
-            ],
+        : RefreshIndicator(
+            onRefresh: _loadData,
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80), // padding for FAB
+              itemCount: paginatedData.length,
+              itemBuilder: (context, index) {
+                final w = paginatedData[index];
+                return _buildWilayahCard(theme, w, index);
+              },
+            ),
           );
   }
 
   Widget _buildPaginationControls(int totalPages) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.only(top: 14, bottom: 20, left: 16, right: 16),
       color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextButton.icon(
-            onPressed: _currentPage > 1
-                ? () => setState(() => _currentPage--)
-                : null,
-            icon: const Icon(Icons.chevron_left),
-            label: const Text('Sebelumnya'),
-          ),
-          Expanded(
-            child: Text(
-              'Halaman $_currentPage dari $totalPages',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            InkWell(
+              onTap: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Icon(Icons.chevron_left, color: _currentPage > 1 ? Colors.black54 : Colors.grey.shade300),
+              ),
             ),
-          ),
-          TextButton.icon(
-            onPressed: _currentPage < totalPages
-                ? () => setState(() => _currentPage++)
-                : null,
-            icon: const Icon(Icons.chevron_right),
-            label: const Text('Selanjutnya'),
-            iconAlignment: IconAlignment.end,
-          ),
-        ],
+            const SizedBox(width: 12),
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: _kNavy,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '$_currentPage',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            const SizedBox(width: 12),
+            InkWell(
+              onTap: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Icon(Icons.chevron_right, color: _currentPage < totalPages ? Colors.black54 : Colors.grey.shade300),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -658,117 +674,64 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
     final kecamatan = (w['kecamatan'] ?? '-').toString();
     final kabupaten = (w['kabupaten'] ?? '').toString();
     final kodeWilayah = (w['kode_wilayah'] ?? '-').toString();
-    return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _showFormDialog(existing: w),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.location_on,
-                        color: theme.colorScheme.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            namaDesa,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            kabupaten.isNotEmpty
-                                ? 'Kec. $kecamatan • Kab. $kabupaten'
-                                : 'Kec. $kecamatan',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Text(
-                              kodeWilayah,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      onSelected: (v) {
-                        if (v == 'edit') _showFormDialog(existing: w);
-                        if (v == 'delete') _confirmDelete(w);
-                      },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: ListTile(
-                            leading: Icon(Icons.edit_outlined),
-                            title: Text('Edit'),
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: ListTile(
-                            leading: Icon(Icons.delete_outline),
-                            title: Text('Hapus'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade300),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        onTap: () => _showFormDialog(existing: w),
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+          child: Icon(Icons.location_on, color: theme.colorScheme.primary),
+        ),
+        title: Text(
+          namaDesa,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                kabupaten.isNotEmpty ? 'Kec. $kecamatan • Kab. $kabupaten' : 'Kec. $kecamatan',
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  kodeWilayah,
+                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace', fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
+            ],
           ),
-        )
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
+          onSelected: (v) {
+            if (v == 'edit') _showFormDialog(existing: w);
+            if (v == 'delete') _confirmDelete(w);
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Edit'), contentPadding: EdgeInsets.zero)),
+            PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_outline, color: Color(0xFFB3261E)), title: Text('Hapus'), contentPadding: EdgeInsets.zero)),
+          ],
+        ),
+      ),
+    )
         .animate()
         .fade(duration: 350.ms, delay: ((index % 15) * 40).ms)
         .slideY(begin: 0.08, duration: 350.ms, curve: Curves.easeOutQuad);

@@ -114,7 +114,7 @@ extension _Step1Extension on _SpopFormScreenState {
           })),
         ]),
         const SizedBox(height: 12),
-        CustomTextField(controller: _noHpController, label: 'Nomor HP', keyboardType: TextInputType.phone, inputFormatters: [LengthLimitingTextInputFormatter(15), FilteringTextInputFormatter.digitsOnly], validator: (v) {
+        CustomTextField(controller: _noHpController, label: 'Nomor HP', keyboardType: TextInputType.phone, inputFormatters: [LengthLimitingTextInputFormatter(13), FilteringTextInputFormatter.digitsOnly], validator: (v) {
           if (v != null && v.isNotEmpty) {
              if (v.length < 10) return 'Minimal 10 digit';
              if (!v.startsWith('08') && !v.startsWith('62')) return 'Harus diawali 08/62';
@@ -125,19 +125,23 @@ extension _Step1Extension on _SpopFormScreenState {
         Row(children: [
           Expanded(
             child: CustomDropdown<String>(
-              label: 'Status WP',
+              label: 'Status WP *',
               value: _statusWp,
+              hintText: 'Pilih...',
               items: _statusWpOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateFormState(() => _statusWp = v!),
+              onChanged: (v) => updateFormState(() => _statusWp = v),
+              validator: (v) => v == null ? 'Wajib' : null,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: CustomDropdown<String>(
-              label: 'Pekerjaan',
+              label: 'Pekerjaan *',
               value: _pekerjaan,
+              hintText: 'Pilih...',
               items: _pekerjaanOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateFormState(() => _pekerjaan = v!),
+              onChanged: (v) => updateFormState(() => _pekerjaan = v),
+              validator: (v) => v == null ? 'Wajib' : null,
             ),
           ),
         ]),
@@ -149,33 +153,40 @@ extension _Step1Extension on _SpopFormScreenState {
         }),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: CustomTextField(controller: _rtController, label: 'RT *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.isEmpty ? 'Wajib' : null, hintText: '001')),
+          Expanded(child: CustomTextField(controller: _rtController, label: 'RT *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], validator: (v) {
+            if (v == null || v.isEmpty) return 'Wajib';
+            if (v.length < 2) return 'Min 2 digit';
+            return null;
+          }, hintText: '001')),
           const SizedBox(width: 8),
-          Expanded(child: CustomTextField(controller: _rwController, label: 'RW *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.isEmpty ? 'Wajib' : null, hintText: '001')),
+          Expanded(child: CustomTextField(controller: _rwController, label: 'RW *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], validator: (v) {
+            if (v == null || v.isEmpty) return 'Wajib';
+            if (v.length < 2) return 'Min 2 digit';
+            return null;
+          }, hintText: '001')),
           const SizedBox(width: 8),
-          Expanded(flex: 2, child: CustomDropdown<String>(
+          Expanded(flex: 2, child: CustomTextField(
+            controller: _kecamatanWpController,
             label: 'Kecamatan *',
-            value: _getValidKecamatan(_kecamatanWpController.text),
-            items: _kecamatans.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis))).toList(),
-            onChanged: (v) => updateFormState(() {
-              _kecamatanWpController.text = v ?? '';
-              _kelurahanWpController.text = ''; // Reset
-            }),
             validator: (v) => v == null || v.isEmpty ? '*' : null,
           )),
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: CustomDropdown<String>(
-            label: 'Kelurahan *',
-            value: _getValidKelurahan(_kecamatanWpController.text, _kelurahanWpController.text),
-            items: _getValidKecamatan(_kecamatanWpController.text) != null
-                ? WilayahData.data.where((e) => e['kecamatan'] == _getValidKecamatan(_kecamatanWpController.text)).map((e) => e['nama_desa']!).toSet().toList().map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis))).toList()
-                : [],
-            onChanged: (v) => updateFormState(() => _kelurahanWpController.text = v ?? ''),
+          Expanded(child: CustomTextField(
+            controller: _kelurahanWpController,
+            label: 'Kelurahan/Desa *',
             validator: (v) => v == null || v.isEmpty ? '*' : null,
           )),
           const SizedBox(width: 12),
+          Expanded(child: CustomTextField(
+            controller: _kabupatenWpController,
+            label: 'Kabupaten *',
+            validator: (v) => v == null || v.isEmpty ? '*' : null,
+          )),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
           Expanded(child: CustomTextField(controller: _kodePosController, label: 'Kode Pos', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(5), FilteringTextInputFormatter.digitsOnly])),
         ]),
       ],
