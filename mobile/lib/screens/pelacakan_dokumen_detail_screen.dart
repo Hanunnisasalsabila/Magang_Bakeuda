@@ -259,7 +259,27 @@ class _PelacakanDokumenDetailScreenState extends State<PelacakanDokumenDetailScr
             // Dokumen Persyaratan
             _buildSectionHeader(Icons.folder_open, Colors.purple, 'Dokumen Persyaratan'),
             const SizedBox(height: 16),
-            _buildLampiranList(d['lampiran'] as List? ?? []),
+            _buildLampiranList(() {
+              final val = d['lampiran'];
+              if (val == null) return [];
+              if (val is List) return val;
+              if (val is Map) {
+                 List res = [];
+                 void addDocs(String key, String title) {
+                   if (val[key] is List) {
+                     for (var url in val[key]) res.add({'jenis_dokumen': title, 'url_file': url});
+                   }
+                 }
+                 addDocs('url_ktp', 'KTP');
+                 addDocs('url_sertifikat', 'Sertifikat Hak Milik');
+                 addDocs('url_ajb', 'Akte Jual Beli');
+                 addDocs('url_imb', 'Izin Mendirikan Bangunan');
+                 addDocs('url_surat_kuasa', 'Surat Kuasa');
+                 addDocs('url_pendukung_lokasi', 'Pendukung Lokasi');
+                 return res;
+              }
+              return [];
+            }()),
             
             const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE))),
             
