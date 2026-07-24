@@ -1,7 +1,0 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
-async function run() {
-  const t = await prisma.transaksiSpop.findMany({ select: { id_transaksi: true, status_ajuan: true, locked_by: true } });
-  console.log(JSON.stringify(t, null, 2));
-}
-run().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
