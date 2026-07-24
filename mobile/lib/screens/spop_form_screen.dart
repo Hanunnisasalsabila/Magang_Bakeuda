@@ -931,7 +931,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           return;
         }
         int nextStep = 1;
-        if (_jenisLayanan == 'HAPUS') nextStep = 4;
+        if (_jenisLayanan == 'HAPUS') nextStep = 5;
         if (_jenisLayanan == 'PERUBAHAN_DATA') nextStep = 2;
         setState(() => _currentStep = nextStep);
       } else {
@@ -1008,6 +1008,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           _pecahanSubStep = 3;
           _isPecahMode = true;
         });
+      } else if (_jenisLayanan == 'HAPUS') {
+        setState(() => _currentStep = 0);
       } else {
         setState(() => _currentStep = 4);
       }
