@@ -331,8 +331,9 @@ export default function ManajemenAkunDesa() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/30 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="py-3 px-4 font-medium border-b border-outline-variant text-center w-[5%] whitespace-nowrap">No</th>
                 <th
-                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-[40%] cursor-pointer hover:bg-surface-container-low transition-colors"
+                  className="py-3 px-4 font-medium border-b border-outline-variant text-left w-[35%] cursor-pointer hover:bg-surface-container-low transition-colors"
                   onClick={() => handleSort('nama_lengkap')}
                 >
                   <div className="flex items-center gap-2">
@@ -376,7 +377,7 @@ export default function ManajemenAkunDesa() {
             <tbody className="divide-y divide-outline-variant/40">
               {isLoading ? (
                 <tr>
-                  <td colSpan="4" className="py-16 text-center">
+                  <td colSpan="5" className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-primary/60">
                       <span className="material-symbols-outlined animate-spin text-5xl mb-3">sync</span>
                       <p className="font-semibold tracking-wide">MENGAMBIL DATA...</p>
@@ -385,14 +386,14 @@ export default function ManajemenAkunDesa() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="4" className="py-16 text-center text-error">
+                  <td colSpan="5" className="py-16 text-center text-error">
                     <span className="material-symbols-outlined text-[48px] mb-2">error</span>
                     <p className="font-bold">{error}</p>
                   </td>
                 </tr>
               ) : currentUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="py-24 text-center">
+                  <td colSpan="5" className="py-24 text-center">
                     <div className="flex flex-col items-center justify-center text-on-surface-variant/60">
                       <div className="w-20 h-20 bg-surface-container-low rounded-full flex items-center justify-center mb-4">
                         <span className="material-symbols-outlined text-[40px] opacity-50">group</span>
@@ -405,6 +406,9 @@ export default function ManajemenAkunDesa() {
               ) : (
                 currentUsers.map((user, i) => (
                   <tr key={user.id_user} className={`hover:bg-primary/5 transition-colors group ${i % 2 === 1 ? 'bg-surface-container-lowest/30' : ''}`}>
+                    <td className="py-3 px-4 text-center text-sm text-on-surface-variant">
+                      {(currentPage - 1) * itemsPerPage + i + 1}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-primary/10 text-primary flex items-center justify-center font-bold text-lg shadow-sm">

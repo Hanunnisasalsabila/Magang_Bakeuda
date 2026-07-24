@@ -14,11 +14,12 @@ export default function Step1InformasiUmum() {
   const [nopData, setNopData] = useState(null);
   const [nopLoading, setNopLoading] = useState(false);
   const [nopError, setNopError] = useState('');
+  const [nopAsalErrors, setNopAsalErrors] = useState({});
   const navigate = useNavigate();
 
   // Build full NOP string from segmented input
   const buildNopString = (nopObj) => {
-    const raw = `${nopObj.prov||''}${nopObj.kab||''}${nopObj.kec||''}${nopObj.kel||''}${nopObj.blok||''}${nopObj.nourut||''}${nopObj.kode||''}`;
+    const raw = `${nopObj.prov || ''}${nopObj.kab || ''}${nopObj.kec || ''}${nopObj.kel || ''}${nopObj.blok || ''}${nopObj.nourut || ''}${nopObj.kode || ''}`;
     return raw.replace(/\D/g, '');
   };
 
@@ -41,22 +42,42 @@ export default function Step1InformasiUmum() {
         if (formData.transaksi === 'PERUBAHAN_DATA' || formData.transaksi === 'MUTASI') {
           setFormData(prev => ({
             ...prev,
-            luasTanah: obj.luas_tanah ? obj.luas_tanah.toString() : prev.luasTanah,
-            jumlahBangunan: obj.jumlah_bangunan ? obj.jumlah_bangunan.toString() : prev.jumlahBangunan,
+            // Objek Pajak
+            luasTanah: (obj.luas_tanah !== undefined && obj.luas_tanah !== null) ? obj.luas_tanah.toString() : (obj.luas_bumi ? obj.luas_bumi.toString() : prev.luasTanah),
+            jumlahBangunan: (obj.jumlah_bangunan !== undefined && obj.jumlah_bangunan !== null) ? obj.jumlah_bangunan.toString() : prev.jumlahBangunan,
+            luasBangunan: (obj.luas_bangunan !== undefined && obj.luas_bangunan !== null) ? obj.luas_bangunan.toString() : prev.luasBangunan,
             alamatObjek: obj.jalan_op || prev.alamatObjek,
-            blokKavObjek: obj.blok_kav_no_op || prev.blokKavObjek,
-            noPersil: obj.no_persil || prev.noPersil,
+            kelurahanObjek: obj.wilayah?.nama_kelurahan || prev.kelurahanObjek,
+            kecamatanObjek: obj.wilayah?.nama_kecamatan || prev.kecamatanObjek,
             rtObjek: obj.rt_op || prev.rtObjek,
             rwObjek: obj.rw_op || prev.rwObjek,
-            jenisTanah: obj.jenis_tanah || prev.jenisTanah,
-            latitude: obj.latitude || prev.latitude,
-            longitude: obj.longitude || prev.longitude,
-            koordinat_polygon: obj.koordinat_polygon ? (typeof obj.koordinat_polygon === 'string' ? JSON.parse(obj.koordinat_polygon) : obj.koordinat_polygon) : prev.koordinat_polygon,
             batasUtara: obj.batas_utara || prev.batasUtara,
             batasSelatan: obj.batas_selatan || prev.batasSelatan,
             batasTimur: obj.batas_timur || prev.batasTimur,
             batasBarat: obj.batas_barat || prev.batasBarat,
-            data_bangunan_json: (obj.bangunan && obj.bangunan.length > 0) ? obj.bangunan : prev.data_bangunan_json
+            jenisTanah: obj.jenis_tanah || prev.jenisTanah,
+            noPersil: obj.no_persil || prev.noPersil,
+            kodeWilayahObjek: obj.kode_wilayah || prev.kodeWilayahObjek,
+            koordinat_polygon: (Array.isArray(obj.koordinat_polygon) && obj.koordinat_polygon.length > 0) ? obj.koordinat_polygon : prev.koordinat_polygon,
+            latitude: (Array.isArray(obj.koordinat_polygon) && obj.koordinat_polygon.length > 0) ? obj.koordinat_polygon[0].lat : prev.latitude,
+            longitude: (Array.isArray(obj.koordinat_polygon) && obj.koordinat_polygon.length > 0) ? obj.koordinat_polygon[0].lng : prev.longitude,
+            blokKavObjek: obj.blok_kav_no || prev.blokKavObjek,
+            data_bangunan_json: (obj.bangunan && obj.bangunan.length > 0) ? obj.bangunan : prev.data_bangunan_json,
+            // Subjek Pajak
+            nik: obj.subjek_pajak?.nik || prev.nik,
+            nama: obj.subjek_pajak?.nama_subjek || prev.nama,
+            npwp: obj.subjek_pajak?.npwp || prev.npwp,
+            noTelp: obj.subjek_pajak?.no_hp || prev.noTelp,
+            email: obj.subjek_pajak?.email || prev.email,
+            statusWp: obj.subjek_pajak?.status_wp || prev.statusWp,
+            pekerjaan: obj.subjek_pajak?.pekerjaan || prev.pekerjaan,
+            alamat: obj.subjek_pajak?.alamat_jalan || prev.alamat,
+            blokKav: obj.subjek_pajak?.blok_kav_no_subjek || prev.blokKav,
+            rt: obj.subjek_pajak?.rt ? obj.subjek_pajak.rt.padStart(3, '0') : prev.rt,
+            rw: obj.subjek_pajak?.rw ? obj.subjek_pajak.rw.padStart(3, '0') : prev.rw,
+            kelurahan: obj.subjek_pajak?.wilayah?.nama_kelurahan || prev.kelurahan,
+            kecamatan: obj.subjek_pajak?.wilayah?.nama_kecamatan || prev.kecamatan,
+            kodePos: obj.subjek_pajak?.kode_pos || prev.kodePos
           }));
         }
       } else {
@@ -66,6 +87,29 @@ export default function Step1InformasiUmum() {
       setNopError('Data objek pajak tidak ditemukan untuk NOP ini.');
     } finally {
       setNopLoading(false);
+    }
+  };
+
+  const verifyNopAsal = async (nop, idx) => {
+    const raw = (nop || '').replace(/\D/g, '');
+    if (!raw || raw === '3303') {
+      setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal harus diisi' }));
+      return;
+    }
+    if (raw.length < 18) {
+      setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal harus 18 digit' }));
+      return;
+    }
+    try {
+      const res = await api.get(`/objek-pajak/${raw}`);
+      const data = res.data?.data || res.data;
+      if (data && data.status_aktif === false) {
+        setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal sudah tidak aktif (nonaktif)' }));
+      } else {
+        setNopAsalErrors(prev => ({ ...prev, [idx]: null }));
+      }
+    } catch (e) {
+      setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal tidak terdaftar di database' }));
     }
   };
 
@@ -143,6 +187,27 @@ export default function Step1InformasiUmum() {
       return;
     }
 
+    if (['PECAH', 'GABUNG'].includes(formData.transaksi)) {
+      const validNops = (formData.nopAsalList || []).filter(nop => nop && nop.replace(/\D/g, '').length === 18);
+      if (formData.transaksi === 'PECAH' && validNops.length < 1) {
+        setErrors({ nopAsal: 'NOP Asal wajib diisi dengan lengkap (18 digit)' });
+        setToast({ show: true, message: 'Mohon isi NOP Asal dengan lengkap.', type: 'error' });
+        return;
+      }
+      if (formData.transaksi === 'GABUNG' && validNops.length < 2) {
+        setErrors({ nopAsal: 'Minimal 2 NOP Asal wajib diisi dengan lengkap untuk penggabungan' });
+        setToast({ show: true, message: 'Minimal 2 NOP Asal wajib diisi untuk penggabungan.', type: 'error' });
+        return;
+      }
+      
+      const hasNopError = Object.values(nopAsalErrors).some(err => err !== null);
+      if (hasNopError) {
+        setErrors({ nopAsal: 'Terdapat NOP Asal yang tidak valid atau tidak aktif' });
+        setToast({ show: true, message: 'Periksa kembali NOP Asal yang Anda masukkan.', type: 'error' });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const newId = await saveDraft();
@@ -176,7 +241,7 @@ export default function Step1InformasiUmum() {
       {toast.show && (
         <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} />
       )}
-      
+
       <section className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1 bg-primary h-8 rounded-full"></div>
@@ -184,7 +249,7 @@ export default function Step1InformasiUmum() {
             JENIS TRANSAKSI &amp; NOP
           </h4>
         </div>
-        
+
         <div className="space-y-8">
           {/* Jenis Transaksi */}
           <div className="space-y-4">
@@ -213,7 +278,7 @@ export default function Step1InformasiUmum() {
                       checked={formData.kategoriTransaksi === t.val}
                       onChange={(e) => {
                         handleTextChange('kategoriTransaksi', e);
-                        
+
                         // Clear prefilled data to prevent lingering data when switching categories
                         setFormData(prev => ({
                           ...prev,
@@ -255,9 +320,9 @@ export default function Step1InformasiUmum() {
                     { val: 'GABUNG', label: 'Hasil Penggabungan' }
                   ].map(opt => (
                     <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border border-outline-variant bg-white rounded-lg hover:bg-surface-container-low">
-                      <input 
-                        type="radio" name="transaksi" value={opt.val} 
-                        checked={formData.transaksi === opt.val} 
+                      <input
+                        type="radio" name="transaksi" value={opt.val}
+                        checked={formData.transaksi === opt.val}
                         onChange={(e) => handleTextChange('transaksi', e)}
                         className="text-primary focus:ring-primary"
                       />
@@ -276,9 +341,9 @@ export default function Step1InformasiUmum() {
                     { val: 'PERUBAHAN_DATA', label: 'Ralat Luas / Alamat (Perubahan Data)' }
                   ].map(opt => (
                     <label key={opt.val} className="flex items-center gap-2 cursor-pointer p-2 border border-outline-variant bg-white rounded-lg hover:bg-surface-container-low">
-                      <input 
-                        type="radio" name="transaksi" value={opt.val} 
-                        checked={formData.transaksi === opt.val} 
+                      <input
+                        type="radio" name="transaksi" value={opt.val}
+                        checked={formData.transaksi === opt.val}
                         onChange={(e) => { handleTextChange('transaksi', e); setNopData(null); setNopError(''); }}
                         className="text-primary focus:ring-primary"
                       />
@@ -292,149 +357,148 @@ export default function Step1InformasiUmum() {
 
           {/* NOP Section - hanya tampil jika kategori memerlukan NOP */}
           {(formData.kategoriTransaksi === 'update' || formData.kategoriTransaksi === 'hapus') && (
-          <div className="space-y-4">
-            <div className="overflow-x-auto pb-4 custom-scrollbar">
-              <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
-                <div className="space-y-4">
-                  {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <WilayahDropdown
-                          selectedKecamatan={formData.kecamatanObjek}
-                          selectedKelurahan={formData.kelurahanObjek}
-                          autoLockByRole={true}
-                          onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
-                            setFormData(prev => ({
-                              ...prev,
-                              kecamatanObjek: namaKec,
-                              kelurahanObjek: namaKel,
-                              kodeWilayahObjek: kodeKel || kodeKec || prev.kodeWilayahObjek,
-                              nop: {
-                                ...prev.nop,
-                                kec: kodeKec ? kodeKec.substring(4, 7) : '',
-                                kel: kodeKel ? kodeKel.substring(7, 10) : ''
-                              }
-                            }));
-                            setNopData(null);
-                            setNopError('');
-                          }}
+            <div className="space-y-4">
+              <div className="overflow-x-auto pb-4 custom-scrollbar">
+                <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                  <div className="space-y-4">
+                    {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <WilayahDropdown
+                            selectedKecamatan={formData.kecamatanObjek}
+                            selectedKelurahan={formData.kelurahanObjek}
+                            autoLockByRole={true}
+                            onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                kecamatanObjek: namaKec,
+                                kelurahanObjek: namaKel,
+                                kodeWilayahObjek: kodeKel || kodeKec || prev.kodeWilayahObjek,
+                                nop: {
+                                  ...prev.nop,
+                                  kec: kodeKec ? kodeKec.substring(4, 7) : '',
+                                  kel: kodeKel ? kodeKel.substring(7, 10) : ''
+                                }
+                              }));
+                              setNopData(null);
+                              setNopError('');
+                            }}
+                          />
+                        </div>
+                        <SegmentedNOPInput
+                          value={formData.nop}
+                          onChange={(val) => { setFormData(prev => ({ ...prev, nop: val })); setNopData(null); setNopError(''); }}
+                          label="NOP"
+                          showHeaders={true}
+                          readOnlyKecKel={true}
                         />
-                      </div>
-                      <SegmentedNOPInput
-                        value={formData.nop}
-                        onChange={(val) => { setFormData(prev => ({ ...prev, nop: val })); setNopData(null); setNopError(''); }}
-                        label="NOP"
-                        showHeaders={true}
-                        readOnlyKecKel={true}
-                      />
-                    </>
-                  )}
-                  <SegmentedNOPInput
-                    value={formData.nopBersama}
-                    onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
-                    label="NOP BERSAMA"
-                    showHeaders={!['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi)}
-                    optional={true}
-                  />
-                </div>
-                {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
-              </div>
-            </div>
-
-            {/* Tombol Cari Data NOP */}
-            {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCariNOP}
-                    disabled={nopLoading}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
-                  >
-                    {nopLoading
-                      ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /><span>Mencari...</span></>
-                      : <><span className="material-symbols-outlined text-[18px]">search</span><span>Cari Data Objek Pajak</span></>
-                    }
-                  </button>
-                  {nopError && <p className="text-error text-sm font-medium">{nopError}</p>}
-                </div>
-
-                {/* Hasil Pencarian NOP */}
-                {nopData && (
-                  <div className="border border-green-200 bg-green-50 rounded-xl p-5 space-y-3">
-                    <div className="flex items-center gap-2 text-green-800 font-bold">
-                      <span className="material-symbols-outlined text-[20px] text-green-600">check_circle</span>
-                      Data Objek Pajak Ditemukan
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-on-surface-variant text-xs">NOP</p>
-                        <p className="font-bold text-on-surface font-mono">{nopData.nop}</p>
-                      </div>
-                      <div>
-                        <p className="text-on-surface-variant text-xs">Subjek Pajak (NIK)</p>
-                        <p className="font-bold text-on-surface">{nopData.nik_subjek || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-on-surface-variant text-xs">Alamat Objek Pajak</p>
-                        <p className="font-bold text-on-surface">{nopData.jalan_op || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-on-surface-variant text-xs">Luas Tanah / Bangunan</p>
-                        <p className="font-bold text-on-surface">{nopData.luas_tanah} m² / {nopData.luas_bangunan || 0} m²</p>
-                      </div>
-                      <div>
-                        <p className="text-on-surface-variant text-xs">Status</p>
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
-                          nopData.status_aktif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                        }`}>{nopData.status_aktif ? 'Aktif' : 'Nonaktif'}</span>
-                      </div>
-                      <div>
-                        <p className="text-on-surface-variant text-xs">Jenis Tanah</p>
-                        <p className="font-bold text-on-surface">{nopData.jenis_tanah || '-'}</p>
-                      </div>
-                    </div>
-
-                    {/* Aksi berdasarkan jenis transaksi */}
-                    {formData.kategoriTransaksi === 'update' && (
-                      <div className="border-t border-green-200 pt-3 flex flex-wrap gap-2">
-                        <p className="w-full text-xs text-green-700 font-bold mb-1">Lanjutkan ke formulir:</p>
-                        <button
-                          type="button"
-                          onClick={async () => { await handleSave(); }}
-                          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                          Isi Formulir Pemutakhiran
-                        </button>
-                      </div>
+                      </>
                     )}
-
+                    <SegmentedNOPInput
+                      value={formData.nopBersama}
+                      onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                      label="NOP BERSAMA"
+                      showHeaders={!['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi)}
+                      optional={true}
+                    />
                   </div>
-                )}
+                  {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* Tombol Cari Data NOP */}
+              {['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(formData.transaksi) && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCariNOP}
+                      disabled={nopLoading}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
+                    >
+                      {nopLoading
+                        ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /><span>Mencari...</span></>
+                        : <><span className="material-symbols-outlined text-[18px]">search</span><span>Cari Data Objek Pajak</span></>
+                      }
+                    </button>
+                    {nopError && <p className="text-error text-sm font-medium">{nopError}</p>}
+                  </div>
+
+                  {/* Hasil Pencarian NOP */}
+                  {nopData && (
+                    <div className="border border-green-200 bg-green-50 rounded-xl p-5 space-y-3">
+                      <div className="flex items-center gap-2 text-green-800 font-bold">
+                        <span className="material-symbols-outlined text-[20px] text-green-600">check_circle</span>
+                        Data Objek Pajak Ditemukan
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-on-surface-variant text-xs">NOP</p>
+                          <p className="font-bold text-on-surface font-mono">{nopData.nop}</p>
+                        </div>
+                        <div>
+                          <p className="text-on-surface-variant text-xs">Subjek Pajak (NIK)</p>
+                          <p className="font-bold text-on-surface">{nopData.nik_subjek || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-on-surface-variant text-xs">Alamat Objek Pajak</p>
+                          <p className="font-bold text-on-surface">{nopData.jalan_op || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-on-surface-variant text-xs">Luas Tanah / Bangunan</p>
+                          <p className="font-bold text-on-surface">{nopData.luas_tanah} m² / {nopData.luas_bangunan || 0} m²</p>
+                        </div>
+                        <div>
+                          <p className="text-on-surface-variant text-xs">Status</p>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${nopData.status_aktif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>{nopData.status_aktif ? 'Aktif' : 'Nonaktif'}</span>
+                        </div>
+                        <div>
+                          <p className="text-on-surface-variant text-xs">Jenis Tanah</p>
+                          <p className="font-bold text-on-surface">{nopData.jenis_tanah || '-'}</p>
+                        </div>
+                      </div>
+
+                      {/* Aksi berdasarkan jenis transaksi */}
+                      {formData.kategoriTransaksi === 'update' && (
+                        <div className="border-t border-green-200 pt-3 flex flex-wrap gap-2">
+                          <p className="w-full text-xs text-green-700 font-bold mb-1">Lanjutkan ke formulir:</p>
+                          <button
+                            type="button"
+                            onClick={async () => { await handleSave(); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                            Isi Formulir Pemutakhiran
+                          </button>
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* NOP Section untuk BARU/PECAH/GABUNG (NOP Bersama) */}
           {formData.kategoriTransaksi === 'baru' && (
-          <div className="space-y-4">
-            <div className="overflow-x-auto pb-4 custom-scrollbar">
-              <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
-                <div className="space-y-4">
-                  <SegmentedNOPInput
-                    value={formData.nopBersama}
-                    onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
-                    label="NOP BERSAMA"
-                    showHeaders={true}
-                    optional={true}
-                  />
+            <div className="space-y-4">
+              <div className="overflow-x-auto pb-4 custom-scrollbar">
+                <div className="bg-surface-container-low p-4 sm:p-6 rounded-xl border border-outline-variant min-w-max">
+                  <div className="space-y-4">
+                    <SegmentedNOPInput
+                      value={formData.nopBersama}
+                      onChange={(val) => setFormData(prev => ({ ...prev, nopBersama: val }))}
+                      label="NOP BERSAMA"
+                      showHeaders={true}
+                      optional={true}
+                    />
+                  </div>
+                  {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
                 </div>
-                {errors.nop && <p className="text-error text-sm font-bold mt-3 text-center">{errors.nop}</p>}
               </div>
             </div>
-          </div>
           )}
         </div>
       </section>
@@ -448,63 +512,77 @@ export default function Step1InformasiUmum() {
               {['BARU', 'PECAH', 'GABUNG'].includes(formData.transaksi) ? 'INFORMASI TAMBAHAN UNTUK DATA BARU' : 'INFORMASI TAMBAHAN'}
             </h4>
           </div>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Input NOP ASAL */}
-          {['PECAH', 'GABUNG'].includes(formData.transaksi) && (
-            <div className="flex flex-col gap-3 col-span-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-on-surface-variant font-bold uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
-                {formData.transaksi === 'GABUNG' && (
-                  <button type="button" onClick={() => setFormData(prev => ({...prev, nopAsalList: [...(prev.nopAsalList || ['']), '']}))} className="text-xs bg-blue-100 text-primary px-3 py-1 rounded-full font-bold hover:bg-blue-200">
-                    + Tambah NOP Asal
-                  </button>
-                )}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Input NOP ASAL */}
+            {['PECAH', 'GABUNG'].includes(formData.transaksi) && (
+              <div className="flex flex-col gap-3 col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-on-surface-variant font-bold uppercase">NOP Asal {formData.transaksi === 'GABUNG' ? '(Minimal 2 NOP)' : ''}</label>
+                  {formData.transaksi === 'GABUNG' && (
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, nopAsalList: [...(prev.nopAsalList || ['']), ''] }))} className="text-xs bg-blue-100 text-primary px-3 py-1 rounded-full font-bold hover:bg-blue-200">
+                      + Tambah NOP Asal
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(formData.nopAsalList || ['']).map((nop, idx) => (
+                    <div key={idx} className="flex flex-col gap-1 w-full">
+                      <div className="flex items-center gap-2 w-full">
+                        <IMaskInput
+                          mask="00.00.000.000.000.0000.0"
+                          value={nop || '33.03.'}
+                          unmask={false}
+                          onAccept={(value) => {
+                            const newNopAsal = [...(formData.nopAsalList || [''])];
+                            newNopAsal[idx] = value;
+                            setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
+                            if ((value.replace(/\D/g, '').length) === 18) {
+                              verifyNopAsal(value, idx);
+                            } else {
+                              setNopAsalErrors(prev => ({ ...prev, [idx]: null }));
+                            }
+                          }}
+                          onBlur={(e) => verifyNopAsal(e.target.value, idx)}
+                          placeholder="33.03.XXX.XXX.XXX.XXXX.X"
+                          className={`p-3 bg-white border ${nopAsalErrors[idx] ? 'border-error focus:ring-error' : 'border-outline-variant focus:ring-primary'} text-on-surface rounded-md focus:outline-none focus:ring-1 w-full tracking-widest`}
+                        />
+                        {formData.transaksi === 'GABUNG' && (formData.nopAsalList || ['']).length > 2 && (
+                          <button type="button" onClick={() => {
+                            const newNopAsal = (formData.nopAsalList || ['']).filter((_, i) => i !== idx);
+                            setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
+                            setNopAsalErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors[idx];
+                              return newErrors;
+                            });
+                          }} className="text-error bg-red-100 p-3 rounded-md hover:bg-red-200">
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
+                        )}
+                      </div>
+                      {nopAsalErrors[idx] && <p className="text-error text-xs font-medium">{nopAsalErrors[idx]}</p>}
+                    </div>
+                  ))}
+                </div>
+                {errors.nopAsal && <p className="text-error text-sm mt-1">{errors.nopAsal}</p>}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(formData.nopAsalList || ['']).map((nop, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <IMaskInput
-                      mask="00.00.000.000.000.0000.0"
-                      value={nop || '33.03.'}
-                      unmask={false}
-                      onAccept={(value) => {
-                        const newNopAsal = [...(formData.nopAsalList || [''])];
-                        newNopAsal[idx] = value;
-                        setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
-                      }}
-                      placeholder="33.03.XXX.XXX.XXX.XXXX.X"
-                      className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-                    />
-                    {formData.transaksi === 'GABUNG' && (formData.nopAsalList || ['']).length > 2 && (
-                      <button type="button" onClick={() => {
-                        const newNopAsal = (formData.nopAsalList || ['']).filter((_, i) => i !== idx);
-                        setFormData(prev => ({ ...prev, nopAsalList: newNopAsal }));
-                      }} className="text-error bg-red-100 p-3 rounded-md hover:bg-red-200">
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {errors.nopAsal && <p className="text-error text-sm mt-1">{errors.nopAsal}</p>}
-            </div>
-          )}
+            )}
 
-          {/* Input NO SPPT LAMA */}
-          {formData.transaksi !== 'HAPUS' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-xs text-on-surface-variant font-bold uppercase flex items-center gap-1">No. SPPT Lama <span className="font-normal text-[11px] ml-1 flex-none normal-case">(Opsional)</span></label>
-              <IMaskInput
-                mask="000.000.000.000.000.000"
-                value={formData.spptLama}
-                unmask={false}
-                onAccept={(value) => setFormData(prev => ({ ...prev, spptLama: value }))}
-                placeholder="XXX.XXX.XXX"
-                className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
-              />
-            </div>
-          )}
-        </div>
+            {/* Input NO SPPT LAMA */}
+            {formData.transaksi !== 'HAPUS' && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-on-surface-variant font-bold uppercase flex items-center gap-1">No. SPPT Lama <span className="font-normal text-[11px] ml-1 flex-none normal-case">(Opsional)</span></label>
+                <IMaskInput
+                  mask="000.000.000.000.000.000"
+                  value={formData.spptLama}
+                  unmask={false}
+                  onAccept={(value) => setFormData(prev => ({ ...prev, spptLama: value }))}
+                  placeholder="XXX.XXX.XXX"
+                  className="p-3 bg-white border border-outline-variant text-on-surface rounded-md focus:outline-none focus:ring-1 focus:ring-primary w-full tracking-widest"
+                />
+              </div>
+            )}
+          </div>
         </section>
       )}
 

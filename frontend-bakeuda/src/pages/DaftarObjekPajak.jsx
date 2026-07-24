@@ -18,7 +18,7 @@ export default function DaftarObjekPajak() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   // States untuk Popup (Modal) & Notifikasi (Toast)
   const [selectedObject, setSelectedObject] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -42,9 +42,9 @@ export default function DaftarObjekPajak() {
           api.get('/objek-pajak/stats'),
           api.get('/objek-pajak')
         ]);
-        
+
         setStats(statsRes.data.data);
-        
+
         const formattedList = listRes.data.data.map(item => ({
           nop: item.nop,
           name: item.subjek_pajak?.nama_subjek || 'Tanpa Nama',
@@ -55,7 +55,9 @@ export default function DaftarObjekPajak() {
           land: Number(item.luas_tanah || 0),
           building: Number(item.luas_bangunan || 0),
           njop: Number(item.total_njop || 0),
-          status: item.status_aktif ? 'Aktif' : 'Nonaktif'
+          status: item.status_aktif ? 'Aktif' : 'Nonaktif',
+          jenis_tanah: item.jenis_tanah || '-',
+          jumlah_bangunan: item.jumlah_bangunan || 0
         }));
 
         setObjects(formattedList);
@@ -89,7 +91,7 @@ export default function DaftarObjekPajak() {
 
   const handleExportExcel = () => {
     showToast('Sedang memproses file Excel...', 'success');
-    
+
     const dataToExport = objects.map((obj, index) => ({
       'No': index + 1,
       'NOP': obj.nop,
@@ -101,9 +103,9 @@ export default function DaftarObjekPajak() {
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    
+
     const wscols = [
-      {wch: 5}, {wch: 28}, {wch: 25}, {wch: 40}, {wch: 15}, {wch: 18}, {wch: 20}, {wch: 12}
+      { wch: 5 }, { wch: 28 }, { wch: 25 }, { wch: 40 }, { wch: 15 }, { wch: 18 }, { wch: 20 }, { wch: 12 }
     ];
     worksheet['!cols'] = wscols;
 
@@ -116,9 +118,9 @@ export default function DaftarObjekPajak() {
 
   const handleExportPDF = () => {
     showToast('Sedang merender dokumen PDF...', 'success');
-    
+
     const doc = new jsPDF('landscape');
-    
+
     doc.setFontSize(16);
     doc.text('Laporan Daftar Objek Pajak (PBB)', 14, 15);
     doc.setFontSize(10);
@@ -205,7 +207,7 @@ export default function DaftarObjekPajak() {
     doc.setFont('times', 'normal');
     doc.setFontSize(10.5);
     const tahun = new Date().getFullYear();
-    const bulanRomawi = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()];
+    const bulanRomawi = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][new Date().getMonth()];
     const nomorDisplay = nomorSurat
       ? `NOMOR : 900.1 / ${nomorSurat} / BKD-PBB / ${bulanRomawi} / ${tahun}`
       : `NOMOR : 900.1 / ......... / BKD-PBB / ${bulanRomawi} / ${tahun}`;
@@ -221,9 +223,9 @@ export default function DaftarObjekPajak() {
     let y = 65 + openingLines.length * 6 + 4;
 
     // ── DATA FIELDS ───────────────────────────────────────────────
-    const LBL_X  = mL + 8;   // indent label
-    const COL_X  = mL + 58;  // posisi titik dua
-    const VAL_X  = mL + 62;  // posisi nilai
+    const LBL_X = mL + 8;   // indent label
+    const COL_X = mL + 58;  // posisi titik dua
+    const VAL_X = mL + 62;  // posisi nilai
     const fs = 11;
 
     const drawField = (label, value, yPos) => {
@@ -338,11 +340,11 @@ export default function DaftarObjekPajak() {
               <span className="material-symbols-outlined text-[18px]">download</span>
               Export Data
             </button>
-            
+
             {/* Export Dropdown Menu */}
             {showExportMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
-                <button 
+                <button
                   onClick={handleExportExcel}
                   className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
                 >
@@ -350,7 +352,7 @@ export default function DaftarObjekPajak() {
                   Export Excel (.xlsx)
                 </button>
                 <div className="w-full h-px bg-gray-100 my-1"></div>
-                <button 
+                <button
                   onClick={handleExportPDF}
                   className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 transition-colors"
                 >
@@ -360,7 +362,7 @@ export default function DaftarObjekPajak() {
               </div>
             )}
           </div>
-          
+
           <button
             onClick={() => {
               loadDraft(null);
@@ -391,7 +393,7 @@ export default function DaftarObjekPajak() {
             Seluruh objek yang tercatat di sistem
           </p>
         </div>
-        
+
         <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex flex-col shadow-sm relative overflow-hidden">
           <div className="flex justify-between items-start mb-2">
             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider pr-2 leading-relaxed">Pajak Aktif</p>
@@ -459,7 +461,7 @@ export default function DaftarObjekPajak() {
               </select>
             </div>
           </div>
-          
+
           <button
             onClick={() => {
               setSearch('');
@@ -479,6 +481,7 @@ export default function DaftarObjekPajak() {
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider w-16 text-center">No</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">NOP</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Subjek Pajak</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
@@ -502,10 +505,12 @@ export default function DaftarObjekPajak() {
                 paginatedObjects.map((obj, i) => (
                   <tr
                     key={i}
-                    className={`hover:bg-surface-container-low transition-colors ${
-                      i % 2 === 1 ? 'bg-surface-container-low/20' : ''
-                    }`}
+                    className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''
+                      }`}
                   >
+                    <td className="px-4 py-3 text-center text-sm text-gray-500 font-medium">
+                      {startIndex + i + 1}
+                    </td>
                     <td className="px-4 py-3 font-data-mono text-primary font-bold whitespace-nowrap text-sm">
                       {obj.nop}
                     </td>
@@ -527,9 +532,10 @@ export default function DaftarObjekPajak() {
                         <button
                           onClick={() => setSelectedObject(obj)}
                           title="Lihat Detail"
-                          className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white rounded-md transition-colors shadow-sm"
+                          className="px-3 py-1.5 flex items-center justify-center gap-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors mx-auto text-sm font-semibold"
                         >
                           <span className="material-symbols-outlined text-[18px]">visibility</span>
+                          Detail
                         </button>
                       </div>
                     </td>
@@ -551,7 +557,7 @@ export default function DaftarObjekPajak() {
           <div className="flex items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Tampilkan</span>
-              <select 
+              <select
                 value={itemsPerPage}
                 onChange={(e) => {
                   setItemsPerPage(Number(e.target.value));
@@ -579,16 +585,16 @@ export default function DaftarObjekPajak() {
               <span className="font-bold text-on-surface">{totalItems}</span> data
             </div>
           </div>
-          
+
           <div className="flex items-center gap-1.5">
-            <button 
+            <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1 || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-            
+
             {Array.from({ length: Math.min(5, totalPages > 0 ? totalPages : 1) }, (_, i) => {
               let pageNum = currentPage;
               const safeTotalPages = totalPages > 0 ? totalPages : 1;
@@ -596,23 +602,22 @@ export default function DaftarObjekPajak() {
               else if (currentPage <= 3) pageNum = i + 1;
               else if (currentPage >= safeTotalPages - 2) pageNum = safeTotalPages - 4 + i;
               else pageNum = currentPage - 2 + i;
-              
+
               return (
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${
-                    currentPage === pageNum 
-                      ? 'bg-blue-900 text-white shadow-sm' 
-                      : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
+                  className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${currentPage === pageNum
+                    ? 'bg-blue-900 text-white shadow-sm'
+                    : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
+                    }`}
                 >
                   {pageNum}
                 </button>
               );
             })}
 
-            <button 
+            <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages || totalItems === 0}
               className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -626,9 +631,8 @@ export default function DaftarObjekPajak() {
       {/* Custom Toast Notification */}
       {toast.show && createPortal(
         <div className="fixed bottom-6 right-6 z-[9999] animate-fade-in-up">
-          <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl font-bold text-sm ${
-            toast.type === 'error' ? 'bg-error text-on-error' : 'bg-primary text-on-primary'
-          }`}>
+          <div className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl font-bold text-sm ${toast.type === 'error' ? 'bg-error text-on-error' : 'bg-primary text-on-primary'
+            }`}>
             <span className="material-symbols-outlined">
               {toast.type === 'error' ? 'picture_as_pdf' : 'check_circle'}
             </span>
@@ -642,99 +646,51 @@ export default function DaftarObjekPajak() {
       {selectedObject && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-scrim/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden scale-in">
-            {/* Modal Header - Official Style */}
-            <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 shadow-sm border border-blue-200">
-                  <span className="material-symbols-outlined text-[20px]">description</span>
-                </div>
-                <div>
-                  <h3 className="text-gray-900 font-bold text-lg uppercase tracking-wide">Informasi Objek Pajak</h3>
-                  <p className="text-sm font-data-mono text-gray-500 font-medium mt-0.5">NOP: <span className="text-blue-700 font-bold">{selectedObject.nop}</span></p>
-                </div>
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[18px]">landscape</span>
               </div>
-              <button 
-                onClick={() => setSelectedObject(null)}
-                className="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
+              <h3 className="text-gray-900 font-bold text-lg">Detail Objek Pajak</h3>
             </div>
-            
-            {/* Modal Body - Formal Table Layout */}
-            <div className="p-0 overflow-y-auto custom-scrollbar flex-1">
-              <div className="p-6">
-                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-                  <table className="w-full text-sm text-left">
-                    <tbody>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">person</span> 
-                            Nama Pemilik
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.name}</td>
-                      </tr>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">info</span> 
-                            Status Pajak
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5"><StatusBadge status={selectedObject.status} /></td>
-                      </tr>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">signpost</span> 
-                            Alamat Jalan
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900">
-                          {selectedObject.address}
-                          {selectedObject.rt_rw !== '-' && <span className="text-gray-500"> ({selectedObject.rt_rw})</span>}
-                        </td>
-                      </tr>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">location_city</span> 
-                            Desa / Kelurahan
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.kelurahan || '-'}</td>
-                      </tr>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">holiday_village</span> 
-                            Kecamatan
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900">{selectedObject.kecamatan || '-'}</td>
-                      </tr>
-                      <tr className="border-b border-gray-200">
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">landscape</span> 
-                            Luas Tanah
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900 font-data-mono">{selectedObject.land.toLocaleString()} m²</td>
-                      </tr>
-                      <tr>
-                        <th className="w-[160px] px-4 py-2.5 bg-gray-50 text-gray-600 font-medium align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[15px] text-gray-400">home_work</span> 
-                            Luas Bangunan
-                          </div>
-                        </th>
-                        <td className="px-4 py-2.5 text-gray-900 font-data-mono">{selectedObject.building.toLocaleString()} m²</td>
-                      </tr>
-                    </tbody>
-                  </table>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              <div className="space-y-4">
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">NOP</p>
+                  <p className="font-bold text-gray-900 text-sm">{selectedObject.nop}</p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Alamat</p>
+                  <p className="font-bold text-gray-900 text-sm">
+                    {selectedObject.address}
+                    {selectedObject.rt_rw !== '-' && <span> ({selectedObject.rt_rw})</span>}
+                    {selectedObject.kelurahan && selectedObject.kelurahan !== '-' && <span> KEL. {selectedObject.kelurahan.toUpperCase()}</span>}
+                    {selectedObject.kecamatan && selectedObject.kecamatan !== '-' && <span>, KEC. {selectedObject.kecamatan.toUpperCase()}</span>}
+                  </p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Jenis Tanah</p>
+                  <p className="font-bold text-gray-900 text-sm capitalize">{selectedObject.jenis_tanah.replace(/_/g, ' ').toLowerCase()}</p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Luas Tanah</p>
+                  <p className="font-bold text-gray-900 text-sm">{selectedObject.land.toLocaleString()} M²</p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Luas Bangunan</p>
+                  <p className="font-bold text-gray-900 text-sm">{selectedObject.building.toLocaleString()} M²</p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Jumlah Bangunan</p>
+                  <p className="font-bold text-gray-900 text-sm">{selectedObject.jumlah_bangunan} Unit</p>
+                </div>
+                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
+                  <p className="text-gray-600 font-medium text-sm">Status Objek Pajak</p>
+                  <div>
+                    <StatusBadge status={selectedObject.status} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -742,7 +698,7 @@ export default function DaftarObjekPajak() {
             {/* Modal Footer (Aksi Lanjutan) */}
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center gap-4">
               <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                <button 
+                <button
                   onClick={() => handleCetakSPPT(selectedObject)}
                   disabled={selectedObject.status === 'Nonaktif'}
                   className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
@@ -751,7 +707,7 @@ export default function DaftarObjekPajak() {
                   <span className="material-symbols-outlined text-[18px]">print</span>
                   Cetak SPPT
                 </button>
-                <button 
+                <button
                   onClick={() => {
                     loadDraft(null);
                     navigate('/spop');
@@ -805,10 +761,10 @@ export default function DaftarObjekPajak() {
                     className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span className="text-xs text-gray-400 whitespace-nowrap font-mono bg-gray-100 px-2 py-2.5 rounded-lg border border-gray-200">
-                    / BKD-PBB / {['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()]} / {new Date().getFullYear()}
+                    / BKD-PBB / {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][new Date().getMonth()]} / {new Date().getFullYear()}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5">Format nomor: <span className="font-mono">900.1 / {printConfig.nomorSurat || '...'} / BKD-PBB / {['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][new Date().getMonth()]} / {new Date().getFullYear()}</span></p>
+                <p className="text-xs text-gray-400 mt-1.5">Format nomor: <span className="font-mono">900.1 / {printConfig.nomorSurat || '...'} / BKD-PBB / {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][new Date().getMonth()]} / {new Date().getFullYear()}</span></p>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Nama Pejabat Penandatangan <span className="text-red-500">*</span></label>
@@ -841,9 +797,8 @@ export default function DaftarObjekPajak() {
                   }}
                   placeholder="Contoh: 197001011999031001"
                   maxLength={18}
-                  className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    printConfig.nip && printConfig.nip.length < 18 ? 'border-amber-400' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${printConfig.nip && printConfig.nip.length < 18 ? 'border-amber-400' : 'border-gray-300'
+                    }`}
                 />
                 <div className="flex justify-between mt-1">
                   {printConfig.nip && printConfig.nip.length < 18 && printConfig.nip.length > 0 && (

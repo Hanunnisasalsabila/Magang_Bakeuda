@@ -85,7 +85,18 @@ export class SubjekPajakService {
       include: {
         user: { select: { nama_lengkap: true } },
         objek_pajak: {
-          select: { nop: true, jalan_op: true, status_aktif: true },
+          select: { 
+            nop: true, 
+            jalan_op: true, 
+            status_aktif: true,
+            jenis_tanah: true,
+            luas_tanah: true,
+            luas_bangunan: true,
+            jumlah_bangunan: true,
+            rt_op: true,
+            rw_op: true,
+            wilayah: { select: { nama_desa: true, kecamatan: true } }
+          },
         },
         wilayah: true,
       },

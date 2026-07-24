@@ -162,6 +162,8 @@ export default function Step2SubjekPajak() {
       if (!data.rw) { newErrors[`${prefix}rw`] = 'RW wajib diisi'; hasError = true; }
       if (!data.kecamatan) { newErrors[`${prefix}kecamatan`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahan) { newErrors[`${prefix}kelurahan`] = 'Kelurahan wajib dipilih'; hasError = true; }
+      if (!data.statusWp) { newErrors[`${prefix}statusWp`] = 'Status WP wajib dipilih'; hasError = true; }
+      if (!data.pekerjaan) { newErrors[`${prefix}pekerjaan`] = 'Pekerjaan wajib dipilih'; hasError = true; }
     };
 
     if (isPecah) {
@@ -274,7 +276,7 @@ export default function Step2SubjekPajak() {
 
         <div className="grid grid-cols-1 gap-6 mt-6">
           <div className="space-y-4">
-            <label className="font-label-sm text-primary block">STATUS WP</label>
+            <label className="font-label-sm text-primary block">STATUS WP <span className="text-error">*</span></label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {[
                 { label: 'Pemilik', val: 'PEMILIK' },
@@ -302,7 +304,7 @@ export default function Step2SubjekPajak() {
           </div>
 
           <div className="space-y-4">
-            <label className="font-label-sm text-primary block">PEKERJAAN</label>
+            <label className="font-label-sm text-primary block">PEKERJAAN <span className="text-error">*</span></label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               {[
                 { label: 'PNS', val: 'PNS' },
@@ -458,6 +460,29 @@ export default function Step2SubjekPajak() {
                 placeholder="123456789"
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-primary flex items-center font-bold">NPWPD <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
+            <input
+              type="text"
+              maxLength={20}
+              value={currentData.npwpd || ''}
+              onChange={(e) => handleTextChange('npwpd', e.target.value.replace(/\D/g, ''))}
+              className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              placeholder="Masukkan NPWPD"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm text-primary flex items-center font-bold">EMAIL <span className="text-gray-400 font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>
+            <input
+              type="email"
+              maxLength={100}
+              value={currentData.email || ''}
+              onChange={(e) => handleTextChange('email', e.target.value)}
+              className="w-full h-12 border border-outline-variant rounded px-4 text-lg bg-white transition-all shadow-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              placeholder="Masukkan Alamat Email"
+            />
           </div>
         </div>
 

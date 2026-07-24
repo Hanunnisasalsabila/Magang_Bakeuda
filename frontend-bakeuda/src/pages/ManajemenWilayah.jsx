@@ -239,7 +239,8 @@ export default function ManajemenWilayah() {
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-white shadow-sm outline outline-1 outline-primary/10">
               <tr className="bg-primary/5 text-primary font-medium text-xs uppercase tracking-wider border-b border-primary/20">
-                <th className="py-2.5 px-4 text-center w-[25%]">Kode Wilayah</th>
+                <th className="py-2.5 px-4 text-center w-[5%] whitespace-nowrap">No</th>
+                <th className="py-2.5 px-4 text-center w-[20%]">Kode Wilayah</th>
                 <th className="py-2.5 px-4 text-left w-[30%]">Nama Desa / Kelurahan</th>
                 <th className="py-2.5 px-4 text-left w-[30%]">Kecamatan</th>
                 <th className="py-2.5 px-4 text-center w-[15%] whitespace-nowrap">Aksi</th>
@@ -248,7 +249,7 @@ export default function ManajemenWilayah() {
             <tbody className="divide-y divide-outline-variant/50 text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan="4" className="py-16 text-center">
+                  <td colSpan="5" className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-primary/60">
                       <span className="material-symbols-outlined animate-spin text-5xl mb-3">sync</span>
                       <p className="font-semibold tracking-wide">MENGAMBIL DATA...</p>
@@ -257,14 +258,14 @@ export default function ManajemenWilayah() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan="4" className="py-16 text-center text-error">
+                  <td colSpan="5" className="py-16 text-center text-error">
                     <span className="material-symbols-outlined text-[48px] mb-2">error</span>
                     <p className="font-bold">{error}</p>
                   </td>
                 </tr>
               ) : paginatedWilayah.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="py-16 text-center">
+                  <td colSpan="5" className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center text-on-surface-variant/60">
                       <span className="material-symbols-outlined text-[64px] mb-3 opacity-50">wrong_location</span>
                       <p className="font-bold text-lg text-on-surface-variant">Wilayah Tidak Ditemukan</p>
@@ -275,6 +276,11 @@ export default function ManajemenWilayah() {
               ) : (
                 paginatedWilayah.map((w, i) => (
                   <tr key={w.kode_wilayah} className="hover:bg-primary/5 transition-colors">
+                    <td className="py-2.5 px-4 text-center">
+                      <span className="text-on-surface-variant text-sm">
+                        {(currentPage - 1) * itemsPerPage + i + 1}
+                      </span>
+                    </td>
                     <td className="py-2.5 px-4 text-center">
                       <span className="font-mono text-on-surface">
                         {w.kode_wilayah}
