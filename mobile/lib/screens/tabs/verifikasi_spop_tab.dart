@@ -214,8 +214,9 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
     final query = _searchController.text.toLowerCase();
     final filtered = _antrean.where((item) {
       if (query.isEmpty) return true;
-      final t = item['detail_tujuan'] as List?;
-      final t0 = t != null && t.isNotEmpty ? t[0] : {};
+      final detailTujuanRaw = item['detail_tujuan'];
+      final t = detailTujuanRaw is List ? detailTujuanRaw : (detailTujuanRaw is Map ? [detailTujuanRaw] : []);
+      final t0 = t.isNotEmpty ? t[0] : {};
       final name = t0['calon_subjek_json']?['nama_subjek'] ?? item['pengaju']?['nama_lengkap'] ?? '';
       final nop = t0['nop_generated'] ?? '';
       return name.toString().toLowerCase().contains(query) || nop.toString().toLowerCase().contains(query);
@@ -258,8 +259,9 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
                               final item = filtered[index];
-                              final t = item['detail_tujuan'] as List?;
-                              final t0 = t != null && t.isNotEmpty ? t[0] : {};
+                              final detailTujuanRaw = item['detail_tujuan'];
+                              final t = detailTujuanRaw is List ? detailTujuanRaw : (detailTujuanRaw is Map ? [detailTujuanRaw] : []);
+                              final t0 = t.isNotEmpty ? t[0] : {};
                               
                               final nop = _formatNop(t0['nop_generated']);
                               final subjekName = t0['calon_subjek_json']?['nama_subjek'];
