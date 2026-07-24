@@ -74,8 +74,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   // Step 1 - Kategori & Jenis
-  String _selectedKategori = 'BARU'; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
-  String _jenisLayanan = 'BARU'; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
+  String _selectedKategori = ''; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
+  String _jenisLayanan = ''; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
   
   final _nopUtamaController = TextEditingController();
   final List<TextEditingController> _nopAsalControllers = [TextEditingController()];
@@ -976,6 +976,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
 
     if (_currentStep == 0) {
+      if (_selectedKategori.isEmpty || _jenisLayanan.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Silakan pilih jenis transaksi terlebih dahulu'), backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
       if (_jenisLayanan == 'PECAH') {
         // Validate NOP Asal
         final nopAsal = _nopAsalControllers[0].text.replaceAll('.', '');
@@ -1249,16 +1256,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC), // Off-White background
       appBar: AppBar(
-        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F2C59), // Navy Blue
+        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF0F2C59),
+        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           TextButton.icon(
             onPressed: _isSavingDraft ? null : _saveDraft,
-            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined, size: 18),
-            label: const Text('Draft'),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F2C59)),
+            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_outlined, size: 18, color: Colors.white),
+            label: const Text('Draft', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

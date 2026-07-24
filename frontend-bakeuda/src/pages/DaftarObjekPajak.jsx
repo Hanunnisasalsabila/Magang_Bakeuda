@@ -532,9 +532,9 @@ export default function DaftarObjekPajak() {
                         <button
                           onClick={() => setSelectedObject(obj)}
                           title="Lihat Detail"
-                          className="px-3 py-1.5 flex items-center justify-center gap-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors mx-auto text-sm font-semibold"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none mx-auto"
                         >
-                          <span className="material-symbols-outlined text-[18px]">visibility</span>
+                          <span className="material-symbols-outlined text-[14px]">visibility</span>
                           Detail
                         </button>
                       </div>

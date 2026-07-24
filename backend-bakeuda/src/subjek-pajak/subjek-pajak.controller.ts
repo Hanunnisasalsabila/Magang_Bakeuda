@@ -35,7 +35,13 @@ export class SubjekPajakController {
     return this.subjekPajakService.create(dto, req.user);
   }
 
-  // GET /subjek-pajak/:nik
+  // GET /subjek-pajak/find/detail?nik=... (Robust endpoint for complex NIKs like '.' or slashes)
+  @Get('find/detail')
+  async getByNikQuery(@Query('nik') nik: string, @Request() req: any) {
+    return this.subjekPajakService.getByNik(nik, req.user);
+  }
+
+  // GET /subjek-pajak/:nik (Legacy endpoint)
   @Get(':nik')
   async getByNik(@Param('nik') nik: string, @Request() req: any) {
     return this.subjekPajakService.getByNik(nik, req.user);

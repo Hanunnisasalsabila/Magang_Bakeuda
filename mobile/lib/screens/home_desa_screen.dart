@@ -315,15 +315,15 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
 
                   _buildDrawerSectionTitle('LAYANAN PAJAK DAERAH'),
                   ExpansionTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.description_rounded,
-                      color: Colors.grey,
+                      color: Colors.grey.shade700,
                       size: 22,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Pendaftaran SPOP Baru',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: Colors.grey.shade700,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
