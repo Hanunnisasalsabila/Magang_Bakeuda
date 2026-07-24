@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
 
 export default function DetailSubjekPajak() {
-  const { nik } = useParams();
+  const [searchParams] = useSearchParams();
+  const nik = searchParams.get('nik');
   const navigate = useNavigate();
 
   const [subjek, setSubjek] = useState(null);
@@ -15,7 +16,8 @@ export default function DetailSubjekPajak() {
       setLoading(true);
       setError('');
       try {
-        const res = await api.get(`/subjek-pajak/${nik}`);
+        // We use the new robust backend endpoint and pass nik as a query parameter
+        const res = await api.get(`/subjek-pajak/find/detail`, { params: { nik } });
         const data = res.data?.data || res.data;
         setSubjek(data);
       } catch (err) {

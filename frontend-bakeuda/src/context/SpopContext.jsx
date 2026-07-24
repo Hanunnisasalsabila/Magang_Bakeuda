@@ -28,7 +28,7 @@ export const SpopProvider = ({ children }) => {
     nopBersama: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
     isKuasa: false,
     nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
-    alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
+    alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
     alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
     noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '', jenisTanah: '',
     lampiran: [],
@@ -63,7 +63,7 @@ export const SpopProvider = ({ children }) => {
         nopBersama: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
         isKuasa: false,
         nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
-        alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
+        alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
         alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', kelurahanObjek: '', kecamatanObjek: '',
         noPersil: '', luasTanah: '', luasBangunan: '', jumlahBangunan: '', jenisTanah: '',
         lampiran: [],
@@ -151,7 +151,7 @@ export const SpopProvider = ({ children }) => {
           rw: subjek.rw || '',
           kelurahan: subjek.kelurahan || '',
           kecamatan: subjek.kecamatan || '',
-          kabupaten: subjek.kabupaten || 'Purbalingga',
+          kabupaten: subjek.kabupaten || '',
           kodePos: subjek.kode_pos || '',
           
           alamatObjek: detailTujuan.jalan_op_baru || '',
@@ -197,7 +197,7 @@ export const SpopProvider = ({ children }) => {
              rw: t.calon_subjek_json?.rw || '',
              kelurahan: t.calon_subjek_json?.kelurahan || '',
              kecamatan: t.calon_subjek_json?.kecamatan || '',
-             kabupaten: t.calon_subjek_json?.kabupaten || 'Purbalingga',
+             kabupaten: t.calon_subjek_json?.kabupaten || '',
              kodePos: t.calon_subjek_json?.kode_pos || '',
              luasTanah: t.luas_tanah_baru ? t.luas_tanah_baru.toString() : '',
              luasBangunan: t.luas_bangunan_baru ? t.luas_bangunan_baru.toString() : '',
@@ -315,7 +315,7 @@ export const SpopProvider = ({ children }) => {
       kode_pos: mergedData.kodePos || undefined,
       kelurahan: mergedData.kelurahan || '',
       kecamatan: mergedData.kecamatan || undefined,
-      kabupaten: mergedData.kabupaten || 'Purbalingga',
+      kabupaten: mergedData.kabupaten || '',
       kode_wilayah: mergedData.kodeWilayah || undefined
     };
 
@@ -368,7 +368,7 @@ export const SpopProvider = ({ children }) => {
             kode_pos: p.kodePos || undefined,
             kelurahan: p.kelurahan || '',
             kecamatan: p.kecamatan || undefined,
-            kabupaten: p.kabupaten || 'Purbalingga',
+            kabupaten: p.kabupaten || '',
             kode_wilayah: p.kodeWilayah || undefined
           },
           luas_tanah_baru: p.luasTanah ? parseFloat(p.luasTanah) : 0,

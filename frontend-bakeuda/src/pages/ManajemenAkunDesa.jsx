@@ -3,6 +3,7 @@ import api from '../utils/axios';
 import ToastNotification from '../components/ToastNotification';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CetakKredensialModal from '../components/CetakKredensialModal';
+import Select from 'react-select';
 
 export default function ManajemenAkunDesa() {
   const [users, setUsers] = useState([]);
@@ -29,7 +30,6 @@ export default function ManajemenAkunDesa() {
     username: '',
     password: '',
     kode_wilayah: '',
-    nip: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -44,7 +44,9 @@ export default function ManajemenAkunDesa() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users', {
+        params: { role: 'DESA', limit: 1000 }
+      });
       if (response.data.success) {
         setUsers(response.data.data);
       }
@@ -72,7 +74,7 @@ export default function ManajemenAkunDesa() {
   const openAddModal = () => {
     setModalMode('add');
     setSelectedUser(null);
-    setFormData({ nama_lengkap: '', username: '', password: '', kode_wilayah: '', nip: '' });
+    setFormData({ nama_lengkap: '', username: '', password: '', kode_wilayah: '' });
     setFormError('');
     setIsModalOpen(true);
   };
@@ -84,8 +86,7 @@ export default function ManajemenAkunDesa() {
       nama_lengkap: user.nama_lengkap,
       username: user.username,
       password: '', // Kosongkan password saat edit
-      kode_wilayah: user.kode_wilayah || '',
-      nip: formatNIP(user.nip || '')
+      kode_wilayah: user.kode_wilayah || ''
     });
     setFormError('');
     setIsModalOpen(true);
@@ -416,11 +417,6 @@ export default function ManajemenAkunDesa() {
                         </div>
                         <div>
                           <p className="font-medium text-on-surface text-[15px]">{user.nama_lengkap}</p>
-                          {user.nip ? (
-                            <p className="font-data-mono text-xs tracking-widest text-on-surface-variant mt-0.5">{user.nip}</p>
-                          ) : (
-                            <p className="text-on-surface-variant/60 text-[10px] uppercase tracking-wider font-medium mt-0.5">- NIP BELUM DIATUR -</p>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -613,18 +609,6 @@ export default function ManajemenAkunDesa() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP <span className="opacity-70 text-xs">(Opsional)</span></label>
-                    <input
-                      type="text"
-                      name="nip"
-                      value={formData.nip}
-                      onChange={handleChange}
-                      placeholder="Contoh: 19850101 201001 1 001"
-                      maxLength={21}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all text-gray-900"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Kata Sandi (Password)
                     </label>
@@ -656,25 +640,49 @@ export default function ManajemenAkunDesa() {
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Area / Wilayah Tugas</label>
-                  <div className="relative">
-                    <select
-                      name="kode_wilayah"
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Area / Wilayah Tugas</label>
+                    <Select
+                      value={wilayahList.find(w => w.kode_wilayah === formData.kode_wilayah) ? {
+                        value: formData.kode_wilayah,
+                        label: `${formData.kode_wilayah} - ${wilayahList.find(w => w.kode_wilayah === formData.kode_wilayah).nama_desa} (${wilayahList.find(w => w.kode_wilayah === formData.kode_wilayah).kecamatan})`
+                      } : null}
+                      onChange={(selected) => setFormData({ ...formData, kode_wilayah: selected ? selected.value : '' })}
+                      options={wilayahList.map((w) => ({
+                        value: w.kode_wilayah,
+                        label: `${w.kode_wilayah} - ${w.nama_desa} (${w.kecamatan})`
+                      }))}
+                      placeholder="Ketik atau Pilih Kode Wilayah"
+                      isClearable
                       required
-                      value={formData.kode_wilayah}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all cursor-pointer"
-                    >
-                      <option value="">Pilih Kode Wilayah</option>
-                      {wilayahList.map((w) => (
-                        <option key={w.kode_wilayah} value={w.kode_wilayah}>
-                          {w.kode_wilayah} - {w.nama_desa} ({w.kecamatan})
-                        </option>
-                      ))}
-                    </select>
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          padding: '2px 4px',
+                          borderColor: state.isFocused ? '#2563EB' : '#D1D5DB', // Focus matches Tailwind focus:border-primary
+                          boxShadow: state.isFocused ? '0 0 0 1px #2563EB' : 'none',
+                          '&:hover': {
+                            borderColor: state.isFocused ? '#2563EB' : '#9CA3AF'
+                          },
+                          borderRadius: '0.375rem',
+                          minHeight: '42px'
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          zIndex: 50,
+                          fontSize: '14px'
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          'input': {
+                            borderColor: 'transparent !important',
+                            boxShadow: 'none !important',
+                            outline: 'none !important'
+                          }
+                        })
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -698,7 +706,6 @@ export default function ManajemenAkunDesa() {
                     (modalMode === 'edit' && selectedUser && (
                       formData.nama_lengkap === selectedUser.nama_lengkap &&
                       formData.username === selectedUser.username &&
-                      formData.nip === (selectedUser.nip || '') &&
                       formData.kode_wilayah === selectedUser.kode_wilayah &&
                       formData.password === ''
                     ))

@@ -192,7 +192,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
   Future<void> _showFormDialog() async {
     final usernameCtrl = TextEditingController();
     final namaCtrl = TextEditingController();
-    final nipCtrl = TextEditingController();
     String? selectedWilayahKode;
     final passwordCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -289,22 +288,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                         return 'Hanya huruf, angka, dan underscore';
                       return null;
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'NIP (Opsional)',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: nipCtrl,
-                    decoration: _formalInputDecoration(
-                      'Contoh: 19850101 201001 1 001',
-                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -412,7 +395,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                       await _userService.createAkun({
                         'username': usernameCtrl.text,
                         'nama_lengkap': namaCtrl.text,
-                        'nip': nipCtrl.text.isNotEmpty ? nipCtrl.text : null,
                         'kode_wilayah': selectedWilayahKode,
                         'password': passwordCtrl.text,
                         'role': 'DESA',
@@ -456,12 +438,11 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
 
   // ============================================================
   // EDIT AKUN PENGGUNA — setara dengan form di versi website:
-  // Nama Lengkap, Username, NIP, Password (opsional), Area/Wilayah.
+  // Nama Lengkap, Username, Password (opsional), Area/Wilayah.
   // ============================================================
   Future<void> _showEditAkunDialog(Map<String, dynamic> akun) async {
     final namaCtrl = TextEditingController(text: akun['nama_lengkap'] ?? '');
     final usernameCtrl = TextEditingController(text: akun['username'] ?? '');
-    final nipCtrl = TextEditingController(text: akun['nip'] ?? '');
     final passwordCtrl = TextEditingController();
     String? selectedWilayahKode = akun['kode_wilayah']?.toString();
     final formKey = GlobalKey<FormState>();
@@ -537,18 +518,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     decoration: _formalInputDecoration('Username'),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Wajib diisi' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'NIP (Opsional)',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: nipCtrl,
-                    decoration: _formalInputDecoration(
-                      'Contoh: 19850101 201001 1 001',
-                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
@@ -654,7 +623,6 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                         .updateAkun(akun['id_user']?.toString() ?? '', {
                           'nama_lengkap': namaCtrl.text,
                           'username': usernameCtrl.text,
-                          'nip': nipCtrl.text.isNotEmpty ? nipCtrl.text : null,
                           'kode_wilayah': selectedWilayahKode,
                           if (passwordCtrl.text.isNotEmpty)
                             'password': passwordCtrl.text,
@@ -1369,6 +1337,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
+      bottomNavigationBar: (!_isLoading && _errorMsg == null && _daftarAkun.isNotEmpty)
+          ? _buildPaginationControls((_daftarAkun.length / _itemsPerPage).ceil())
+          : null,
       body: Column(
         children: [
           Expanded(
@@ -1441,10 +1412,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
         : _daftarAkun.length;
     final paginatedData = _daftarAkun.sublist(startIndex, endIndex);
 
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
+    return RefreshIndicator(
             color: _kNavy,
             onRefresh: () => _loadData(),
             child: ListView.builder(
@@ -1464,156 +1432,94 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                   }
                 }
 
-                return Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 46,
-                                  height: 46,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primaryContainer
-                                        .withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Icon(
-                                    Icons.person,
-                                    color: theme.colorScheme.primary,
-                                    size: 24,
-                                  ),
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 0,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                      child: Icon(Icons.person, color: theme.colorScheme.primary),
+                    ),
+                    title: Text(
+                      akun['nama_lengkap'] ?? '-',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            wilayahText,
+                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.assignment_ind_outlined, size: 12, color: Colors.black45),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  akun['username'] ?? '-',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black45),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        akun['nama_lengkap'] ?? '-',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
-                                          color: Colors.black87,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        wilayahText,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black54,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuButton<String>(
-                                  icon: const Icon(
-                                    Icons.more_vert,
-                                    color: Colors.black45,
-                                  ),
-                                  onSelected: (v) {
-                                    if (v == 'edit')
-                                      _showEditAkunDialog(akun);
-                                    else if (v == 'hapus')
-                                      _hapusAkun(akun);
-                                  },
-                                  itemBuilder: (_) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: ListTile(
-                                        leading: Icon(
-                                          Icons.edit_outlined,
-                                          color: _kNavy,
-                                        ),
-                                        title: Text('Edit Akun'),
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'hapus',
-                                      child: ListTile(
-                                        leading: const Icon(
-                                          Icons.delete_outline,
-                                          color: Color(0xFFB3261E),
-                                        ),
-                                        title: const Text('Hapus Akun'),
-                                        contentPadding: EdgeInsets.zero,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            const Divider(height: 1),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _infoChip(
-                                    icon: Icons.badge_outlined,
-                                    label:
-                                        (akun['nip'] != null &&
-                                            akun['nip'].toString().isNotEmpty)
-                                        ? 'NIP ${akun['nip']}'
-                                        : 'NIP belum diatur',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _infoChip(
-                                    icon: Icons.assignment_ind_outlined,
-                                    label: akun['username'] ?? '-',
-                                  ),
-                                ),
+                              ),
+                              if (kode != null) ...[
                                 const SizedBox(width: 8),
-                                if (kode != null)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEAF3DE),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: const Color(0xFFBBD79A),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      kode.toString(),
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF3D6A16),
-                                      ),
-                                    ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEAF3DE),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
+                                  child: Text(
+                                    kode.toString(),
+                                    style: const TextStyle(fontSize: 10, color: Color(0xFF3D6A16), fontWeight: FontWeight.bold),
+                                  ),
+                                ),
                               ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    )
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.black45),
+                      onSelected: (v) {
+                        if (v == 'edit') _showEditAkunDialog(akun);
+                        else if (v == 'hapus') _hapusAkun(akun);
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            leading: Icon(Icons.edit_outlined, color: _kNavy),
+                            title: Text('Edit Akun'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'hapus',
+                          child: ListTile(
+                            leading: const Icon(Icons.delete_outline, color: Color(0xFFB3261E)),
+                            title: const Text('Hapus Akun'),
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
                     .animate()
                     .fade(duration: 300.ms, delay: ((index % 10) * 40).ms)
                     .slideY(
@@ -1623,45 +1529,63 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     );
               },
             ),
-          ),
-        ),
-        _buildPaginationControls(totalPages),
-        const SizedBox(height: 80), // Padding for FAB
-      ],
-    );
+          );
   }
 
   Widget _buildPaginationControls(int totalPages) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.only(top: 14, bottom: 20, left: 16, right: 16),
       color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: SafeArea(
+        top: false,
+        child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          TextButton.icon(
-            onPressed: _currentPage > 1
-                ? () => setState(() => _currentPage--)
-                : null,
-            icon: const Icon(Icons.chevron_left),
-            label: const Text('Sebelumnya'),
-          ),
-          Expanded(
-            child: Text(
-              'Halaman $_currentPage dari $totalPages',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+          InkWell(
+            onTap: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+              ),
+              child: Icon(Icons.chevron_left, color: _currentPage > 1 ? Colors.black54 : Colors.grey.shade300),
             ),
           ),
-          TextButton.icon(
-            onPressed: _currentPage < totalPages
-                ? () => setState(() => _currentPage++)
-                : null,
-            icon: const Icon(Icons.chevron_right),
-            label: const Text('Selanjutnya'),
-            iconAlignment: IconAlignment.end,
+          const SizedBox(width: 12),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _kNavy,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '$_currentPage',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            onTap: _currentPage < totalPages ? () => setState(() => _currentPage++) : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+              ),
+              child: Icon(Icons.chevron_right, color: _currentPage < totalPages ? Colors.black54 : Colors.grey.shade300),
+            ),
           ),
         ],
+      ),
       ),
     );
   }

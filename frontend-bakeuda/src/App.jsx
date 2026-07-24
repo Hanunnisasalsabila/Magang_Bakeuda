@@ -281,7 +281,7 @@ function AppContent() {
 
   // Get active page title based on current path
   const currentPath = location.pathname;
-  let activePageTitle = 'SIPD Purbalingga';
+  let activePageTitle = 'SIMPBB Purbalingga';
   for (const [path, title] of Object.entries(pageTitles)) {
     if (currentPath.startsWith(path)) {
       activePageTitle = title;
@@ -329,7 +329,7 @@ function AppContent() {
         <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
         <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
         <Route path="/daftar-subjek" element={<DaftarSubjekPajak />} />
-        <Route path="/detail-subjek/:nik" element={<DetailSubjekPajak />} />
+        <Route path="/detail-subjek" element={<DetailSubjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
         <Route path="/pelacakan-dokumen/:id" element={<PelacakanDokumen />} />
         <Route path="/profil" element={<ProfilPengguna role={role} />} />

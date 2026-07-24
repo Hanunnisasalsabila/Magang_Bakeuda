@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -74,8 +75,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   // Step 1 - Kategori & Jenis
-  String _selectedKategori = 'BARU'; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
-  String _jenisLayanan = 'BARU'; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
+  String _selectedKategori = ''; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
+  String _jenisLayanan = ''; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
   
   final _nopUtamaController = TextEditingController();
   final List<TextEditingController> _nopAsalControllers = [TextEditingController()];
@@ -117,6 +118,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
       setState(() {
         _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        _menggunakanKuasa = d['menggunakan_kuasa'] ?? false;
         
         final nopAsalList = d['detail_asal'] as List?;
         if (nopAsalList != null && nopAsalList.isNotEmpty) {
@@ -131,27 +133,82 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         
         final tujuanList = d['detail_tujuan'] as List?;
         if (tujuanList != null && tujuanList.isNotEmpty) {
-           final tujuan = tujuanList[0];
-           final subjek = tujuan['calon_subjek_json'];
-           if (subjek != null) {
-              _namaWpController.text = subjek['nama_subjek'] ?? '';
-              _nikController.text = subjek['nik'] ?? '';
-              _npwpController.text = subjek['npwp'] ?? '';
-              _noHpController.text = subjek['no_hp'] ?? '';
-              _alamatWpController.text = subjek['alamat_jalan'] ?? '';
-              _rtController.text = subjek['rt'] ?? '';
-              _rwController.text = subjek['rw'] ?? '';
-              _kelurahanWpController.text = subjek['kelurahan'] ?? '';
-              _kecamatanWpController.text = subjek['kecamatan'] ?? '';
-              _kodePosController.text = subjek['kode_pos'] ?? '';
+           if (_jenisLayanan == 'PECAH') {
+             _isPecahMode = true;
+             _jumlahPecahan = tujuanList.length;
+             _pecahanList.clear();
+             for (var t in tujuanList) {
+               final subjek = t['calon_subjek_json'] ?? {};
+               final bng = t['data_bangunan_json'] as List? ?? [];
+               _pecahanList.add({
+                  'namaWp': subjek['nama_subjek'] ?? '',
+                  'nik': subjek['nik'] ?? '',
+                  'statusWp': subjek['status_wp'],
+                  'pekerjaan': subjek['pekerjaan'],
+                  'npwp': subjek['npwp'] ?? '',
+                  'noHp': subjek['no_hp'] ?? '',
+                  'alamatWp': subjek['alamat_jalan'] ?? '',
+                  'rt': subjek['rt'] ?? '',
+                  'rw': subjek['rw'] ?? '',
+                  'kelurahan': subjek['kelurahan'] ?? '',
+                  'kecamatan': subjek['kecamatan'] ?? '',
+                  'kabupaten': subjek['kabupaten'] ?? '',
+                  'kodePos': subjek['kode_pos'] ?? '',
+                  
+                  'luasTanah': t['luas_tanah_baru']?.toString() ?? '',
+                  'jenisTanah': t['jenis_tanah_baru'] ?? 'TANAH_BANGUNAN',
+                  'jalanOp': t['jalan_op_baru'] ?? '',
+                  'blokKav': t['blok_kav_no_baru'] ?? '',
+                  'rtOp': t['rt_op_baru'] ?? '',
+                  'rwOp': t['rw_op_baru'] ?? '',
+                  'kelurahanOp': (t['kelurahan_op_baru']?.toString().isNotEmpty == true) ? t['kelurahan_op_baru'] : (_isOpWilayahPatented ? _kelurahanOpController.text : ''),
+                  'kecamatanOp': (t['kecamatan_op_baru']?.toString().isNotEmpty == true) ? t['kecamatan_op_baru'] : (_isOpWilayahPatented ? _kecamatanOpController.text : ''),
+                  'batasUtara': t['batas_utara'] ?? '',
+                  'batasSelatan': t['batas_selatan'] ?? '',
+                  'batasTimur': t['batas_timur'] ?? '',
+                  'batasBarat': t['batas_barat'] ?? '',
+                  'lat': t['latitude']?.toString() ?? '-7.3934',
+                  'lng': t['longitude']?.toString() ?? '109.3663',
+                  'koordinatPolygon': t['koordinat_polygon'] ?? <Map<String, double>>[],
+                  'jumlahBangunan': t['jumlah_bangunan_baru']?.toString() ?? bng.length.toString(),
+                  'dataBangunan': List<Map<String, dynamic>>.from(bng.map((e) => Map<String, dynamic>.from(e as Map))),
+                  'lampiran': <Map<String, dynamic>>[],
+                  'selectedJenisDokumen': 'KTP',
+               });
+             }
+           } else {
+             final tujuan = tujuanList[0];
+             final subjek = tujuan['calon_subjek_json'];
+             if (subjek != null) {
+                _namaWpController.text = subjek['nama_subjek'] ?? '';
+                _nikController.text = subjek['nik'] ?? '';
+                _npwpController.text = subjek['npwp'] ?? '';
+                _noHpController.text = subjek['no_hp'] ?? '';
+                _alamatWpController.text = subjek['alamat_jalan'] ?? '';
+                _rtController.text = subjek['rt'] ?? '';
+                _rwController.text = subjek['rw'] ?? '';
+                _kelurahanWpController.text = subjek['kelurahan'] ?? '';
+                _kecamatanWpController.text = subjek['kecamatan'] ?? '';
+                _kodePosController.text = subjek['kode_pos'] ?? '';
+             }
+             _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
+             _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
+             _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
+             _rtOpController.text = tujuan['rt_op_baru'] ?? '';
+             _rwOpController.text = tujuan['rw_op_baru'] ?? '';
+             final kelOpB = tujuan['kelurahan_op_baru']?.toString();
+             final kecOpB = tujuan['kecamatan_op_baru']?.toString();
+             _kelurahanOpController.text = (kelOpB != null && kelOpB.isNotEmpty) ? kelOpB : (_isOpWilayahPatented ? _kelurahanOpController.text : '');
+             _kecamatanOpController.text = (kecOpB != null && kecOpB.isNotEmpty) ? kecOpB : (_isOpWilayahPatented ? _kecamatanOpController.text : '');
+             
+             _jmlBangunanController.text = tujuan['jumlah_bangunan_baru']?.toString() ?? '0';
+             final bngList = tujuan['data_bangunan_json'];
+             if (bngList != null && bngList is List) {
+                _dataBangunanList = List<Map<String, dynamic>>.from(
+                    bngList.map((e) => Map<String, dynamic>.from(e as Map))
+                );
+             }
            }
-           _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
-           _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
-           _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
-           _rtOpController.text = tujuan['rt_op_baru'] ?? '';
-           _rwOpController.text = tujuan['rw_op_baru'] ?? '';
-           _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
-           _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
         }
       });
     } catch (e) {
@@ -169,20 +226,21 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   LatLng? _searchReferencePoint;
 
   // Step 2 - Data Subjek Pajak
+  bool _menggunakanKuasa = false;
   final _namaWpController = TextEditingController();
   final _nikController = TextEditingController();
   final _npwpController = TextEditingController();
   final _noHpController = TextEditingController();
   final List<LatLng> _polygonPoints = [];
   
-  String _statusWp = 'PEMILIK';
-  String _pekerjaan = 'PNS';
+  String? _statusWp;
+  String? _pekerjaan;
   final _alamatWpController = TextEditingController();
   final _rtController = TextEditingController();
   final _rwController = TextEditingController();
   final _kelurahanWpController = TextEditingController();
   final _kecamatanWpController = TextEditingController();
-  final _kabupatenWpController = TextEditingController(text: 'Purbalingga');
+  final _kabupatenWpController = TextEditingController();
   final _kodePosController = TextEditingController();
 
   final List<Map<String, String>> _statusWpOptions = [
@@ -226,16 +284,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   void _initBangunanList(int count) {
     if (_dataBangunanList.length != count) {
       _dataBangunanList = List.generate(count, (index) => {
-        'jenisPenggunaan': Constants.jenisPenggunaanBangunan[0],
+        'jenisPenggunaan': null,
         'luasBangunan': '',
         'jumlahLantai': '',
         'tahunDibangun': '',
-        'kondisi': Constants.kondisiBangunan[0],
-        'konstruksi': Constants.konstruksiBangunan[0],
-        'atap': Constants.atapBangunan[0],
-        'dinding': Constants.dindingBangunan[0],
-        'lantai': Constants.lantaiBangunan[0],
-        'langitLangit': Constants.langitLangitBangunan[0],
+        'kondisi': null,
+        'konstruksi': null,
+        'atap': null,
+        'dinding': null,
+        'lantai': null,
+        'langitLangit': null,
       });
       _currentBangunanIndex = 1;
     }
@@ -247,10 +305,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       _pecahanList.add({
         'namaWp': '', 'nik': '', 'statusWp': 'PEMILIK', 'pekerjaan': 'LAINNYA',
         'npwp': '', 'noHp': '', 'alamatWp': '', 'rt': '', 'rw': '',
-        'kelurahan': '', 'kecamatan': '', 'kabupaten': 'Purbalingga', 'kodePos': '',
+        'kelurahan': '', 'kecamatan': '', 'kabupaten': '', 'kodePos': '',
         'luasTanah': '', 'jenisTanah': 'TANAH_BANGUNAN', 'jalanOp': '',
-        'blokKav': '', 'rtOp': '', 'rwOp': '', 'kelurahanOp': '',
-        'kecamatanOp': '', 'batasUtara': '', 'batasSelatan': '',
+        'blokKav': '', 'rtOp': '', 'rwOp': '', 'kelurahanOp': _isOpWilayahPatented ? _kelurahanOpController.text : '',
+        'kecamatanOp': _isOpWilayahPatented ? _kecamatanOpController.text : '', 'batasUtara': '', 'batasSelatan': '',
         'batasTimur': '', 'batasBarat': '', 'lat': '-7.3934', 'lng': '109.3663',
         'koordinatPolygon': <Map<String, double>>[],
         'jumlahBangunan': '0',
@@ -476,6 +534,27 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                }
              } catch (_) {}
           }
+
+          if (obj['bangunan'] != null && obj['bangunan'] is List) {
+             final listB = obj['bangunan'] as List;
+             _jmlBangunanController.text = listB.length.toString();
+             _dataBangunanList = listB.map<Map<String, dynamic>>((b) => {
+                'jenisPenggunaan': b['jenis_penggunaan'] ?? Constants.jenisPenggunaanBangunan[0],
+                'luasBangunan': b['luas_bangunan']?.toString() ?? '',
+                'jumlahLantai': b['jumlah_lantai']?.toString() ?? '',
+                'tahunDibangun': b['tahun_dibangun']?.toString() ?? '',
+                'kondisi': b['kondisi'] ?? Constants.kondisiBangunan[0],
+                'konstruksi': b['konstruksi'] ?? Constants.konstruksiBangunan[0],
+                'atap': b['atap'] ?? Constants.atapBangunan[0],
+                'dinding': b['dinding'] ?? Constants.dindingBangunan[0],
+                'lantai': b['lantai'] ?? Constants.lantaiBangunan[0],
+                'langitLangit': b['langit_langit'] ?? Constants.langitLangitBangunan[0],
+                'dayaListrik': b['daya_listrik_watt']?.toString() ?? '900',
+             }).toList();
+          } else if (_jenisTanah != 'TANAH_KOSONG') {
+             _jmlBangunanController.text = '0';
+             _dataBangunanList = [];
+          }
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -602,7 +681,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
             if ((p['rt'] as String).isNotEmpty) 'rt': p['rt'],
             if ((p['rw'] as String).isNotEmpty) 'rw': p['rw'],
             'kelurahan': p['kelurahan'],
-            'kabupaten': p['kabupaten'] ?? 'Purbalingga',
+            'kabupaten': p['kabupaten'] ?? '',
             if ((p['kecamatan'] as String).isNotEmpty) 'kecamatan': p['kecamatan'],
             if ((p['npwp'] as String).isNotEmpty) 'npwp': p['npwp'],
             if ((p['noHp'] as String).isNotEmpty) 'no_hp': p['noHp'],
@@ -662,7 +741,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         'tahun_pajak': DateTime.now().year,
         'tanggal_pengajuan': DateTime.now().toIso8601String(),
         'nama_pengaju': _pecahanList.isNotEmpty ? (_pecahanList[0]['namaWp'] ?? 'TANPA NAMA') : 'TANPA NAMA',
-        'menggunakan_kuasa': false,
+        'menggunakan_kuasa': _menggunakanKuasa,
         if (nopBersama.length >= 18) 'nop_bersama': nopBersama,
         if (_noSpptLamaController.text.isNotEmpty) 'no_sppt_lama': _noSpptLamaController.text,
         if (detailAsal.isNotEmpty) 'detail_asal': detailAsal,
@@ -698,7 +777,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       if (_rtController.text.isNotEmpty) 'rt': _rtController.text,
       if (_rwController.text.isNotEmpty) 'rw': _rwController.text,
       'kelurahan': _kelurahanWpController.text,
-      'kabupaten': _kabupatenWpController.text.isEmpty ? 'Purbalingga' : _kabupatenWpController.text,
+      'kabupaten': _kabupatenWpController.text,
       if (_kecamatanWpController.text.isNotEmpty) 'kecamatan': _kecamatanWpController.text,
       if (_kodePosController.text.isNotEmpty) 'kode_pos': _kodePosController.text,
     };
@@ -776,7 +855,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       'tanggal_pengajuan': DateTime.now().toIso8601String(),
       if (_alasanHapusController.text.isNotEmpty) 'catatan_pengaju': _alasanHapusController.text,
       'nama_pengaju': _namaWpController.text.isEmpty ? 'TANPA NAMA' : _namaWpController.text,
-      'menggunakan_kuasa': false,
+      'menggunakan_kuasa': _menggunakanKuasa,
       if (nopBersama.length >= 18) 'nop_bersama': nopBersama,
       if (_noSpptLamaController.text.isNotEmpty) 'no_sppt_lama': _noSpptLamaController.text,
       if (detailAsal.isNotEmpty) 'detail_asal': detailAsal,
@@ -801,8 +880,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        if (e is DioException && e.response?.data != null) {
+          final data = e.response!.data;
+          final m = data['message'] ?? data.toString();
+          msg = m is List ? m.join(', ') : m.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal simpan draft: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(content: Text('Gagal simpan draft: $msg'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
@@ -825,7 +910,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       _transaksiId = idTransaksi;
       
       // Finalisasi submit (DRAFT -> MENUNGGU)
-      await _spopService.submitSpop({'id_transaksi': idTransaksi}); // Parameter tak terpakai karena service yang urus via _dio.post('/.../$id/submit')
+      await _spopService.submitDraft(idTransaksi);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -835,8 +920,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        if (e is DioException && e.response?.data != null) {
+          final data = e.response!.data;
+          final m = data['message'] ?? data.toString();
+          msg = m is List ? m.join(', ') : m.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal kirim: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(content: Text('Gagal kirim: $msg'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
@@ -844,38 +935,70 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      allowMultiple: false,
+  Future<void> _pickFile([String? forcedJenisDokumen]) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Galeri / File Document'),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+                      allowMultiple: false,
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _processPickedFile(result.files.single.path!, result.files.single.name, forcedJenisDokumen);
+                    }
+                  }),
+              ListTile(
+                leading: const Icon(Icons.photo_camera),
+                title: const Text('Kamera'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final ImagePicker picker = ImagePicker();
+                  final XFile? image = await picker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    _processPickedFile(image.path, image.name, forcedJenisDokumen);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (result != null && result.files.single.path != null) {
-      final file = result.files.single;
-      setState(() => _isLoading = true);
-      try {
-        final url = await _spopService.uploadFile(file.path!, file.name);
-        setState(() {
-          _lampiran.add({'jenis_dokumen': _selectedJenisDokumen, 'url_file': url});
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('✅ ${file.name} berhasil diunggah')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+  }
+
+  Future<void> _processPickedFile(String path, String name, String? forcedJenisDokumen) async {
+    setState(() => _isLoading = true);
+    try {
+      final url = await _spopService.uploadFile(path, name);
+      setState(() {
+        _lampiran.add({'jenis_dokumen': forcedJenisDokumen ?? _selectedJenisDokumen, 'url_file': url});
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ $name berhasil diunggah')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Gagal unggah: $e'), backgroundColor: Theme.of(context).colorScheme.error),
           );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
     if (_isPecahMode) { _nextPecahanStep(); return; }
 
     if (_currentStep < 4 && !_isPecahMode) {
@@ -888,6 +1011,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
 
     if (_currentStep == 0) {
+      if (_selectedKategori.isEmpty || _jenisLayanan.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Silakan pilih jenis transaksi terlebih dahulu'), backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
       if (_jenisLayanan == 'PECAH') {
         // Validate NOP Asal
         final nopAsal = _nopAsalControllers[0].text.replaceAll('.', '');
@@ -903,6 +1033,24 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ));
           return;
         }
+
+        setState(() => _isLoading = true);
+        try {
+          final obj = await _spopService.getObjekPajakByNop(nopAsal);
+          if (obj == null) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('NOP Asal tidak ditemukan di server'), backgroundColor: Colors.orange));
+            return;
+          }
+          if (obj['luas_tanah'] != null) {
+            _luasTanahController.text = obj['luas_tanah'].toString();
+          }
+        } catch (e) {
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengambil data NOP Asal: $e'), backgroundColor: Colors.red));
+           return;
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+
         _initPecahanList(_jumlahPecahan);
         setState(() {
           _isPecahMode = true;
@@ -960,6 +1108,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         setState(() => _currentStep = 4);
       }
     } else if (_currentStep == 4) {
+      if (_menggunakanKuasa && !_lampiran.any((l) => l['jenis_dokumen'] == 'Surat Kuasa')) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Anda bertindak selaku kuasa, wajib melampirkan Surat Kuasa'), backgroundColor: Colors.orange));
+        return;
+      }
       setState(() => _currentStep = 5);
     } else if (_currentStep == 5) {
       _submitForm();
@@ -969,6 +1121,26 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   void _nextPecahanStep() {
     final p = _pecahanList[_currentPecahanIdx - 1];
     final jmlBng = int.tryParse(p['jumlahBangunan']?.toString() ?? '0') ?? 0;
+
+    if (_pecahanSubStep == 3 && _currentPecahanIdx == _jumlahPecahan) {
+      double totalLuas = 0;
+      for (var pecahan in _pecahanList) {
+        totalLuas += double.tryParse(pecahan['luasTanah']?.toString() ?? '0') ?? 0;
+      }
+      double luasInduk = double.tryParse(_luasTanahController.text) ?? 0;
+      
+      if (totalLuas > luasInduk) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Total luas tanah pecahan ($totalLuas m²) melebihi luas induk ($luasInduk m²).'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 4),
+          )
+        );
+        return; 
+      }
+    }
+
     setState(() {
       if (_pecahanSubStep == 0) {
         _pecahanSubStep = 1;
@@ -1123,16 +1295,23 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC), // Off-White background
       appBar: AppBar(
-        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F2C59), // Navy Blue
+        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF0F2C59),
+        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(2.0),
+          child: Container(
+            color: const Color(0xFFD4AF37), // Garis emas (Gold border)
+            height: 2.0,
+          ),
+        ),
         actions: [
           TextButton.icon(
             onPressed: _isSavingDraft ? null : _saveDraft,
-            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined, size: 18),
-            label: const Text('Draft'),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F2C59)),
+            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_outlined, size: 18, color: Colors.white),
+            label: const Text('Draft', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1141,16 +1320,22 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         child: Column(
           children: [
             // Linear Progress Indicator
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / 6,
-              backgroundColor: Colors.grey.shade200,
-              color: const Color(0xFF0F2C59),
-              minHeight: 4,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (_currentStep + 1) / 6,
+                  backgroundColor: Colors.grey.shade300,
+                  color: const Color(0xFF0F2C59),
+                  minHeight: 8,
+                ),
+              ),
             ),
             
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -1171,9 +1356,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 color: Colors.white,
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))],
               ),
-              child: Row(
+              child: SafeArea(
+                top: false,
+                child: Row(
                 children: [
-                  if (_currentStep > 0) ...[
+                  if (_currentStep > 0 || _isPecahMode) ...[
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
@@ -1184,7 +1371,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                           foregroundColor: const Color(0xFF0F2C59),
                           side: const BorderSide(color: Color(0xFF0F2C59)),
                         ),
-                        child: const Text('Kembali'),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_back_ios, size: 14),
+                            SizedBox(width: 4),
+                            Text('Kembali', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1201,14 +1395,24 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                       ),
                       child: _isLoading 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                            isLastStep ? 'Simpan & Ajukan' : (_selectedKategori == 'PENGHAPUSAN' && _currentStep == 0 ? 'Lanjut Konfirmasi Penghapusan' : 'Selanjutnya'),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isLastStep ? 'Ajukan Data' : (_selectedKategori == 'PENGHAPUSAN' && _currentStep == 0 ? 'Lanjut Hapus' : 'Lanjut'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                if (!isLastStep) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.arrow_forward_ios, size: 14),
+                                ],
+                              ],
+                            ),
                     ),
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),

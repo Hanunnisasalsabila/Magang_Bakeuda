@@ -24,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
+  bool _isCheckingAuth = true;
   String? _errorMessage;
 
   bool get _isFormValid => 
@@ -39,6 +40,47 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _usernameController.addListener(_onInputChanged);
     _passwordController.addListener(_onInputChanged);
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final isLoggedIn = await _authService.isLoggedIn();
+    if (isLoggedIn) {
+      final profileResult = await _authService.getProfile();
+      if (profileResult['success'] && mounted) {
+        final userData = profileResult['data'];
+        final role = userData['role'];
+        final isForced = userData['must_change_password'] ?? false;
+        
+        if (isForced) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const ChangePasswordScreen(isForced: true)),
+          );
+          return;
+        }
+
+        if (role == RoleConstants.perangkatDesa) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeDesaScreen()),
+          );
+          return;
+        } else if (role == RoleConstants.adminBkd) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeAdminScreen()),
+          );
+          return;
+        }
+      }
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isCheckingAuth = false;
+      });
+    }
   }
 
   Future<void> _login() async {
@@ -105,6 +147,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingAuth) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF1E3A8A)),
+        ),
+      );
+    }
+
     final theme = Theme.of(context);
     
     return Scaffold(
@@ -181,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'SIPD Purbalingga',
+                          'SIMPBB Purbalingga',
                           style: theme.textTheme.headlineMedium?.copyWith(
                             color: theme.colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
@@ -271,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // Submit Button
                         CustomButton(
-                          text: 'Masuk ke Sistem',
+                          text: 'Masuk',
                           isLoading: _isLoading,
                           onPressed: _isFormValid ? _login : null,
                         ),

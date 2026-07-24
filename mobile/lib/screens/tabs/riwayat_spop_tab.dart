@@ -122,8 +122,9 @@ class _RiwayatSpopTabState extends State<RiwayatSpopTab> {
         if (status != _filterStatus.toUpperCase()) return false;
       }
       if (query.isEmpty) return true;
-      final t = item['detail_tujuan'] as List?;
-      final t0 = t != null && t.isNotEmpty ? t[0] : {};
+      final detailTujuanRaw = item['detail_tujuan'];
+      final t = detailTujuanRaw is List ? detailTujuanRaw : (detailTujuanRaw is Map ? [detailTujuanRaw] : []);
+      final t0 = t.isNotEmpty ? t[0] : {};
       final name =
           t0['calon_subjek_json']?['nama_subjek'] ??
           item['pengaju']?['nama_lengkap'] ??
@@ -234,8 +235,9 @@ class _RiwayatSpopTabState extends State<RiwayatSpopTab> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final item = filtered[index];
-                      final t = item['detail_tujuan'] as List?;
-                      final t0 = t != null && t.isNotEmpty ? t[0] : {};
+                      final detailTujuanRaw = item['detail_tujuan'];
+                      final t = detailTujuanRaw is List ? detailTujuanRaw : (detailTujuanRaw is Map ? [detailTujuanRaw] : []);
+                      final t0 = t.isNotEmpty ? t[0] : {};
 
                       final nop = _formatNop(t0['nop_generated']);
                       final subjekName =

@@ -26,7 +26,7 @@ export default function Step2SubjekPajak() {
           newList.push({
             id: Date.now() + Math.random(),
             nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
-            alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
+            alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
             isKuasa: false, lampiran: []
           });
         }
@@ -115,7 +115,7 @@ export default function Step2SubjekPajak() {
         {
           id: Date.now() + Math.random(),
           nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
-          alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: 'Purbalingga', kodePos: '',
+          alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
           isKuasa: false, lampiran: []
         }
       ]
@@ -160,8 +160,8 @@ export default function Step2SubjekPajak() {
       if (!data.nik || data.nik.length < 16) { newErrors[`${prefix}nik`] = 'NIK harus 16 digit'; hasError = true; }
       if (!data.nama) { newErrors[`${prefix}nama`] = 'Nama Wajib Pajak wajib diisi'; hasError = true; }
       if (!data.alamat) { newErrors[`${prefix}alamat`] = 'Alamat wajib diisi'; hasError = true; }
-      if (!data.rt) { newErrors[`${prefix}rt`] = 'RT wajib diisi'; hasError = true; }
-      if (!data.rw) { newErrors[`${prefix}rw`] = 'RW wajib diisi'; hasError = true; }
+      if (!data.rt || !/^\d{2,3}$/.test(data.rt)) { newErrors[`${prefix}rt`] = 'RT harus 2-3 digit'; hasError = true; }
+      if (!data.rw || !/^\d{2,3}$/.test(data.rw)) { newErrors[`${prefix}rw`] = 'RW harus 2-3 digit'; hasError = true; }
       if (!data.kecamatan) { newErrors[`${prefix}kecamatan`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahan) { newErrors[`${prefix}kelurahan`] = 'Kelurahan wajib dipilih'; hasError = true; }
       if (!data.statusWp) { newErrors[`${prefix}statusWp`] = 'Status WP wajib dipilih'; hasError = true; }
@@ -260,7 +260,7 @@ export default function Step2SubjekPajak() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="font-label-sm text-primary block">NOMOR KTP (NIK)</label>
+            <label className="font-label-sm text-primary block">NOMOR KTP (NIK) <span className="text-error">*</span></label>
             <input
               type="text"
               maxLength={16}
@@ -268,6 +268,7 @@ export default function Step2SubjekPajak() {
               onChange={(e) => handleTextChange('nik', e.target.value.replace(/\D/g, ''))}
               className={`w-full h-12 border ${getError('nik') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm outline-none`}
               placeholder="Masukkan 16 digit NIK"
+              maxLength={16}
             />
             {getError('nik') && <p className="text-error text-[12px]">{getError('nik')}</p>}
           </div>
@@ -543,37 +544,28 @@ export default function Step2SubjekPajak() {
               />
               {getError('rt') && <p className="text-error text-[12px]">{getError('rt')}</p>}
             </div>
-            <WilayahDropdown
-              selectedKecamatan={currentData.kecamatan || ''}
-              selectedKelurahan={currentData.kelurahan || ''}
-              onSelect={(namaKec, namaKel, kodeKec, kodeKel) => {
-                if (isPecah) {
-                  setFormData(prev => {
-                    const newList = [...(prev.pecahanList || [])];
-                    if (newList[activeTab]) {
-                      newList[activeTab] = {
-                        ...newList[activeTab],
-                        kecamatan: namaKec,
-                        kelurahan: namaKel,
-                        kabupaten: namaKel ? 'Purbalingga' : newList[activeTab].kabupaten,
-                      };
-                    }
-                    return { ...prev, pecahanList: newList, kodeWilayah: kodeKel || kodeKec || prev.kodeWilayah };
-                  });
-                } else {
-                  setFormData(prev => ({
-                    ...prev,
-                    kecamatan: namaKec,
-                    kelurahan: namaKel,
-                    kabupaten: namaKel ? 'Purbalingga' : prev.kabupaten,
-                    kodeWilayah: kodeKel || kodeKec || prev.kodeWilayah,
-                  }));
-                }
-              }}
-              errorKecamatan={getError('kecamatan')}
-              errorKelurahan={getError('kelurahan')}
-              required={true}
-            />
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold">Kecamatan</label>
+              <input
+                type="text"
+                value={currentData.kecamatan || ''}
+                onChange={(e) => handleTextChange('kecamatan', e.target.value)}
+                className={`w-full h-11 border ${getError('kecamatan') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none placeholder-gray-400`}
+                placeholder="Nama Kecamatan"
+              />
+              {getError('kecamatan') && <p className="text-error text-[12px]">{getError('kecamatan')}</p>}
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm text-on-surface-variant font-bold">Kelurahan/Desa</label>
+              <input
+                type="text"
+                value={currentData.kelurahan || ''}
+                onChange={(e) => handleTextChange('kelurahan', e.target.value)}
+                className={`w-full h-11 border ${getError('kelurahan') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none placeholder-gray-400`}
+                placeholder="Nama Kelurahan/Desa"
+              />
+              {getError('kelurahan') && <p className="text-error text-[12px]">{getError('kelurahan')}</p>}
+            </div>
           </div>
 
           {/* Baris 3: Kabupaten (readonly) + Kode Pos */}
@@ -582,9 +574,10 @@ export default function Step2SubjekPajak() {
               <label className="text-sm text-on-surface-variant font-bold block">Kabupaten / Kota</label>
               <input
                 type="text"
-                readOnly
-                value="Purbalingga"
-                className="w-full h-11 border border-outline-variant rounded-md px-4 outline-none bg-surface-container-low text-on-surface-variant cursor-not-allowed"
+                value={currentData.kabupaten || ''}
+                onChange={(e) => handleTextChange('kabupaten', e.target.value)}
+                className="w-full h-11 border border-outline-variant rounded-md px-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-gray-400"
+                placeholder="Nama Kabupaten/Kota"
               />
             </div>
             <div className="space-y-1">

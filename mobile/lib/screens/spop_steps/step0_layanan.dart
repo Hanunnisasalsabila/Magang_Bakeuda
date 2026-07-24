@@ -319,6 +319,17 @@ extension _Step0Extension on _SpopFormScreenState {
 
   Widget _buildDataPreviewCard() {
     final obj = _fetchedObjekPajak!;
+    
+    double calculatedLuasBangunan = 0.0;
+    if (obj['bangunan'] != null && obj['bangunan'] is List) {
+      for (var b in obj['bangunan']) {
+        calculatedLuasBangunan += double.tryParse(b['luas_bangunan']?.toString() ?? '0') ?? 0.0;
+      }
+    }
+    final displayLuasBng = calculatedLuasBangunan > 0 
+        ? calculatedLuasBangunan 
+        : (obj['total_luas_bangunan'] ?? obj['luas_bangunan'] ?? '-');
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF1F8F1),
@@ -368,7 +379,7 @@ extension _Step0Extension on _SpopFormScreenState {
                     Text(obj['subjek_pajak']?['nik']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     const Text('Luas Tanah / Bangunan', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text('${obj['luas_tanah'] ?? '-'} m² / ${obj['total_luas_bangunan'] ?? obj['luas_bangunan'] ?? '-'} m²', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text('${obj['luas_tanah'] ?? '-'} m² / $displayLuasBng m²', style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     const Text('Jenis Tanah', style: TextStyle(fontSize: 12, color: Colors.grey)),
                     Text(obj['jenis_tanah']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),

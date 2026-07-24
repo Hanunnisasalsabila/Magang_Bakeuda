@@ -297,7 +297,8 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final trx = _recentTransactions[index];
-              final detail = (trx['detail_tujuan'] as List?)?.firstOrNull;
+              final detailTujuanRaw = trx['detail_tujuan'];
+              final detail = detailTujuanRaw is List ? detailTujuanRaw.firstOrNull : (detailTujuanRaw is Map ? detailTujuanRaw : null);
               final status = trx['status_ajuan'] ?? 'UNKNOWN';
               final statusColor = _getStatusColor(status, theme.colorScheme);
               final type =

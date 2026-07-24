@@ -1,21 +1,21 @@
 class Constants {
   static const List<String> jenisPenggunaanBangunan = [
-    'Perumahan',
-    'Perkantoran Swasta',
-    'Pabrik',
-    'Toko/Apotik/Pasar/Ruko',
-    'Rumah Sakit/Klinik',
-    'Olah Raga/Rekreasi',
-    'Hotel/Wisma',
-    'Bengkel/Gudang/Pertanian',
-    'Gedung Pemerintah',
-    'Lain-lain',
-    'Bng Tidak Kena Pajak',
-    'Bangunan Parkir',
     'Apartemen',
+    'Bangunan Parkir',
+    'Bengkel/Gudang/Pertanian',
+    'Bng Tidak Kena Pajak',
+    'Gedung Pemerintah',
+    'Gedung Sekolah',
+    'Hotel/Wisma',
+    'Olah Raga/Rekreasi',
+    'Pabrik',
+    'Perkantoran Swasta',
+    'Perumahan',
     'Pompa Bensin',
+    'Rumah Sakit/Klinik',
     'Tangki Minyak',
-    'Gedung Sekolah'
+    'Toko/Apotik/Pasar/Ruko',
+    'Lain-lain'
   ];
 
   static const List<String> kondisiBangunan = [
@@ -27,34 +27,35 @@ class Constants {
 
   static const List<String> konstruksiBangunan = [
     'Baja',
-    'Beton',
     'Batu Bata',
+    'Beton',
     'Kayu'
   ];
 
   static const List<String> atapBangunan = [
+    'Asbes',
     'Decrabon/Beton/Genteng Glazur',
     'Genteng Beton/Aluminium',
     'Genteng Biasa/Sirap',
-    'Asbes',
     'Seng'
   ];
 
   static const List<String> dindingBangunan = [
-    'Kaca/Aluminium',
-    'Beton',
     'Batu Bata/Conblok',
+    'Beton',
+    'Kaca/Aluminium',
     'Kayu',
     'Seng',
     'Tidak ada Dinding'
   ];
 
   static const List<String> lantaiBangunan = [
-    'Marmer',
     'Keramik',
+    'Marmer',
+    'Semen',
+    'Tanah',
     'Teraso',
-    'Ubin PC/Papan',
-    'Semen'
+    'Ubin PC/Papan'
   ];
 
   static const List<String> langitLangitBangunan = [

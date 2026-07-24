@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service.js';
 import { NopGeneratorService } from '../lib/nop-generator.js';
 import { OracleWriteService } from '../oracle/oracle-write.service.js';
+import { NotifikasiService } from '../notifikasi/notifikasi.service.js';
 import {
   StatusAjuan,
   JenisTransaksi,
@@ -32,6 +33,7 @@ export class TransaksiSpopService {
     private readonly prisma: PrismaService,
     private readonly nopGenerator: NopGeneratorService,
     private readonly oracleWriteService: OracleWriteService,
+    private readonly notifikasiService: NotifikasiService,
   ) { }
 
   async submitPengajuan(dto: SubmitTransaksiDto, currentUser: CurrentUser, asDraft: boolean) {
@@ -68,7 +70,7 @@ export class TransaksiSpopService {
       if (nopAsalList.length > 0) {
         const found = await this.prisma.objekPajak.findMany({
           where: { nop: { in: nopAsalList } },
-          select: { nop: true, status_aktif: true }
+          select: { nop: true, status_aktif: true, luas_tanah: true, luas_bangunan: true }
         });
         const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
         for (const n of nopAsalList) {
@@ -78,6 +80,13 @@ export class TransaksiSpopService {
           if (foundNops.get(n) === false) {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
+        }
+        
+        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
+          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
+          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
+          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
+          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
         }
       }
     }
@@ -137,6 +146,18 @@ export class TransaksiSpopService {
       peringatanValidasi ? `Pengajuan dibuat — ${peringatanValidasi}` : 'Pengajuan dibuat',
     );
 
+    if (!asDraft) {
+      const bakeudaAdmins = await this.prisma.user.findMany({ where: { role: 'BAKEUDA', is_active: true } });
+      for (const admin of bakeudaAdmins) {
+        await this.notifikasiService.create({
+          user_id: admin.id_user,
+          title: 'Pengajuan SPOP Baru',
+          message: `Desa telah mengajukan transaksi SPOP baru.`,
+          type: 'SPOP_SUBMITTED'
+        });
+      }
+    }
+
     return {
       success: true,
       message: 'Pengajuan berhasil dibuat',
@@ -187,7 +208,7 @@ export class TransaksiSpopService {
       if (nopAsalList.length > 0) {
         const found = await this.prisma.objekPajak.findMany({
           where: { nop: { in: nopAsalList } },
-          select: { nop: true, status_aktif: true }
+          select: { nop: true, status_aktif: true, luas_tanah: true, luas_bangunan: true }
         });
         const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
         for (const n of nopAsalList) {
@@ -197,6 +218,13 @@ export class TransaksiSpopService {
           if (foundNops.get(n) === false) {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
+        }
+        
+        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
+          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
+          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
+          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
+          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
         }
       }
     }
@@ -477,11 +505,15 @@ export class TransaksiSpopService {
       await this.syncToOracle(hasil);
     } catch (oracleError) {
       console.error("Gagal write-through ke Oracle:", oracleError);
-      // Optional: Anda bisa memutuskan apakah kegagalan Oracle membatalkan transaksi Postgres
-      // Untuk write-through strict, bisa di-throw error di sini. 
-      // Saat ini kita biarkan sukses di Postgres, dan catat error.
       await this.catatRiwayat(idTransaksi, 'DISETUJUI', 'DISETUJUI', currentUser.id_user, 'WARNING: Sinkronisasi ke Oracle Gagal');
     }
+
+    await this.notifikasiService.create({
+      user_id: transaksi.id_user,
+      title: 'SPOP Disetujui',
+      message: `Pengajuan SPOP Anda telah disetujui oleh Bakeuda.`,
+      type: 'SPOP_APPROVED'
+    });
 
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
   }
@@ -531,11 +563,22 @@ export class TransaksiSpopService {
 
   async mintaRevisi(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
+    const transaksi = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi: idTransaksi } });
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'REVISI', catatan_bakeuda: catatan, locked_by: null, locked_at: null },
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'REVISI', currentUser.id_user, catatan);
+
+    if (transaksi) {
+      await this.notifikasiService.create({
+        user_id: transaksi.id_user,
+        title: 'SPOP Perlu Revisi',
+        message: `Bakeuda meminta revisi pada pengajuan Anda: ${catatan}`,
+        type: 'SPOP_REJECTED'
+      });
+    }
+
     return { success: true, data: updated };
   }
 
@@ -616,12 +659,20 @@ export class TransaksiSpopService {
         break;
 
       case 'PECAH':
-      case 'GABUNG':
         if (!dto.detail_tujuan?.length)
           throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
         for (const t of dto.detail_tujuan) {
           if (!t.luas_tanah_baru || t.luas_tanah_baru <= 0)
             throw new BadRequestException('Luas tanah setiap tujuan wajib diisi.');
+          if (!t.jenis_tanah_baru)
+            throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
+        }
+        break;
+
+      case 'GABUNG':
+        if (!dto.detail_tujuan?.length)
+          throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
+        for (const t of dto.detail_tujuan) {
           if (!t.jenis_tanah_baru)
             throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
         }

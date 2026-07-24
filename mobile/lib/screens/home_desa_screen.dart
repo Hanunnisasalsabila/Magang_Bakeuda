@@ -6,12 +6,16 @@ import 'tabs/desa_dashboard_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/monitoring_pajak_tab.dart';
 import 'spop_form_screen.dart';
-import 'lspop_form_screen.dart';
+
 import 'pelacakan_dokumen_screen.dart';
 import 'login_screen.dart';
 import 'draft_spop_screen.dart';
 import 'data_objek_pajak_screen.dart';
 import '../services/auth_service.dart';
+import '../services/notifikasi_service.dart';
+import '../services/api_service.dart';
+import 'notifikasi_screen.dart';
+import 'dart:async';
 
 const Color _kNavy = Color(0xFF0F2C59);
 const Color _kGold = Color(0xFFE8B831);
@@ -44,6 +48,10 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
   String _profileEmail = 'desa@purbalingga.go.id';
   String _profileRole = 'DESA';
 
+  final _notifikasiService = NotifikasiService(ApiService());
+  int _unreadNotifCount = 0;
+  Timer? _notifTimer;
+
   @override
   void initState() {
     super.initState();
@@ -60,6 +68,8 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
       const DraftSpopScreen(),
     ];
     _loadUserProfile();
+    _fetchUnreadNotif();
+    _notifTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchUnreadNotif());
   }
 
   Future<void> _loadUserProfile() async {
@@ -84,55 +94,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     }
   }
 
-  void _showFormulirOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Pilih Jenis Formulir',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.description, color: Colors.blue),
-                  title: const Text('Formulir SPOP (Bumi & Bangunan)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SpopFormScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.domain, color: Colors.green),
-                  title: const Text('Formulir LSPOP (Bangunan Khusus)'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LspopFormScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   Widget _buildDrawerSectionTitle(String title) {
     return Padding(
@@ -180,7 +142,22 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
     );
   }
 
+  Future<void> _fetchUnreadNotif() async {
+    try {
+      final res = await _notifikasiService.getNotifikasi();
+      if (res['success']) {
+        if (mounted) setState(() => _unreadNotifCount = res['data']['unreadCount']);
+      }
+    } catch (e) {
+      // ignore error on polling
+    }
+  }
+
   @override
+  void dispose() {
+    _notifTimer?.cancel();
+    super.dispose();
+  }
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -193,6 +170,36 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
         backgroundColor: _kNavy,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiScreen()))
+                      .then((_) => _fetchUnreadNotif());
+                },
+              ),
+              if (_unreadNotifCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_unreadNotifCount',
+                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
         title: Padding(
           padding: const EdgeInsets.only(right: 16.0),
           child: Row(
@@ -363,15 +370,15 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
 
                   _buildDrawerSectionTitle('LAYANAN PAJAK DAERAH'),
                   ExpansionTile(
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.description_rounded,
-                      color: Colors.grey,
+                      color: Colors.grey.shade700,
                       size: 22,
                     ),
-                    title: const Text(
+                    title: Text(
                       'Pendaftaran SPOP Baru',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: Colors.grey.shade700,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -388,19 +395,6 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const SpopFormScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildDrawerItem(
-                        icon: Icons.domain_rounded,
-                        title: 'LSPOP (Bangunan Khusus)',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LspopFormScreen(),
                             ),
                           );
                         },
@@ -504,7 +498,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
           .slideY(begin: 0.05, end: 0, duration: 300.ms, curve: Curves.easeOut),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showFormulirOptions(context),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SpopFormScreen())),
         backgroundColor: _kNavy,
         elevation: 4,
         shape: const CircleBorder(),

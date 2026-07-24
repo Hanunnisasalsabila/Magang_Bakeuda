@@ -58,6 +58,17 @@ export default function DaftarSubjekPajak() {
     fetchData();
   }, [currentPage, itemsPerPage, debouncedSearch]);
 
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PEMILIK': return 'bg-green-50 text-green-700 border-green-200';
+      case 'PENYEWA': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'PENGELOLA': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'PEMAKAI': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+      case 'SENGKETA': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
   return (
     <main className="p-gutter max-w-screen-xl mx-auto w-full">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -90,7 +101,7 @@ export default function DaftarSubjekPajak() {
         </div>
 
         {/* Table Container */}
-        <div className="overflow-x-auto min-h-[400px]">
+        <div className="overflow-x-auto w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 text-primary">
               <span className="material-symbols-outlined animate-spin text-4xl mb-4">autorenew</span>
@@ -127,27 +138,38 @@ export default function DaftarSubjekPajak() {
                       {((currentPage - 1) * itemsPerPage) + i + 1}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-on-surface font-medium">{obj.nik}</p>
+                      <p className="text-sm text-gray-800">{obj.nik}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-bold text-on-surface text-sm uppercase">{obj.name}</p>
+                      <p className="font-medium text-gray-900 text-sm">{obj.name}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-bold tracking-wide">
+                      <span className={`px-2.5 py-1 border rounded text-[11px] font-semibold tracking-wide uppercase ${getStatusColor(obj.status_wp)}`}>
                         {obj.status_wp}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-on-surface capitalize truncate max-w-[250px]">{obj.address.toLowerCase()}</p>
+                      <p className="text-sm text-gray-800 truncate max-w-[250px]">{obj.address}</p>
                       {obj.rt_rw && <p className="text-xs text-gray-500 mt-0.5">{obj.rt_rw} {obj.desa ? `- ${obj.desa}` : ''}</p>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => navigate(`/detail-subjek/${obj.nik}`)}
-                        title="Detail Subjek"
-                        className="px-3 py-1.5 flex items-center justify-center gap-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors mx-auto text-sm font-semibold"
+                        onClick={() => {
+                          if (!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.') {
+                            alert('Subjek pajak ini tidak memiliki NIK yang valid sehingga detail tidak dapat ditampilkan.');
+                          } else {
+                            navigate(`/detail-subjek?nik=${encodeURIComponent(obj.nik)}`);
+                          }
+                        }}
+                        title={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.' ? 'NIK Tidak Valid' : 'Detail Subjek'}
+                        disabled={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none mx-auto ${
+                          !obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'
+                            ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-background border border-outline-variant text-primary hover:bg-surface-container-lowest hover:border-primary'
+                        }`}
                       >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        <span className="material-symbols-outlined text-[14px]">visibility</span>
                         Detail
                       </button>
                     </td>

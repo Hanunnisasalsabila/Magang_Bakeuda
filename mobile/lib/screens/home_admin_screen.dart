@@ -11,7 +11,11 @@ import 'daftar_objek_pajak_screen.dart';
 import 'manajemen_wilayah_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
+import '../services/notifikasi_service.dart';
+import '../services/api_service.dart';
+import 'notifikasi_screen.dart';
 import 'bantuan_admin_screen.dart';
+import 'dart:async';
 
 // Palet warna resmi instansi
 const Color _kNavy = Color(0xFF0C2A5B);
@@ -30,6 +34,10 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
   String _profileName = 'Admin BKD';
   String _profileUsername = 'admin';
   String _profileRole = 'BAKEUDA';
+
+  final _notifikasiService = NotifikasiService(ApiService());
+  int _unreadNotifCount = 0;
+  Timer? _notifTimer;
 
   @override
   void initState() {
@@ -54,9 +62,29 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
       } catch (_) {}
     }
 
+    _fetchUnreadNotif();
+    _notifTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchUnreadNotif());
+
     if (mounted) {
       setState(() {});
     }
+  }
+
+  Future<void> _fetchUnreadNotif() async {
+    try {
+      final res = await _notifikasiService.getNotifikasi();
+      if (res['success']) {
+        if (mounted) setState(() => _unreadNotifCount = res['data']['unreadCount']);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  @override
+  void dispose() {
+    _notifTimer?.cancel();
+    super.dispose();
   }
 
   List<Widget> get _pages {
@@ -137,7 +165,36 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
           preferredSize: const Size.fromHeight(3),
           child: Container(height: 3, color: _kGold),
         ),
-        actions: const [],
+        actions: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiScreen()))
+                      .then((_) => _fetchUnreadNotif());
+                },
+              ),
+              if (_unreadNotifCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$_unreadNotifCount',
+                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       drawer: Drawer(
         child: ListView(
