@@ -501,15 +501,6 @@ export default function DetailReviewSPOP() {
                         const generated = detailTujuanList[0]?.nop_generated || detailTujuanList[0]?.no_persil_baru;
                         return generated || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
                       }
-                      if (nopAsalList.length > 1) {
-                        return (
-                          <div className="flex flex-col gap-1">
-                            {nopAsalList.map((nop, i) => (
-                              <div key={i}>{nop}</div>
-                            ))}
-                          </div>
-                        );
-                      }
                       return nopAsal !== 'Menunggu NOP' && nopAsal ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
                     })()}
                   </td>

@@ -13,6 +13,9 @@ export default function SpopLayout() {
     }
   }, [id_transaksi]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const location = window.location;
+  const isKonfirmasi = location.pathname.includes('/konfirmasi') || location.pathname.includes('/status');
+
   const isRevisi = spopData?.status_ajuan === 'REVISI';
   const catatanRevisi = spopData?.catatan_bakeuda;
 
@@ -25,7 +28,7 @@ export default function SpopLayout() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {isRevisi && catatanRevisi && (
+          {isRevisi && catatanRevisi && !isKonfirmasi && (
             <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm w-full mb-2">
               <div className="flex gap-3 items-start">
                 <span className="material-symbols-outlined text-amber-600 mt-0.5">warning</span>

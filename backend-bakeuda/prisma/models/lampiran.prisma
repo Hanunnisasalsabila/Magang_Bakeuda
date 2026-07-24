@@ -1,11 +1,17 @@
 model LampiranDokumen {
-  id_dokumen         String   @id @default(uuid())
-  id_transaksi       String // FK → transaksi_spop
-  jenis_dokumen      String   @db.VarChar(100)
-  keterangan_dokumen String?  @db.VarChar(255)
-  url_file           String   @db.VarChar(500)
-  uploaded_at        DateTime @default(now())
-  uploaded_by        String // FK → users.id_user
+  id_dokumen             String   @id @default(uuid())
+  id_transaksi           String   @unique // FK → transaksi_spop
+  
+  url_ktp                Json     @default("[]")
+  url_sertifikat         Json     @default("[]")
+  url_ajb                Json     @default("[]")
+  url_imb                Json     @default("[]")
+  url_pendukung_lokasi   Json     @default("[]")
+  url_surat_kuasa        Json     @default("[]")
+
+  keterangan_dokumen     String?  @db.VarChar(255)
+  uploaded_at            DateTime @default(now())
+  uploaded_by            String // FK → users.id_user
 
   // ── Relasi ──
   transaksi TransaksiSpop @relation(fields: [id_transaksi], references: [id_transaksi], onDelete: Cascade)

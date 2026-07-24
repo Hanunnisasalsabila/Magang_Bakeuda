@@ -6,10 +6,11 @@ class UserService {
   UserService(this._apiService);
   Dio get _dio => _apiService.dio;
 
-  Future<Map<String, dynamic>> getDaftarAkun({String? search, String? role, int page = 1, int limit = 20}) async {
+  Future<Map<String, dynamic>> getDaftarAkun({String? search, String? role, bool? isActive, int page = 1, int limit = 20}) async {
     final params = <String, dynamic>{'page': page, 'limit': limit};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (role != null) params['role'] = role;
+    if (isActive != null) params['is_active'] = isActive;
     final resp = await _dio.get('/users', queryParameters: params);
     return resp.data as Map<String, dynamic>;
   }
@@ -37,5 +38,15 @@ class UserService {
   Future<Map<String, dynamic>> toggleAktif(String idUser, bool isActive) async {
     final resp = await _dio.patch('/users/$idUser', data: {'is_active': isActive});
     return resp.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> deleteAkun(String idUser) async {
+    final resp = await _dio.delete('/users/$idUser');
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getWilayah() async {
+    final resp = await _dio.get('/wilayah');
+    return (resp.data['data'] as List).cast<Map<String, dynamic>>();
   }
 }

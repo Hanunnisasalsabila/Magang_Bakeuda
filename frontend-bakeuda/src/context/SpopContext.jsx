@@ -106,7 +106,28 @@ export const SpopProvider = ({ children }) => {
 
         const subjek = detailTujuan.calon_subjek_json || {};
         
-        setFormData(prev => ({
+          let allLampiran = [];
+          if (data.lampiran) {
+             const unmap = (arr, baseJenis) => {
+                if (!arr || !Array.isArray(arr)) return;
+                arr.forEach(url => {
+                   if (url.includes('::')) {
+                      const [prefix, ...urlParts] = url.split('::');
+                      allLampiran.push({ jenis_dokumen: `${baseJenis}_${prefix}`, url_file: urlParts.join('::') });
+                   } else {
+                      allLampiran.push({ jenis_dokumen: baseJenis, url_file: url });
+                   }
+                });
+             };
+             unmap(data.lampiran.url_ktp, 'KTP');
+             unmap(data.lampiran.url_sertifikat, 'Sertifikat Hak Milik');
+             unmap(data.lampiran.url_ajb, 'Akte Jual Beli');
+             unmap(data.lampiran.url_imb, 'Izin Mendirikan Bangunan');
+             unmap(data.lampiran.url_pendukung_lokasi, 'Dokumen Pendukung Lokasi');
+             unmap(data.lampiran.url_surat_kuasa, 'SURAT_KUASA');
+          }
+
+          setFormData(prev => ({
           ...prev,
           kategoriTransaksi: ['BARU', 'PECAH', 'GABUNG'].includes(data.jenis_transaksi) ? 'baru' : 
                              ['MUTASI', 'PERUBAHAN_DATA'].includes(data.jenis_transaksi) ? 'update' : 'hapus',
@@ -195,11 +216,11 @@ export const SpopProvider = ({ children }) => {
              koordinat_polygon: t.koordinat_polygon ? (typeof t.koordinat_polygon === 'string' ? JSON.parse(t.koordinat_polygon) : t.koordinat_polygon) : [],
              latitude: t.koordinat_polygon ? (t.koordinat_polygon[0]?.lat?.toString() || '') : '',
              longitude: t.koordinat_polygon ? (t.koordinat_polygon[0]?.lng?.toString() || '') : '',
-             lampiran: (data.lampiran || [])
+             lampiran: allLampiran
                 .filter(l => l.jenis_dokumen.endsWith(`_PECAHAN_${idx + 1}`))
                 .map(l => ({ ...l, jenis_dokumen: l.jenis_dokumen.replace(`_PECAHAN_${idx + 1}`, '') }))
           })) : [],
-          lampiran: (data.lampiran || []).filter(l => !l.jenis_dokumen.includes('_PECAHAN_'))
+          lampiran: allLampiran.filter(l => !l.jenis_dokumen.includes('_PECAHAN_'))
         }));
 
         const isStep1Complete = !!(data.jenis_transaksi);
@@ -303,9 +324,9 @@ export const SpopProvider = ({ children }) => {
       detail_tujuan = undefined;
     } else {
       detail_tujuan = [{
-        nik_calon_subjek: mergedData.nik || undefined,
-        calon_subjek_json: calon_subjek_json,
-        nop_generated: rawNop.length >= 18 ? rawNop : undefined,
+        nik_calon_subjek: isPerubahanData ? undefined : (mergedData.nik || undefined),
+        calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
+        nop_generated: (isPerubahanData && rawNop.length >= 18 && rawNop !== '330300000000000000') ? rawNop : (rawNop.length >= 18 ? rawNop : undefined),
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: (parseFloat(mergedData.luasBangunan) > 0) ? Number(mergedData.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
         jumlah_bangunan_baru: mergedData.jumlahBangunan ? Number(mergedData.jumlahBangunan) : 0,
@@ -390,26 +411,50 @@ export const SpopProvider = ({ children }) => {
       detail_tujuan: detail_tujuan,
     };
 
-    let finalLampiran = [...(mergedData.lampiran || [])];
+    let payloadLampiran = {
+      url_ktp: [],
+      url_sertifikat: [],
+      url_ajb: [],
+      url_imb: [],
+      url_pendukung_lokasi: [],
+      url_surat_kuasa: []
+    };
+
+    const mapDokumen = (jenis, url) => {
+      let baseJenis = jenis;
+      let suffix = '';
+      if (jenis.includes('_PECAHAN_')) {
+        const parts = jenis.split('_PECAHAN_');
+        baseJenis = parts[0];
+        suffix = `PECAHAN_${parts[1]}::`;
+      }
+      
+      const finalUrl = suffix + url;
+      if (baseJenis === 'KTP') payloadLampiran.url_ktp.push(finalUrl);
+      else if (baseJenis === 'Sertifikat Hak Milik') payloadLampiran.url_sertifikat.push(finalUrl);
+      else if (baseJenis === 'Akte Jual Beli') payloadLampiran.url_ajb.push(finalUrl);
+      else if (baseJenis === 'Izin Mendirikan Bangunan') payloadLampiran.url_imb.push(finalUrl);
+      else if (baseJenis === 'SURAT_KUASA') payloadLampiran.url_surat_kuasa.push(finalUrl);
+      else payloadLampiran.url_pendukung_lokasi.push(finalUrl);
+    };
+
     if (mergedData.transaksi === 'PECAH' && mergedData.pecahanList) {
       mergedData.pecahanList.forEach((p, idx) => {
         if (p.lampiran && p.lampiran.length > 0) {
           p.lampiran.forEach(l => {
-            finalLampiran.push({
-              jenis_dokumen: `${l.jenis_dokumen}_PECAHAN_${idx + 1}`,
-              url_file: l.url_file
-            });
+            mapDokumen(`${l.jenis_dokumen}_PECAHAN_${idx + 1}`, l.url_file);
           });
         }
       });
     }
 
-    if (finalLampiran.length > 0) {
-      payload.lampiran = finalLampiran.map(l => ({
-        jenis_dokumen: l.jenis_dokumen,
-        url_file: l.url_file
-      }));
+    if (mergedData.lampiran && mergedData.lampiran.length > 0) {
+      mergedData.lampiran.forEach(l => {
+        mapDokumen(l.jenis_dokumen, l.url_file);
+      });
     }
+
+    payload.lampiran = payloadLampiran;
 
     return payload;
   };

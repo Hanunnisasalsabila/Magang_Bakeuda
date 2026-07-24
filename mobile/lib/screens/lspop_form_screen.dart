@@ -194,6 +194,8 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
   }
 
   Widget _buildDropdown(String label, String value, List<Map<String, String>> options, Function(String?) onChanged) {
+    final sortedOptions = List<Map<String, String>>.from(options)
+      ..sort((a, b) => a['label']!.compareTo(b['label']!));
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
@@ -204,7 +206,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        items: options.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
+        items: sortedOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 14)))).toList(),
         onChanged: onChanged,
       ),
     );

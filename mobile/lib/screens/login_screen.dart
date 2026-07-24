@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user.mustChangePassword) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+          MaterialPageRoute(builder: (context) => const ChangePasswordScreen(isForced: true)),
         );
       } else {
         if (user.role == RoleConstants.perangkatDesa) {
