@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { OracleSyncService } from './oracle-sync.service.js';
 
 @Controller('oracle/sync')
-@UseGuards(JwtAuthGuard) // Asumsi hanya admin/authorized user yang bisa manual trigger
+@UseGuards(JwtAuthGuard)
 export class OracleSyncController {
   constructor(private readonly syncService: OracleSyncService) {}
 

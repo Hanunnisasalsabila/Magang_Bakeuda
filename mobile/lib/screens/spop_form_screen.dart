@@ -131,27 +131,72 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         
         final tujuanList = d['detail_tujuan'] as List?;
         if (tujuanList != null && tujuanList.isNotEmpty) {
-           final tujuan = tujuanList[0];
-           final subjek = tujuan['calon_subjek_json'];
-           if (subjek != null) {
-              _namaWpController.text = subjek['nama_subjek'] ?? '';
-              _nikController.text = subjek['nik'] ?? '';
-              _npwpController.text = subjek['npwp'] ?? '';
-              _noHpController.text = subjek['no_hp'] ?? '';
-              _alamatWpController.text = subjek['alamat_jalan'] ?? '';
-              _rtController.text = subjek['rt'] ?? '';
-              _rwController.text = subjek['rw'] ?? '';
-              _kelurahanWpController.text = subjek['kelurahan'] ?? '';
-              _kecamatanWpController.text = subjek['kecamatan'] ?? '';
-              _kodePosController.text = subjek['kode_pos'] ?? '';
+           if (_jenisLayanan == 'PECAH') {
+             _isPecahMode = true;
+             _jumlahPecahan = tujuanList.length;
+             _pecahanList.clear();
+             for (var t in tujuanList) {
+               final subjek = t['calon_subjek_json'] ?? {};
+               final bng = t['data_bangunan_json'] as List? ?? [];
+               _pecahanList.add({
+                  'namaWp': subjek['nama_subjek'] ?? '',
+                  'nik': subjek['nik'] ?? '',
+                  'statusWp': subjek['status_wp'] ?? 'PEMILIK',
+                  'pekerjaan': subjek['pekerjaan'] ?? 'LAINNYA',
+                  'npwp': subjek['npwp'] ?? '',
+                  'noHp': subjek['no_hp'] ?? '',
+                  'alamatWp': subjek['alamat_jalan'] ?? '',
+                  'rt': subjek['rt'] ?? '',
+                  'rw': subjek['rw'] ?? '',
+                  'kelurahan': subjek['kelurahan'] ?? '',
+                  'kecamatan': subjek['kecamatan'] ?? '',
+                  'kabupaten': subjek['kabupaten'] ?? 'Purbalingga',
+                  'kodePos': subjek['kode_pos'] ?? '',
+                  
+                  'luasTanah': t['luas_tanah_baru']?.toString() ?? '',
+                  'jenisTanah': t['jenis_tanah_baru'] ?? 'TANAH_BANGUNAN',
+                  'jalanOp': t['jalan_op_baru'] ?? '',
+                  'blokKav': t['blok_kav_no_baru'] ?? '',
+                  'rtOp': t['rt_op_baru'] ?? '',
+                  'rwOp': t['rw_op_baru'] ?? '',
+                  'kelurahanOp': (t['kelurahan_op_baru']?.toString().isNotEmpty == true) ? t['kelurahan_op_baru'] : (_isOpWilayahPatented ? _kelurahanOpController.text : ''),
+                  'kecamatanOp': (t['kecamatan_op_baru']?.toString().isNotEmpty == true) ? t['kecamatan_op_baru'] : (_isOpWilayahPatented ? _kecamatanOpController.text : ''),
+                  'batasUtara': t['batas_utara'] ?? '',
+                  'batasSelatan': t['batas_selatan'] ?? '',
+                  'batasTimur': t['batas_timur'] ?? '',
+                  'batasBarat': t['batas_barat'] ?? '',
+                  'lat': t['latitude']?.toString() ?? '-7.3934',
+                  'lng': t['longitude']?.toString() ?? '109.3663',
+                  'koordinatPolygon': t['koordinat_polygon'] ?? <Map<String, double>>[],
+                  'jumlahBangunan': t['jumlah_bangunan_baru']?.toString() ?? bng.length.toString(),
+                  'dataBangunan': List<Map<String, dynamic>>.from(bng.map((e) => Map<String, dynamic>.from(e as Map))),
+                  'lampiran': <Map<String, dynamic>>[],
+                  'selectedJenisDokumen': 'KTP',
+               });
+             }
+           } else {
+             final tujuan = tujuanList[0];
+             final subjek = tujuan['calon_subjek_json'];
+             if (subjek != null) {
+                _namaWpController.text = subjek['nama_subjek'] ?? '';
+                _nikController.text = subjek['nik'] ?? '';
+                _npwpController.text = subjek['npwp'] ?? '';
+                _noHpController.text = subjek['no_hp'] ?? '';
+                _alamatWpController.text = subjek['alamat_jalan'] ?? '';
+                _rtController.text = subjek['rt'] ?? '';
+                _rwController.text = subjek['rw'] ?? '';
+                _kelurahanWpController.text = subjek['kelurahan'] ?? '';
+                _kecamatanWpController.text = subjek['kecamatan'] ?? '';
+                _kodePosController.text = subjek['kode_pos'] ?? '';
+             }
+             _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
+             _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
+             _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
+             _rtOpController.text = tujuan['rt_op_baru'] ?? '';
+             _rwOpController.text = tujuan['rw_op_baru'] ?? '';
+             _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
+             _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
            }
-           _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
-           _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
-           _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
-           _rtOpController.text = tujuan['rt_op_baru'] ?? '';
-           _rwOpController.text = tujuan['rw_op_baru'] ?? '';
-           _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
-           _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
         }
       });
     } catch (e) {
@@ -249,8 +294,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         'npwp': '', 'noHp': '', 'alamatWp': '', 'rt': '', 'rw': '',
         'kelurahan': '', 'kecamatan': '', 'kabupaten': 'Purbalingga', 'kodePos': '',
         'luasTanah': '', 'jenisTanah': 'TANAH_BANGUNAN', 'jalanOp': '',
-        'blokKav': '', 'rtOp': '', 'rwOp': '', 'kelurahanOp': '',
-        'kecamatanOp': '', 'batasUtara': '', 'batasSelatan': '',
+        'blokKav': '', 'rtOp': '', 'rwOp': '', 'kelurahanOp': _isOpWilayahPatented ? _kelurahanOpController.text : '',
+        'kecamatanOp': _isOpWilayahPatented ? _kecamatanOpController.text : '', 'batasUtara': '', 'batasSelatan': '',
         'batasTimur': '', 'batasBarat': '', 'lat': '-7.3934', 'lng': '109.3663',
         'koordinatPolygon': <Map<String, double>>[],
         'jumlahBangunan': '0',
@@ -825,7 +870,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       _transaksiId = idTransaksi;
       
       // Finalisasi submit (DRAFT -> MENUNGGU)
-      await _spopService.submitSpop({'id_transaksi': idTransaksi}); // Parameter tak terpakai karena service yang urus via _dio.post('/.../$id/submit')
+      await _spopService.submitDraft(idTransaksi);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -875,7 +920,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
     if (_isPecahMode) { _nextPecahanStep(); return; }
 
     if (_currentStep < 4 && !_isPecahMode) {
@@ -903,6 +948,24 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ));
           return;
         }
+
+        setState(() => _isLoading = true);
+        try {
+          final obj = await _spopService.getObjekPajakByNop(nopAsal);
+          if (obj == null) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('NOP Asal tidak ditemukan di server'), backgroundColor: Colors.orange));
+            return;
+          }
+          if (obj['luas_tanah'] != null) {
+            _luasTanahController.text = obj['luas_tanah'].toString();
+          }
+        } catch (e) {
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengambil data NOP Asal: $e'), backgroundColor: Colors.red));
+           return;
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
+        }
+
         _initPecahanList(_jumlahPecahan);
         setState(() {
           _isPecahMode = true;
@@ -969,6 +1032,26 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   void _nextPecahanStep() {
     final p = _pecahanList[_currentPecahanIdx - 1];
     final jmlBng = int.tryParse(p['jumlahBangunan']?.toString() ?? '0') ?? 0;
+
+    if (_pecahanSubStep == 3 && _currentPecahanIdx == _jumlahPecahan) {
+      double totalLuas = 0;
+      for (var pecahan in _pecahanList) {
+        totalLuas += double.tryParse(pecahan['luasTanah']?.toString() ?? '0') ?? 0;
+      }
+      double luasInduk = double.tryParse(_luasTanahController.text) ?? 0;
+      
+      if (totalLuas > luasInduk) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Total luas tanah pecahan ($totalLuas m²) melebihi luas induk ($luasInduk m²).'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 4),
+          )
+        );
+        return; 
+      }
+    }
+
     setState(() {
       if (_pecahanSubStep == 0) {
         _pecahanSubStep = 1;
@@ -1173,7 +1256,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
               ),
               child: Row(
                 children: [
-                  if (_currentStep > 0) ...[
+                  if (_currentStep > 0 || _isPecahMode) ...[
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
