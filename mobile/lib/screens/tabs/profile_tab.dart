@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
 import '../login_screen.dart';
 import '../change_password_screen.dart';
+import '../bantuan_admin_screen.dart';
 
 const Color _kNavy = Color(0xFF0C2A5B);
 const Color _kGold = Color(0xFFC9A227);
@@ -602,11 +603,20 @@ class _ProfileTabState extends State<ProfileTab> {
                         Colors.orange.shade700,
                         'Bantuan',
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Pusat Bantuan belum tersedia.'),
-                            ),
-                          );
+                          if (widget.role.toLowerCase() == 'bakeuda') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BantuanAdminScreen(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pusat Bantuan belum tersedia.'),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ],

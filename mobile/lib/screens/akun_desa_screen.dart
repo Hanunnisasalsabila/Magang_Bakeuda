@@ -341,8 +341,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     menuHeight: 250,
                     initialSelection: selectedWilayahKode,
                     enableFilter: true,
+                    requestFocusOnTap: true,
                     enableSearch: false,
-                    hintText: 'Pilih / Cari Kode Wilayah',
+                    hintText: 'Ketik atau Pilih Kode Wilayah',
                     inputDecorationTheme: InputDecorationTheme(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -576,8 +577,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     menuHeight: 250,
                     initialSelection: selectedWilayahKode,
                     enableFilter: true,
+                    requestFocusOnTap: true,
                     enableSearch: false,
-                    hintText: 'Pilih / Cari Kode Wilayah',
+                    hintText: 'Ketik atau Pilih Kode Wilayah',
                     inputDecorationTheme: InputDecorationTheme(
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1199,7 +1201,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                   Text(
                     'BAKEUDA Kabupaten\nPurbalingga',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       height: 1.1,
@@ -1209,7 +1211,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                   Text(
                     'Manajemen Akun Desa',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: _kGold,
                     ),
@@ -1229,9 +1231,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           const SizedBox(width: 4),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(130),
+          preferredSize: const Size.fromHeight(116),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: _kGold, width: 3)),
