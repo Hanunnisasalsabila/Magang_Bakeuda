@@ -5,8 +5,8 @@ import api from '../utils/axios';
 export default function DaftarSubjekPajak() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [showFilter, setShowFilter] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -45,7 +45,10 @@ export default function DaftarSubjekPajak() {
       obj.name.toLowerCase().includes(search.toLowerCase()) ||
       obj.nik.includes(search) ||
       obj.address.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
+      
+    const matchesStatus = statusFilter === 'ALL' || obj.status_wp?.toUpperCase() === statusFilter;
+      
+    return matchesSearch && matchesStatus;
   });
 
   filteredSubjects.sort((a, b) => {
@@ -59,6 +62,17 @@ export default function DaftarSubjekPajak() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedSubjects = filteredSubjects.slice(startIndex, endIndex);
+  
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PEMILIK': return 'bg-green-50 text-green-700 border-green-200';
+      case 'PENYEWA': return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'PENGELOLA': return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'PEMAKAI': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+      case 'SENGKETA': return 'bg-red-50 text-red-700 border-red-200';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
 
   return (
     <main className="p-gutter max-w-screen-xl mx-auto w-full">
@@ -76,8 +90,8 @@ export default function DaftarSubjekPajak() {
         <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row gap-4 justify-between items-end">
           <div className="flex-1 w-full">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Cari Nama/NIK/Alamat</label>
-            <div className="flex items-center gap-3 w-full">
-              <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+              <div className="relative flex-1 w-full">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">
                   search
                 </span>
@@ -92,38 +106,42 @@ export default function DaftarSubjekPajak() {
                   className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                 />
               </div>
-              <div className="relative">
-                <button
-                  onClick={() => setShowFilter(!showFilter)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-lg border ${showFilter ? 'bg-primary text-white border-primary' : 'bg-surface-container-low border-outline-variant text-on-surface-variant hover:bg-surface-container'}`}
+              
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+                  className="flex-1 sm:flex-none pl-3 pr-8 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/50 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em'
+                  }}
                 >
-                  <span className="material-symbols-outlined text-[20px]">filter_list</span>
+                  <option value="ALL">Semua Kategori</option>
+                  <option value="PEMILIK">Pemilik</option>
+                  <option value="PENYEWA">Penyewa</option>
+                  <option value="PENGELOLA">Pengelola</option>
+                  <option value="PEMAKAI">Pemakai</option>
+                  <option value="SENGKETA">Sengketa</option>
+                </select>
+
+
+                <button
+                  onClick={() => { setSearch(''); setStatusFilter('ALL'); setSortOrder('asc'); setCurrentPage(1); }}
+                  title="Reset Filter & Pencarian"
+                  className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg border bg-surface-container-low border-outline-variant text-gray-500 hover:bg-gray-100 hover:text-red-500 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">refresh</span>
                 </button>
-                {showFilter && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-outline-variant py-2 z-10">
-                    <button
-                      onClick={() => { setSortOrder('asc'); setShowFilter(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortOrder === 'asc' ? 'text-primary font-bold' : 'text-gray-700'}`}
-                    >
-                      Urutkan (A-Z)
-                      {sortOrder === 'asc' && <span className="material-symbols-outlined text-[18px]">check</span>}
-                    </button>
-                    <button
-                      onClick={() => { setSortOrder('desc'); setShowFilter(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortOrder === 'desc' ? 'text-primary font-bold' : 'text-gray-700'}`}
-                    >
-                      Urutkan (Z-A)
-                      {sortOrder === 'desc' && <span className="material-symbols-outlined text-[18px]">check</span>}
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Table Container */}
-        <div className="overflow-x-auto min-h-[400px]">
+        <div className="overflow-x-auto w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 text-primary">
               <span className="material-symbols-outlined animate-spin text-4xl mb-4">autorenew</span>
@@ -156,31 +174,43 @@ export default function DaftarSubjekPajak() {
                     className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''
                       }`}
                   >
-                    <td className="px-4 py-3 text-center text-sm text-gray-500 font-medium">
+                    <td className="px-4 py-3 text-center text-sm text-gray-600">
                       {startIndex + i + 1}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-on-surface font-medium">{obj.nik}</p>
+                      <p className="text-sm text-gray-800">{obj.nik}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="font-bold text-on-surface text-sm uppercase">{obj.name}</p>
+                      <p className="font-medium text-gray-900 text-sm">{obj.name}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-bold tracking-wide">
+                      <span className={`px-2.5 py-1 border rounded text-[11px] font-semibold tracking-wide uppercase ${getStatusColor(obj.status_wp)}`}>
                         {obj.status_wp}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-on-surface capitalize truncate max-w-[250px]">{obj.address.toLowerCase()}</p>
+                      <p className="text-sm text-gray-800 truncate max-w-[250px]">{obj.address}</p>
                       {obj.rt_rw && <p className="text-xs text-gray-500 mt-0.5">{obj.rt_rw} {obj.desa ? `- ${obj.desa}` : ''}</p>}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => navigate(`/detail-subjek/${obj.nik}`)}
-                        title="Detail Subjek"
-                        className="px-3 py-1.5 flex items-center justify-center gap-1.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors mx-auto text-sm font-semibold"
+                        onClick={() => {
+                          if (!obj.nik || obj.nik.trim() === '') {
+                            alert('Subjek pajak ini tidak memiliki NIK sehingga detail tidak dapat ditampilkan.');
+                          } else {
+                            // Use query parameter to safely pass ANY weird string from Oracle (like '.' or slashes)
+                            navigate(`/detail-subjek?nik=${encodeURIComponent(obj.nik)}`);
+                          }
+                        }}
+                        title={!obj.nik || obj.nik.trim() === '' ? 'NIK Kosong' : 'Detail Subjek'}
+                        disabled={!obj.nik || obj.nik.trim() === ''}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none mx-auto ${
+                          !obj.nik || obj.nik.trim() === ''
+                            ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-background border border-outline-variant text-primary hover:bg-surface-container-lowest hover:border-primary'
+                        }`}
                       >
-                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                        <span className="material-symbols-outlined text-[14px]">visibility</span>
                         Detail
                       </button>
                     </td>

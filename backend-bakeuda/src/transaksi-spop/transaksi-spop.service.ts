@@ -120,10 +120,10 @@ export class TransaksiSpopService {
           }))
         } : undefined,
         lampiran: dto.lampiran ? {
-          create: dto.lampiran.map((l) => ({
-            ...l,
+          create: {
+            ...dto.lampiran,
             uploaded_by: currentUser.id_user
-          }))
+          }
         } : undefined
       },
       include: { detail_asal: true, detail_tujuan: true },
@@ -239,10 +239,10 @@ export class TransaksiSpopService {
               }))
             } : undefined,
             lampiran: dto.lampiran ? {
-              create: dto.lampiran.map((l) => ({
-                ...l,
+              create: {
+                ...dto.lampiran,
                 uploaded_by: currentUser.id_user
-              }))
+              }
             } : undefined
           }
         });
