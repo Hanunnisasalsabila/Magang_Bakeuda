@@ -234,7 +234,7 @@ export default function Step4DataBangunan() {
       konstruksi: ['Baja', 'Beton', 'Batu Bata', 'Kayu'],
       atap: ['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng'],
       dinding: ['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding'],
-      lantai: ['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen'],
+      lantai: ['Keramik', 'Marmer', 'Semen', 'Tanah', 'Teraso', 'Ubin PC/Papan'],
       langitLangit: ['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']
     };
 
@@ -722,7 +722,7 @@ export default function Step4DataBangunan() {
                 <RadioGroup label="8. Konstruksi" field="konstruksi" columns={4} options={['Baja', 'Beton', 'Batu Bata', 'Kayu']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
                 <RadioGroup label="9. Atap" field="atap" columns={3} options={['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
                 <RadioGroup label="10. Dinding" field="dinding" columns={3} options={['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
-                <RadioGroup label="11. Lantai" field="lantai" columns={5} options={['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="11. Lantai" field="lantai" columns={6} options={['Keramik', 'Marmer', 'Semen', 'Tanah', 'Teraso', 'Ubin PC/Papan']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
                 <RadioGroup label="12. Langit-Langit" field="langitLangit" columns={3} options={['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
               </div>
             </div>

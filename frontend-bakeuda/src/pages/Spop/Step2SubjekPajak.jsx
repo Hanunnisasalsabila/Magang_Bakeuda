@@ -158,8 +158,8 @@ export default function Step2SubjekPajak() {
       if (!data.nik || data.nik.length < 16) { newErrors[`${prefix}nik`] = 'NIK harus 16 digit'; hasError = true; }
       if (!data.nama) { newErrors[`${prefix}nama`] = 'Nama Wajib Pajak wajib diisi'; hasError = true; }
       if (!data.alamat) { newErrors[`${prefix}alamat`] = 'Alamat wajib diisi'; hasError = true; }
-      if (!data.rt) { newErrors[`${prefix}rt`] = 'RT wajib diisi'; hasError = true; }
-      if (!data.rw) { newErrors[`${prefix}rw`] = 'RW wajib diisi'; hasError = true; }
+      if (!data.rt || !/^\d{2,3}$/.test(data.rt)) { newErrors[`${prefix}rt`] = 'RT harus 2-3 digit'; hasError = true; }
+      if (!data.rw || !/^\d{2,3}$/.test(data.rw)) { newErrors[`${prefix}rw`] = 'RW harus 2-3 digit'; hasError = true; }
       if (!data.kecamatan) { newErrors[`${prefix}kecamatan`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahan) { newErrors[`${prefix}kelurahan`] = 'Kelurahan wajib dipilih'; hasError = true; }
       if (!data.statusWp) { newErrors[`${prefix}statusWp`] = 'Status WP wajib dipilih'; hasError = true; }
@@ -261,7 +261,7 @@ export default function Step2SubjekPajak() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="font-label-sm text-primary block">NOMOR KTP (NIK)</label>
+            <label className="font-label-sm text-primary block">NOMOR KTP (NIK) <span className="text-error">*</span></label>
             <input
               type="text"
               maxLength={16}
@@ -269,6 +269,7 @@ export default function Step2SubjekPajak() {
               onChange={(e) => handleTextChange('nik', e.target.value.replace(/\D/g, ''))}
               className={`w-full h-12 border ${getError('nik') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm outline-none`}
               placeholder="Masukkan 16 digit NIK"
+              maxLength={16}
             />
             {getError('nik') && <p className="text-error text-[12px]">{getError('nik')}</p>}
           </div>

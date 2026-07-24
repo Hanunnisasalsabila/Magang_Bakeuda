@@ -284,16 +284,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   void _initBangunanList(int count) {
     if (_dataBangunanList.length != count) {
       _dataBangunanList = List.generate(count, (index) => {
-        'jenisPenggunaan': Constants.jenisPenggunaanBangunan[0],
+        'jenisPenggunaan': null,
         'luasBangunan': '',
         'jumlahLantai': '',
         'tahunDibangun': '',
-        'kondisi': Constants.kondisiBangunan[0],
-        'konstruksi': Constants.konstruksiBangunan[0],
-        'atap': Constants.atapBangunan[0],
-        'dinding': Constants.dindingBangunan[0],
-        'lantai': Constants.lantaiBangunan[0],
-        'langitLangit': Constants.langitLangitBangunan[0],
+        'kondisi': null,
+        'konstruksi': null,
+        'atap': null,
+        'dinding': null,
+        'lantai': null,
+        'langitLangit': null,
       });
       _currentBangunanIndex = 1;
     }
@@ -1301,10 +1301,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
+          preferredSize: const Size.fromHeight(2.0),
           child: Container(
-            color: Colors.white.withValues(alpha: 0.2),
-            height: 1.0,
+            color: const Color(0xFFD4AF37), // Garis emas (Gold border)
+            height: 2.0,
           ),
         ),
         actions: [
@@ -1320,16 +1320,22 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         child: Column(
           children: [
             // Linear Progress Indicator
-            LinearProgressIndicator(
-              value: (_currentStep + 1) / 6,
-              backgroundColor: Colors.grey.shade200,
-              color: const Color(0xFF0F2C59),
-              minHeight: 4,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (_currentStep + 1) / 6,
+                  backgroundColor: Colors.grey.shade300,
+                  color: const Color(0xFF0F2C59),
+                  minHeight: 8,
+                ),
+              ),
             ),
             
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -1365,7 +1371,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                           foregroundColor: const Color(0xFF0F2C59),
                           side: const BorderSide(color: Color(0xFF0F2C59)),
                         ),
-                        child: const Text('Kembali'),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_back_ios, size: 14),
+                            SizedBox(width: 4),
+                            Text('Kembali', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1382,10 +1395,19 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                       ),
                       child: _isLoading 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                            isLastStep ? 'Simpan & Ajukan' : (_selectedKategori == 'PENGHAPUSAN' && _currentStep == 0 ? 'Lanjut Konfirmasi Penghapusan' : 'Selanjutnya'),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isLastStep ? 'Ajukan Data' : (_selectedKategori == 'PENGHAPUSAN' && _currentStep == 0 ? 'Lanjut Hapus' : 'Lanjut'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                if (!isLastStep) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.arrow_forward_ios, size: 14),
+                                ],
+                              ],
+                            ),
                     ),
                   ),
                 ],

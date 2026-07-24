@@ -612,8 +612,8 @@ export default function FormulirSPOP() {
         newErrors.alamat = 'Alamat 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
 
-      if (!formData.rt || !/^\d{1,3}$/.test(formData.rt)) newErrors.rt = 'RT wajib 1-3 digit angka';
-      if (!formData.rw || !/^\d{1,3}$/.test(formData.rw)) newErrors.rw = 'RW wajib 1-3 digit angka';
+      if (!formData.rt || !/^\d{2,3}$/.test(formData.rt)) newErrors.rt = 'RT wajib 2-3 digit angka';
+      if (!formData.rw || !/^\d{2,3}$/.test(formData.rw)) newErrors.rw = 'RW wajib 2-3 digit angka';
 
       const kelVal = (formData.kelurahan || '').trim();
       if (!kelVal || kelVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kelVal)) {
@@ -645,8 +645,8 @@ export default function FormulirSPOP() {
         newErrors.alamatObjek = 'Jalan OP 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
 
-      if (!formData.rtObjek || !/^\d{1,3}$/.test(formData.rtObjek)) newErrors.rtObjek = 'RT wajib 1-3 digit angka';
-      if (!formData.rwObjek || !/^\d{1,3}$/.test(formData.rwObjek)) newErrors.rwObjek = 'RW wajib 1-3 digit angka';
+      if (!formData.rtObjek || !/^\d{2,3}$/.test(formData.rtObjek)) newErrors.rtObjek = 'RT wajib 2-3 digit angka';
+      if (!formData.rwObjek || !/^\d{2,3}$/.test(formData.rwObjek)) newErrors.rwObjek = 'RW wajib 2-3 digit angka';
 
       const kelOpVal = (formData.kelurahanObjek || '').trim();
       if (!kelOpVal || kelOpVal.length > 100 || !/^[a-zA-Z0-9\s]+$/.test(kelOpVal)) {
@@ -1201,7 +1201,7 @@ export default function FormulirSPOP() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="font-label-sm text-primary block">NOMOR KTP (NIK)</label>
+                    <label className="font-label-sm text-primary block">NOMOR KTP (NIK) <span className="text-error">*</span></label>
                     <input
                       type="text"
                       maxLength={16}
@@ -1209,6 +1209,7 @@ export default function FormulirSPOP() {
                       onChange={(e) => handleTextChange('nik', e)}
                       className={`w-full h-12 border ${errors.nik ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm`}
                       placeholder="Masukkan 16 digit NIK"
+                      maxLength={16}
                     />
                     {errors.nik && <p className="text-error text-[12px]">{errors.nik}</p>}
                   </div>
@@ -1400,8 +1401,12 @@ export default function FormulirSPOP() {
                       <input
                         type="text"
                         maxLength={3}
+                        pattern="\d{2,3}"
                         value={formData.rw}
-                        onChange={(e) => handleTextChange('rw', e)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          handleTextChange('rw', { ...e, target: { ...e.target, value: val } });
+                        }}
                         className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
                         placeholder="002"
                       />
@@ -1411,8 +1416,12 @@ export default function FormulirSPOP() {
                       <input
                         type="text"
                         maxLength={3}
+                        pattern="\d{2,3}"
                         value={formData.rt}
-                        onChange={(e) => handleTextChange('rt', e)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          handleTextChange('rt', { ...e, target: { ...e.target, value: val } });
+                        }}
                         className="w-full h-11 border border-outline-variant rounded px-4 text-center font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary"
                         placeholder="001"
                       />
