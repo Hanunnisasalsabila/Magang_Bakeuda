@@ -930,7 +930,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alasan Penghapusan wajib diisi')));
           return;
         }
-        setState(() => _currentStep = _jenisLayanan == 'HAPUS' ? 4 : 1);
+        int nextStep = 1;
+        if (_jenisLayanan == 'HAPUS') nextStep = 4;
+        if (_jenisLayanan == 'PERUBAHAN_DATA') nextStep = 2;
+        setState(() => _currentStep = nextStep);
       } else {
         setState(() => _currentStep = 1);
       }
@@ -1028,7 +1031,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         setState(() => _currentStep = 2);
       }
     } else if (_currentStep == 2) {
-      setState(() => _currentStep = 1);
+      if (_jenisLayanan == 'PERUBAHAN_DATA') {
+        setState(() => _currentStep = 0);
+      } else {
+        setState(() => _currentStep = 1);
+      }
     } else if (_currentStep == 1) {
       setState(() => _currentStep = 0);
     }
