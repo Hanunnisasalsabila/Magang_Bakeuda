@@ -36,15 +36,15 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchWilayah();
-    _loadData();
-    // Pencarian langsung berjalan saat mengetik (debounce 400ms),
-    // dan tombol clear muncul/hilang otomatis.
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
     _searchController.addListener(_onSearchChanged);
-    if (widget.autoShowAddForm) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showFormDialog();
-      });
+    await _fetchWilayah();
+    _loadData();
+    if (widget.autoShowAddForm && mounted) {
+      _showFormDialog();
     }
   }
 
@@ -336,25 +336,45 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    isExpanded:
-                        true, // wajib: cegah overflow saat teks item panjang
-                    value: selectedWilayahKode,
-                    decoration: _formalInputDecoration('Pilih Kode Wilayah'),
-                    items: _wilayahList.map((w) {
-                      return DropdownMenuItem<String>(
+                  DropdownMenu<String>(
+                    width: dialogWidth,
+                    menuHeight: 250,
+                    initialSelection: selectedWilayahKode,
+                    enableFilter: true,
+                    enableSearch: false,
+                    hintText: 'Pilih / Cari Kode Wilayah',
+                    inputDecorationTheme: InputDecorationTheme(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: _kNavy, width: 1.5),
+                      ),
+                    ),
+                    dropdownMenuEntries: _wilayahList.map((w) {
+                      final text = '${w['kode_wilayah']} - ${w['nama_desa']} (${w['kecamatan']})';
+                      return DropdownMenuEntry<String>(
                         value: w['kode_wilayah']?.toString() ?? '',
-                        child: Text(
-                          '${w['kode_wilayah']} - ${w['nama_desa']} (${w['kecamatan']})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        label: text,
                       );
                     }).toList(),
-                    onChanged: (v) {
+                    onSelected: (v) {
                       selectedWilayahKode = v;
                     },
-                    validator: (v) => v == null ? 'Harus pilih wilayah' : null,
                   ),
+                  if (selectedWilayahKode == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, left: 14),
+                      child: Text('Harus pilih wilayah', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    ),
                 ],
               ),
             ),
@@ -384,7 +404,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () async {
-                  if (formKey.currentState!.validate()) {
+                  if (formKey.currentState!.validate() && selectedWilayahKode != null) {
                     Navigator.pop(ctx);
                     setState(() => _isLoading = true);
                     try {
@@ -448,7 +468,8 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
 
     await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setDialogState) {
+        return AlertDialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -550,29 +571,47 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    value:
-                        _wilayahList.any(
-                          (w) =>
-                              w['kode_wilayah']?.toString() ==
-                              selectedWilayahKode,
-                        )
-                        ? selectedWilayahKode
-                        : null,
-                    decoration: _formalInputDecoration('Pilih Kode Wilayah'),
-                    items: _wilayahList.map((w) {
-                      return DropdownMenuItem<String>(
+                  DropdownMenu<String>(
+                    width: _dialogWidth(context),
+                    menuHeight: 250,
+                    initialSelection: selectedWilayahKode,
+                    enableFilter: true,
+                    enableSearch: false,
+                    hintText: 'Pilih / Cari Kode Wilayah',
+                    inputDecorationTheme: InputDecorationTheme(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: _kNavy, width: 1.5),
+                      ),
+                    ),
+                    dropdownMenuEntries: _wilayahList.map((w) {
+                      final text = '${w['kode_wilayah']} - ${w['nama_desa']} (${w['kecamatan']})';
+                      return DropdownMenuEntry<String>(
                         value: w['kode_wilayah']?.toString() ?? '',
-                        child: Text(
-                          '${w['kode_wilayah']} - ${w['nama_desa']} (${w['kecamatan']})',
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        label: text,
                       );
                     }).toList(),
-                    onChanged: (v) => selectedWilayahKode = v,
-                    validator: (v) => v == null ? 'Harus pilih wilayah' : null,
+                    onSelected: (v) {
+                      setDialogState(() {
+                        selectedWilayahKode = v;
+                      });
+                    },
                   ),
+                  if (selectedWilayahKode == null)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, left: 14),
+                      child: Text('Harus pilih wilayah', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    ),
                 ],
               ),
             ),
@@ -650,8 +689,8 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
             ],
           ),
         ],
-      ),
-    );
+      );
+    }));
   }
 
   Future<void> _hapusAkun(Map<String, dynamic> akun) async {
@@ -659,7 +698,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus Akun'),
-        content: Text('Anda yakin ingin menghapus akun ${akun['nama_lengkap']}?'),
+        content: Text(
+          'Anda yakin ingin menghapus akun ${akun['nama_lengkap']}?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -689,9 +730,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
         _loadData();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Gagal menghapus: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
         }
         setState(() => _isLoading = false);
       }
@@ -777,14 +818,15 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
               : _daftarAkun
                     .where((a) => _kecamatanDariAkun(a) == selectedKecamatan)
                     .toList();
-          final daftarDesa =
-              _daftarAkun
-                  .where((a) => _kecamatanDariAkun(a) == selectedKecamatan)
-                  .map((a) => {
-                        'nama_desa': _namaDesaDariAkun(a),
-                        'username': a['username'],
-                      })
-                  .toList();
+          final daftarDesa = _daftarAkun
+              .where((a) => _kecamatanDariAkun(a) == selectedKecamatan)
+              .map(
+                (a) => {
+                  'nama_desa': _namaDesaDariAkun(a),
+                  'username': a['username'],
+                },
+              )
+              .toList();
           final dialogWidth = _dialogWidth(context);
 
           return Dialog(
@@ -985,36 +1027,36 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: selectedKecamatan == null
-                                ? null
-                                : () async {
-                                    Navigator.pop(ctx);
-                                    await _cetakKredensialKecamatan(
-                                      kecamatan: selectedKecamatan!,
-                                      daftarAkun: akunKecamatan,
-                                      namaKepalaBkd: namaKepalaBkdCtrl.text,
-                                      nipKepalaBkd: nipKepalaBkdCtrl.text,
-                                      namaCamat: namaCamatCtrl.text,
-                                      nipCamat: nipCamatCtrl.text,
-                                      aksi: 'open',
-                                    );
-                                  },
-                            icon: const Icon(Icons.print_outlined, size: 18),
-                            label: const Text('Cetak & Unduh PDF'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _kNavy,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: selectedKecamatan == null
+                            ? null
+                            : () async {
+                                Navigator.pop(ctx);
+                                await _cetakKredensialKecamatan(
+                                  kecamatan: selectedKecamatan!,
+                                  daftarAkun: akunKecamatan,
+                                  namaKepalaBkd: namaKepalaBkdCtrl.text,
+                                  nipKepalaBkd: nipKepalaBkdCtrl.text,
+                                  namaCamat: namaCamatCtrl.text,
+                                  nipCamat: nipCamatCtrl.text,
+                                  aksi: 'open',
+                                );
+                              },
+                        icon: const Icon(Icons.print_outlined, size: 18),
+                        label: const Text('Cetak & Unduh PDF'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kNavy,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1230,7 +1272,10 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: _kNavy, width: 1.5),
+                            borderSide: const BorderSide(
+                              color: _kNavy,
+                              width: 1.5,
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -1281,7 +1326,10 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                             ..._kecamatanList.map((kec) {
                               return DropdownMenuItem(
                                 value: kec,
-                                child: Text(kec, overflow: TextOverflow.ellipsis),
+                                child: Text(
+                                  kec,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               );
                             }),
                           ],
@@ -1402,183 +1450,177 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
               itemCount: paginatedData.length,
               itemBuilder: (context, index) {
                 final akun = paginatedData[index];
-                        final kode = akun['kode_wilayah'];
-                        String wilayahText = '-';
-                        if (kode != null && _wilayahList.isNotEmpty) {
-                          final found = _wilayahList
-                              .where((w) => w['kode_wilayah'] == kode)
-                              .toList();
-                          if (found.isNotEmpty) {
-                            wilayahText =
-                                '${found[0]['nama_desa']}, ${found[0]['kecamatan']}';
-                          }
-                        }
+                final kode = akun['kode_wilayah'];
+                String wilayahText = '-';
+                if (kode != null && _wilayahList.isNotEmpty) {
+                  final found = _wilayahList
+                      .where((w) => w['kode_wilayah'] == kode)
+                      .toList();
+                  if (found.isNotEmpty) {
+                    wilayahText =
+                        '${found[0]['nama_desa']}, ${found[0]['kecamatan']}';
+                  }
+                }
 
-                        return Container(
-                              margin: const EdgeInsets.only(bottom: 14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(18),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          width: 46,
-                                          height: 46,
-                                          decoration: BoxDecoration(
-                                            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Icon(
-                                            Icons.person,
-                                            color: theme.colorScheme.primary,
-                                            size: 24,
-                                          ),
+                return Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 46,
+                                  height: 46,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer
+                                        .withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.person,
+                                    color: theme.colorScheme.primary,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        akun['nama_lengkap'] ?? '-',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                          color: Colors.black87,
                                         ),
-                                        const SizedBox(width: 14),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                akun['nama_lengkap'] ?? '-',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w700,
-                                                  fontSize: 15,
-                                                  color: Colors.black87,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                wilayahText,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.black54,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        wilayahText,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.black54,
                                         ),
-                                        PopupMenuButton<String>(
-                                          icon: const Icon(
-                                            Icons.more_vert,
-                                            color: Colors.black45,
-                                          ),
-                                          onSelected: (v) {
-                                            if (v == 'edit')
-                                              _showEditAkunDialog(akun);
-                                            else if (v == 'hapus')
-                                              _hapusAkun(akun);
-                                          },
-                                          itemBuilder: (_) => [
-                                            const PopupMenuItem(
-                                              value: 'edit',
-                                              child: ListTile(
-                                                leading: Icon(
-                                                  Icons.edit_outlined,
-                                                  color: _kNavy,
-                                                ),
-                                                title: Text('Edit Akun'),
-                                                contentPadding: EdgeInsets.zero,
-                                              ),
-                                            ),
-                                            PopupMenuItem(
-                                              value: 'hapus',
-                                              child: ListTile(
-                                                leading: const Icon(
-                                                  Icons.delete_outline,
-                                                  color: Color(0xFFB3261E),
-                                                ),
-                                                title: const Text('Hapus Akun'),
-                                                contentPadding: EdgeInsets.zero,
-                                              ),
-                                            ),
-                                          ],
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(
+                                    Icons.more_vert,
+                                    color: Colors.black45,
+                                  ),
+                                  onSelected: (v) {
+                                    if (v == 'edit')
+                                      _showEditAkunDialog(akun);
+                                    else if (v == 'hapus')
+                                      _hapusAkun(akun);
+                                  },
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.edit_outlined,
+                                          color: _kNavy,
                                         ),
-                                      ],
+                                        title: Text('Edit Akun'),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
                                     ),
-                                    const SizedBox(height: 14),
-                                    const Divider(height: 1),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _infoChip(
-                                            icon: Icons.badge_outlined,
-                                            label:
-                                                (akun['nip'] != null &&
-                                                    akun['nip']
-                                                        .toString()
-                                                        .isNotEmpty)
-                                                ? 'NIP ${akun['nip']}'
-                                                : 'NIP belum diatur',
-                                          ),
+                                    PopupMenuItem(
+                                      value: 'hapus',
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.delete_outline,
+                                          color: Color(0xFFB3261E),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _infoChip(
-                                            icon: Icons.assignment_ind_outlined,
-                                            label: akun['username'] ?? '-',
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        if (kode != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFEAF3DE),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: const Color(0xFFBBD79A),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              kode.toString(),
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF3D6A16),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
+                                        title: const Text('Hapus Akun'),
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            )
-                            .animate()
-                            .fade(
-                              duration: 300.ms,
-                              delay: ((index % 10) * 40).ms,
-                            )
-                            .slideY(
-                              begin: 0.05,
-                              duration: 300.ms,
-                              curve: Curves.easeOutQuad,
-                            );
-                      },
-                    ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            const Divider(height: 1),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _infoChip(
+                                    icon: Icons.badge_outlined,
+                                    label:
+                                        (akun['nip'] != null &&
+                                            akun['nip'].toString().isNotEmpty)
+                                        ? 'NIP ${akun['nip']}'
+                                        : 'NIP belum diatur',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _infoChip(
+                                    icon: Icons.assignment_ind_outlined,
+                                    label: akun['username'] ?? '-',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (kode != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEAF3DE),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: const Color(0xFFBBD79A),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      kode.toString(),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF3D6A16),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .animate()
+                    .fade(duration: 300.ms, delay: ((index % 10) * 40).ms)
+                    .slideY(
+                      begin: 0.05,
+                      duration: 300.ms,
+                      curve: Curves.easeOutQuad,
+                    );
+              },
+            ),
           ),
         ),
         _buildPaginationControls(totalPages),
@@ -1599,11 +1641,15 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                 ? () => setState(() => _currentPage--)
                 : null,
             icon: const Icon(Icons.chevron_left),
-            label: const Text('Sebelumnnya'),
+            label: const Text('Sebelumnya'),
           ),
-          Text(
-            'Halaman $_currentPage dari $totalPages',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          Expanded(
+            child: Text(
+              'Halaman $_currentPage dari $totalPages',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           TextButton.icon(
             onPressed: _currentPage < totalPages

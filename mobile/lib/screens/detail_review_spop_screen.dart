@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
 
@@ -28,6 +30,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
   bool _isProcessing = false;
   String? _errorMsg;
   bool _isSatellite = true;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -73,6 +76,24 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
             .toList();
       }
 
+      // Coba lock transaksi jika statusnya MENUNGGU
+      if (!widget.isReadOnly && data['status_ajuan'] == 'MENUNGGU') {
+        try {
+          await _spopService.lockSpop(widget.idTransaksi);
+          data['status_ajuan'] = 'PROSES';
+        } catch (e) {
+          // Gagal lock (misal: dikunci admin lain)
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gagal mengunci transaksi atau sudah dikunci admin lain.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+
       setState(() {
         _transaksi = data;
       });
@@ -98,6 +119,9 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
   @override
   void dispose() {
     _catatanController.dispose();
+    if (!widget.isReadOnly && _transaksi != null && _transaksi!['status_ajuan'] == 'PROSES') {
+      _spopService.unlockSpop(widget.idTransaksi).catchError((_) {});
+    }
     super.dispose();
   }
 
@@ -142,6 +166,12 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
 
     setState(() => _isProcessing = true);
     try {
+      if (_transaksi?['status_ajuan'] == 'MENUNGGU') {
+        try {
+          await _spopService.lockSpop(widget.idTransaksi);
+          _transaksi?['status_ajuan'] = 'PROSES';
+        } catch (_) {}
+      }
       if (needsNOP) {
         final tujuan = _transaksi?['detail_tujuan']?[0] ?? {};
         final kec = tujuan['kecamatan_op_baru'];
@@ -155,17 +185,18 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
       } else {
         await _spopService.approveSpop(widget.idTransaksi);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, 'DISETUJUI');
     } on DioException catch (e) {
-      if (mounted)
+      if (mounted) {
+        final msg = e.response?.data?['message'];
+        final errText = msg is List ? msg.join(', ') : (msg?.toString() ?? 'Gagal memproses verifikasi');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              e.response?.data?['message'] ?? 'Gagal memproses verifikasi',
-            ),
+            content: Text(errText),
             backgroundColor: Colors.red,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -183,19 +214,28 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
     }
     setState(() => _isProcessing = true);
     try {
+      if (_transaksi?['status_ajuan'] == 'MENUNGGU') {
+        try {
+          await _spopService.lockSpop(widget.idTransaksi);
+          _transaksi?['status_ajuan'] = 'PROSES';
+        } catch (_) {}
+      }
       await _spopService.revisiSpop(
         widget.idTransaksi,
         _catatanController.text.trim(),
       );
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, 'REVISI');
     } on DioException catch (e) {
-      if (mounted)
+      if (mounted) {
+        final msg = e.response?.data?['message'];
+        final errText = msg is List ? msg.join(', ') : (msg?.toString() ?? 'Gagal');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.response?.data?['message'] ?? 'Gagal'),
+            content: Text(errText),
             backgroundColor: Colors.red,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -213,19 +253,28 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
     }
     setState(() => _isProcessing = true);
     try {
+      if (_transaksi?['status_ajuan'] == 'MENUNGGU') {
+        try {
+          await _spopService.lockSpop(widget.idTransaksi);
+          _transaksi?['status_ajuan'] = 'PROSES';
+        } catch (_) {}
+      }
       await _spopService.tolakSpop(
         widget.idTransaksi,
         _catatanController.text.trim(),
       );
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, 'DITOLAK');
     } on DioException catch (e) {
-      if (mounted)
+      if (mounted) {
+        final msg = e.response?.data?['message'];
+        final errText = msg is List ? msg.join(', ') : (msg?.toString() ?? 'Gagal');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.response?.data?['message'] ?? 'Gagal'),
+            content: Text(errText),
             backgroundColor: Colors.red,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -327,7 +376,8 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
   String _fmtDate(String? iso) {
     if (iso == null) return '-';
     try {
-      return DateFormat('dd MMM yyyy, HH:mm', 'id').format(DateTime.parse(iso));
+      final date = DateTime.parse(iso).toLocal();
+      return DateFormat('dd MMM yyyy, HH:mm', 'id').format(date);
     } catch (_) {
       return iso;
     }
@@ -350,7 +400,8 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
     final bool canVerify =
         tx != null &&
         (tx['status_ajuan'] == 'MENUNGGU' ||
-            tx['status_ajuan'] == 'SEDANG_DITINJAU');
+            tx['status_ajuan'] == 'SEDANG_DITINJAU' ||
+            tx['status_ajuan'] == 'PROSES');
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -702,7 +753,15 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                               (tx!['detail_tujuan'] as List).isNotEmpty)
                           ? tx!['detail_tujuan'][0]
                           : null;
-                      final List polyRaw = tujuan?['koordinat_polygon'] ?? [];
+                      final polyVal = tujuan?['koordinat_polygon'];
+                      List polyRaw = [];
+                      if (polyVal is String) {
+                        try {
+                          polyRaw = jsonDecode(polyVal);
+                        } catch(e) {}
+                      } else if (polyVal is List) {
+                        polyRaw = polyVal;
+                      }
 
                       if (polyRaw.isEmpty) {
                         return Padding(
@@ -799,6 +858,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                 child: Stack(
                                   children: [
                                     FlutterMap(
+                                      mapController: _mapController,
                                       options: MapOptions(
                                         initialCenter: center,
                                         initialZoom: 16.0,
@@ -831,6 +891,18 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                             ),
                                           ],
                                         ),
+                                        MarkerLayer(
+                                          markers: points.map((p) => Marker(
+                                            point: p,
+                                            width: 40,
+                                            height: 40,
+                                            child: const Icon(
+                                              Icons.location_on,
+                                              color: Colors.red,
+                                              size: 40,
+                                            ),
+                                          )).toList(),
+                                        ),
                                       ],
                                     ),
                                     Positioned(
@@ -847,6 +919,38 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                               : Icons.satellite_alt_outlined,
                                           color: Colors.blue,
                                         ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 10,
+                                      right: 10,
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          FloatingActionButton.small(
+                                            heroTag: 'zoom_in',
+                                            onPressed: () {
+                                              final zoom = _mapController.camera.zoom;
+                                              if (zoom < 22.0) {
+                                                _mapController.move(_mapController.camera.center, zoom + 1);
+                                              }
+                                            },
+                                            backgroundColor: Colors.white,
+                                            child: const Icon(Icons.add, color: Colors.black87),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          FloatingActionButton.small(
+                                            heroTag: 'zoom_out',
+                                            onPressed: () {
+                                              final zoom = _mapController.camera.zoom;
+                                              if (zoom > 1.0) {
+                                                _mapController.move(_mapController.camera.center, zoom - 1);
+                                              }
+                                            },
+                                            backgroundColor: Colors.white,
+                                            child: const Icon(Icons.remove, color: Colors.black87),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -947,7 +1051,10 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                           padding: const EdgeInsets.all(8),
                                           child: Text(
                                             _fmt(
-                                              b['penggunaan'] ??
+                                              b['jenisPenggunaan'] ??
+                                                  b['kode_jpb'] ??
+                                                  b['jenis_penggunaan_bangunan'] ??
+                                                  b['penggunaan'] ??
                                                   b['jenisPenggunaanBangunan'],
                                             ),
                                             style: const TextStyle(
@@ -1367,7 +1474,20 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                             SizedBox(
                                               width: 80,
                                               child: ElevatedButton(
-                                                onPressed: () {},
+                                                onPressed: () async {
+                                                  if (url.isNotEmpty) {
+                                                    final uri = Uri.tryParse(url);
+                                                    if (uri != null && await canLaunchUrl(uri)) {
+                                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                                    } else {
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          const SnackBar(content: Text('Tidak dapat membuka dokumen.')),
+                                                        );
+                                                      }
+                                                    }
+                                                  }
+                                                },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
                                                       Colors.blue.shade700,
@@ -1539,11 +1659,123 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                     ),
 
                   const SizedBox(height: 16),
+                  
+                  // HASIL KEPUTUSAN (jika sudah diverifikasi)
+                  if (['DISETUJUI', 'DITOLAK', 'MENUNGGU_REVISI', 'REVISI'].contains(tx?['status_ajuan']))
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.black87, width: 2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.verified, color: Colors.black87, size: 28),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'BERKAS ${tx!['status_ajuan'] == 'DISETUJUI' ? 'TELAH DISETUJUI' : (tx['status_ajuan'] == 'DITOLAK' ? 'DITOLAK PERMANEN' : 'DIKEMBALIKAN UNTUK REVISI')}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Divider(color: Colors.black87, height: 1, thickness: 1),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'DIVERIFIKASI OLEH',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _fmt(tx['verifikator']?['nama_lengkap'] ?? 'Admin Bakeuda'),
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'WAKTU KEPUTUSAN',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            decoration: TextDecoration.underline,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _fmtDate(tx['verified_at']),
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'CATATAN TAMBAHAN',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(12),
+                                    color: Colors.grey.shade100,
+                                    child: Text(
+                                      _fmt(tx['catatan_bakeuda'] ?? 'Tidak ada catatan dari verifikator.'),
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
 
                   // KEPUTUSAN VERIFIKASI
                   if (!widget.isReadOnly && canVerify) ...[
                     const Divider(thickness: 1, height: 32),
-                    _buildBlueHeader('H. KEPUTUSAN VERIFIKASI'),
+                    _buildBlueHeader('G. KEPUTUSAN VERIFIKASI'),
 
                     if (_transaksi?['jenis_transaksi'] == 'BARU' ||
                         _transaksi?['jenis_transaksi'] == 'PECAH' ||
@@ -1554,82 +1786,97 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                           vertical: 8,
                         ),
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            border: Border.all(color: Colors.blue.shade200),
-                            borderRadius: BorderRadius.circular(8),
+                            color: const Color(0xFFF9F9F9),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'PENETAPAN NOP BARU',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.map_outlined, color: Color(0xFF0C2A5B), size: 20),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Penetapan NOP baru',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'Pastikan Kecamatan dan Desa sudah benar. Anda hanya perlu mengisi Kode Blok. Nomor Urut akan dihitung otomatis oleh sistem.',
+                                'Pastikan kecamatan dan desa sudah benar.\nCukup isi kode blok.',
                                 style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.blue,
+                                  fontSize: 12,
+                                  color: Colors.black54,
+                                  height: 1.3,
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
                               Row(
                                 children: [
                                   Expanded(
                                     child: Builder(
                                       builder: (context) {
-                                        final kec =
-                                            tx?['detail_tujuan'] != null &&
-                                                (tx!['detail_tujuan'] as List)
-                                                    .isNotEmpty
-                                            ? tx!['detail_tujuan'][0]['kecamatan_op_baru'] ??
-                                                  '-'
+                                        final kec = tx?['detail_tujuan'] != null &&
+                                                (tx!['detail_tujuan'] as List).isNotEmpty
+                                            ? tx!['detail_tujuan'][0]['kecamatan_op_baru'] ?? '-'
                                             : '-';
-                                        return TextField(
-                                          decoration: const InputDecoration(
-                                            labelText: 'KECAMATAN',
-                                            border: OutlineInputBorder(),
-                                            isDense: true,
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                          ),
-                                          enabled: false,
-                                          controller: TextEditingController(
-                                            text: kec,
-                                          ),
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('Kecamatan', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                            const SizedBox(height: 4),
+                                            TextField(
+                                              decoration: InputDecoration(
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                                isDense: true,
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              ),
+                                              enabled: false,
+                                              controller: TextEditingController(text: kec),
+                                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                            ),
+                                          ],
                                         );
                                       },
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Builder(
                                       builder: (context) {
-                                        final kel =
-                                            tx?['detail_tujuan'] != null &&
-                                                (tx!['detail_tujuan'] as List)
-                                                    .isNotEmpty
-                                            ? tx!['detail_tujuan'][0]['kelurahan_op_baru'] ??
-                                                  '-'
+                                        final kel = tx?['detail_tujuan'] != null &&
+                                                (tx!['detail_tujuan'] as List).isNotEmpty
+                                            ? tx!['detail_tujuan'][0]['kelurahan_op_baru'] ?? '-'
                                             : '-';
-                                        return TextField(
-                                          decoration: const InputDecoration(
-                                            labelText: 'DESA/KEL',
-                                            border: OutlineInputBorder(),
-                                            isDense: true,
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                          ),
-                                          enabled: false,
-                                          controller: TextEditingController(
-                                            text: kel,
-                                          ),
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text('Desa/kel', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                            const SizedBox(height: 4),
+                                            TextField(
+                                              decoration: InputDecoration(
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                                isDense: true,
+                                                filled: true,
+                                                fillColor: Colors.white,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              ),
+                                              enabled: false,
+                                              controller: TextEditingController(text: kel),
+                                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                            ),
+                                          ],
                                         );
                                       },
                                     ),
@@ -1638,109 +1885,120 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                               ),
                               const SizedBox(height: 12),
                               Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: TextField(
-                                      decoration: const InputDecoration(
-                                        labelText: 'KODE BLOK (3 DIGIT) *',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      maxLength: 3,
-                                      onChanged: (val) =>
-                                          setState(() => _kodeBlok = val),
+                                    flex: 1,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('Kode blok', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                                        const SizedBox(height: 4),
+                                        TextField(
+                                          decoration: InputDecoration(
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                                            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF0C2A5B))),
+                                            isDense: true,
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                            counterText: '',
+                                            hintText: '001',
+                                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                          maxLength: 3,
+                                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                          onChanged: (val) => setState(() => _kodeBlok = val),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 12),
                                   Expanded(
+                                    flex: 1,
                                     child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'KODE JENIS OP',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
+                                        const Text('Jenis OP', style: TextStyle(fontSize: 11, color: Colors.black54)),
                                         const SizedBox(height: 4),
-                                        ToggleButtons(
-                                          isSelected: [
-                                            _kodeJenisOp == '0',
-                                            _kodeJenisOp == '1',
-                                          ],
-                                          onPressed: (idx) => setState(
-                                            () => _kodeJenisOp = idx.toString(),
+                                        Container(
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.grey.shade200),
                                           ),
-                                          fillColor: Colors.blue.shade50,
-                                          selectedColor: Colors.blue.shade700,
-                                          color: Colors.black87,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () => setState(() => _kodeJenisOp = '0'),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: _kodeJenisOp == '0' ? const Color(0xFF0C2A5B) : Colors.transparent,
+                                                      borderRadius: BorderRadius.circular(7),
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Text(
+                                                      'Bumi',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: _kodeJenisOp == '0' ? FontWeight.bold : FontWeight.normal,
+                                                        color: _kodeJenisOp == '0' ? Colors.white : Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: GestureDetector(
+                                                  onTap: () => setState(() => _kodeJenisOp = '1'),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: _kodeJenisOp == '1' ? const Color(0xFF0C2A5B) : Colors.transparent,
+                                                      borderRadius: BorderRadius.circular(7),
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Text(
+                                                      'Bgn',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight: _kodeJenisOp == '1' ? FontWeight.bold : FontWeight.normal,
+                                                        color: _kodeJenisOp == '1' ? Colors.white : Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          constraints: const BoxConstraints(
-                                            minHeight: 36,
-                                            minWidth: 60,
-                                          ),
-                                          children: const [
-                                            Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                              ),
-                                              child: Text(
-                                                '0 - Bumi',
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                              ),
-                                              child: Text(
-                                                '1 - Bangunan',
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                            ),
-                                          ],
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
+                              const SizedBox(height: 16),
+                              Divider(color: Colors.grey.shade300, height: 1),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Preview NOP',
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54),
                                   ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'PREVIEW NOP: 33.03.010.001.${_kodeBlok.isEmpty ? '___' : _kodeBlok}.AUTO.0',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
-                                      ),
-                                    ),
-                                    const Text(
-                                      '  (No. Urut otomatis)',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.black54,
-                                      ),
-                                    ),
-                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '33.03.010.001.${_kodeBlok.isEmpty ? '___' : _kodeBlok.padRight(3, '_')}.AUTO.0',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  letterSpacing: 1.0,
+                                  color: Colors.black87,
                                 ),
                               ),
                             ],
@@ -1749,101 +2007,137 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                       ),
 
                     Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'CATATAN / ALASAN VERIFIKASI',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: Colors.black54,
+                          // Catatan verifikasi dipindah ke dalam kotak abu
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF9F9F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Catatan verifikasi',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                TextField(
+                                  controller: _catatanController,
+                                  maxLines: 4,
+                                  decoration: InputDecoration(
+                                    hintText: 'Bagian subjek: ...\nBagian objek: ...',
+                                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade500, height: 1.3),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.grey.shade300),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(color: Color(0xFF0C2A5B)),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.all(12),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _catatanController,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'Contoh:\nBagian Subjek: ...\nBagian Objek: ...\nBagian Lampiran: ...',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
+
                           if (_isProcessing)
-                            const Center(child: CircularProgressIndicator())
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
                           else
                             Column(
                               children: [
+                                // Tombol Setujui - full width, solid navy
                                 SizedBox(
                                   width: double.infinity,
-                                  child: OutlinedButton.icon(
+                                  height: 52,
+                                  child: ElevatedButton.icon(
                                     onPressed: _prosesApprove,
-                                    icon: const Icon(
-                                      Icons.check_circle_outline,
-                                      size: 18,
+                                    icon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                                    label: const Text(
+                                      'Setujui pengajuan',
+                                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                                     ),
-                                    label: const Text('Setujui Pengajuan'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.blue.shade700,
-                                      side: BorderSide(
-                                        color: Colors.blue.shade200,
-                                        width: 2,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0C2A5B),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
+                                // Tombol Revisi dan Tolak - berdampingan
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: _prosesRevisi,
-                                        icon: const Icon(Icons.undo, size: 18),
-                                        label: const Text(
-                                          'Kembalikan untuk Revisi',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor:
-                                              Colors.orange.shade700,
-                                          side: BorderSide(
-                                            color: Colors.orange.shade200,
-                                            width: 2,
+                                      child: SizedBox(
+                                        height: 46,
+                                        child: OutlinedButton.icon(
+                                          onPressed: _prosesRevisi,
+                                          icon: const Icon(Icons.undo_rounded, size: 18),
+                                          label: const Text(
+                                            'Revisi',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                           ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.black87,
+                                            side: BorderSide(
+                                              color: Colors.grey.shade300,
+                                              width: 1.5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 10),
                                     Expanded(
-                                      child: OutlinedButton.icon(
-                                        onPressed: _prosesTolak,
-                                        icon: const Icon(
-                                          Icons.cancel_outlined,
-                                          size: 18,
-                                        ),
-                                        label: const Text(
-                                          'Tolak Permanen',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.red.shade700,
-                                          side: BorderSide(
-                                            color: Colors.red.shade200,
-                                            width: 2,
+                                      child: SizedBox(
+                                        height: 46,
+                                        child: OutlinedButton.icon(
+                                          onPressed: _prosesTolak,
+                                          icon: const Icon(Icons.block_rounded, size: 18),
+                                          label: const Text(
+                                            'Tolak',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                           ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Colors.red.shade700,
+                                            side: BorderSide(
+                                              color: Colors.red.shade300,
+                                              width: 1.5,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
                                           ),
                                         ),
                                       ),

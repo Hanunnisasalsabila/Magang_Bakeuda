@@ -52,16 +52,16 @@ class _RiwayatSpopTabState extends State<RiwayatSpopTab> {
 
       final List<Map<String, dynamic>> allData = [...futures[0], ...futures[1]];
 
-      // Sort by updated_at desc (newest first)
+      // Sort by tanggal_pengajuan (created_at) desc (newest first)
       allData.sort((a, b) {
         final dateA =
             DateTime.tryParse(
-              a['updated_at'] ?? a['tanggal_pengajuan'] ?? '',
+              a['tanggal_pengajuan'] ?? a['created_at'] ?? '',
             ) ??
             DateTime.now();
         final dateB =
             DateTime.tryParse(
-              b['updated_at'] ?? b['tanggal_pengajuan'] ?? '',
+              b['tanggal_pengajuan'] ?? b['created_at'] ?? '',
             ) ??
             DateTime.now();
         return dateB.compareTo(dateA);
@@ -170,7 +170,7 @@ class _RiwayatSpopTabState extends State<RiwayatSpopTab> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['Semua', 'Disetujui', 'Ditolak'].map((status) {
+                  children: ['Semua', 'Disetujui', 'Ditolak', 'Revisi'].map((status) {
                     final isSelected = _filterStatus == status;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
@@ -256,7 +256,7 @@ class _RiwayatSpopTabState extends State<RiwayatSpopTab> {
                           ) ??
                           '-';
                       final dateStr =
-                          item['updated_at'] ?? item['tanggal_pengajuan'];
+                          item['tanggal_pengajuan'] ?? item['created_at'];
                       final date = dateStr != null
                           ? DateFormat('dd MMM yyyy • HH:mm', 'id').format(
                               DateTime.tryParse(dateStr)?.toLocal() ??

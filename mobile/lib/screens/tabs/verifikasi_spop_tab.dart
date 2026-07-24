@@ -135,8 +135,63 @@ class _VerifikasiSpopTabState extends State<VerifikasiSpopTab> {
     );
 
     if (result != null && mounted) {
-      final snack = result == true ? '✅ Pengajuan berhasil diselesaikan!' : '❌ Pengajuan ditolak.';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snack)));
+      String title = 'Berhasil';
+      String msg = '';
+      IconData icon = Icons.check_circle;
+      Color color = Colors.blue;
+
+      if (result == 'DISETUJUI') {
+        msg = 'Pengajuan berhasil disetujui';
+        color = Colors.blue;
+      } else if (result == 'REVISI') {
+        title = 'Dikembalikan';
+        msg = 'Pengajuan dikembalikan untuk direvisi';
+        color = Colors.orange;
+        icon = Icons.assignment_return;
+      } else if (result == 'DITOLAK') {
+        title = 'Ditolak';
+        msg = 'Pengajuan telah ditolak permanen';
+        color = Colors.red;
+        icon = Icons.cancel;
+      } else {
+        msg = 'Pengajuan berhasil diproses';
+      }
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+          });
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) {
+                      return Transform.scale(
+                        scale: value,
+                        child: Icon(icon, color: color, size: 80),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(msg, textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
+          );
+        }
+      );
     }
     _loadAntrean(showLoading: false);
   }
