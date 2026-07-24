@@ -18,6 +18,7 @@ export default function ProfilPengguna({ role }) {
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const [isChangingPwd, setIsChangingPwd] = useState(false);
+  const [showDesaEditModal, setShowDesaEditModal] = useState(false);
 
   const [profileData, setProfileData] = useState({
     id: '',
@@ -119,6 +120,7 @@ export default function ProfilPengguna({ role }) {
         nip: editForm.nip || '-'
       }));
       setIsEditing(false);
+      setShowDesaEditModal(false);
       setToast({ show: true, message: 'Profil berhasil diperbarui', type: 'success' });
       
       // Update localStorage and notify Header
@@ -330,6 +332,19 @@ export default function ProfilPengguna({ role }) {
                 <button
                   onClick={() => setIsEditing(true)}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 text-primary text-sm font-medium hover:bg-primary/5 active:scale-95 rounded-lg transition-all border border-primary/20"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  Edit
+                </button>
+              )}
+              {isDesa && (
+                <button
+                  onClick={() => {
+                    setEditForm({ name: profileData.name, nip: profileData.nip === '-' ? '' : profileData.nip });
+                    setShowDesaEditModal(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-primary text-sm font-medium hover:bg-primary/5 active:scale-95 rounded-lg transition-all border border-primary/20"
+                  title="Edit Profil"
                 >
                   <span className="material-symbols-outlined text-[16px]">edit</span>
                   Edit
@@ -558,6 +573,94 @@ export default function ProfilPengguna({ role }) {
               >
                 {isChangingPwd && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
                 Simpan Kata Sandi
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profil Desa Modal */}
+      {showDesaEditModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowDesaEditModal(false)}></div>
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-2xl w-full max-w-2xl relative z-10 animate-fadeIn max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowDesaEditModal(false)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors">
+              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            </button>
+            <div className="text-center mb-5">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="material-symbols-outlined text-3xl text-primary">edit</span>
+              </div>
+              <h2 className="text-xl font-bold text-on-surface">Edit Informasi Pribadi</h2>
+              <p className="text-sm text-on-surface-variant mt-1">Perbarui NIP Anda</p>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    disabled
+                    className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">NIP</label>
+                  <input
+                    type="text"
+                    maxLength={21}
+                    value={editForm.nip}
+                    onChange={(e) => setEditForm({ ...editForm, nip: formatNIPInput(e.target.value) })}
+                    placeholder="Contoh: 19850315 201012 1 002"
+                    className="w-full bg-white border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm font-mono text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Username</label>
+                  <input
+                    type="text"
+                    value={profileData.username || '-'}
+                    disabled
+                    className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Jabatan / Role</label>
+                  <input
+                    type="text"
+                    value={profileData.role || '-'}
+                    disabled
+                    className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                  />
+                </div>
+                <div className="sm:col-span-1 space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Unit Kerja / Departemen</label>
+                  <input
+                    type="text"
+                    value={profileData.dept || '-'}
+                    disabled
+                    className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                  />
+                </div>
+                <div className="sm:col-span-1 space-y-1">
+                  <label className="text-[11px] text-on-surface-variant ml-0.5 block tracking-wide uppercase font-medium">Kode Wilayah</label>
+                  <input
+                    type="text"
+                    value={profileData.kode_wilayah || '-'}
+                    disabled
+                    className="w-full bg-surface-container/50 border border-outline-variant/40 rounded-lg px-3.5 py-2.5 text-sm text-on-surface-variant cursor-not-allowed"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={isSaving || (editForm.nip === (!profileData.nip || profileData.nip === '-' ? '' : profileData.nip))}
+                className="w-full py-2.5 font-bold bg-primary text-on-primary rounded-xl mt-6 hover:bg-primary/90 transition-all flex justify-center items-center gap-2 shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none"
+              >
+                {isSaving && <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>}
+                Simpan Perubahan
               </button>
             </form>
           </div>

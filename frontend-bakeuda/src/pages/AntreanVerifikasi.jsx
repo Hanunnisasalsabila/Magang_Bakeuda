@@ -63,7 +63,25 @@ export default function AntreanVerifikasi() {
         }
 
         const formatted = allData.map(item => {
-          const nopRaw = item.detail_tujuan[0]?.nop_generated || '..................';
+          let nopRaw = item.detail_tujuan[0]?.nop_generated || '..................';
+          let nameToDisplay = item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek || '';
+          let addressToDisplay = item.detail_tujuan?.[0]?.jalan_op_baru || item.detail_tujuan?.[0]?.jenis_tanah_baru?.replace('_', ' ') || '-';
+          let kelurahanToDisplay = item.detail_tujuan?.[0]?.kelurahan_op_baru || '-';
+          let kecamatanToDisplay = item.detail_tujuan?.[0]?.kecamatan_op_baru || '-';
+          let jenisLayanan = item.jenis_transaksi ? item.jenis_transaksi.replace(/_/g, ' ') : '-';
+
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.[0]) {
+            const objekAsal = item.detail_asal[0].objek_asal;
+            nopRaw = item.detail_asal[0].nop_asal || nopRaw;
+            nameToDisplay = objekAsal?.subjek_pajak?.nama_subjek || nameToDisplay;
+            addressToDisplay = objekAsal?.subjek_pajak?.alamat_jalan || objekAsal?.jalan_op || '-';
+            kelurahanToDisplay = objekAsal?.wilayah?.nama_desa || '-';
+            kecamatanToDisplay = objekAsal?.wilayah?.kecamatan || '-';
+          }
+
+          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
+            ? nameToDisplay 
+            : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama');
           const clean = nopRaw.replace(/\D/g, '');
           let nopFormatted = nopRaw;
           if (clean.length === 18) {
@@ -92,12 +110,13 @@ export default function AntreanVerifikasi() {
           return {
             id: item.id_transaksi,
             nop: nopFormatted,
-            name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+            name: nameToDisplay,
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
-            address: item.detail_tujuan[0]?.jalan_op_baru || item.detail_tujuan[0]?.jenis_tanah_baru?.replace('_', ' ') || '-',
+            jenisLayanan: jenisLayanan,
+            address: addressToDisplay,
             rtRw: '',
-            kelurahan: item.detail_tujuan[0]?.kelurahan_op_baru || '-',
-            kecamatan: item.detail_tujuan[0]?.kecamatan_op_baru || '-',
+            kelurahan: kelurahanToDisplay,
+            kecamatan: kecamatanToDisplay,
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
             status: badgeStatus,
@@ -246,9 +265,11 @@ export default function AntreanVerifikasi() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="px-6 py-3 font-bold border-b border-outline-variant">No</th>
                 <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">NOP</th>
                 <th className="px-6 py-3 font-bold border-b border-outline-variant w-[20%]">Subjek Pajak</th>
-                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[25%]">Alamat Objek</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Jenis Layanan</th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant w-[20%]">Alamat Objek</th>
                 <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Desa/Kelurahan</th>
                 <th className="px-6 py-3 font-bold border-b border-outline-variant w-[15%]">Tanggal Kirim</th>
                 <th className="px-6 py-3 font-bold border-b border-outline-variant text-center w-[10%]">Aksi</th>
@@ -257,12 +278,12 @@ export default function AntreanVerifikasi() {
             <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-on-surface-variant">
+                  <td colSpan={8} className="text-center p-8 text-on-surface-variant">
                     Memuat antrean...
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((item) => (
+                paginatedData.map((item, index) => (
                   <tr
                     key={item.id}
                     className={`transition-colors ${
@@ -271,6 +292,7 @@ export default function AntreanVerifikasi() {
                         : 'hover:bg-gray-50'
                     }`}
                   >
+                    <td className="px-6 py-4 font-bold text-on-surface">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-sm font-bold text-primary whitespace-nowrap">
                         {item.nop === 'Menunggu penetapan' ? (
@@ -285,11 +307,14 @@ export default function AntreanVerifikasi() {
                       <p className="text-[12px] text-on-surface-variant">{item.userId}</p>
                     </td>
                     <td className="px-6 py-4">
+                      <span className="font-bold text-on-surface-variant text-sm whitespace-nowrap">{item.jenisLayanan}</span>
+                    </td>
+                    <td className="px-6 py-4">
                       <p className="text-on-surface">{item.address}</p>
                       <p className="text-[12px] text-on-surface-variant">{item.rtRw}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-on-surface">{item.kelurahan}</span>
+                      <span className="text-on-surface uppercase font-semibold">{item.kecamatan} / {item.kelurahan}</span>
                     </td>
                     <td className="px-6 py-4">
                       <p className={`text-on-surface ${item.urgent ? 'font-bold' : ''}`}>{item.date}</p>
@@ -335,7 +360,7 @@ export default function AntreanVerifikasi() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center p-8 text-on-surface-variant">
+                  <td colSpan={8} className="text-center p-8 text-on-surface-variant">
                     Tidak ada antrean verifikasi yang cocok.
                   </td>
                 </tr>

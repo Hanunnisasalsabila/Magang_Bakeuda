@@ -3,11 +3,98 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 import api from '../../utils/axios';
 
+
+const ToggleSwitch = ({ label, checked, onChange, description }) => (
+  <div className={`flex items-start justify-between p-4 border rounded-xl cursor-pointer transition-all ${checked ? 'bg-primary/5 border-primary/50' : 'bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low'}`} onClick={onChange}>
+    <div>
+      <h6 className={`font-bold text-sm ${checked ? 'text-primary' : 'text-on-surface'}`}>{label}</h6>
+      {description && <p className="text-xs text-on-surface-variant mt-0.5">{description}</p>}
+    </div>
+    <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-outline-variant'}`}>
+      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+    </div>
+  </div>
+);
+
+const RadioGroup = ({ label, field, options, columns = 3, formData, handleTextChange, errors }) => (
+  <div className="space-y-2">
+    <label className="font-label-sm text-primary block">{label}</label>
+    <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-3`}>
+      {options.map((opt, idx) => (
+        <label key={idx} className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-colors ${formData[field] === opt ? 'border-primary bg-primary/5' : 'border-outline-variant hover:bg-surface-container-low'}`}>
+          <input
+            type="radio"
+            name={field}
+            value={opt}
+            checked={formData[field] === opt}
+            onChange={(e) => handleTextChange(field, e)}
+            className="mt-0.5 text-primary focus:ring-primary border-outline-variant"
+          />
+          <span className="text-sm font-semibold text-on-surface">{opt}</span>
+        </label>
+      ))}
+    </div>
+    {errors?.[field] && <p className="text-error text-[12px] mt-1">{errors[field]}</p>}
+  </div>
+);
+
 export default function Step4DataBangunan() {
+
+  const [formData, setFormData] = useState({
+    // INDUK
+    noFormulir: '',
+    jenisTransaksi: 'Perekaman Data',
+    jumlahBng: '1',
+    bangunanM2: '',
+
+    // A. RINCIAN DATA BANGUNAN
+    jenisPenggunaan: '',
+    luasBangunan: '',
+    jumlahLantai: '',
+    tahunDibangun: '',
+    tahunDirenovasi: '',
+    dayaListrik: '',
+    kondisi: '',
+    konstruksi: '',
+    atap: '',
+    dinding: '',
+    lantai: '',
+    langitLangit: '',
+
+    // B. FASILITAS
+    acSplit: '',
+    acWindow: '',
+    acSentral: '',
+    kolamRenangLuas: '',
+    kolamRenangFinishing: '',
+    halamanRingan: '',
+    halamanSedang: '',
+    halamanBerat: '',
+    halamanPenutupLantai: '',
+    lapanganTenisLampuBeton: '',
+    lapanganTenisLampuAspal: '',
+    lapanganTenisLampuTanah: '',
+    lapanganTenisTanpaLampuBeton: '',
+    lapanganTenisTanpaLampuAspal: '',
+    lapanganTenisTanpaLampuTanah: '',
+    liftPenumpang: '',
+    liftKapsul: '',
+    liftBarang: '',
+    tanggaBerjalanKecil: '', // Lbr < 0,80
+    tanggaBerjalanBesar: '', // Lbr > 0,80
+    panjangPagar: '',
+    bahanPagar: '',
+    pemadamHydrant: '',
+    pemadamSprinkler: '',
+    pemadamFireAl: '',
+    saluranPabx: '',
+    sumurArtesis: ''
+  });
+
   const navigate = useNavigate();
   const { id_transaksi } = useParams();
   const { spopData, formData: ctxFormData, setFormData: setCtxFormData, saveDraft, idTransaksi: ctxId, completionStatus, updateCompletion } = useSpop();
-  
+
   const parsedTotal = ctxFormData?.jumlahBangunan ? parseInt(ctxFormData.jumlahBangunan, 10) : 1;
   const currentId = ctxId || id_transaksi || '';
 
@@ -52,6 +139,14 @@ export default function Step4DataBangunan() {
   const [catatanRevisi, setCatatanRevisi] = useState(spopData?.catatan_bakeuda || '');
   const [draftDataList, setDraftDataList] = useState([]);
 
+  useEffect(() => {
+    if (ctxFormData?.transaksi === 'HAPUS') {
+      setFormData(prev => ({ ...prev, jenisTransaksi: 'Penghapusan Data' }));
+    } else if (['BARU', 'PECAH', 'GABUNG'].includes(ctxFormData?.transaksi)) {
+      setFormData(prev => ({ ...prev, jenisTransaksi: 'Perekaman Data' }));
+    }
+  }, [ctxFormData?.transaksi]);
+
   // State untuk Progressive Disclosure UI
   const [hasAC, setHasAC] = useState(false);
   const [hasKolamRenang, setHasKolamRenang] = useState(false);
@@ -75,22 +170,11 @@ export default function Step4DataBangunan() {
     });
   };
 
-  const ToggleSwitch = ({ label, checked, onChange, description }) => (
-    <div className={`flex items-start justify-between p-4 border rounded-xl cursor-pointer transition-all ${checked ? 'bg-primary/5 border-primary/50' : 'bg-surface-container-lowest border-outline-variant hover:bg-surface-container-low'}`} onClick={onChange}>
-      <div>
-        <h6 className={`font-bold text-sm ${checked ? 'text-primary' : 'text-on-surface'}`}>{label}</h6>
-        {description && <p className="text-xs text-on-surface-variant mt-0.5">{description}</p>}
-      </div>
-      <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-primary' : 'bg-outline-variant'}`}>
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
-      </div>
-    </div>
-  );
 
   const applyDataToForm = (data) => {
     // Mapping from snake_case to camelCase for backwards compatibility
     const mappedData = { ...data };
-    
+
     // Rincian Data Bangunan
     if (data.kode_jpb || data.jenis_penggunaan_bangunan || data.penggunaan) mappedData.jenisPenggunaan = data.kode_jpb || data.jenis_penggunaan_bangunan || data.penggunaan;
     if (data.luas_bangunan || data.luas) mappedData.luasBangunan = data.luas_bangunan || data.luas;
@@ -110,65 +194,65 @@ export default function Step4DataBangunan() {
       mappedData.acSplit = data.fasilitas.jumlah_ac_split || '';
       mappedData.acWindow = data.fasilitas.jumlah_ac_window || '';
       mappedData.acSentral = data.fasilitas.ac_sentral ? '1' : '';
-      
+
       mappedData.kolamRenangLuas = data.fasilitas.luas_kolam_renang || '';
       mappedData.kolamRenangFinishing = data.fasilitas.kolam_dengan_pelapis ? 'Dengan Pelapis' : (data.fasilitas.kolam_diplester ? 'Diplester' : '');
-      
+
       mappedData.halamanRingan = data.fasilitas.perkerasan_ringan || '';
       mappedData.halamanSedang = data.fasilitas.perkerasan_sedang || '';
       mappedData.halamanBerat = data.fasilitas.perkerasan_berat || '';
       mappedData.halamanPenutupLantai = data.fasilitas.perkerasan_dengan_penutup || '';
-      
+
       mappedData.panjangPagar = data.fasilitas.panjang_pagar_m || '';
       mappedData.bahanPagar = data.fasilitas.bahan_pagar || '';
-      
+
       mappedData.lapanganTenisLampuBeton = data.fasilitas.tenis_beton_dgn_lampu || '';
       mappedData.lapanganTenisLampuAspal = data.fasilitas.tenis_aspal_dgn_lampu || '';
       mappedData.lapanganTenisLampuTanah = data.fasilitas.tenis_tanah_rumput_dgn_lampu || '';
       mappedData.lapanganTenisTanpaLampuBeton = data.fasilitas.tenis_beton_tanpa_lampu || '';
       mappedData.lapanganTenisTanpaLampuAspal = data.fasilitas.tenis_aspal_tanpa_lampu || '';
       mappedData.lapanganTenisTanpaLampuTanah = data.fasilitas.tenis_tanah_rumput_tanpa_lampu || '';
-      
+
       mappedData.liftPenumpang = data.fasilitas.lift_penumpang || '';
       mappedData.liftKapsul = data.fasilitas.lift_kapsul || '';
       mappedData.liftBarang = data.fasilitas.lift_barang || '';
       mappedData.tanggaBerjalanKecil = data.fasilitas.tangga_berjalan_lbr_kurang_080m || '';
       mappedData.tanggaBerjalanBesar = data.fasilitas.tangga_berjalan_lbr_lebih_080m || '';
-      
+
       mappedData.pemadamHydrant = data.fasilitas.hydrant_ada ? '1' : '';
       mappedData.pemadamSprinkler = data.fasilitas.sprinkler_ada ? '1' : '';
       mappedData.pemadamFireAl = data.fasilitas.fire_alarm_ada ? '1' : '';
-      
+
       mappedData.saluranPabx = data.fasilitas.jumlah_saluran_pabx || '';
       mappedData.sumurArtesis = data.fasilitas.kedalaman_sumur_artesis_m || '';
     }
 
     // Pastikan nilai dari DB benar-benar cocok dengan Option Radio
     const radioOptions = {
-       jenisPenggunaan: ['Perumahan', 'Perkantoran Swasta', 'Pabrik', 'Toko/Apotik/Pasar/Ruko', 'Rumah Sakit/Klinik', 'Olah Raga/Rekreasi', 'Hotel/Wisma', 'Bengkel/Gudang/Pertanian', 'Gedung Pemerintah', 'Lain-lain', 'Bng Tidak Kena Pajak', 'Bangunan Parkir', 'Apartemen', 'Pompa Bensin', 'Tangki Minyak', 'Gedung Sekolah'],
-       kondisi: ['Sangat Baik', 'Baik', 'Sedang', 'Jelek'],
-       konstruksi: ['Baja', 'Beton', 'Batu Bata', 'Kayu'],
-       atap: ['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng'],
-       dinding: ['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding'],
-       lantai: ['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen'],
-       langitLangit: ['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']
+      jenisPenggunaan: ['Perumahan', 'Perkantoran Swasta', 'Pabrik', 'Toko/Apotik/Pasar/Ruko', 'Rumah Sakit/Klinik', 'Olah Raga/Rekreasi', 'Hotel/Wisma', 'Bengkel/Gudang/Pertanian', 'Gedung Pemerintah', 'Lain-lain', 'Bng Tidak Kena Pajak', 'Bangunan Parkir', 'Apartemen', 'Pompa Bensin', 'Tangki Minyak', 'Gedung Sekolah'],
+      kondisi: ['Sangat Baik', 'Baik', 'Sedang', 'Jelek'],
+      konstruksi: ['Baja', 'Beton', 'Batu Bata', 'Kayu'],
+      atap: ['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng'],
+      dinding: ['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding'],
+      lantai: ['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen'],
+      langitLangit: ['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']
     };
 
     const normalizeString = (str) => String(str).toLowerCase().replace(/_/g, ' ').replace(/[^a-z0-9]/g, '');
 
     Object.keys(radioOptions).forEach(field => {
       if (mappedData[field]) {
-         if (field === 'jenisPenggunaan' && !isNaN(mappedData[field])) {
-           const mapJpb = { '01': 'Perumahan', '02': 'Perkantoran Swasta', '03': 'Pabrik', '04': 'Toko/Apotik/Pasar/Ruko', '05': 'Rumah Sakit/Klinik', '06': 'Olah Raga/Rekreasi', '07': 'Hotel/Wisma', '08': 'Bengkel/Gudang/Pertanian', '09': 'Gedung Pemerintah', '10': 'Lain-lain', '11': 'Bng Tidak Kena Pajak', '12': 'Bangunan Parkir', '13': 'Apartemen', '14': 'Pompa Bensin', '15': 'Tangki Minyak', '16': 'Gedung Sekolah' };
-           const strVal = String(mappedData[field]).padStart(2, '0');
-           if (mapJpb[strVal]) mappedData[field] = mapJpb[strVal];
-         }
-         
-         const dbValNorm = normalizeString(mappedData[field]);
-         const match = radioOptions[field].find(opt => normalizeString(opt) === dbValNorm);
-         if (match) {
-            mappedData[field] = match;
-         }
+        if (field === 'jenisPenggunaan' && !isNaN(mappedData[field])) {
+          const mapJpb = { '01': 'Perumahan', '02': 'Perkantoran Swasta', '03': 'Pabrik', '04': 'Toko/Apotik/Pasar/Ruko', '05': 'Rumah Sakit/Klinik', '06': 'Olah Raga/Rekreasi', '07': 'Hotel/Wisma', '08': 'Bengkel/Gudang/Pertanian', '09': 'Gedung Pemerintah', '10': 'Lain-lain', '11': 'Bng Tidak Kena Pajak', '12': 'Bangunan Parkir', '13': 'Apartemen', '14': 'Pompa Bensin', '15': 'Tangki Minyak', '16': 'Gedung Sekolah' };
+          const strVal = String(mappedData[field]).padStart(2, '0');
+          if (mapJpb[strVal]) mappedData[field] = mapJpb[strVal];
+        }
+
+        const dbValNorm = normalizeString(mappedData[field]);
+        const match = radioOptions[field].find(opt => normalizeString(opt) === dbValNorm);
+        if (match) {
+          mappedData[field] = match;
+        }
       }
     });
 
@@ -189,26 +273,26 @@ export default function Step4DataBangunan() {
 
   useEffect(() => {
     if (!spopData) return;
-    
+
     let flatList = [];
     if (isPecah) {
       spopData.detail_tujuan?.forEach((t, idx) => {
-         if (t.data_bangunan_json) {
-           let parsed = typeof t.data_bangunan_json === 'string' ? JSON.parse(t.data_bangunan_json) : t.data_bangunan_json;
-           if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-           if (Array.isArray(parsed)) {
-             parsed.forEach(b => {
-               b._pecahanIndex = idx;
-               flatList.push(b);
-             });
-           }
-         }
+        if (t.data_bangunan_json) {
+          let parsed = typeof t.data_bangunan_json === 'string' ? JSON.parse(t.data_bangunan_json) : t.data_bangunan_json;
+          if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(b => {
+              b._pecahanIndex = idx;
+              flatList.push(b);
+            });
+          }
+        }
       });
     } else {
       const detailTujuan = spopData.detail_tujuan && spopData.detail_tujuan[0];
       if (detailTujuan?.data_bangunan_json) {
-        let parsedList = typeof detailTujuan.data_bangunan_json === 'string' 
-          ? JSON.parse(detailTujuan.data_bangunan_json) 
+        let parsedList = typeof detailTujuan.data_bangunan_json === 'string'
+          ? JSON.parse(detailTujuan.data_bangunan_json)
           : detailTujuan.data_bangunan_json;
         if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
         if (Array.isArray(parsedList)) {
@@ -258,74 +342,23 @@ export default function Step4DataBangunan() {
     fetchLuasGabung();
   }, [ctxFormData.transaksi, ctxFormData.nopAsalList, nomorBangunan]);
 
-  const [formData, setFormData] = useState({
-    // INDUK
-    noFormulir: '',
-    jenisTransaksi: 'Perekaman Data',
-    jumlahBng: '1',
-    bangunanM2: '',
-
-    // A. RINCIAN DATA BANGUNAN
-    jenisPenggunaan: '',
-    luasBangunan: '',
-    jumlahLantai: '',
-    tahunDibangun: '',
-    tahunDirenovasi: '',
-    dayaListrik: '',
-    kondisi: '',
-    konstruksi: '',
-    atap: '',
-    dinding: '',
-    lantai: '',
-    langitLangit: '',
-    
-    // B. FASILITAS
-    acSplit: '',
-    acWindow: '',
-    acSentral: '',
-    kolamRenangLuas: '',
-    kolamRenangFinishing: '',
-    halamanRingan: '',
-    halamanSedang: '',
-    halamanBerat: '',
-    halamanPenutupLantai: '',
-    lapanganTenisLampuBeton: '',
-    lapanganTenisLampuAspal: '',
-    lapanganTenisLampuTanah: '',
-    lapanganTenisTanpaLampuBeton: '',
-    lapanganTenisTanpaLampuAspal: '',
-    lapanganTenisTanpaLampuTanah: '',
-    liftPenumpang: '',
-    liftKapsul: '',
-    liftBarang: '',
-    tanggaBerjalanKecil: '', // Lbr < 0,80
-    tanggaBerjalanBesar: '', // Lbr > 0,80
-    panjangPagar: '',
-    bahanPagar: '',
-    pemadamHydrant: '',
-    pemadamSprinkler: '',
-    pemadamFireAl: '',
-    saluranPabx: '',
-    sumurArtesis: ''
-  });
-
   const [errors, setErrors] = useState({});
 
   const handleTextChange = (field, event) => {
     let value = event.target.value;
-    
+
     // Constraint khusus tahun (maksimal 4 digit, hanya angka, tidak boleh minus)
     if (field === 'tahunDibangun' || field === 'tahunDirenovasi') {
       value = value.replace(/\D/g, '');
       if (value.length > 4) value = value.slice(0, 4);
     }
-    
+
     // Constraint khusus jumlah lantai (maksimal 2 digit / 99)
     if (field === 'jumlahLantai') {
       value = value.replace(/\D/g, '');
       if (value.length > 2) value = value.slice(0, 2);
     }
-    
+
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -335,13 +368,13 @@ export default function Step4DataBangunan() {
 
     if (!formData.jenisPenggunaan) newErrors.jenisPenggunaan = 'Pilih jenis penggunaan bangunan';
     if (!formData.luasBangunan || parseFloat(formData.luasBangunan) <= 0) newErrors.luasBangunan = 'Isi luas bangunan dengan benar';
-    
+
     if (!formData.jumlahLantai || parseInt(formData.jumlahLantai) < 1) {
       newErrors.jumlahLantai = 'Jumlah lantai minimal 1';
     } else if (parseInt(formData.jumlahLantai) > 99) {
       newErrors.jumlahLantai = 'Jumlah lantai maksimal 99';
     }
-    
+
     if (!formData.tahunDibangun) {
       newErrors.tahunDibangun = 'Isi tahun dibangun';
     } else if (!/^\d{4}$/.test(formData.tahunDibangun)) {
@@ -353,7 +386,7 @@ export default function Step4DataBangunan() {
     if (formData.tahunDirenovasi) {
       const thnRenov = parseInt(formData.tahunDirenovasi);
       const thnBangun = parseInt(formData.tahunDibangun || 0);
-      
+
       if (!/^\d{4}$/.test(formData.tahunDirenovasi)) {
         newErrors.tahunDirenovasi = 'Tahun direnovasi harus 4 digit angka';
       } else if (thnRenov < thnBangun) {
@@ -399,7 +432,7 @@ export default function Step4DataBangunan() {
     if (formData.tahunDirenovasi) {
       const thnRenov = parseInt(formData.tahunDirenovasi);
       const thnBangun = parseInt(formData.tahunDibangun || 0);
-      
+
       if (!/^\d{4}$/.test(formData.tahunDirenovasi)) {
         newErrors.tahunDirenovasi = 'Tahun direnovasi harus 4 digit angka';
       } else if (thnBangun && thnRenov < thnBangun) {
@@ -425,13 +458,13 @@ export default function Step4DataBangunan() {
     const sanitizedData = { ...formData };
     const numericFasilitasFields = [
       'luasBangunan', 'jumlahLantai', 'dayaListrik',
-      'acSplit', 'acWindow', 'kolamRenangLuas', 
-      'halamanRingan', 'halamanSedang', 'halamanBerat', 'halamanPenutupLantai', 
+      'acSplit', 'acWindow', 'kolamRenangLuas',
+      'halamanRingan', 'halamanSedang', 'halamanBerat', 'halamanPenutupLantai',
       'lapanganTenisLampuBeton', 'lapanganTenisLampuAspal', 'lapanganTenisLampuTanah',
       'lapanganTenisTanpaLampuBeton', 'lapanganTenisTanpaLampuAspal', 'lapanganTenisTanpaLampuTanah',
-      'liftPenumpang', 'liftKapsul', 'liftBarang', 
-      'tanggaBerjalanKecil', 'tanggaBerjalanBesar', 
-      'panjangPagar', 'pemadamHydrant', 'pemadamSprinkler', 'pemadamFireAl', 
+      'liftPenumpang', 'liftKapsul', 'liftBarang',
+      'tanggaBerjalanKecil', 'tanggaBerjalanBesar',
+      'panjangPagar', 'pemadamHydrant', 'pemadamSprinkler', 'pemadamFireAl',
       'saluranPabx', 'sumurArtesis'
     ];
 
@@ -452,7 +485,7 @@ export default function Step4DataBangunan() {
     if (sanitizedData.fasilitas) {
       delete sanitizedData.fasilitas;
     }
-    
+
     // Add form structure attributes expected by backend
     sanitizedData.noFormulir = nop;
     sanitizedData.jenisTransaksi = localStorage.getItem('lspop_jenis_transaksi') || 'BARU';
@@ -479,7 +512,7 @@ export default function Step4DataBangunan() {
       const sanitizedData = getSanitizedData();
       const hasData = Object.keys(sanitizedData).some(k => !['noFormulir', 'jenisTransaksi', 'jumlahBng', 'bangunanM2'].includes(k));
       const newBangunanList = hasData ? [...bangunanList, sanitizedData] : bangunanList;
-      
+
       setCtxFormData(prev => ({ ...prev, data_bangunan_json: newBangunanList }));
       await saveDraft({ data_bangunan_json: newBangunanList });
       navigate('/draft-spop');
@@ -519,20 +552,20 @@ export default function Step4DataBangunan() {
     setIsSubmitting(true);
     const sanitizedData = getSanitizedData();
     const newBangunanList = [...bangunanList, sanitizedData];
-    
+
     if (activeRequiredIndex < requiredBangunan.length - 1) {
       setBangunanList(newBangunanList);
       setIsSubmitting(false);
       setToast({ show: true, message: `Data Bangunan berhasil disimpan sementara. Lanjut ke bangunan berikutnya.`, type: 'success' });
       setTimeout(() => setToast({ show: false, message: '', type: '' }), 4000);
-      
+
       const nextIdx = activeRequiredIndex + 1;
       if (isRevisi && draftDataList[nextIdx]) {
         applyDataToForm(draftDataList[nextIdx]);
       } else {
         resetForm();
       }
-      
+
       setActiveRequiredIndex(nextIdx);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
@@ -548,8 +581,8 @@ export default function Step4DataBangunan() {
         console.error('SAVE ERROR:', error);
         let errorMsg = 'Gagal menyimpan data bangunan.';
         if (error.response?.data?.message) {
-          errorMsg = Array.isArray(error.response.data.message) 
-            ? error.response.data.message.join(', ') 
+          errorMsg = Array.isArray(error.response.data.message)
+            ? error.response.data.message.join(', ')
             : error.response.data.message;
         } else if (error.message) {
           errorMsg = error.message;
@@ -560,27 +593,6 @@ export default function Step4DataBangunan() {
     }
   };
 
-  const RadioGroup = ({ label, field, options, columns = 3 }) => (
-    <div className="space-y-2">
-      <label className="font-label-sm text-primary block">{label}</label>
-      <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-3`}>
-        {options.map((opt, idx) => (
-          <label key={idx} className={`flex items-start gap-3 p-3 border rounded cursor-pointer transition-colors ${formData[field] === opt ? 'border-primary bg-primary/5' : 'border-outline-variant hover:bg-surface-container-low'}`}>
-            <input 
-              type="radio" 
-              name={field} 
-              value={opt}
-              checked={formData[field] === opt}
-              onChange={(e) => handleTextChange(field, e)}
-              className="mt-0.5 text-primary focus:ring-primary border-outline-variant"
-            />
-            <span className="text-sm font-semibold text-on-surface">{opt}</span>
-          </label>
-        ))}
-      </div>
-      {errors[field] && <p className="text-error text-[12px] mt-1">{errors[field]}</p>}
-    </div>
-  );
 
   return (
     <div>
@@ -599,35 +611,35 @@ export default function Step4DataBangunan() {
         <h4 className="font-bold text-on-surface text-lg border-b border-outline-variant/50 pb-3 mb-4">Informasi Induk (SPOP)</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="space-y-2">
-            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">No. Formulir</label>
+            <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">No. Formulir (Opsional)</label>
             <input type="text" value={formData.noFormulir} onChange={(e) => handleTextChange('noFormulir', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} className="w-full h-10 border border-outline-variant rounded px-3 font-data-mono" placeholder="No. Formulir" />
           </div>
           <div className="space-y-2">
             <label className="font-label-sm text-primary block text-xs uppercase tracking-wider">Jenis Transaksi</label>
-            <select 
-              value={formData.jenisTransaksi} 
-              onChange={(e) => handleTextChange('jenisTransaksi', { target: { value: e.target.value.replace(/[^0-9.]/g, '') } })} 
-              disabled={['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(ctxFormData?.transaksi)}
-              className={`w-full h-10 border border-outline-variant rounded px-3 text-sm ${['BARU', 'PECAH', 'GABUNG', 'PENGHAPUSAN'].includes(ctxFormData?.transaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : ''}`}
+            <select
+              value={formData.jenisTransaksi}
+              onChange={(e) => handleTextChange('jenisTransaksi', { target: { value: e.target.value } })}
+              disabled={['BARU', 'PECAH', 'GABUNG', 'HAPUS'].includes(ctxFormData?.transaksi)}
+              className={`w-full h-10 border border-outline-variant rounded px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none ${['BARU', 'PECAH', 'GABUNG', 'HAPUS'].includes(ctxFormData?.transaksi) ? 'bg-surface-container-lowest cursor-not-allowed text-on-surface-variant font-bold' : 'bg-white'}`}
             >
               {['BARU', 'PECAH', 'GABUNG'].includes(ctxFormData?.transaksi) && (
-                <option value="Perekaman Data">Perekaman Data</option>
+                <option value="Perekaman Data">1. Perekaman Data</option>
               )}
-              {['MUTASI', 'PERUBAHAN'].includes(ctxFormData?.transaksi) && (
+              {['MUTASI', 'PERUBAHAN_DATA'].includes(ctxFormData?.transaksi) && (
                 <>
-                  <option value="Perekaman Data">Perekaman Data</option>
-                  <option value="Pemutakhiran Data">Pemutakhiran Data</option>
-                  <option value="Penghapusan Data">Penghapusan Data</option>
+                  <option value="Perekaman Data">1. Perekaman Data</option>
+                  <option value="Pemutakhiran Data">2. Pemutakhiran Data</option>
+                  <option value="Penghapusan Data">3. Penghapusan Data</option>
                 </>
               )}
-              {ctxFormData?.transaksi === 'PENGHAPUSAN' && (
-                <option value="Penghapusan Data">Penghapusan Data</option>
+              {ctxFormData?.transaksi === 'HAPUS' && (
+                <option value="Penghapusan Data">3. Penghapusan Data</option>
               )}
               {!ctxFormData?.transaksi && (
                 <>
-                  <option value="Perekaman Data">Perekaman Data</option>
-                  <option value="Pemutakhiran Data">Pemutakhiran Data</option>
-                  <option value="Penghapusan Data">Penghapusan Data</option>
+                  <option value="Perekaman Data">1. Perekaman Data</option>
+                  <option value="Pemutakhiran Data">2. Pemutakhiran Data</option>
+                  <option value="Penghapusan Data">3. Penghapusan Data</option>
                 </>
               )}
             </select>
@@ -653,7 +665,7 @@ export default function Step4DataBangunan() {
 
       <div className="bg-white border-x border-b border-outline-variant rounded-b-xl p-6 md:p-10 shadow-sm">
         <form onSubmit={(e) => e.preventDefault()} className="space-y-12">
-          
+
           {/* BAGIAN A: RINCIAN DATA BANGUNAN */}
           <section className="space-y-8">
             <div className="flex items-center gap-3 border-b border-outline-variant pb-4">
@@ -663,17 +675,17 @@ export default function Step4DataBangunan() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <RadioGroup 
-                  label="1. Jenis Penggunaan Bangunan" 
-                  field="jenisPenggunaan" 
+                <RadioGroup
+                  label="1. Jenis Penggunaan Bangunan"
+                  field="jenisPenggunaan"
                   columns={3}
                   options={[
                     'Perumahan', 'Perkantoran Swasta', 'Pabrik', 'Toko/Apotik/Pasar/Ruko',
                     'Rumah Sakit/Klinik', 'Olah Raga/Rekreasi', 'Hotel/Wisma', 'Bengkel/Gudang/Pertanian',
                     'Gedung Pemerintah', 'Lain-lain', 'Bng Tidak Kena Pajak', 'Bangunan Parkir',
                     'Apartemen', 'Pompa Bensin', 'Tangki Minyak', 'Gedung Sekolah'
-                  ]} 
-                />
+                  ]}
+                 formData={formData} handleTextChange={handleTextChange} errors={errors} />
               </div>
 
               <div className="space-y-2">
@@ -706,12 +718,12 @@ export default function Step4DataBangunan() {
               <div className="space-y-2"></div>
 
               <div className="md:col-span-2 grid grid-cols-1 gap-6">
-                <RadioGroup label="7. Kondisi Pada Umumnya" field="kondisi" columns={4} options={['Sangat Baik', 'Baik', 'Sedang', 'Jelek']} />
-                <RadioGroup label="8. Konstruksi" field="konstruksi" columns={4} options={['Baja', 'Beton', 'Batu Bata', 'Kayu']} />
-                <RadioGroup label="9. Atap" field="atap" columns={3} options={['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng']} />
-                <RadioGroup label="10. Dinding" field="dinding" columns={3} options={['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding']} />
-                <RadioGroup label="11. Lantai" field="lantai" columns={5} options={['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen']} />
-                <RadioGroup label="12. Langit-Langit" field="langitLangit" columns={3} options={['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']} />
+                <RadioGroup label="7. Kondisi Pada Umumnya" field="kondisi" columns={4} options={['Sangat Baik', 'Baik', 'Sedang', 'Jelek']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="8. Konstruksi" field="konstruksi" columns={4} options={['Baja', 'Beton', 'Batu Bata', 'Kayu']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="9. Atap" field="atap" columns={3} options={['Decrabon/Beton/Genteng Glazur', 'Genteng Beton/Aluminium', 'Genteng Biasa/Sirap', 'Asbes', 'Seng']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="10. Dinding" field="dinding" columns={3} options={['Kaca/Aluminium', 'Beton', 'Batu Bata/Conblok', 'Kayu', 'Seng', 'Tidak ada Dinding']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="11. Lantai" field="lantai" columns={5} options={['Marmer', 'Keramik', 'Teraso', 'Ubin PC/Papan', 'Semen']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
+                <RadioGroup label="12. Langit-Langit" field="langitLangit" columns={3} options={['Akustik/Jati', 'Triplek/Asbes/Bambu', 'Tidak Ada']}  formData={formData} handleTextChange={handleTextChange} errors={errors} />
               </div>
             </div>
           </section>
@@ -722,17 +734,17 @@ export default function Step4DataBangunan() {
               <div className="w-1 bg-secondary h-8 rounded-full"></div>
               <h4 className="font-headline-md text-headline-md font-bold text-on-surface">B. FASILITAS (Opsional)</h4>
             </div>
-            
+
             <p className="text-sm text-on-surface-variant">Isi jumlah atau luas fasilitas di bawah ini jika tersedia di dalam bangunan. Kosongkan jika tidak ada.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Kelompok Pendingin Ruangan */}
               <div className="space-y-4 md:col-span-2">
-                <ToggleSwitch 
-                  label="Pendingin Ruangan (AC)" 
-                  description="Apakah terdapat AC Split, AC Window, atau AC Sentral?" 
-                  checked={hasAC} 
-                  onChange={() => handleToggle(setHasAC, ['acSplit', 'acWindow', 'acSentral'])} 
+                <ToggleSwitch
+                  label="Pendingin Ruangan (AC)"
+                  description="Apakah terdapat AC Split, AC Window, atau AC Sentral?"
+                  checked={hasAC}
+                  onChange={() => handleToggle(setHasAC, ['acSplit', 'acWindow', 'acSentral'])}
                 />
                 {hasAC && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -757,10 +769,10 @@ export default function Step4DataBangunan() {
 
               {/* Kelompok Eksterior: Kolam Renang */}
               <div className="space-y-4">
-                <ToggleSwitch 
-                  label="Kolam Renang" 
-                  checked={hasKolamRenang} 
-                  onChange={() => handleToggle(setHasKolamRenang, ['kolamRenangLuas', 'kolamRenangFinishing'])} 
+                <ToggleSwitch
+                  label="Kolam Renang"
+                  checked={hasKolamRenang}
+                  onChange={() => handleToggle(setHasKolamRenang, ['kolamRenangLuas', 'kolamRenangFinishing'])}
                 />
                 {hasKolamRenang && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
@@ -781,10 +793,10 @@ export default function Step4DataBangunan() {
 
               {/* Kelompok Eksterior: Pagar */}
               <div className="space-y-4">
-                <ToggleSwitch 
-                  label="Pagar Halaman" 
-                  checked={hasPagar} 
-                  onChange={() => handleToggle(setHasPagar, ['panjangPagar', 'bahanPagar'])} 
+                <ToggleSwitch
+                  label="Pagar Halaman"
+                  checked={hasPagar}
+                  onChange={() => handleToggle(setHasPagar, ['panjangPagar', 'bahanPagar'])}
                 />
                 {hasPagar && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn space-y-4">
@@ -806,11 +818,11 @@ export default function Step4DataBangunan() {
 
               {/* Kelompok Eksterior: Perkerasan Halaman */}
               <div className="space-y-4 md:col-span-2">
-                <ToggleSwitch 
-                  label="Perkerasan Halaman (Paving dll)" 
-                  description="Apakah terdapat area halaman yang diperkeras permukaannya?" 
-                  checked={hasHalaman} 
-                  onChange={() => handleToggle(setHasHalaman, ['halamanRingan', 'halamanSedang', 'halamanBerat', 'halamanPenutupLantai'])} 
+                <ToggleSwitch
+                  label="Perkerasan Halaman (Paving dll)"
+                  description="Apakah terdapat area halaman yang diperkeras permukaannya?"
+                  checked={hasHalaman}
+                  onChange={() => handleToggle(setHasHalaman, ['halamanRingan', 'halamanSedang', 'halamanBerat', 'halamanPenutupLantai'])}
                 />
                 {hasHalaman && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
@@ -827,11 +839,11 @@ export default function Step4DataBangunan() {
 
               {/* Lapangan Tenis */}
               <div className="space-y-4 md:col-span-2">
-                <ToggleSwitch 
-                  label="Lapangan Tenis" 
-                  description="Hanya diisi jika terdapat lapangan tenis pada properti." 
-                  checked={hasLapanganTenis} 
-                  onChange={() => handleToggle(setHasLapanganTenis, ['lapanganTenisLampuBeton', 'lapanganTenisLampuAspal', 'lapanganTenisLampuTanah', 'lapanganTenisTanpaLampuBeton', 'lapanganTenisTanpaLampuAspal', 'lapanganTenisTanpaLampuTanah'])} 
+                <ToggleSwitch
+                  label="Lapangan Tenis"
+                  description="Hanya diisi jika terdapat lapangan tenis pada properti."
+                  checked={hasLapanganTenis}
+                  onChange={() => handleToggle(setHasLapanganTenis, ['lapanganTenisLampuBeton', 'lapanganTenisLampuAspal', 'lapanganTenisLampuTanah', 'lapanganTenisTanpaLampuBeton', 'lapanganTenisTanpaLampuAspal', 'lapanganTenisTanpaLampuTanah'])}
                 />
                 {hasLapanganTenis && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
@@ -861,10 +873,10 @@ export default function Step4DataBangunan() {
 
               {/* Lift & Eskalator */}
               <div className="space-y-4 md:col-span-2">
-                <ToggleSwitch 
-                  label="Gedung Bertingkat (Lift & Eskalator)" 
-                  checked={hasLiftEskalator} 
-                  onChange={() => handleToggle(setHasLiftEskalator, ['liftPenumpang', 'liftKapsul', 'liftBarang', 'tanggaBerjalanKecil', 'tanggaBerjalanBesar'])} 
+                <ToggleSwitch
+                  label="Gedung Bertingkat (Lift & Eskalator)"
+                  checked={hasLiftEskalator}
+                  onChange={() => handleToggle(setHasLiftEskalator, ['liftPenumpang', 'liftKapsul', 'liftBarang', 'tanggaBerjalanKecil', 'tanggaBerjalanBesar'])}
                 />
                 {hasLiftEskalator && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -885,25 +897,25 @@ export default function Step4DataBangunan() {
 
               {/* Pemadam Kebakaran */}
               <div className="space-y-4 md:col-span-2">
-                <ToggleSwitch 
-                  label="Keamanan & Pemadam Kebakaran" 
-                  checked={hasPemadam} 
-                  onChange={() => handleToggle(setHasPemadam, ['pemadamHydrant', 'pemadamSprinkler', 'pemadamFireAl'])} 
+                <ToggleSwitch
+                  label="Keamanan & Pemadam Kebakaran"
+                  checked={hasPemadam}
+                  onChange={() => handleToggle(setHasPemadam, ['pemadamHydrant', 'pemadamSprinkler', 'pemadamFireAl'])}
                 />
                 {hasPemadam && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
                     <p className="text-xs font-bold text-outline uppercase tracking-wider mb-4">Centang Jika Ada</p>
                     <div className="flex flex-wrap gap-8">
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" checked={formData.pemadamHydrant > 0} onChange={e => setFormData(d => ({...d, pemadamHydrant: e.target.checked ? 1 : 0}))} className="w-5 h-5 text-primary rounded" />
+                        <input type="checkbox" checked={formData.pemadamHydrant > 0} onChange={e => setFormData(d => ({ ...d, pemadamHydrant: e.target.checked ? 1 : 0 }))} className="w-5 h-5 text-primary rounded" />
                         <span className="text-sm font-semibold">Hydrant</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" checked={formData.pemadamSprinkler > 0} onChange={e => setFormData(d => ({...d, pemadamSprinkler: e.target.checked ? 1 : 0}))} className="w-5 h-5 text-primary rounded" />
+                        <input type="checkbox" checked={formData.pemadamSprinkler > 0} onChange={e => setFormData(d => ({ ...d, pemadamSprinkler: e.target.checked ? 1 : 0 }))} className="w-5 h-5 text-primary rounded" />
                         <span className="text-sm font-semibold">Sprinkler</span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" checked={formData.pemadamFireAl > 0} onChange={e => setFormData(d => ({...d, pemadamFireAl: e.target.checked ? 1 : 0}))} className="w-5 h-5 text-primary rounded" />
+                        <input type="checkbox" checked={formData.pemadamFireAl > 0} onChange={e => setFormData(d => ({ ...d, pemadamFireAl: e.target.checked ? 1 : 0 }))} className="w-5 h-5 text-primary rounded" />
                         <span className="text-sm font-semibold">Fire Alarm</span>
                       </label>
                     </div>
@@ -913,11 +925,11 @@ export default function Step4DataBangunan() {
 
               {/* Utilitas Tambahan */}
               <div className="space-y-4">
-                <ToggleSwitch 
+                <ToggleSwitch
                   label="Saluran PABX (Telepon)"
                   description="Saluran telepon internal antar ruangan dalam gedung / ekstensi."
-                  checked={hasPabx} 
-                  onChange={() => handleToggle(setHasPabx, ['saluranPabx'])} 
+                  checked={hasPabx}
+                  onChange={() => handleToggle(setHasPabx, ['saluranPabx'])}
                 />
                 {hasPabx && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
@@ -928,11 +940,11 @@ export default function Step4DataBangunan() {
               </div>
 
               <div className="space-y-4">
-                <ToggleSwitch 
+                <ToggleSwitch
                   label="Sumur Artesis"
                   description="Sumur bor dalam untuk sumber air tanah sekunder."
-                  checked={hasSumur} 
-                  onChange={() => handleToggle(setHasSumur, ['sumurArtesis'])} 
+                  checked={hasSumur}
+                  onChange={() => handleToggle(setHasSumur, ['sumurArtesis'])}
                 />
                 {hasSumur && (
                   <div className="p-5 border border-outline-variant rounded-xl bg-surface-container-lowest animate-fadeIn">
@@ -955,9 +967,9 @@ export default function Step4DataBangunan() {
             >
               Simpan Draft
             </button>
-            <button 
-              type="button" 
-              onClick={() => navigate(`/spop/objek-pajak/${currentId}`)} 
+            <button
+              type="button"
+              onClick={() => navigate(`/spop/objek-pajak/${currentId}`)}
               className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2"
             >
               Kembali

@@ -57,8 +57,8 @@ export const SpopProvider = ({ children }) => {
       setCompletionStatus({ 1: false, 2: false, 3: false, 4: false });
       // Reset formData for new entry (keep defaults)
       setFormData({
-        kategoriTransaksi: '',
-        transaksi: '',
+        kategoriTransaksi: 'baru',
+        transaksi: 'BARU',
         nop: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
         nopBersama: { prov: '33', kab: '03', kec: '', kel: '', blok: '', nourut: '', kode: '' },
         isKuasa: false,
@@ -119,6 +119,7 @@ export const SpopProvider = ({ children }) => {
           nik: (subjek.nik && subjek.nik !== '0000000000000000') ? subjek.nik : '',
           nama: (subjek.nama_subjek && subjek.nama_subjek !== 'TANPA NAMA') ? subjek.nama_subjek : '',
           npwp: subjek.npwp || '',
+          npwpd: subjek.npwpd || '',
           noTelp: subjek.no_hp || '',
           statusWp: subjek.status_wp || '',
           pekerjaan: subjek.pekerjaan || '',
@@ -161,15 +162,16 @@ export const SpopProvider = ({ children }) => {
           
           pecahanList: data.jenis_transaksi === 'PECAH' ? data.detail_tujuan?.map((t, idx) => ({
              id: idx,
-             nik: t.calon_subjek_json?.nik || '',
-             nama: t.calon_subjek_json?.nama || '',
+             nik: (t.calon_subjek_json?.nik && t.calon_subjek_json.nik !== '0000000000000000') ? t.calon_subjek_json.nik : '',
+             nama: (t.calon_subjek_json?.nama_subjek && t.calon_subjek_json.nama_subjek !== 'TANPA NAMA') ? t.calon_subjek_json.nama_subjek : '',
              npwp: t.calon_subjek_json?.npwp || '',
-             noTelp: t.calon_subjek_json?.no_telp || '',
+             npwpd: t.calon_subjek_json?.npwpd || '',
+             noTelp: t.calon_subjek_json?.no_hp || '',
              statusWp: t.calon_subjek_json?.status_wp || '',
              pekerjaan: t.calon_subjek_json?.pekerjaan || '',
              email: t.calon_subjek_json?.email || '',
-             alamat: t.calon_subjek_json?.alamat || '',
-             blokKav: t.calon_subjek_json?.blok_kav || '',
+             alamat: (t.calon_subjek_json?.alamat_jalan && t.calon_subjek_json.alamat_jalan !== 'TANPA ALAMAT') ? t.calon_subjek_json.alamat_jalan : '',
+             blokKav: t.calon_subjek_json?.blok_kav_no_subjek || '',
              rt: t.calon_subjek_json?.rt || '',
              rw: t.calon_subjek_json?.rw || '',
              kelurahan: t.calon_subjek_json?.kelurahan || '',
@@ -280,6 +282,7 @@ export const SpopProvider = ({ children }) => {
       nik: mergedData.nik || '0000000000000000',
       nama_subjek: mergedData.nama || 'TANPA NAMA',
       npwp: mergedData.npwp || undefined,
+      npwpd: mergedData.npwpd || undefined,
       no_hp: mergedData.noTelp || undefined,
       status_wp: mapStatusWp[mergedData.statusWp] || undefined,
       pekerjaan: mapPekerjaan[mergedData.pekerjaan] || undefined,
@@ -298,17 +301,10 @@ export const SpopProvider = ({ children }) => {
     let detail_tujuan;
     if (isHapus) {
       detail_tujuan = undefined;
-    } else if (isMutasi) {
-      detail_tujuan = [{
-        nik_calon_subjek: formData.nik || undefined,
-        calon_subjek_json,
-        luas_tanah_baru: 0,
-        jenis_tanah_baru: undefined
-      }];
     } else {
       detail_tujuan = [{
-        nik_calon_subjek: isPerubahanData ? undefined : (mergedData.nik || undefined),
-        calon_subjek_json: isPerubahanData ? undefined : calon_subjek_json,
+        nik_calon_subjek: mergedData.nik || undefined,
+        calon_subjek_json: calon_subjek_json,
         nop_generated: rawNop.length >= 18 ? rawNop : undefined,
         luas_tanah_baru: mergedData.luasTanah ? Number(mergedData.luasTanah) : 0,
         luas_bangunan_baru: (parseFloat(mergedData.luasBangunan) > 0) ? Number(mergedData.luasBangunan) : (Array.isArray(mergedData.data_bangunan_json) ? mergedData.data_bangunan_json.reduce((acc, b) => acc + (parseFloat(b.luasBangunan || b.luas_bangunan) || 0), 0) : 0),
@@ -339,6 +335,7 @@ export const SpopProvider = ({ children }) => {
             nik: p.nik || '0000000000000000',
             nama_subjek: p.nama || 'TANPA NAMA',
             npwp: p.npwp || undefined,
+            npwpd: p.npwpd || undefined,
             no_hp: p.noTelp || undefined,
             status_wp: mapStatusWp[p.statusWp] || undefined,
             pekerjaan: mapPekerjaan[p.pekerjaan] || undefined,

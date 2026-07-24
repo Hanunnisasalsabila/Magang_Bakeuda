@@ -8,6 +8,7 @@ export class CalonSubjekDto {
   @IsOptional() @IsEnum(StatusWp) status_wp?: StatusWp;
   @IsOptional() @IsEnum(Pekerjaan) pekerjaan?: Pekerjaan;
   @IsOptional() @IsString() npwp?: string;
+  @IsOptional() @IsString() npwpd?: string;
   @IsOptional() @IsString() no_hp?: string;
   @IsOptional() @IsString() email?: string;
   @IsString() alamat_jalan: string;

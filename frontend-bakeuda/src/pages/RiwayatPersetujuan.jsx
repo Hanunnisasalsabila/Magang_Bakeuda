@@ -12,9 +12,9 @@ function formatNOP(nopRaw) {
   if (!nopRaw || nopRaw.includes('...')) return 'Menunggu penetapan';
   const clean = nopRaw.replace(/\D/g, '');
   if (clean.length === 18) {
-    return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+    return clean;
   }
-  return nopRaw;
+  return nopRaw.replace(/\./g, '');
 }
 
 export default function RiwayatPersetujuan() {
@@ -38,15 +38,33 @@ export default function RiwayatPersetujuan() {
         ]);
 
         const mapItem = (item, status) => {
-          const detail = item.detail_tujuan?.[0] || {};
-          const nopRaw = detail.nop_generated || '';
+          const isHapus = item.jenis_transaksi === 'HAPUS';
+          let detail, calonSubjek, alamatJalan;
+          let nopRaw = '';
+
+          if (isHapus && item.detail_asal?.length > 0) {
+            const asal = item.detail_asal[0].objek_asal || {};
+            calonSubjek = asal.subjek_pajak || {};
+            detail = {
+              kelurahan_op_baru: asal.wilayah?.nama_desa,
+              kecamatan_op_baru: asal.wilayah?.kecamatan,
+            };
+            alamatJalan = calonSubjek.alamat_jalan;
+            nopRaw = item.detail_asal[0].nop_asal;
+          } else {
+            detail = item.detail_tujuan?.[0] || {};
+            calonSubjek = detail.calon_subjek_json || {};
+            alamatJalan = calonSubjek.alamat_jalan || calonSubjek.alamat;
+            nopRaw = detail.nop_generated || '';
+          }
+
           return {
             id: item.id_transaksi,
             nop: formatNOP(nopRaw),
-            namaPengaju: item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
+            namaSubjek: calonSubjek.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
             namaDesa: detail.kelurahan_op_baru || '-',
             kecamatan: detail.kecamatan_op_baru || '-',
-            reviewer: item.verifikator?.nama_lengkap || item.reviewer?.nama_lengkap || '—',
+            alamat: alamatJalan || '-',
             tanggalDiajukan: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesai: new Date(item.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesaiRaw: new Date(item.updated_at),
@@ -76,7 +94,7 @@ export default function RiwayatPersetujuan() {
   const filtered = allData.filter(item => {
     const matchStatus = statusFilter === 'SEMUA' || item.status === statusFilter;
     const matchSearch =
-      item.namaPengaju.toLowerCase().includes(search.toLowerCase()) ||
+      item.namaSubjek.toLowerCase().includes(search.toLowerCase()) ||
       item.nop.toLowerCase().includes(search.toLowerCase()) ||
       item.namaDesa.toLowerCase().includes(search.toLowerCase());
     const matchKec = kecamatan ? item.kecamatan === kecamatan : true;
@@ -167,9 +185,8 @@ export default function RiwayatPersetujuan() {
               <button
                 key={f.value}
                 onClick={() => { setStatusFilter(f.value); setCurrentPage(1); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-                  statusFilter === f.value ? f.color + ' shadow-sm' : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${statusFilter === f.value ? f.color + ' shadow-sm' : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400'
+                  }`}
               >
                 <span className="material-symbols-outlined text-[15px]">{f.icon}</span>
                 {f.label}
@@ -185,7 +202,7 @@ export default function RiwayatPersetujuan() {
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px] group-focus-within:text-primary transition-colors">search</span>
               <input
                 type="text"
-                placeholder="Cari NOP, nama pengaju, atau desa..."
+                placeholder="Cari NOP atau Nama subjek pajak..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                 className="w-full pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm shadow-sm"
@@ -215,9 +232,9 @@ export default function RiwayatPersetujuan() {
               <tr className="bg-primary/5 text-primary font-medium text-xs uppercase tracking-wider border-b border-primary/20">
                 <th className="py-2.5 px-3 text-center whitespace-nowrap w-8">No</th>
                 <th className="py-2.5 px-3 text-left whitespace-nowrap">NOP</th>
-                <th className="py-2.5 px-3 text-left whitespace-nowrap">Nama Pengaju</th>
-                <th className="py-2.5 px-3 text-left whitespace-nowrap">Kecamatan</th>
-                <th className="py-2.5 px-3 text-center whitespace-nowrap">Diproses Oleh</th>
+                <th className="py-2.5 px-3 text-left whitespace-nowrap">Nama Subjek</th>
+                <th className="py-2.5 px-3 text-left whitespace-nowrap">Desa / Kecamatan</th>
+                <th className="py-2.5 px-3 text-left whitespace-nowrap">Alamat</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Tanggal Diajukan</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Tanggal Selesai</th>
                 <th className="py-2.5 px-3 text-center whitespace-nowrap">Status</th>
@@ -262,12 +279,15 @@ export default function RiwayatPersetujuan() {
                       )}
                     </td>
                     <td className="py-2.5 px-3 whitespace-nowrap pr-8">
-                      <p className="font-medium text-gray-900 text-sm">{item.namaPengaju}</p>
-                      <p className="text-xs text-gray-400">{item.namaDesa}</p>
+                      <p className="font-medium text-gray-900 text-sm">{item.namaSubjek}</p>
                     </td>
-                    <td className="py-2.5 px-3 text-gray-600 text-xs whitespace-nowrap">{item.kecamatan}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <span className="text-xs text-gray-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full whitespace-nowrap">{item.reviewer}</span>
+                    <td className="py-2.5 px-3 text-gray-600 text-xs whitespace-nowrap">
+                      {item.namaDesa}, {item.kecamatan}
+                    </td>
+                    <td className="py-2.5 px-3 text-left">
+                      <span className="text-xs text-gray-600 whitespace-nowrap" title={item.alamat}>
+                        {item.alamat?.length > 20 ? item.alamat.substring(0, 20) + '...' : item.alamat}
+                      </span>
                     </td>
                     <td className="py-2.5 px-3 text-center text-xs text-gray-400 whitespace-nowrap">{item.tanggalDiajukan}</td>
                     <td className="py-2.5 px-3 text-center text-xs text-gray-600 whitespace-nowrap">{item.tanggalSelesai}</td>
