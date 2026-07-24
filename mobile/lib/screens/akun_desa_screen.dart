@@ -1369,6 +1369,9 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
+      bottomNavigationBar: (!_isLoading && _errorMsg == null && _daftarAkun.isNotEmpty)
+          ? _buildPaginationControls((_daftarAkun.length / _itemsPerPage).ceil())
+          : null,
       body: Column(
         children: [
           Expanded(
@@ -1441,10 +1444,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
         : _daftarAkun.length;
     final paginatedData = _daftarAkun.sublist(startIndex, endIndex);
 
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
+    return RefreshIndicator(
             color: _kNavy,
             onRefresh: () => _loadData(),
             child: ListView.builder(
@@ -1623,12 +1623,7 @@ class _AkunDesaScreenState extends State<AkunDesaScreen> {
                     );
               },
             ),
-          ),
-        ),
-        _buildPaginationControls(totalPages),
-        const SizedBox(height: 80), // Padding for FAB
-      ],
-    );
+          );
   }
 
   Widget _buildPaginationControls(int totalPages) {
