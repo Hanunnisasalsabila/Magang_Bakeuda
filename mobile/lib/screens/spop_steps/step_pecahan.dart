@@ -241,7 +241,14 @@ extension _StepPecahanExtension on _SpopFormScreenState {
           initialValue: p['jenisTanah'] as String,
           decoration: _dec('Jenis Tanah'),
           items: _jenisTanahOptions.map((o) => DropdownMenuItem(value: o['value'], child: Text(o['label']!, style: const TextStyle(fontSize: 12)))).toList(),
-          onChanged: (v) => _setP('jenisTanah', v),
+          onChanged: (v) {
+            _setP('jenisTanah', v);
+            if (v == 'TANAH_KOSONG') {
+              _setP('jumlahBangunan', '0');
+            } else if (p['jumlahBangunan'] == '0' || p['jumlahBangunan'] == '') {
+              _setP('jumlahBangunan', '1');
+            }
+          },
         )),
       ]),
       const SizedBox(height: 12),
@@ -313,6 +320,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
         initialValue: p['jumlahBangunan'] as String,
         decoration: _dec('Jumlah Bangunan (isi 0 jika tanah kosong)'),
         keyboardType: TextInputType.number,
+        readOnly: p['jenisTanah'] == 'TANAH_KOSONG',
         inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
         onChanged: (v) => _setP('jumlahBangunan', v),
       ),

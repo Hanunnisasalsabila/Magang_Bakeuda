@@ -33,7 +33,17 @@ extension _Step2Extension on _SpopFormScreenState {
           })),
         ]),
         const SizedBox(height: 12),
-        CustomTextField(controller: _jmlBangunanController, label: 'Jumlah Bangunan *', keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(2), FilteringTextInputFormatter.digitsOnly], validator: (v) => v == null || v.isEmpty ? 'Wajib diisi' : null),
+        CustomTextField(
+          controller: _jmlBangunanController, 
+          label: 'Jumlah Bangunan *', 
+          keyboardType: TextInputType.number, 
+          readOnly: _jenisTanah == 'TANAH_KOSONG',
+          inputFormatters: [LengthLimitingTextInputFormatter(2), FilteringTextInputFormatter.digitsOnly], 
+          validator: (v) {
+            if (_jenisTanah == 'TANAH_KOSONG') return null;
+            return v == null || v.isEmpty ? 'Wajib diisi' : null;
+          }
+        ),
         const SizedBox(height: 12),
         CustomTextField(controller: _jalanOpController, label: 'Alamat Objek (Jalan) *', maxLines: 2, validator: (v) {
           if (v == null || v.isEmpty) return 'Wajib diisi';
