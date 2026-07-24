@@ -44,7 +44,9 @@ export default function ManajemenAkunDesa() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users', {
+        params: { role: 'DESA', limit: 1000 }
+      });
       if (response.data.success) {
         setUsers(response.data.data);
       }
