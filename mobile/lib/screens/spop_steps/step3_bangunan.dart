@@ -17,11 +17,12 @@ extension _Step3Extension on _SpopFormScreenState {
           title: const Text('Rincian Utama', style: TextStyle(fontWeight: FontWeight.bold)),
           childrenPadding: const EdgeInsets.all(8),
           children: [
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Jenis Penggunaan',
               value: b['jenisPenggunaan'] ?? Constants.jenisPenggunaanBangunan[0],
-              decoration: InputDecoration(labelText: 'Jenis Penggunaan', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.jenisPenggunaanBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('jenisPenggunaan', v),
+              onChanged: (v,
+            ) => updateB('jenisPenggunaan', v),
             ),
             const SizedBox(height: 12),
             Row(children: [
@@ -88,11 +89,12 @@ extension _Step3Extension on _SpopFormScreenState {
                 },
               )),
               const SizedBox(width: 12),
-              Expanded(child: DropdownButtonFormField<String>(
-                value: b['kondisi'] ?? Constants.kondisiBangunan[0],
-                decoration: InputDecoration(labelText: 'Kondisi', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: Constants.kondisiBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('kondisi', v),
+              Expanded(child: CustomDropdown<String>(
+              label: 'Kondisi',
+              value: b['kondisi'] ?? Constants.kondisiBangunan[0],
+              items: Constants.kondisiBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('kondisi', v),
               )),
             ]),
           ],
@@ -102,39 +104,44 @@ extension _Step3Extension on _SpopFormScreenState {
           title: const Text('Spesifikasi Material', style: TextStyle(fontWeight: FontWeight.bold)),
           childrenPadding: const EdgeInsets.all(8),
           children: [
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Konstruksi',
               value: b['konstruksi'] ?? Constants.konstruksiBangunan[0],
-              decoration: InputDecoration(labelText: 'Konstruksi', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.konstruksiBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('konstruksi', v),
+              onChanged: (v,
+            ) => updateB('konstruksi', v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Atap',
               value: b['atap'] ?? Constants.atapBangunan[0],
-              decoration: InputDecoration(labelText: 'Atap', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.atapBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('atap', v),
+              onChanged: (v,
+            ) => updateB('atap', v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Dinding',
               value: b['dinding'] ?? Constants.dindingBangunan[0],
-              decoration: InputDecoration(labelText: 'Dinding', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.dindingBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('dinding', v),
+              onChanged: (v,
+            ) => updateB('dinding', v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Lantai',
               value: b['lantai'] ?? Constants.lantaiBangunan[0],
-              decoration: InputDecoration(labelText: 'Lantai', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.lantaiBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('lantai', v),
+              onChanged: (v,
+            ) => updateB('lantai', v),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
+            CustomDropdown<String>(
+              label: 'Langit-langit',
               value: b['langitLangit'] ?? Constants.langitLangitBangunan[0],
-              decoration: InputDecoration(labelText: 'Langit-langit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
               items: Constants.langitLangitBangunan.map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-              onChanged: (v) => updateB('langitLangit', v),
+              onChanged: (v,
+            ) => updateB('langitLangit', v),
             ),
           ],
         ),
@@ -162,11 +169,12 @@ extension _Step3Extension on _SpopFormScreenState {
                 )),
               ]),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: b['acSentral']?.toString() ?? 'Tidak Ada',
-                decoration: InputDecoration(labelText: 'AC Sentral', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('acSentral', v),
+              CustomDropdown<String>(
+              label: 'AC Sentral',
+              value: b['acSentral']?.toString() ?? 'Tidak Ada',
+              items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('acSentral', v),
               ),
               const Divider(),
             ],
@@ -181,11 +189,12 @@ extension _Step3Extension on _SpopFormScreenState {
                 label: 'Luas Kolam (M²)', keyboardType: TextInputType.number, onChanged: (v) => updateB('kolamRenangLuas', v),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: b['kolamRenangFinishing']?.toString(),
-                decoration: InputDecoration(labelText: 'Finishing', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Diplester', 'Dengan Pelapis'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('kolamRenangFinishing', v),
+              CustomDropdown<String>(
+              label: 'Finishing',
+              value: b['kolamRenangFinishing']?.toString(),
+              items: ['Diplester', 'Dengan Pelapis'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('kolamRenangFinishing', v),
               ),
               const Divider(),
             ],
@@ -200,11 +209,12 @@ extension _Step3Extension on _SpopFormScreenState {
                 label: 'Panjang Pagar (M)', keyboardType: TextInputType.number, onChanged: (v) => updateB('panjangPagar', v),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: b['bahanPagar']?.toString(),
-                decoration: InputDecoration(labelText: 'Bahan Pagar', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Baja/Besi', 'Bata/Batako'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('bahanPagar', v),
+              CustomDropdown<String>(
+              label: 'Bahan Pagar',
+              value: b['bahanPagar']?.toString(),
+              items: ['Baja/Besi', 'Bata/Batako'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('bahanPagar', v),
               ),
               const Divider(),
             ],
@@ -273,25 +283,28 @@ extension _Step3Extension on _SpopFormScreenState {
               onChanged: (v) => updateB('hasPemadam', v),
             ),
             if (b['hasPemadam'] == true) ...[
-              DropdownButtonFormField<String>(
-                value: b['pemadamHydrant']?.toString() ?? 'Tidak Ada',
-                decoration: InputDecoration(labelText: 'Hydrant', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('pemadamHydrant', v),
+              CustomDropdown<String>(
+              label: 'Hydrant',
+              value: b['pemadamHydrant']?.toString() ?? 'Tidak Ada',
+              items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('pemadamHydrant', v),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: b['pemadamSprinkler']?.toString() ?? 'Tidak Ada',
-                decoration: InputDecoration(labelText: 'Sprinkler', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('pemadamSprinkler', v),
+              CustomDropdown<String>(
+              label: 'Sprinkler',
+              value: b['pemadamSprinkler']?.toString() ?? 'Tidak Ada',
+              items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('pemadamSprinkler', v),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: b['pemadamFireAl']?.toString() ?? 'Tidak Ada',
-                decoration: InputDecoration(labelText: 'Fire Alarm', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
-                onChanged: (v) => updateB('pemadamFireAl', v),
+              CustomDropdown<String>(
+              label: 'Fire Alarm',
+              value: b['pemadamFireAl']?.toString() ?? 'Tidak Ada',
+              items: ['Ada', 'Tidak Ada'].map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontSize: 14)))).toList(),
+              onChanged: (v,
+            ) => updateB('pemadamFireAl', v),
               ),
               const Divider(),
             ],
@@ -365,3 +378,4 @@ extension _Step3Extension on _SpopFormScreenState {
     );
   }
 }
+

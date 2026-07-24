@@ -599,3 +599,4 @@ extension _StepPecahanExtension on _SpopFormScreenState {
   Widget _sectionTitle(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F2C59)));
   Widget _sectionSubtitle(String text) => Column(children: [Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)), const Divider()]);
 }
+
