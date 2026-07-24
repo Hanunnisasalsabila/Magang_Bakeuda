@@ -74,8 +74,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   // Step 1 - Kategori & Jenis
-  String _selectedKategori = 'BARU'; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
-  String _jenisLayanan = 'BARU'; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
+  String _selectedKategori = ''; // BARU, PEMUTAKHIRAN, PENGHAPUSAN
+  String _jenisLayanan = ''; // BARU, PECAH, GABUNG, MUTASI, PERUBAHAN_DATA, HAPUS
   
   final _nopUtamaController = TextEditingController();
   final List<TextEditingController> _nopAsalControllers = [TextEditingController()];
@@ -194,8 +194,18 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
              _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
              _rtOpController.text = tujuan['rt_op_baru'] ?? '';
              _rwOpController.text = tujuan['rw_op_baru'] ?? '';
-             _kelurahanOpController.text = tujuan['kelurahan_op_baru'] ?? '';
-             _kecamatanOpController.text = tujuan['kecamatan_op_baru'] ?? '';
+             final kelOpB = tujuan['kelurahan_op_baru']?.toString();
+             final kecOpB = tujuan['kecamatan_op_baru']?.toString();
+             _kelurahanOpController.text = (kelOpB != null && kelOpB.isNotEmpty) ? kelOpB : (_isOpWilayahPatented ? _kelurahanOpController.text : '');
+             _kecamatanOpController.text = (kecOpB != null && kecOpB.isNotEmpty) ? kecOpB : (_isOpWilayahPatented ? _kecamatanOpController.text : '');
+             
+             _jmlBangunanController.text = tujuan['jumlah_bangunan_baru']?.toString() ?? '0';
+             final bngList = tujuan['data_bangunan_json'];
+             if (bngList != null && bngList is List) {
+                _dataBangunanList = List<Map<String, dynamic>>.from(
+                    bngList.map((e) => Map<String, dynamic>.from(e as Map))
+                );
+             }
            }
         }
       });
@@ -520,6 +530,27 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                  }
                }
              } catch (_) {}
+          }
+
+          if (obj['bangunan'] != null && obj['bangunan'] is List) {
+             final listB = obj['bangunan'] as List;
+             _jmlBangunanController.text = listB.length.toString();
+             _dataBangunanList = listB.map<Map<String, dynamic>>((b) => {
+                'jenisPenggunaan': b['jenis_penggunaan'] ?? Constants.jenisPenggunaanBangunan[0],
+                'luasBangunan': b['luas_bangunan']?.toString() ?? '',
+                'jumlahLantai': b['jumlah_lantai']?.toString() ?? '',
+                'tahunDibangun': b['tahun_dibangun']?.toString() ?? '',
+                'kondisi': b['kondisi'] ?? Constants.kondisiBangunan[0],
+                'konstruksi': b['konstruksi'] ?? Constants.konstruksiBangunan[0],
+                'atap': b['atap'] ?? Constants.atapBangunan[0],
+                'dinding': b['dinding'] ?? Constants.dindingBangunan[0],
+                'lantai': b['lantai'] ?? Constants.lantaiBangunan[0],
+                'langitLangit': b['langit_langit'] ?? Constants.langitLangitBangunan[0],
+                'dayaListrik': b['daya_listrik_watt']?.toString() ?? '900',
+             }).toList();
+          } else if (_jenisTanah != 'TANAH_KOSONG') {
+             _jmlBangunanController.text = '0';
+             _dataBangunanList = [];
           }
         });
         if (mounted) {
@@ -846,8 +877,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        if (e is DioException && e.response?.data != null) {
+          final data = e.response!.data;
+          final m = data['message'] ?? data.toString();
+          msg = m is List ? m.join(', ') : m.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal simpan draft: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(content: Text('Gagal simpan draft: $msg'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
@@ -880,8 +917,14 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        if (e is DioException && e.response?.data != null) {
+          final data = e.response!.data;
+          final m = data['message'] ?? data.toString();
+          msg = m is List ? m.join(', ') : m.toString();
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal kirim: $e'), backgroundColor: Theme.of(context).colorScheme.error),
+          SnackBar(content: Text('Gagal kirim: $msg'), backgroundColor: Theme.of(context).colorScheme.error),
         );
       }
     } finally {
@@ -933,6 +976,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
 
     if (_currentStep == 0) {
+      if (_selectedKategori.isEmpty || _jenisLayanan.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Silakan pilih jenis transaksi terlebih dahulu'), backgroundColor: Colors.orange,
+        ));
+        return;
+      }
+
       if (_jenisLayanan == 'PECAH') {
         // Validate NOP Asal
         final nopAsal = _nopAsalControllers[0].text.replaceAll('.', '');
@@ -1206,16 +1256,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC), // Off-White background
       appBar: AppBar(
-        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16)),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F2C59), // Navy Blue
+        title: Text(_getStepTitle(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: const Color(0xFF0F2C59),
+        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           TextButton.icon(
             onPressed: _isSavingDraft ? null : _saveDraft,
-            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined, size: 18),
-            label: const Text('Draft'),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F2C59)),
+            icon: _isSavingDraft ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_outlined, size: 18, color: Colors.white),
+            label: const Text('Draft', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

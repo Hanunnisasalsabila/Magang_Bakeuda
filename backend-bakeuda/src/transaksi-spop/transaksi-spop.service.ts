@@ -68,7 +68,7 @@ export class TransaksiSpopService {
       if (nopAsalList.length > 0) {
         const found = await this.prisma.objekPajak.findMany({
           where: { nop: { in: nopAsalList } },
-          select: { nop: true, status_aktif: true }
+          select: { nop: true, status_aktif: true, luas_tanah: true, luas_bangunan: true }
         });
         const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
         for (const n of nopAsalList) {
@@ -78,6 +78,13 @@ export class TransaksiSpopService {
           if (foundNops.get(n) === false) {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
+        }
+        
+        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
+          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
+          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
+          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
+          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
         }
       }
     }
@@ -187,7 +194,7 @@ export class TransaksiSpopService {
       if (nopAsalList.length > 0) {
         const found = await this.prisma.objekPajak.findMany({
           where: { nop: { in: nopAsalList } },
-          select: { nop: true, status_aktif: true }
+          select: { nop: true, status_aktif: true, luas_tanah: true, luas_bangunan: true }
         });
         const foundNops = new Map(found.map(f => [f.nop, f.status_aktif]));
         for (const n of nopAsalList) {
@@ -197,6 +204,13 @@ export class TransaksiSpopService {
           if (foundNops.get(n) === false) {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
+        }
+        
+        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
+          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
+          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
+          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
+          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
         }
       }
     }
@@ -610,12 +624,20 @@ export class TransaksiSpopService {
         break;
 
       case 'PECAH':
-      case 'GABUNG':
         if (!dto.detail_tujuan?.length)
           throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
         for (const t of dto.detail_tujuan) {
           if (!t.luas_tanah_baru || t.luas_tanah_baru <= 0)
             throw new BadRequestException('Luas tanah setiap tujuan wajib diisi.');
+          if (!t.jenis_tanah_baru)
+            throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
+        }
+        break;
+
+      case 'GABUNG':
+        if (!dto.detail_tujuan?.length)
+          throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
+        for (const t of dto.detail_tujuan) {
           if (!t.jenis_tanah_baru)
             throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
         }

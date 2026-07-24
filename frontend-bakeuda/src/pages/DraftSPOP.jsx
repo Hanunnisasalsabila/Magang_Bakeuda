@@ -93,9 +93,9 @@ export default function DraftSPOP() {
         <p className="text-on-surface-variant text-sm">Kelola pengajuan SPOP Anda yang belum selesai diajukan (masih berstatus draft).</p>
       </div>
 
-      <div className="bg-surface border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex justify-between items-center">
-          <h2 className="font-bold text-on-surface">Daftar Draft Saya</h2>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
+          <h2 className="font-bold text-gray-900">Daftar Draft Saya</h2>
           <button
             onClick={() => {
               loadDraft(null);
@@ -108,7 +108,7 @@ export default function DraftSPOP() {
           </button>
         </div>
 
-        <div className="overflow-x-auto min-h-[300px]">
+        <div className="overflow-x-auto w-full">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <span className="material-symbols-outlined animate-spin text-[40px] text-primary">autorenew</span>
@@ -121,66 +121,73 @@ export default function DraftSPOP() {
               <p className="text-on-surface-variant text-sm max-w-sm">Anda belum memiliki pengajuan SPOP yang tersimpan sebagai draft.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="bg-surface-container-low text-on-surface text-sm uppercase tracking-wide border-b border-outline-variant">
-                  <th className="p-4 font-bold">No</th>
-                  <th className="p-4 font-bold">Jenis Layanan</th>
-                  <th className="p-4 font-bold">Identitas (Nama / NOP)</th>
+                <tr className="bg-surface-container-low border-b border-outline-variant">
+                  <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider w-16 text-center">No</th>
+                  <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Jenis Layanan</th>
+                  <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Identitas (Nama / NOP)</th>
                   <th
-                    className="p-4 font-bold cursor-pointer  select-none"
+                    className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider cursor-pointer select-none"
                     onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
                     title={sortOrder === 'newest' ? 'Urutkan Terlama ke Terbaru' : 'Urutkan Terbaru ke Terlama'}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       Dibuat Pada
-                      <span className="material-symbols-outlined text-[16px]">
+                      <span className="material-symbols-outlined text-[14px]">
                         {sortOrder === 'newest' ? 'arrow_downward' : 'arrow_upward'}
                       </span>
                     </div>
                   </th>
-                  <th className="p-4 font-bold">Status</th>
-                  <th className="p-4 font-bold text-center">Aksi</th>
+                  <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant">
+              <tbody className="divide-y divide-outline-variant/50">
                 {paginatedDrafts.map((draft, idx) => (
-                  <tr key={draft.id_transaksi} className="hover:bg-surface-container-lowest transition-colors">
-                    <td className="p-4 text-sm font-medium">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                    <td className="p-4 text-sm font-semibold">{draft.jenis_transaksi?.replace('_', ' ')}</td>
-                    <td className="p-4">
+                  <tr 
+                    key={draft.id_transaksi} 
+                    className={`hover:bg-surface-container-low transition-colors ${idx % 2 === 1 ? 'bg-surface-container-low/20' : ''}`}
+                  >
+                    <td className="px-4 py-3 text-center text-sm text-gray-600">
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 text-sm">{draft.jenis_transaksi?.replace('_', ' ')}</p>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold text-on-surface">
+                        <span className="text-sm font-bold text-gray-900">
                           {draft.nama_pengaju || 'Nama Belum Diisi'}
                         </span>
-                        <span className="text-xs text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded w-fit">
+                        <span className="text-xs text-gray-500 font-mono bg-gray-100 px-2 py-0.5 rounded w-fit border border-gray-200">
                           {draft.jenis_transaksi === 'BARU'
                             ? (draft.detail_tujuan?.[0]?.nik_calon_subjek ? `NIK: ${draft.detail_tujuan[0].nik_calon_subjek}` : 'SPOP Baru (NOP dari Bakeuda)')
                             : (draft.detail_tujuan?.[0]?.nop_generated || draft.detail_asal?.[0]?.nop_asal || draft.nop_bersama || draft.no_sppt_lama || 'NOP Belum Diisi')}
                         </span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-on-surface-variant">
+                    <td className="px-4 py-3 text-sm text-gray-600">
                       {new Date(draft.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3">
                       <StatusBadge status={draft.status_ajuan} />
                     </td>
-                    <td className="p-4">
+                    <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => handleEdit(draft.id_transaksi)}
-                          className="w-8 h-8 rounded-full bg-secondary/10 text-secondary hover:bg-secondary hover:text-white flex items-center justify-center transition-colors"
+                          className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 flex items-center justify-center transition-colors"
                           title="Lanjutkan Edit"
                         >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                          <span className="material-symbols-outlined text-[16px]">edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(draft.id_transaksi)}
-                          className="w-8 h-8 rounded-full bg-error/10 text-error hover:bg-error hover:text-white flex items-center justify-center transition-colors"
+                          className="w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors"
                           title="Hapus Draft"
                         >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                          <span className="material-symbols-outlined text-[16px]">delete</span>
                         </button>
                       </div>
                     </td>
@@ -193,30 +200,33 @@ export default function DraftSPOP() {
 
         {/* Pagination Footer */}
         {drafts.length > 0 && (
-          <div className="p-4 border-t border-outline-variant/60 bg-surface-container-lowest flex flex-col lg:flex-row items-center justify-between gap-4 text-sm">
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-on-surface-variant font-medium">
-              <div className="flex items-center gap-2 border-r border-outline-variant/60 pr-4">
-                <label className="font-semibold whitespace-nowrap">Tampilkan:</label>
-                <div className="relative">
-                  <select
-                    value={itemsPerPage}
-                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                    style={{ backgroundImage: 'none' }}
-                    className="pl-3 pr-8 py-1.5 bg-white border border-outline-variant rounded-md focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all text-on-surface font-bold text-sm shadow-sm outline-none appearance-none cursor-pointer"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={15}>15</option>
-                    <option value={20}>20</option>
-                    <option value={25}>25</option>
-                  </select>
-                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] pointer-events-none">
-                    expand_more
-                  </span>
-                </div>
+          <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 text-sm">
+            <div className="flex items-center gap-4 text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline">Tampilkan</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  className="bg-white border border-gray-300 rounded-md py-1 pl-3 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-bold text-on-surface cursor-pointer appearance-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '1.5em 1.5em'
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="hidden sm:inline">data per halaman</span>
               </div>
+              <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
               <div>
-                Menampilkan <span className="font-bold text-on-surface">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-bold text-on-surface">{Math.min(currentPage * itemsPerPage, drafts.length)}</span> dari <span className="font-bold text-on-surface">{drafts.length}</span> draft
+                Menampilkan <span className="font-bold text-on-surface">{drafts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, drafts.length)}</span> dari{' '}
+                <span className="font-bold text-on-surface">{drafts.length}</span> data
               </div>
             </div>
 
@@ -224,7 +234,7 @@ export default function DraftSPOP() {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex items-center justify-center w-8 h-8 rounded-md border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Halaman Sebelumnya"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -241,9 +251,9 @@ export default function DraftSPOP() {
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-8 h-8 rounded-md text-sm font-bold transition-all ${currentPage === pageNum
+                    className={`w-8 h-8 flex items-center justify-center rounded-md text-sm font-bold transition-all ${currentPage === pageNum
                       ? 'bg-primary text-white border-primary shadow-sm'
-                      : 'border border-outline-variant text-on-surface hover:bg-surface-container-high hover:border-on-surface/30'
+                      : 'border border-gray-200 text-gray-600 hover:bg-gray-100'
                       }`}
                   >
                     {pageNum}
@@ -253,9 +263,9 @@ export default function DraftSPOP() {
 
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="flex items-center justify-center w-8 h-8 rounded-md border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                title="Halaman Selanjutnya"
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Halaman Berikutnya"
               >
                 <span className="material-symbols-outlined text-[18px]">chevron_right</span>
               </button>

@@ -138,7 +138,6 @@ export class SubjekPajakService {
         },
         wilayah: true,
       },
-      take: 50,
       orderBy: { nama_subjek: 'asc' },
     });
 

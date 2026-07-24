@@ -1105,11 +1105,29 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                   _buildSectionCard(
                     title: 'F. LAMPIRAN DOKUMEN',
                     children: [
-                      if (tx?['lampiran'] != null)
+                      if (tx?['lampiran'] != null &&
+                          (tx!['lampiran'] is Map ? (tx!['lampiran'] as Map).isNotEmpty : (tx!['lampiran'] as List).isNotEmpty))
                         Builder(
                           builder: (context) {
-                            final lampiranData = tx!['lampiran'];
-                            final List lampiransRaw = lampiranData is List ? lampiranData : (lampiranData is Map ? [lampiranData] : []);
+                            List lampiransRaw = [];
+                            if (tx!['lampiran'] is Map) {
+                              final Map<String, dynamic> map = tx!['lampiran'];
+                              void addDocs(String key, String title) {
+                                if (map[key] is List) {
+                                  for (var url in map[key]) {
+                                    lampiransRaw.add({'jenis_dokumen': title, 'url_file': url});
+                                  }
+                                }
+                              }
+                              addDocs('url_ktp', 'KTP');
+                              addDocs('url_sertifikat', 'Sertifikat Hak Milik');
+                              addDocs('url_ajb', 'Akte Jual Beli');
+                              addDocs('url_imb', 'Izin Mendirikan Bangunan');
+                              addDocs('url_surat_kuasa', 'Surat Kuasa');
+                              addDocs('url_pendukung_lokasi', 'Pendukung Lokasi');
+                            } else {
+                              lampiransRaw = tx!['lampiran'];
+                            }
                             final List lampirans = lampiransRaw.where((l) {
                               final url = l['url_file']?.toString() ?? '';
                               return url.trim().isNotEmpty && url != 'null';
