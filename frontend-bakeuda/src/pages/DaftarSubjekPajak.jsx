@@ -5,22 +5,39 @@ import api from '../utils/axios';
 export default function DaftarSubjekPajak() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [showFilter, setShowFilter] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1); // Reset page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await api.get('/subjek-pajak');
-        const dataList = res.data.data || res.data;
-        const formattedList = Array.isArray(dataList) ? dataList.map(item => ({
+        const res = await api.get(`/subjek-pajak`, {
+          params: {
+            page: currentPage,
+            limit: itemsPerPage,
+            q: debouncedSearch
+          }
+        });
+        
+        const { data, total, totalPages: tp } = res.data;
+        const formattedList = Array.isArray(data) ? data.map(item => ({
           nik: item.nik,
           name: item.nama_subjek || 'Tanpa Nama',
           status_wp: item.status_wp || '-',
@@ -29,8 +46,9 @@ export default function DaftarSubjekPajak() {
           desa: item.wilayah?.nama_desa || '',
         })) : [];
 
-
         setSubjects(formattedList);
+        setTotalItems(total || 0);
+        setTotalPages(tp || 1);
       } catch (err) {
         console.error("Gagal memuat data subjek pajak:", err);
       } finally {
@@ -38,27 +56,7 @@ export default function DaftarSubjekPajak() {
       }
     };
     fetchData();
-  }, []);
-
-  const filteredSubjects = subjects.filter((obj) => {
-    const matchesSearch =
-      obj.name.toLowerCase().includes(search.toLowerCase()) ||
-      obj.nik.includes(search) ||
-      obj.address.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
-  });
-
-  filteredSubjects.sort((a, b) => {
-    if (sortOrder === 'asc') return a.name.localeCompare(b.name);
-    return b.name.localeCompare(a.name);
-  });
-
-  // Pagination Logic
-  const totalItems = filteredSubjects.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedSubjects = filteredSubjects.slice(startIndex, endIndex);
+  }, [currentPage, itemsPerPage, debouncedSearch]);
 
   return (
     <main className="p-gutter max-w-screen-xl mx-auto w-full">
@@ -73,51 +71,20 @@ export default function DaftarSubjekPajak() {
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col">
         {/* Toolbar */}
-        <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row gap-4 justify-between items-end">
-          <div className="flex-1 w-full">
+        <div className="p-4 border-b border-outline-variant bg-surface-container-lowest flex flex-col gap-4">
+          <div className="w-full">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Cari Nama/NIK/Alamat</label>
-            <div className="flex items-center gap-3 w-full">
-              <div className="relative flex-1">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">
-                  search
-                </span>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Ketik kata kunci..."
-                  className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
-                />
-              </div>
-              <div className="relative">
-                <button
-                  onClick={() => setShowFilter(!showFilter)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-lg border ${showFilter ? 'bg-primary text-white border-primary' : 'bg-surface-container-low border-outline-variant text-on-surface-variant hover:bg-surface-container'}`}
-                >
-                  <span className="material-symbols-outlined text-[20px]">filter_list</span>
-                </button>
-                {showFilter && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-outline-variant py-2 z-10">
-                    <button
-                      onClick={() => { setSortOrder('asc'); setShowFilter(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortOrder === 'asc' ? 'text-primary font-bold' : 'text-gray-700'}`}
-                    >
-                      Urutkan (A-Z)
-                      {sortOrder === 'asc' && <span className="material-symbols-outlined text-[18px]">check</span>}
-                    </button>
-                    <button
-                      onClick={() => { setSortOrder('desc'); setShowFilter(false); }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${sortOrder === 'desc' ? 'text-primary font-bold' : 'text-gray-700'}`}
-                    >
-                      Urutkan (Z-A)
-                      {sortOrder === 'desc' && <span className="material-symbols-outlined text-[18px]">check</span>}
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="relative flex-1 max-w-md">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">
+                search
+              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Ketik kata kunci..."
+                className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+              />
             </div>
           </div>
         </div>
@@ -129,7 +96,7 @@ export default function DaftarSubjekPajak() {
               <span className="material-symbols-outlined animate-spin text-4xl mb-4">autorenew</span>
               <p className="font-bold animate-pulse">Memuat Data...</p>
             </div>
-          ) : paginatedSubjects.length === 0 ? (
+          ) : subjects.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-on-surface-variant text-center px-4">
               <div className="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mb-4">
                 <span className="material-symbols-outlined text-[32px]">search_off</span>
@@ -150,14 +117,14 @@ export default function DaftarSubjekPajak() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50">
-                {paginatedSubjects.map((obj, i) => (
+                {subjects.map((obj, i) => (
                   <tr
                     key={i}
                     className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-low/20' : ''
                       }`}
                   >
                     <td className="px-4 py-3 text-center text-sm text-gray-500 font-medium">
-                      {startIndex + i + 1}
+                      {((currentPage - 1) * itemsPerPage) + i + 1}
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-on-surface font-medium">{obj.nik}</p>
@@ -192,7 +159,7 @@ export default function DaftarSubjekPajak() {
         </div>
 
         {/* Footer / Pagination */}
-        {!loading && filteredSubjects.length > 0 && (
+        {!loading && subjects.length > 0 && (
           <div className="p-4 border-t border-outline-variant bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4 text-sm text-on-surface-variant w-full sm:w-auto justify-between sm:justify-start">
               <div className="flex items-center gap-2">

@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
+import DraftConfirmModal from '../../components/DraftConfirmModal';
 import api from '../../utils/axios';
 
 // Fix leaflet icon issues
@@ -29,6 +30,7 @@ export default function Step4Konfirmasi() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [jenisDokumenUpload, setJenisDokumenUpload] = useState('KTP');
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
   const [previewImage, setPreviewImage] = useState(null);
@@ -624,22 +626,7 @@ export default function Step4Konfirmasi() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => {
-          const isHapus = formData?.transaksi === 'HAPUS' || spopData?.jenis_transaksi === 'HAPUS';
-          const isMutasi = formData?.transaksi === 'MUTASI' || spopData?.jenis_transaksi === 'MUTASI';
-          const isPerubahanData = formData?.transaksi === 'PERUBAHAN_DATA' || spopData?.jenis_transaksi === 'PERUBAHAN_DATA';
-          const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
-          
-          if (isHapus) {
-            navigate(`/spop/informasi-umum/${idTransaksi || ''}`);
-          } else if (isMutasi) {
-            navigate(`/spop/subjek-pajak/${idTransaksi || ''}`);
-          } else if (jumlahBangunan > 0) {
-            navigate(`/spop/data-bangunan/${idTransaksi || ''}`);
-          } else {
-            navigate(`/spop/objek-pajak/${idTransaksi || ''}`);
-          }
-        }} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting || !formData.persetujuan} className={`px-6 py-2.5 rounded-full font-bold shadow-md transition-all flex items-center gap-2 ${!formData.persetujuan ? 'bg-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'}`}>
@@ -820,6 +807,34 @@ export default function Step4Konfirmasi() {
           </div>
         </div>
       )}
+
+      <DraftConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onDiscard={() => {
+          const isHapus = formData?.transaksi === 'HAPUS' || spopData?.jenis_transaksi === 'HAPUS';
+          const isMutasi = formData?.transaksi === 'MUTASI' || spopData?.jenis_transaksi === 'MUTASI';
+          const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
+          
+          if (isHapus) {
+            navigate(`/spop/informasi-umum/${idTransaksi || ''}`);
+          } else if (isMutasi) {
+            navigate(`/spop/subjek-pajak/${idTransaksi || ''}`);
+          } else if (jumlahBangunan > 0) {
+            navigate(`/spop/data-bangunan/${idTransaksi || ''}`);
+          } else {
+            navigate(`/spop/objek-pajak/${idTransaksi || ''}`);
+          }
+        }}
+        onSave={async () => {
+          try {
+            await saveDraft();
+            navigate('/draft-spop');
+          } catch (error) {
+            setToast({ show: true, message: 'Gagal menyimpan draft.', type: 'error' });
+          }
+        }}
+      />
     </div>
   );
 }

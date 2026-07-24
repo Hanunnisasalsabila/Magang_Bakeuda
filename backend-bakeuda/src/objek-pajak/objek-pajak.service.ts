@@ -157,7 +157,7 @@ export class ObjekPajakService {
   // SEARCH
   // ─────────────────────────────────────────
 
-  async search(keyword: string, currentUser: CurrentUser) {
+  async search(keyword: string, currentUser: CurrentUser, page = 1, limit = 10, status?: string, jenisTanah?: string) {
     const scope = buildWilayahScope(currentUser);
     
     // Jika keyword berbentuk persis NOP (18 digit angka), coba sinkronkan dulu
@@ -169,23 +169,57 @@ export class ObjekPajakService {
       }
     }
 
-    const results = await this.prisma.objekPajak.findMany({
-      where: {
-        ...scope,
-        OR: [
-          { nop: { contains: keyword } },
-          { jalan_op: { contains: keyword, mode: 'insensitive' } },
-          {
-            subjek_pajak: {
-              nama_subjek: { contains: keyword, mode: 'insensitive' },
-            },
+    const keywordTrimmed = keyword.trim();
+
+    // Build where clause
+    const whereClause: any = {
+      ...scope,
+    };
+
+    if (keywordTrimmed) {
+      whereClause.OR = [
+        { nop: { contains: keywordTrimmed } },
+        { jalan_op: { contains: keywordTrimmed, mode: 'insensitive' } },
+        {
+          subjek_pajak: {
+            nama_subjek: { contains: keywordTrimmed, mode: 'insensitive' },
           },
-        ],
-      },
-      include: { subjek_pajak: { select: { nama_subjek: true } }, wilayah: true },
-      take: 50,
-    });
-    return { success: true, total: results.length, data: results };
+        },
+      ];
+    }
+
+    // Filter status
+    if (status === 'aktif') whereClause.status_aktif = true;
+    else if (status === 'nonaktif') whereClause.status_aktif = false;
+
+    // Filter jenis tanah
+    if (jenisTanah) whereClause.jenis_tanah = jenisTanah;
+
+    // Selalu urutkan dari terbaru
+    const orderBy = { created_at: 'desc' as const };
+
+    const safeLimit = Math.min(limit, 100); // max 100 per page
+    const skip = (page - 1) * safeLimit;
+
+    const [total, results] = await Promise.all([
+      this.prisma.objekPajak.count({ where: whereClause }),
+      this.prisma.objekPajak.findMany({
+        where: whereClause,
+        include: { subjek_pajak: { select: { nama_subjek: true } }, wilayah: true },
+        orderBy,
+        take: safeLimit,
+        skip,
+      }),
+    ]);
+
+    return {
+      success: true,
+      total,
+      page,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      data: results,
+    };
   }
 
   async getStats(currentUser: CurrentUser) {

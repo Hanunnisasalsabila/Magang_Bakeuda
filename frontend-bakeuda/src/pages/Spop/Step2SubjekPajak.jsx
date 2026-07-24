@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
+import DraftConfirmModal from '../../components/DraftConfirmModal';
 import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
@@ -9,6 +10,7 @@ export default function Step2SubjekPajak() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
@@ -183,15 +185,12 @@ export default function Step2SubjekPajak() {
     setIsSubmitting(true);
     try {
       setErrors({});
-      const newId = await saveDraft();
-      setToast({ show: true, message: 'Langkah 2 berhasil disimpan.', type: 'success' });
-      const savedId = idTransaksi || newId;
-      if (savedId) {
-        if (formData.transaksi === 'MUTASI') {
-          navigate(`/spop/konfirmasi/${savedId}`);
-        } else {
-          navigate(`/spop/objek-pajak/${savedId}`);
-        }
+      const savedId = idTransaksi || '';
+      
+      if (formData.transaksi === 'MUTASI') {
+        navigate(`/spop/konfirmasi/${savedId}`);
+      } else {
+        navigate(`/spop/objek-pajak/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -608,7 +607,7 @@ export default function Step2SubjekPajak() {
         <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
           Simpan Draft
         </button>
-        <button type="button" onClick={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
@@ -620,6 +619,15 @@ export default function Step2SubjekPajak() {
           Simpan Data
         </button>
       </div>
+
+      <DraftConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onDiscard={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)}
+        onSave={async () => {
+          await handleSaveDraft();
+        }}
+      />
     </div>
   );
 }

@@ -22,10 +22,20 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 export class SubjekPajakController {
   constructor(private readonly subjekPajakService: SubjekPajakService) {}
 
-  // GET /subjek-pajak?q=keyword
+  // GET /subjek-pajak?q=keyword&page=1&limit=10
   @Get()
-  async search(@Query('q') keyword: string, @Request() req: any) {
-    return this.subjekPajakService.search(keyword ?? '', req.user);
+  async search(
+    @Query('q') keyword: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Request() req: any
+  ) {
+    return this.subjekPajakService.search(
+      keyword ?? '', 
+      req.user,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10
+    );
   }
 
   // POST /subjek-pajak

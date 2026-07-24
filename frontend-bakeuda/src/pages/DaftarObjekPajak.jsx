@@ -4,20 +4,34 @@ import { createPortal } from 'react-dom';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { MapContainer, TileLayer, Polygon, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import StatusBadge from '../components/StatusBadge';
 import { useSpop } from '../context/SpopContext';
 import api from '../utils/axios';
 import logoPurbalingga from '../assets/logo-purbalingga.png';
 
+// Fix leaflet default icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
 export default function DaftarObjekPajak() {
   const navigate = useNavigate();
   const { loadDraft } = useSpop();
-  const [statusVerif, setStatusVerif] = useState('Semua Status');
+  const [statusVerif, setStatusVerif] = useState('');
   const [search, setSearch] = useState('');
+  const [jenisTanah, setJenisTanah] = useState('');
   const [showExportMenu, setShowExportMenu] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // States untuk Popup (Modal) & Notifikasi (Toast)
   const [selectedObject, setSelectedObject] = useState(null);
@@ -34,18 +48,34 @@ export default function DaftarObjekPajak() {
   const [objects, setObjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Debounced search
+  const [searchInput, setSearchInput] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Fetch stats sekali saja
+  useEffect(() => {
+    api.get('/objek-pajak/stats').then(res => setStats(res.data.data)).catch(() => { });
+  }, []);
+
+  // Fetch data setiap ada perubahan filter/page
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [statsRes, listRes] = await Promise.all([
-          api.get('/objek-pajak/stats'),
-          api.get('/objek-pajak')
-        ]);
+        const params = new URLSearchParams();
+        if (search) params.set('q', search);
+        params.set('page', String(currentPage));
+        params.set('limit', String(itemsPerPage));
+        if (statusVerif) params.set('status', statusVerif);
+        if (jenisTanah) params.set('jenis_tanah', jenisTanah);
 
-        setStats(statsRes.data.data);
+        const res = await api.get(`/objek-pajak?${params.toString()}`);
+        const { data, total, totalPages: tp } = res.data;
 
-        const formattedList = listRes.data.data.map(item => ({
+        const formattedList = (data || []).map(item => ({
           nop: item.nop,
           name: item.subjek_pajak?.nama_subjek || 'Tanpa Nama',
           address: item.jalan_op || '-',
@@ -57,10 +87,15 @@ export default function DaftarObjekPajak() {
           njop: Number(item.total_njop || 0),
           status: item.status_aktif ? 'Aktif' : 'Nonaktif',
           jenis_tanah: item.jenis_tanah || '-',
-          jumlah_bangunan: item.jumlah_bangunan || 0
+          jumlah_bangunan: item.jumlah_bangunan || 0,
+          koordinat_polygon: item.koordinat_polygon || null,
+          no_persil: item.no_persil || '-',
+          kode_blok: item.kode_blok || '-',
         }));
 
         setObjects(formattedList);
+        setTotalItems(total || 0);
+        setTotalPages(tp || 0);
       } catch (err) {
         console.error("Gagal memuat data objek pajak:", err);
       } finally {
@@ -68,26 +103,19 @@ export default function DaftarObjekPajak() {
       }
     };
     fetchData();
-  }, []);
+  }, [search, statusVerif, jenisTanah, currentPage, itemsPerPage]);
 
-  const filteredObjects = objects.filter((obj) => {
-    const matchesStatus =
-      statusVerif === 'Semua Status' ||
-      (statusVerif === 'Aktif' && obj.status === 'Aktif') ||
-      (statusVerif === 'Nonaktif' && obj.status === 'Nonaktif');
-    const matchesSearch =
-      obj.name.toLowerCase().includes(search.toLowerCase()) ||
-      obj.nop.includes(search) ||
-      obj.address.toLowerCase().includes(search.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const handleResetFilter = () => {
+    setSearchInput('');
+    setSearch('');
+    setStatusVerif('');
+    setJenisTanah('');
+    setCurrentPage(1);
+  };
 
-  // Pagination Logic
-  const totalItems = filteredObjects.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedObjects = filteredObjects.slice(startIndex, endIndex);
+  const paginatedObjects = objects;
 
   const handleExportExcel = () => {
     showToast('Sedang memproses file Excel...', 'success');
@@ -430,8 +458,8 @@ export default function DaftarObjekPajak() {
       {/* Filters & Search Controls */}
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row gap-4 justify-between md:items-end">
-          <div className="flex flex-col sm:flex-row gap-4 w-full">
-            <div className="space-y-1.5 flex-1 w-full">
+          <div className="flex flex-col sm:flex-row gap-4 w-full flex-wrap">
+            <div className="space-y-1.5 flex-1 min-w-[200px]">
               <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
                 Cari Nama/NOP/Alamat
               </label>
@@ -439,34 +467,48 @@ export default function DaftarObjekPajak() {
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">search</span>
                 <input
                   type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => { setSearchInput(e.target.value); setCurrentPage(1); }}
                   className="w-full bg-background border border-outline-variant rounded-lg py-2 pl-9 pr-3 text-sm focus:ring-primary focus:border-primary"
                   placeholder="Ketik kata kunci..."
                 />
               </div>
             </div>
-            <div className="space-y-1.5 w-full sm:w-[250px] shrink-0">
+            <div className="space-y-1.5 w-full sm:w-[165px] shrink-0">
               <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
-                Status Verifikasi
+                Status
               </label>
               <select
                 value={statusVerif}
-                onChange={(e) => setStatusVerif(e.target.value)}
+                onChange={(e) => { setStatusVerif(e.target.value); setCurrentPage(1); }}
                 className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
               >
-                <option>Semua Status</option>
-                <option>Aktif</option>
-                <option>Nonaktif</option>
+                <option value="">Semua Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 w-full sm:w-[200px] shrink-0">
+              <label className="font-label-sm text-on-surface-variant text-xs font-bold block ml-1">
+                Jenis Tanah
+              </label>
+              <select
+                value={jenisTanah}
+                onChange={(e) => { setJenisTanah(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-background border border-outline-variant rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary"
+              >
+                <option value="">Semua Jenis</option>
+                <option value="TANAH_BANGUNAN">Tanah Bangunan</option>
+                <option value="KAVLING_SIAP_BANGUN">Kavling Siap Bangun</option>
+                <option value="TANAH_KOSONG">Tanah Kosong</option>
+                <option value="FASILITAS_UMUM">Fasilitas Umum</option>
+                <option value="TANAH_LAINNYA">Tanah Lainnya</option>
               </select>
             </div>
           </div>
 
           <button
-            onClick={() => {
-              setSearch('');
-              setStatusVerif('Semua Status');
-            }}
+            onClick={handleResetFilter}
             className="bg-white border border-gray-300 rounded-lg px-5 py-2 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors focus:outline-none shadow-sm flex items-center justify-center gap-2 w-full md:w-auto shrink-0"
           >
             <span className="material-symbols-outlined text-[16px]">refresh</span>
@@ -487,6 +529,7 @@ export default function DaftarObjekPajak() {
                 <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Alamat Objek</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Tanah (m²)</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Bgn (m²)</th>
+                <th className="px-4 py-3 font-bold border-b border-outline-variant whitespace-nowrap">Jenis Tanah</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Status</th>
                 <th className="px-4 py-3 font-bold border-b border-outline-variant text-center whitespace-nowrap">Aksi</th>
               </tr>
@@ -515,14 +558,19 @@ export default function DaftarObjekPajak() {
                       {obj.nop}
                     </td>
                     <td className="px-4 py-3 font-label-md font-bold text-on-background whitespace-nowrap">{obj.name}</td>
-                    <td className="px-4 py-3 text-sm text-on-surface-variant leading-relaxed whitespace-nowrap">
-                      {obj.address}
+                    <td className="px-4 py-3 text-sm text-on-surface-variant leading-relaxed whitespace-nowrap" title={obj.address}>
+                      {obj.address.length > 25 ? obj.address.slice(0, 25) + '…' : obj.address}
                     </td>
                     <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
                       {obj.land.toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-center font-data-mono font-medium text-sm">
                       {obj.building.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium">
+                        {obj.jenis_tanah}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <StatusBadge status={obj.status} />
@@ -543,7 +591,7 @@ export default function DaftarObjekPajak() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center p-8 text-on-surface-variant font-medium">
+                  <td colSpan={9} className="text-center p-8 text-on-surface-variant font-medium">
                     Tidak ada objek pajak yang ditemukan.
                   </td>
                 </tr>
@@ -582,7 +630,7 @@ export default function DaftarObjekPajak() {
             <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
             <div>
               Menampilkan <span className="font-bold text-on-surface">{totalItems === 0 ? 0 : startIndex + 1} - {endIndex}</span> dari{' '}
-              <span className="font-bold text-on-surface">{totalItems}</span> data
+              <span className="font-bold text-on-surface">{totalItems.toLocaleString('id-ID')}</span> data
             </div>
           </div>
 
@@ -644,187 +692,138 @@ export default function DaftarObjekPajak() {
 
       {/* Detail Modal Popup */}
       {selectedObject && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-scrim/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-surface-container-lowest w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-full overflow-hidden scale-in">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedObject(null); }}
+        >
+          <div className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">landscape</span>
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3 bg-gradient-to-r from-green-50 to-emerald-50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-green-600 text-white flex items-center justify-center shadow">
+                  <span className="material-symbols-outlined text-[20px]">landscape</span>
+                </div>
+                <div>
+                  <h3 className="text-gray-900 font-bold text-base">Detail Objek Pajak</h3>
+                  <p className="text-gray-500 text-xs font-mono">{selectedObject.nop}</p>
+                </div>
               </div>
-              <h3 className="text-gray-900 font-bold text-lg">Detail Objek Pajak</h3>
+              <button
+                onClick={() => setSelectedObject(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors text-gray-500"
+                title="Tutup"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-              <div className="space-y-4">
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">NOP</p>
-                  <p className="font-bold text-gray-900 text-sm">{selectedObject.nop}</p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Alamat</p>
-                  <p className="font-bold text-gray-900 text-sm">
-                    {selectedObject.address}
-                    {selectedObject.rt_rw !== '-' && <span> ({selectedObject.rt_rw})</span>}
-                    {selectedObject.kelurahan && selectedObject.kelurahan !== '-' && <span> KEL. {selectedObject.kelurahan.toUpperCase()}</span>}
-                    {selectedObject.kecamatan && selectedObject.kecamatan !== '-' && <span>, KEC. {selectedObject.kecamatan.toUpperCase()}</span>}
-                  </p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Jenis Tanah</p>
-                  <p className="font-bold text-gray-900 text-sm capitalize">{selectedObject.jenis_tanah.replace(/_/g, ' ').toLowerCase()}</p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Luas Tanah</p>
-                  <p className="font-bold text-gray-900 text-sm">{selectedObject.land.toLocaleString()} M²</p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Luas Bangunan</p>
-                  <p className="font-bold text-gray-900 text-sm">{selectedObject.building.toLocaleString()} M²</p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Jumlah Bangunan</p>
-                  <p className="font-bold text-gray-900 text-sm">{selectedObject.jumlah_bangunan} Unit</p>
-                </div>
-                <div className="grid grid-cols-[160px_1fr] items-start gap-4">
-                  <p className="text-gray-600 font-medium text-sm">Status Objek Pajak</p>
-                  <div>
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
+              {/* Peta */}
+              {(() => {
+                const poly = selectedObject.koordinat_polygon;
+                const coords = Array.isArray(poly)
+                  ? poly
+                  : (poly?.coordinates?.[0] || null);
+                const leafletCoords = coords
+                  ? coords.map(c => Array.isArray(c[0]) ? c[0].map(p => [p[1], p[0]]) : [c[1], c[0]])
+                  : null;
+                const center = leafletCoords
+                  ? [leafletCoords.reduce((s, p) => s + p[0], 0) / leafletCoords.length,
+                     leafletCoords.reduce((s, p) => s + p[1], 0) / leafletCoords.length]
+                  : [-7.3906, 109.3647]; // Default: Purbalingga
+
+                return (
+                  <div className="h-52 w-full relative">
+                    <MapContainer
+                      key={selectedObject.nop}
+                      center={center}
+                      zoom={leafletCoords ? 17 : 12}
+                      style={{ height: '100%', width: '100%' }}
+                      scrollWheelZoom={false}
+                    >
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution='&copy; OpenStreetMap'
+                      />
+                      {leafletCoords ? (
+                        <Polygon positions={leafletCoords} pathOptions={{ color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.25, weight: 2 }} />
+                      ) : (
+                        <Marker position={center} />
+                      )}
+                    </MapContainer>
+                    {!leafletCoords && (
+                      <div className="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none">
+                        <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium">Koordinat polygon belum tersedia</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Info Grid */}
+              <div className="p-6 space-y-0">
+                {/* Section: Identitas */}
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Identitas Objek</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  <div className="bg-gray-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">NOP</p>
+                    <p className="font-bold text-gray-900 text-sm font-mono tracking-wider">{selectedObject.nop}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Status</p>
                     <StatusBadge status={selectedObject.status} />
                   </div>
+                  <div className="bg-gray-50 rounded-xl p-3.5 sm:col-span-2">
+                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1">Alamat Lengkap</p>
+                    <p className="font-semibold text-gray-800 text-sm leading-relaxed">
+                      {selectedObject.address}
+                      {selectedObject.rt_rw !== '-' && <span> ({selectedObject.rt_rw})</span>}
+                      {selectedObject.kelurahan && selectedObject.kelurahan !== '-' && <span> Kel. {selectedObject.kelurahan}</span>}
+                      {selectedObject.kecamatan && selectedObject.kecamatan !== '-' && <span>, Kec. {selectedObject.kecamatan}</span>}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Modal Footer (Aksi Lanjutan) */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center gap-4">
-              <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                <button
-                  onClick={() => handleCetakSPPT(selectedObject)}
-                  disabled={selectedObject.status === 'Nonaktif'}
-                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
-                  title={selectedObject.status === 'Nonaktif' ? "Objek Nonaktif tidak bisa dicetak SPPT" : "Cetak Tagihan Pajak"}
-                >
-                  <span className="material-symbols-outlined text-[18px]">print</span>
-                  Cetak SPPT
-                </button>
-                <button
-                  onClick={() => {
-                    loadDraft(null);
-                    navigate('/spop');
-                    setSelectedObject(null);
-                  }}
-                  disabled={selectedObject.status === 'Nonaktif'}
-                  className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
-                >
-                  <span className="material-symbols-outlined text-[18px]">edit_document</span>
-                  Ajukan Perubahan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ========== Modal Pre-Cetak PDF ========== */}
-      {printModal.show && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPrintModal({ show: false, obj: null })} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Header */}
-            <div className="bg-blue-50/80 border-b border-blue-100 px-6 py-5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-blue-500 text-[22px]">print</span>
-              </div>
-              <div>
-                <h3 className="text-blue-900 font-bold text-base">Cetak Salinan Data</h3>
-                <p className="text-blue-600/80 text-xs mt-0.5">Lengkapi form sebelum mengunduh PDF</p>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  Nomor Urut Surat <span className="text-gray-400 font-normal normal-case">(opsional)</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 whitespace-nowrap font-mono bg-gray-100 px-2 py-2.5 rounded-lg border border-gray-200">
-                    900.1 /
-                  </span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={printConfig.nomorSurat}
-                    onChange={e => setPrintConfig(p => ({ ...p, nomorSurat: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="mis. 123"
-                    className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <span className="text-xs text-gray-400 whitespace-nowrap font-mono bg-gray-100 px-2 py-2.5 rounded-lg border border-gray-200">
-                    / BKD-PBB / {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][new Date().getMonth()]} / {new Date().getFullYear()}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-1.5">Format nomor: <span className="font-mono">900.1 / {printConfig.nomorSurat || '...'} / BKD-PBB / {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][new Date().getMonth()]} / {new Date().getFullYear()}</span></p>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Nama Pejabat Penandatangan <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={printConfig.namaPejabat}
-                  onChange={e => setPrintConfig(p => ({ ...p, namaPejabat: e.target.value }))}
-                  placeholder="Contoh: Drs. Ahmad Fauzi, M.Si."
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Jabatan</label>
-                <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-lg">
-                  <span className="material-symbols-outlined text-[16px] text-gray-400">lock</span>
-                  <span className="text-sm text-gray-600 font-medium">Kepala Badan Keuangan Daerah</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                  NIP <span className="text-gray-400 font-normal normal-case">(opsional, maks. 18 digit)</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={printConfig.nip}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 18);
-                    setPrintConfig(p => ({ ...p, nip: val }));
-                  }}
-                  placeholder="Contoh: 197001011999031001"
-                  maxLength={18}
-                  className={`w-full px-3 py-2.5 border rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${printConfig.nip && printConfig.nip.length < 18 ? 'border-amber-400' : 'border-gray-300'
-                    }`}
-                />
-                <div className="flex justify-between mt-1">
-                  {printConfig.nip && printConfig.nip.length < 18 && printConfig.nip.length > 0 && (
-                    <span className="text-xs text-amber-600">NIP biasanya 18 digit</span>
+                {/* Section: Data Fisik */}
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Data Fisik Objek</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+                  <div className="bg-blue-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wider mb-1">Jenis Tanah</p>
+                    <p className="font-bold text-blue-800 text-sm capitalize">
+                      {selectedObject.jenis_tanah === '-' ? '-' : selectedObject.jenis_tanah.replace(/_/g, ' ').toLowerCase()}
+                    </p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wider mb-1">Luas Tanah</p>
+                    <p className="font-bold text-blue-800 text-sm">{selectedObject.land.toLocaleString('id-ID')} m²</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wider mb-1">Luas Bangunan</p>
+                    <p className="font-bold text-blue-800 text-sm">{selectedObject.building.toLocaleString('id-ID')} m²</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3.5">
+                    <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wider mb-1">Jumlah Bangunan</p>
+                    <p className="font-bold text-blue-800 text-sm">{selectedObject.jumlah_bangunan} Unit</p>
+                  </div>
+                  {selectedObject.njop > 0 && (
+                    <div className="bg-green-50 rounded-xl p-3.5 sm:col-span-2">
+                      <p className="text-[10px] text-green-600 font-semibold uppercase tracking-wider mb-1">NJOP</p>
+                      <p className="font-bold text-green-800 text-sm">Rp {selectedObject.njop.toLocaleString('id-ID')}</p>
+                    </div>
                   )}
-                  <span className="text-xs text-gray-400 ml-auto">{printConfig.nip.length}/18</span>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 italic">Kosongkan ruang tanda tangan fisik — cetak dokumen ini lalu tandatangani dengan tanda tangan basah.</p>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 border-t border-gray-200 bg-gray-50 flex justify-end">
               <button
-                onClick={() => setPrintModal({ show: false, obj: null })}
-                className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() => setSelectedObject(null)}
+                className="px-5 py-2 bg-white border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
               >
-                Batal
-              </button>
-              <button
-                onClick={generatePDF}
-                disabled={!printConfig.namaPejabat.trim()}
-                className="px-5 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[18px]">download</span>
-                Unduh PDF
+                <span className="material-symbols-outlined text-[16px]">close</span>
+                Tutup
               </button>
             </div>
           </div>

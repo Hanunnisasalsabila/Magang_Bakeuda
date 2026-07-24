@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
+import DraftConfirmModal from '../../components/DraftConfirmModal';
 import api from '../../utils/axios';
 
 
@@ -132,6 +133,7 @@ export default function Step4DataBangunan() {
   const [nomorBangunan, setNomorBangunan] = useState(1);
   const [totalBangunan, setTotalBangunan] = useState(parsedTotal);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const [bangunanList, setBangunanList] = useState([]);
@@ -969,7 +971,7 @@ export default function Step4DataBangunan() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/spop/objek-pajak/${currentId}`)}
+              onClick={() => setShowDraftModal(true)}
               className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2"
             >
               Kembali
@@ -997,6 +999,15 @@ export default function Step4DataBangunan() {
           <p className="text-sm opacity-90">{toast.message}</p>
         </div>
       </div>
+
+      <DraftConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onDiscard={() => navigate(`/spop/objek-pajak/${currentId}`)}
+        onSave={async () => {
+          await handleSaveDraft();
+        }}
+      />
     </div>
   );
 }

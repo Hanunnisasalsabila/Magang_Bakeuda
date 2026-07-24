@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
+import DraftConfirmModal from '../../components/DraftConfirmModal';
 import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
@@ -151,6 +152,7 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
 export default function Step3ObjekPajak() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, updateCompletion } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
@@ -566,23 +568,20 @@ export default function Step3ObjekPajak() {
     setIsSubmitting(true);
     try {
       setErrors({});
-      const newId = await saveDraft();
-      setToast({ show: true, message: 'Langkah 3 berhasil disimpan.', type: 'success' });
-      const savedId = idTransaksi || newId;
-      if (savedId) {
-        let hasBangunan = false;
-        if (isPecah) {
-          hasBangunan = formData.pecahanList?.some(p => parseInt(p.jumlahBangunan, 10) > 0);
-        } else {
-          hasBangunan = parseInt(formData.jumlahBangunan, 10) > 0;
-        }
+      const savedId = idTransaksi || '';
+      
+      let hasBangunan = false;
+      if (isPecah) {
+        hasBangunan = formData.pecahanList?.some(p => parseInt(p.jumlahBangunan, 10) > 0);
+      } else {
+        hasBangunan = parseInt(formData.jumlahBangunan, 10) > 0;
+      }
 
-        if (hasBangunan) {
-          navigate(`/spop/data-bangunan/${savedId}`);
-        } else {
-          updateCompletion(4, true);
-          navigate(`/spop/konfirmasi/${savedId}`);
-        }
+      if (hasBangunan) {
+        navigate(`/spop/data-bangunan/${savedId}`);
+      } else {
+        updateCompletion(4, true);
+        navigate(`/spop/konfirmasi/${savedId}`);
       }
     } catch (error) {
       console.error('Error saving step:', error);
@@ -1114,7 +1113,7 @@ export default function Step3ObjekPajak() {
         <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
           Simpan Draft
         </button>
-        <button type="button" onClick={() => navigate(formData.transaksi === 'PERUBAHAN_DATA' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
@@ -1125,6 +1124,15 @@ export default function Step3ObjekPajak() {
           )}
         </button>
       </div>
+
+      <DraftConfirmModal
+        isOpen={showDraftModal}
+        onClose={() => setShowDraftModal(false)}
+        onDiscard={() => navigate(formData.transaksi === 'PERUBAHAN_DATA' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/subjek-pajak/${idTransaksi || ''}`)}
+        onSave={async () => {
+          await handleSaveDraft();
+        }}
+      />
     </div>
   );
 }

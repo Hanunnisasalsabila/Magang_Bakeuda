@@ -3,6 +3,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateSubjekPajakDto } from './dto/create-subjek-pajak.dto.js';
@@ -95,6 +96,7 @@ export class SubjekPajakService {
             jumlah_bangunan: true,
             rt_op: true,
             rw_op: true,
+            kode_wilayah: true,
             wilayah: { select: { nama_desa: true, kecamatan: true } }
           },
         },
@@ -103,7 +105,16 @@ export class SubjekPajakService {
     });
     if (!subjek) throw new NotFoundException('Subjek pajak tidak ditemukan');
     
-    assertWilayahAccess(currentUser, subjek.kode_wilayah);
+    if (currentUser.role === 'DESA') {
+      if (!currentUser.kode_wilayah) {
+        throw new ForbiddenException('User DESA belum terikat ke wilayah manapun');
+      }
+      const hasAccess = subjek.kode_wilayah === currentUser.kode_wilayah || 
+                        subjek.objek_pajak.some(op => op.kode_wilayah === currentUser.kode_wilayah);
+      if (!hasAccess) {
+        throw new ForbiddenException('Anda tidak memiliki akses ke data subjek pajak ini');
+      }
+    }
 
     const { user, created_by, ...rest } = subjek;
 
@@ -120,32 +131,67 @@ export class SubjekPajakService {
   // SEARCH
   // ─────────────────────────────────────────
 
-  async search(keyword: string, currentUser: CurrentUser) {
-    const scope = buildWilayahScope(currentUser);
-
-    const results = await this.prisma.subjekPajak.findMany({
-      where: {
-        ...scope,
+  async search(keyword: string, currentUser: CurrentUser, page = 1, limit = 10) {
+    const keywordTrimmed = keyword.trim();
+    
+    const whereClause: any = {};
+    const andConditions: any[] = [];
+    
+    // 1. Wilayah scope
+    if (currentUser.role === 'DESA') {
+      andConditions.push({
         OR: [
-          { nik: { contains: keyword } },
-          { nama_subjek: { contains: keyword, mode: 'insensitive' } },
-          { alamat_jalan: { contains: keyword, mode: 'insensitive' } },
-        ],
-      },
-      include: {
-        user: {
-          select: { nama_lengkap: true },
-        },
-        wilayah: true,
-      },
-      take: 50,
-      orderBy: { nama_subjek: 'asc' },
-    });
+          { kode_wilayah: currentUser.kode_wilayah },
+          { objek_pajak: { some: { kode_wilayah: currentUser.kode_wilayah } } }
+        ]
+      });
+    }
 
-    return results.map(({ user, created_by, ...rest }) => ({
+    // 2. Keyword scope
+    if (keywordTrimmed) {
+      andConditions.push({
+        OR: [
+          { nik: { contains: keywordTrimmed } },
+          { nama_subjek: { contains: keywordTrimmed, mode: 'insensitive' } },
+          { alamat_jalan: { contains: keywordTrimmed, mode: 'insensitive' } },
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      whereClause.AND = andConditions;
+    }
+
+    const safeLimit = Math.min(limit, 100);
+    const skip = (page - 1) * safeLimit;
+
+    const [total, results] = await Promise.all([
+      this.prisma.subjekPajak.count({ where: whereClause }),
+      this.prisma.subjekPajak.findMany({
+        where: whereClause,
+        include: {
+          user: { select: { nama_lengkap: true } },
+          wilayah: true,
+        },
+        take: safeLimit,
+        skip,
+        orderBy: { updated_at: 'desc' },
+      })
+    ]);
+
+    const data = results.map(({ user, created_by, ...rest }) => ({
       ...rest,
       dibuat_oleh: user?.nama_lengkap ?? null,
     }));
+
+    return {
+      success: true,
+      total,
+      page,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      data,
+    };
   }
 
   // ─────────────────────────────────────────
@@ -158,7 +204,19 @@ export class SubjekPajakService {
     });
     if (!existing) throw new NotFoundException('Subjek pajak tidak ditemukan');
 
-    assertWilayahAccess(currentUser, existing.kode_wilayah);
+    if (currentUser.role === 'DESA') {
+      if (!currentUser.kode_wilayah) {
+        throw new ForbiddenException('User DESA belum terikat ke wilayah manapun');
+      }
+      if (existing.kode_wilayah !== currentUser.kode_wilayah) {
+        const hasObject = await this.prisma.objekPajak.findFirst({
+          where: { nik_subjek: nik, kode_wilayah: currentUser.kode_wilayah }
+        });
+        if (!hasObject) {
+          throw new ForbiddenException('Anda tidak memiliki akses untuk mengubah data subjek pajak ini');
+        }
+      }
+    }
 
     // Hapus field 'nik' dari dto agar tidak bisa diubah
     const { nik: _nik, ...updateData } = dto as any;

@@ -11,6 +11,8 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ObjekPajakService } from './objek-pajak.service.js';
 import { CreateObjekPajakDto } from './dto/create-objek-pajak.dto.js';
@@ -89,10 +91,17 @@ export class ObjekPajakController {
     return this.objekPajakService.getStats(req.user);
   }
 
-  // GET /objek-pajak?q=keyword
+  // GET /objek-pajak?q=keyword&page=1&limit=10&status=aktif&jenis_tanah=TANAH_KOSONG
   @Get()
-  async search(@Query('q') keyword: string, @Request() req: any) {
-    return this.objekPajakService.search(keyword ?? '', req.user);
+  async search(
+    @Query('q') keyword: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status: string,
+    @Query('jenis_tanah') jenisTanah: string,
+    @Request() req: any,
+  ) {
+    return this.objekPajakService.search(keyword ?? '', req.user, page, limit, status, jenisTanah);
   }
 
   // POST /objek-pajak — hanya BAKEUDA (koreksi darurat)
