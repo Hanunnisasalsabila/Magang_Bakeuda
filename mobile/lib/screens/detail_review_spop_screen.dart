@@ -622,141 +622,187 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                   const SizedBox(height: 16),
                   const Divider(thickness: 2),
 
-                  _buildSectionCard(
-                    title: 'A. NOMOR OBJEK PAJAK (NOP)',
-                    children: [
-                      _buildSingleColumn(
-                        'Nomor Objek Pajak',
-                        tx?['nop_bersama'] != null
-                            ? tx!['nop_bersama']
-                            : (([
-                                    'BARU',
-                                    'PECAH',
-                                    'GABUNG',
-                                  ].contains(tx?['jenis_transaksi']))
-                                  ? (tx?['status_ajuan'] == 'DISETUJUI' &&
-                                            tx?['detail_tujuan'] != null &&
-                                            (tx!['detail_tujuan'] as List)
-                                                .isNotEmpty &&
-                                            tx!['detail_tujuan'][0]['nop_generated'] !=
-                                                null
-                                        ? _fmtNop(
-                                            tx!['detail_tujuan'][0]['nop_generated'],
-                                          )
-                                        : 'Akan digenerate oleh Bakeuda')
-                                  : _fmt(
-                                      tx?['detail_asal']?.isNotEmpty == true
-                                          ? tx!['detail_asal'][0]['nop_asal']
-                                          : null,
-                                    )),
-                      ),
-                      _buildSingleColumn(
-                        'Format NOP',
-                        'Prov-Kab-Kec-Kel-Blok-No.Urut-Kode',
-                      ),
-                    ],
-                  ),
+                  Builder(builder: (context) {
+                    final jenis = tx?['jenis_transaksi'];
+                    String title = 'A. NOMOR OBJEK PAJAK (NOP)';
+                    if (jenis == 'BARU') title = 'A. NOMOR OBJEK PAJAK (NOP BARU)';
+                    if (jenis == 'PECAH' || jenis == 'GABUNG') title = 'A. DATA NOP ASAL (INDUK)';
 
-                  _buildSectionCard(
-                    title: 'B. DATA PENGAJUAN / SUBJEK PAJAK',
-                    children: [
-                      if (tx?['detail_tujuan'] != null &&
-                          (tx!['detail_tujuan'] as List).isNotEmpty)
-                        Builder(
-                          builder: (context) {
-                            final subjek = tx!['detail_tujuan'][0]['calon_subjek_json'] ?? {};
-                            final tujuan = tx['detail_tujuan'][0];
-                            final nama = subjek['nama_subjek'] ??
-                                tx['nama_pengaju'] ??
-                                tx['pengaju']?['nama_lengkap'] ??
-                                '-';
-                            final nik = subjek['nik'] ??
-                                subjek['npwp'] ??
-                                tujuan['nik_calon_subjek'] ??
-                                '-';
-                            final alamat = subjek['alamat_jalan'] ?? subjek['alamat'] ?? '-';
-                            final rt = subjek['rt'] ?? '-';
-                            final rw = subjek['rw'] ?? '-';
-                            final kel = subjek['kelurahan'] ?? '-';
-                            final kec = subjek['kecamatan'] ?? '-';
-                            final kab = subjek['kabupaten'] ?? 'Purbalingga';
+                    String nopLabel = (jenis == 'PECAH' || jenis == 'GABUNG') ? 'Nomor Objek Pajak Induk' : 'Nomor Objek Pajak';
+                    String nopValue = '-';
+                    if (tx?['nop_bersama'] != null) {
+                      nopValue = tx!['nop_bersama'];
+                    } else if (jenis == 'BARU') {
+                       if (tx?['status_ajuan'] == 'DISETUJUI' && tx?['detail_tujuan'] != null && (tx!['detail_tujuan'] as List).isNotEmpty) {
+                         nopValue = tx!['detail_tujuan'][0]['nop_generated'] != null ? _fmtNop(tx!['detail_tujuan'][0]['nop_generated']) : 'Akan digenerate oleh Bakeuda';
+                       } else {
+                         nopValue = 'Akan digenerate oleh Bakeuda';
+                       }
+                    } else if (jenis == 'PECAH' || jenis == 'GABUNG') {
+                       if (tx?['detail_asal'] != null && (tx!['detail_asal'] as List).isNotEmpty) {
+                         nopValue = _fmtNop(tx!['detail_asal'][0]['nop_asal']);
+                       }
+                    } else {
+                       if (tx?['detail_asal'] != null && (tx!['detail_asal'] as List).isNotEmpty) {
+                         nopValue = _fmtNop(tx!['detail_asal'][0]['nop_asal']);
+                       }
+                    }
 
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildGridRow([
-                                  {'label': 'Nama Subjek', 'value': _fmt(nama)},
-                                  {
-                                    'label': 'Status Subjek',
-                                    'value': _fmt(subjek['status_wp'] ?? subjek['status_subjek'])
-                                  },
-                                ]),
-                                _buildGridRow([
-                                  {'label': 'NIK / NPWP', 'value': _fmt(nik)},
-                                  {'label': 'Pekerjaan', 'value': _fmt(subjek['pekerjaan'])},
-                                ]),
-                                if (subjek['no_hp'] != null && subjek['no_hp'].toString().trim().isNotEmpty)
-                                  _buildSingleColumn('No. Telepon/HP', _fmt(subjek['no_hp'])),
-                                _buildSingleColumn(
-                                  'Alamat WP',
-                                  '$alamat, RT $rt/RW $rw, KEL. $kel, KEC. $kec\nKAB. $kab',
-                                ),
-                              ],
-                            );
-                          },
+                    // Luas Induk calculation
+                    double sumLuas = 0;
+                    String luasInduk = '-';
+                    if (tx?['detail_asal'] != null) {
+                      for (var asal in (tx!['detail_asal'] as List)) {
+                         sumLuas += double.tryParse((asal['luas_tanah_asal'] ?? 0).toString()) ?? 0;
+                      }
+                      if (sumLuas > 0) {
+                        luasInduk = sumLuas.toString();
+                      } else {
+                        luasInduk = (tx!['detail_asal'] as List).isNotEmpty ? (tx!['detail_asal'][0]['objek_asal']?['luas_tanah']?.toString() ?? '-') : '-';
+                      }
+                    }
+
+                    return _buildSectionCard(
+                      title: title,
+                      children: [
+                        if (jenis == 'PECAH' || jenis == 'GABUNG')
+                          _buildGridRow([
+                            {'label': nopLabel, 'value': nopValue},
+                            {'label': 'Luas Induk (Tanah)', 'value': '$luasInduk M²'},
+                          ])
+                        else
+                          _buildSingleColumn(
+                            nopLabel,
+                            nopValue,
+                          ),
+                        _buildSingleColumn(
+                          'Format NOP',
+                          'Prov-Kab-Kec-Kel-Blok-No.Urut-Kode',
                         ),
-                      _buildGridRow([
-                        {'label': 'No. SPPT Lama', 'value': _fmt(tx?['no_sppt_lama'])},
-                        {'label': 'Tahun Pajak', 'value': _fmt(tx?['tahun_pajak'])},
-                      ]),
-                    ],
-                  ),
-                  _buildSectionCard(
-                    title: 'C. DATA OBJEK PAJAK (TANAH)',
-                    children: [
-                      if (tx?['detail_tujuan'] != null &&
-                          (tx!['detail_tujuan'] as List).isNotEmpty)
-                        Builder(
-                          builder: (context) {
-                            final tujuan = tx!['detail_tujuan'][0];
-                            final jalan = tujuan['jalan_op_baru'] ?? '-';
-                            final blok = tujuan['blok_kav_no_baru'] != null
-                                ? '(Blok/Kav: ${tujuan['blok_kav_no_baru']})'
-                                : '';
-                            final rt = tujuan['rt_op_baru'] ?? '-';
-                            final rw = tujuan['rw_op_baru'] ?? '-';
-                            final kel = tujuan['kelurahan_op_baru'] ?? '-';
-                            final kec = tujuan['kecamatan_op_baru'] ?? '-';
+                      ],
+                    );
+                  }),
 
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildGridRow([
-                                  {'label': 'Luas Tanah', 'value': '${_fmt(tujuan['luas_tanah_baru'] ?? 0)} m²'},
-                                  {'label': 'Jenis Tanah', 'value': _fmt(tujuan['jenis_tanah_baru'])},
-                                ]),
-                                _buildSingleColumn(
-                                  'Letak Objek',
-                                  '$jalan $blok\nRT $rt/RW $rw, DESA $kel, KEC. $kec',
+                  if (tx?['detail_tujuan'] != null && (tx!['detail_tujuan'] as List).isNotEmpty)
+                    ...((tx!['detail_tujuan'] as List).asMap().entries.map((entry) {
+                      final idx = entry.key;
+                      final tujuan = entry.value;
+                      final subjek = tujuan['calon_subjek_json'] ?? {};
+                      
+                      final jenis = tx['jenis_transaksi'];
+                      String rincianTitle = 'RINCIAN TUJUAN';
+                      if (jenis == 'PECAH') rincianTitle = 'RINCIAN PECAHAN ${idx + 1}';
+                      if (jenis == 'HAPUS') rincianTitle = 'RINCIAN DATA YANG DIHAPUS';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (jenis == 'PECAH' || (tx!['detail_tujuan'] as List).length > 1) ...[
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                              color: Colors.blue.shade50,
+                              child: Text(
+                                rincianTitle,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.blue.shade900,
                                 ),
-                              ],
-                            );
-                          },
-                        ),
-                    ],
-                  ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          _buildSectionCard(
+                            title: 'B. DATA PENGAJUAN / SUBJEK PAJAK',
+                            children: [
+                              Builder(
+                                builder: (context) {
+                                  final nama = subjek['nama_subjek'] ??
+                                      tx['nama_pengaju'] ??
+                                      tx['pengaju']?['nama_lengkap'] ??
+                                      '-';
+                                  final nik = subjek['nik'] ??
+                                      subjek['npwp'] ??
+                                      tujuan['nik_calon_subjek'] ??
+                                      '-';
+                                  final alamat = subjek['alamat_jalan'] ?? subjek['alamat'] ?? '-';
+                                  final rt = subjek['rt'] ?? '-';
+                                  final rw = subjek['rw'] ?? '-';
+                                  final kel = subjek['kelurahan'] ?? '-';
+                                  final kec = subjek['kecamatan'] ?? '-';
+                                  final kab = subjek['kabupaten'] ?? 'Purbalingga';
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildGridRow([
+                                        {'label': 'Nama Subjek', 'value': _fmt(nama)},
+                                        {
+                                          'label': 'Status Subjek',
+                                          'value': _fmt(subjek['status_wp'] ?? subjek['status_subjek'])
+                                        },
+                                      ]),
+                                      _buildGridRow([
+                                        {'label': 'NIK / NPWP', 'value': _fmt(nik)},
+                                        {'label': 'Pekerjaan', 'value': _fmt(subjek['pekerjaan'])},
+                                      ]),
+                                      if (subjek['no_hp'] != null && subjek['no_hp'].toString().trim().isNotEmpty)
+                                        _buildSingleColumn('No. Telepon/HP', _fmt(subjek['no_hp'])),
+                                      _buildSingleColumn(
+                                        'Alamat WP',
+                                        '$alamat, RT $rt/RW $rw, KEL. $kel, KEC. $kec\nKAB. $kab',
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                              _buildGridRow([
+                                {'label': 'No. SPPT Lama', 'value': _fmt(tx?['no_sppt_lama'])},
+                                {'label': 'Tahun Pajak', 'value': _fmt(tx?['tahun_pajak'])},
+                              ]),
+                            ],
+                          ),
+                          _buildSectionCard(
+                            title: 'C. DATA OBJEK PAJAK (TANAH)',
+                            children: [
+                              Builder(
+                                builder: (context) {
+                                  final jalan = tujuan['jalan_op_baru'] ?? '-';
+                                  final blok = tujuan['blok_kav_no_baru'] != null
+                                      ? '(Blok/Kav: ${tujuan['blok_kav_no_baru']})'
+                                      : '';
+                                  final rt = tujuan['rt_op_baru'] ?? '-';
+                                  final rw = tujuan['rw_op_baru'] ?? '-';
+                                  final kel = tujuan['kelurahan_op_baru'] ?? '-';
+                                  final kec = tujuan['kecamatan_op_baru'] ?? '-';
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildGridRow([
+                                        {'label': 'Luas Tanah', 'value': '${_fmt(tujuan['luas_tanah_baru'] ?? 0)} m²'},
+                                        {'label': 'Jenis Tanah', 'value': _fmt(tujuan['jenis_tanah_baru'])},
+                                      ]),
+                                      _buildSingleColumn(
+                                        'Letak Objek',
+                                        '$jalan $blok\nRT $rt/RW $rw, DESA $kel, KEC. $kec',
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
 
                   _buildSectionCard(
                     title: 'D. LOKASI OBJEK / PETA BIDANG',
                     children: [
                       Builder(
                         builder: (context) {
-                          final tujuan =
-                              (tx?['detail_tujuan'] != null &&
-                                  (tx!['detail_tujuan'] as List).isNotEmpty)
-                              ? tx!['detail_tujuan'][0]
-                              : null;
-                          final polyVal = tujuan?['koordinat_polygon'];
+                          final polyVal = tujuan['koordinat_polygon'];
                           List polyRaw = [];
                           if (polyVal is String) {
                             try {
@@ -949,113 +995,112 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                     ],
                   ),
 
-                  _buildSectionCard(
-                    title: 'E. DATA BANGUNAN',
-                    children: [
-                      if (tx?['detail_tujuan'] != null &&
-                          (tx!['detail_tujuan'] as List).isNotEmpty)
-                        Builder(
-                          builder: (context) {
-                            final tujuan = tx!['detail_tujuan'][0];
-                            final List bangunan =
-                                tujuan['data_bangunan_json'] ?? [];
-                            if (bangunan.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                child: Text(
-                                  'Tidak ada data bangunan.',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              );
-                            }
-                            return Column(
-                              children: bangunan.asMap().entries.map((entry) {
-                                final idx = entry.key;
-                                final b = entry.value;
-                                return Container(
-                                  margin: EdgeInsets.only(
-                                    bottom: idx == bangunan.length - 1 ? 0 : 16,
-                                    left: 16,
-                                    right: 16,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.grey.shade200),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 16,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              'BANGUNAN KE-${idx + 1}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                                color: Colors.blue.shade900,
-                                              ),
-                                            ),
-                                            Text(
-                                              "1 UNIT (${_fmt(b['luas_bangunan'] ?? b['luasBangunan'] ?? 0)} m²)",
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                                color: Colors.blue.shade900,
-                                              ),
-                                            ),
-                                          ],
+                          _buildSectionCard(
+                            title: 'E. DATA BANGUNAN',
+                            children: [
+                              Builder(
+                                builder: (context) {
+                                  final List bangunan = tujuan['data_bangunan_json'] ?? [];
+                                  if (bangunan.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      child: Text(
+                                        'Tidak ada data bangunan.',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontStyle: FontStyle.italic,
                                         ),
                                       ),
-                                      _buildGridRow([
-                                        {'label': 'Penggunaan', 'value': _fmt(b['jenisPenggunaan'] ?? b['kode_jpb'] ?? b['jenis_penggunaan_bangunan'] ?? b['penggunaan'] ?? b['jenisPenggunaanBangunan'])},
-                                        {'label': 'Kondisi', 'value': _fmt(b['kondisi_bangunan'] ?? b['kondisiBangunan'] ?? b['kondisi'])},
-                                      ]),
-                                      _buildGridRow([
-                                        {'label': 'Luas Bangunan', 'value': '${_fmt(b['luas_bangunan'] ?? b['luasBangunan'] ?? 0)} m²'},
-                                        {'label': 'Atap', 'value': _fmt(b['atap'])},
-                                      ]),
-                                      _buildGridRow([
-                                        {'label': 'Jumlah Lantai', 'value': _fmt(b['jumlah_lantai'] ?? b['jumlahLantai'] ?? 1)},
-                                        {'label': 'Dinding', 'value': _fmt(b['dinding'])},
-                                      ]),
-                                      _buildGridRow([
-                                        {'label': 'Tahun Dibangun', 'value': _fmt(b['tahun_dibangun'] ?? b['tahunDibangun'] ?? b['tahun_bangun'])},
-                                        {'label': 'Lantai', 'value': _fmt(b['lantai'])},
-                                      ]),
-                                      _buildGridRow([
-                                        {'label': 'Tahun Renovasi', 'value': _fmt(b['tahun_renovasi'] ?? b['tahunRenovasi'] ?? b['tahun_direnovasi'] ?? b['tahunDirenovasi'] ?? '0')},
-                                        {'label': 'Langit-langit', 'value': _fmt(b['langit_langit'] ?? b['langitLangit'])},
-                                      ]),
-                                      _buildGridRow([
-                                        {'label': 'Konstruksi', 'value': _fmt(b['konstruksi'])},
-                                        {'label': 'Daya Listrik', 'value': "${_fmt(b['daya_listrik'] ?? b['dayaListrik'] ?? 0)} Watt"},
-                                      ]),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
+                                    );
+                                  }
+                                  return Column(
+                                    children: bangunan.asMap().entries.map((entry) {
+                                      final idx = entry.key;
+                                      final b = entry.value;
+                                      return Container(
+                                        margin: EdgeInsets.only(
+                                          bottom: idx == bangunan.length - 1 ? 0 : 16,
+                                          left: 16,
+                                          right: 16,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey.shade200),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                vertical: 8,
+                                                horizontal: 16,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.shade50,
+                                                borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                                              ),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    'BANGUNAN KE-${idx + 1}',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 12,
+                                                      color: Colors.blue.shade900,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "1 UNIT (${_fmt(b['luas_bangunan'] ?? b['luasBangunan'] ?? 0)} m²)",
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 12,
+                                                      color: Colors.blue.shade900,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            _buildGridRow([
+                                              {'label': 'Penggunaan', 'value': _fmt(b['jenisPenggunaan'] ?? b['kode_jpb'] ?? b['jenis_penggunaan_bangunan'] ?? b['penggunaan'] ?? b['jenisPenggunaanBangunan'])},
+                                              {'label': 'Kondisi', 'value': _fmt(b['kondisi_bangunan'] ?? b['kondisiBangunan'] ?? b['kondisi'])},
+                                            ]),
+                                            _buildGridRow([
+                                              {'label': 'Luas Bangunan', 'value': '${_fmt(b['luas_bangunan'] ?? b['luasBangunan'] ?? 0)} m²'},
+                                              {'label': 'Atap', 'value': _fmt(b['atap'])},
+                                            ]),
+                                            _buildGridRow([
+                                              {'label': 'Jumlah Lantai', 'value': _fmt(b['jumlah_lantai'] ?? b['jumlahLantai'] ?? 1)},
+                                              {'label': 'Dinding', 'value': _fmt(b['dinding'])},
+                                            ]),
+                                            _buildGridRow([
+                                              {'label': 'Tahun Dibangun', 'value': _fmt(b['tahun_dibangun'] ?? b['tahunDibangun'] ?? b['tahun_bangun'])},
+                                              {'label': 'Lantai', 'value': _fmt(b['lantai'])},
+                                            ]),
+                                            _buildGridRow([
+                                              {'label': 'Tahun Renovasi', 'value': _fmt(b['tahun_renovasi'] ?? b['tahunRenovasi'] ?? b['tahun_direnovasi'] ?? b['tahunDirenovasi'] ?? '0')},
+                                              {'label': 'Langit-langit', 'value': _fmt(b['langit_langit'] ?? b['langitLangit'])},
+                                            ]),
+                                            _buildGridRow([
+                                              {'label': 'Konstruksi', 'value': _fmt(b['konstruksi'])},
+                                              {'label': 'Daya Listrik', 'value': "${_fmt(b['daya_listrik'] ?? b['dayaListrik'] ?? 0)} Watt"},
+                                            ]),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }).toList()),
 
                   _buildSectionCard(
                     title: 'F. LAMPIRAN DOKUMEN',
