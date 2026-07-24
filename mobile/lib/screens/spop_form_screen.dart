@@ -919,14 +919,21 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           return;
         }
         _prefillGabungDataAndNext();
-      } else if (_selectedKategori == 'PENGHAPUSAN') {
-        if (_alasanHapusController.text.trim().isEmpty) {
+      } else if (_jenisLayanan == 'MUTASI' || _jenisLayanan == 'PERUBAHAN_DATA' || _jenisLayanan == 'HAPUS') {
+        if (_fetchedObjekPajak == null) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Silakan cari data NOP Utama terlebih dahulu'), backgroundColor: Colors.orange,
+          ));
+          return;
+        }
+        if (_jenisLayanan == 'HAPUS' && _alasanHapusController.text.trim().isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alasan Penghapusan wajib diisi')));
           return;
         }
-        setState(() => _currentStep = 4);
-      } else if (_jenisLayanan == 'MUTASI') {
-        setState(() => _currentStep = 1);
+        int nextStep = 1;
+        if (_jenisLayanan == 'HAPUS') nextStep = 5;
+        if (_jenisLayanan == 'PERUBAHAN_DATA') nextStep = 2;
+        setState(() => _currentStep = nextStep);
       } else {
         setState(() => _currentStep = 1);
       }
@@ -1001,12 +1008,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           _pecahanSubStep = 3;
           _isPecahMode = true;
         });
+      } else if (_jenisLayanan == 'HAPUS') {
+        setState(() => _currentStep = 0);
       } else {
         setState(() => _currentStep = 4);
       }
     } else if (_currentStep == 4) {
       if (_jenisLayanan == 'PENGHAPUSAN' || _jenisLayanan == 'HAPUS') {
         setState(() => _currentStep = 0);
+      } else if (_jenisLayanan == 'MUTASI') {
+        setState(() => _currentStep = 1);
       } else {
         int jmlBangunan = int.tryParse(_jmlBangunanController.text) ?? 0;
         if (jmlBangunan > 0) {
@@ -1022,7 +1033,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         setState(() => _currentStep = 2);
       }
     } else if (_currentStep == 2) {
-      setState(() => _currentStep = 1);
+      if (_jenisLayanan == 'PERUBAHAN_DATA') {
+        setState(() => _currentStep = 0);
+      } else {
+        setState(() => _currentStep = 1);
+      }
     } else if (_currentStep == 1) {
       setState(() => _currentStep = 0);
     }

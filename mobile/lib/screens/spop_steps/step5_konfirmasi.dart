@@ -26,7 +26,7 @@ extension _Step5Extension on _SpopFormScreenState {
           if (_nopUtamaController.text.isNotEmpty) _buildResiRow('NOP Utama', _nopUtamaController.text),
           if (_nopAsalControllers.any((c) => c.text.isNotEmpty)) _buildResiRow('NOP Asal', _nopAsalControllers.map((c) => c.text).where((t) => t.isNotEmpty).join(', ')),
           if (_alasanHapusController.text.isNotEmpty) _buildResiRow('Alasan Hapus', _alasanHapusController.text),
-          if (_selectedKategori != 'PENGHAPUSAN') ...[
+          if (_selectedKategori != 'PENGHAPUSAN' && _jenisLayanan != 'HAPUS') ...[
             const Divider(height: 24),
             _buildResiRow('Wajib Pajak', _namaWpController.text),
             _buildResiRow('NIK', _nikController.text),
