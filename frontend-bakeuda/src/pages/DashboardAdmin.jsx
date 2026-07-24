@@ -48,14 +48,29 @@ export default function DashboardAdmin() {
         const rawList = listRes.data.data || [];
         setAllTransactions(rawList);
 
-        const formattedList = rawList.slice(0, 5).map(item => ({
-          id: item.id_transaksi,
-          nop: item.detail_tujuan[0]?.nop_generated || '............-.......',
-          name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama'),
-          district: item.pengaju?.nama_lengkap || 'Admin Desa',
-          status: (item.status_ajuan === 'MENUNGGU' || item.status_ajuan === 'PROSES') ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan,
-          time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-        }));
+        const formattedList = rawList.slice(0, 5).map(item => {
+          let nopToDisplay = item.detail_tujuan?.[0]?.nop_generated || '............-.......';
+          let nameToDisplay = item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek || '';
+
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.[0]) {
+            nopToDisplay = item.detail_asal[0].nop_asal || nopToDisplay;
+            nameToDisplay = item.detail_asal[0].objek_asal?.subjek_pajak?.nama_subjek || nameToDisplay;
+          }
+
+          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
+            ? nameToDisplay 
+            : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama');
+
+          return {
+            id: item.id_transaksi,
+            nop: nopToDisplay,
+            name: nameToDisplay,
+            district: item.pengaju?.nama_lengkap || 'Admin Desa',
+            jenis_layanan: item.jenis_transaksi ? item.jenis_transaksi.replace(/_/g, ' ') : '-',
+            status: (item.status_ajuan === 'MENUNGGU' || item.status_ajuan === 'PROSES') ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan,
+            time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+        };
+      });
         setActivities(formattedList);
       } catch (error) {
         console.error("Gagal mengambil data dashboard admin:", error);
@@ -289,6 +304,9 @@ export default function DashboardAdmin() {
                 <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
                   Asal Pengaju
                 </th>
+                <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap">
+                  Jenis Layanan
+                </th>
                 <th className="px-6 py-4 font-bold border-b border-outline-variant whitespace-nowrap text-center">
                   Status
                 </th>
@@ -303,7 +321,7 @@ export default function DashboardAdmin() {
             <tbody className="divide-y divide-outline-variant">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
+                  <td colSpan="7" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
                     <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
                     <span>Memuat data pengajuan...</span>
                   </td>
@@ -319,6 +337,9 @@ export default function DashboardAdmin() {
                     </td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">
                       {act.district}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-on-surface-variant whitespace-nowrap">
+                      {act.jenis_layanan}
                     </td>
                     <td className="px-6 py-4 text-center whitespace-nowrap">
                       <StatusBadge status={act.status} />
@@ -341,7 +362,7 @@ export default function DashboardAdmin() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-12 text-on-surface-variant">
+                  <td colSpan="7" className="text-center py-12 text-on-surface-variant">
                     <div className="flex flex-col items-center gap-2 opacity-60">
                       <span className="material-symbols-outlined text-4xl">inbox</span>
                       <p>Belum ada pengajuan SPOP terbaru.</p>

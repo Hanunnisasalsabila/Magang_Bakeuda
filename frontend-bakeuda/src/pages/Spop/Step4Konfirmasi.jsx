@@ -221,8 +221,16 @@ export default function Step4Konfirmasi() {
                 <td className="py-1.5 font-data-mono text-on-surface">{data.npwp || '-'}</td>
               </tr>
               <tr>
+                <td className="py-1.5 text-on-surface-variant">NPWPD</td>
+                <td className="py-1.5 font-data-mono text-on-surface">{data.npwpd || '-'}</td>
+              </tr>
+              <tr>
                 <td className="py-1.5 text-on-surface-variant">No. Telp / HP</td>
                 <td className="py-1.5 font-data-mono text-on-surface">{data.noTelp || '-'}</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 text-on-surface-variant">Email</td>
+                <td className="py-1.5 text-on-surface">{data.email || '-'}</td>
               </tr>
 
               <tr>
@@ -479,8 +487,8 @@ export default function Step4Konfirmasi() {
               <p className="font-data-mono font-bold text-on-surface text-lg mt-0.5">
                 {['BARU', 'PECAH'].includes(formData.transaksi) ? (
                   <span className="text-on-surface-variant text-sm italic">Akan digenerate oleh Bakeuda</span>
-                ) : formData.transaksi === 'HAPUS' ? (
-                  formData.nopAsalList?.[0] || '-'
+                ) : ['HAPUS', 'GABUNG'].includes(formData.transaksi) ? (
+                  formData.nopAsalList?.filter(Boolean).join(', ') || '-'
                 ) : (
                   `33.03.${formData.nop.kec || '___'}.${formData.nop.kel || '___'}.${formData.nop.blok || '___'}.${formData.nop.nourut || '____'}.${formData.nop.kode || '_'}`
                 )}
@@ -616,7 +624,22 @@ export default function Step4Konfirmasi() {
       </section>
 
       <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => navigate(formData.transaksi === 'HAPUS' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/objek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => {
+          const isHapus = formData?.transaksi === 'HAPUS' || spopData?.jenis_transaksi === 'HAPUS';
+          const isMutasi = formData?.transaksi === 'MUTASI' || spopData?.jenis_transaksi === 'MUTASI';
+          const isPerubahanData = formData?.transaksi === 'PERUBAHAN_DATA' || spopData?.jenis_transaksi === 'PERUBAHAN_DATA';
+          const jumlahBangunan = parseInt(formData?.jumlahBangunan || spopData?.detail_tujuan?.[0]?.jumlah_bangunan_baru || 0);
+          
+          if (isHapus) {
+            navigate(`/spop/informasi-umum/${idTransaksi || ''}`);
+          } else if (isMutasi) {
+            navigate(`/spop/subjek-pajak/${idTransaksi || ''}`);
+          } else if (jumlahBangunan > 0) {
+            navigate(`/spop/data-bangunan/${idTransaksi || ''}`);
+          } else {
+            navigate(`/spop/objek-pajak/${idTransaksi || ''}`);
+          }
+        }} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting || !formData.persetujuan} className={`px-6 py-2.5 rounded-full font-bold shadow-md transition-all flex items-center gap-2 ${!formData.persetujuan ? 'bg-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'}`}>
@@ -660,7 +683,7 @@ export default function Step4Konfirmasi() {
                     } else {
                       const detailTujuan = spopData?.detail_tujuan?.[0];
                       if (detailTujuan?.data_bangunan_json) {
-                        parsedList = JSON.parse(detailTujuan.data_bangunan_json);
+                        parsedList = detailTujuan.data_bangunan_json;
                         if (typeof parsedList === 'string') parsedList = JSON.parse(parsedList);
                       }
                     }
@@ -672,26 +695,26 @@ export default function Step4Konfirmasi() {
                 }
 
                 return parsedList.map((b, i) => (
-                  <div key={i} className="border border-outline-variant rounded-xl overflow-hidden bg-white shadow-sm mb-6">
-                    <div className="bg-surface-container-low px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+                  <div key={i} className="border border-outline-variant rounded-xl bg-white shadow-sm mb-6 overflow-hidden">
+                    <div className="bg-primary/5 px-5 py-3 border-b border-outline-variant flex items-center gap-3">
+                      <span className="material-symbols-outlined text-primary text-[20px]">domain</span>
                       <h4 className="font-bold text-primary uppercase tracking-wider text-sm">Bangunan Ke-{i + 1}</h4>
                     </div>
-                    <table className="w-full text-sm">
-                      <tbody>
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                         {Object.entries(b)
-                          .filter(([k, v]) => v && v !== '' && v !== '0' && k !== 'nomorBangunan')
-                          .map(([k, v], idx) => (
-                            <tr key={k} className={`border-b border-outline-variant/30 ${idx % 2 === 0 ? 'bg-white' : 'bg-surface-container-lowest/50'}`}>
-                              <td className="py-2.5 px-4 text-on-surface-variant w-1/2 align-top uppercase text-xs tracking-wider font-semibold">
-                                {k.replace(/([A-Z])/g, ' $1').trim()}
-                              </td>
-                              <td className="py-2.5 px-4 font-medium text-on-surface w-1/2 align-top">
+                          .filter(([k, v]) => v && v !== '' && v !== '0' && k !== 'nomorBangunan' && k !== '_pecahanIndex' && typeof v !== 'object')
+                          .map(([k, v]) => (
+                            <div key={k} className="flex flex-col border-b border-outline-variant/40 pb-2">
+                               <span className="text-on-surface-variant uppercase text-[10px] tracking-widest font-bold mb-1">
+                                 {k.replace(/([A-Z])/g, ' $1').trim()}
+                               </span>
+                               <span className="font-semibold text-on-surface text-sm">
                                 {(() => {
                                   const keyLower = k.toLowerCase();
                                   if (isNaN(v) || v === 'Ada' || v === 'Tidak Ada') return v;
-                                  if (keyLower.includes('luas') || keyLower.includes('halaman')) return `${v} M²`;
+                                  if (keyLower.includes('luas') || keyLower.includes('halaman') || keyLower.includes('m2') || keyLower.includes('bangunanm2')) return `${v} m²`;
                                   if (keyLower.includes('listrik')) return `${v} Watt`;
-                                  if (keyLower.includes('panjang') || keyLower.includes('sumur')) return `${v} Meter`;
+                                  if (keyLower.includes('panjang') || keyLower.includes('sumur')) return `${v} meter`;
                                   if (keyLower.includes('ac') && keyLower !== 'acsentral' || 
                                       keyLower.includes('lapangan') || 
                                       keyLower.includes('lift') || 
@@ -699,11 +722,10 @@ export default function Step4Konfirmasi() {
                                       keyLower.includes('pabx')) return `${v} Unit`;
                                   return v;
                                 })()}
-                              </td>
-                            </tr>
+                               </span>
+                            </div>
                           ))}
-                      </tbody>
-                    </table>
+                    </div>
                   </div>
                 ));
               })()}

@@ -37,14 +37,28 @@ export default function DashboardDesa() {
         ]);
 
         const rawList = listRes.data.data;
-        const formattedList = rawList.slice(0, 5).map(item => ({
-          id: item.id_transaksi,
-          nop: item.detail_tujuan[0]?.nop_generated || '............-.......',
-          name: (item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek && item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama'),
-          type: item.jenis_transaksi,
-          date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-          status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'PROSES' ? 'Diproses' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan
-        }));
+        const formattedList = rawList.slice(0, 5).map(item => {
+          let nopToDisplay = item.detail_tujuan?.[0]?.nop_generated || '............-.......';
+          let nameToDisplay = item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek || '';
+
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.[0]) {
+            nopToDisplay = item.detail_asal[0].nop_asal || nopToDisplay;
+            nameToDisplay = item.detail_asal[0].objek_asal?.subjek_pajak?.nama_subjek || nameToDisplay;
+          }
+
+          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
+            ? nameToDisplay 
+            : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama');
+
+          return {
+            id: item.id_transaksi,
+            nop: nopToDisplay,
+            name: nameToDisplay,
+            type: item.jenis_transaksi,
+            date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'PROSES' ? 'Diproses' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan
+          };
+        });
         setRecentSubmissions(formattedList);
         
         if (userRes.data?.data) {

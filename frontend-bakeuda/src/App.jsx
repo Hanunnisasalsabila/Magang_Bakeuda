@@ -18,6 +18,8 @@ import { SpopProvider } from './context/SpopContext';
 import AntreanVerifikasi from './pages/AntreanVerifikasi';
 import DetailReviewSPOP from './pages/DetailReviewSPOP';
 import DaftarObjekPajak from './pages/DaftarObjekPajak';
+import DaftarSubjekPajak from './pages/DaftarSubjekPajak';
+import DetailSubjekPajak from './pages/DetailSubjekPajak';
 import MonitoringObjekPajak from './pages/MonitoringObjekPajak';
 import ProfilPengguna from './pages/ProfilPengguna';
 import ManajemenAkunDesa from './pages/ManajemenAkunDesa';
@@ -26,7 +28,6 @@ import PelacakanDokumen from './pages/PelacakanDokumen';
 import FormulirLSPOP from './pages/FormulirLSPOP';
 import RiwayatPersetujuan from './pages/RiwayatPersetujuan';
 import DraftSPOP from './pages/DraftSPOP';
-import RiwayatSPOP from './pages/RiwayatSPOP';
 
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
@@ -38,7 +39,6 @@ const pageTitles = {
   '/manajemen-wilayah': 'Manajemen Wilayah',
   '/formulir-spop': 'Formulir SPOP Digital',
   '/draft-spop': 'Draft SPOP',
-  '/riwayat-spop': 'Riwayat SPOP',
   '/formulir-lspop': 'Formulir LSPOP - Data Bangunan',
   '/antrean-verifikasi': 'Antrean Verifikasi SPOP',
   '/detail-review': 'Review Verifikasi SPOP',
@@ -71,13 +71,13 @@ function HelpPage({ role }) {
                 <div className="text-xs sm:text-sm text-on-surface-variant mt-2 pl-3 border-l-2 border-primary/20 leading-relaxed space-y-2">
                   <span>Proses verifikasi dokumen SPOP memerlukan ketelitian. Berikut adalah tahapan untuk memproses antrean:</span>
                   <ol className="list-decimal pl-4 space-y-1">
-                    <li>Buka menu "Antrean Validasi" melalui menu navigasi di sebelah kiri.</li>
-                    <li>Cari dokumen SPOP yang berstatus "Menunggu Verifikasi" (berkas yang belum diproses oleh petugas lain).</li>
-                    <li>Klik tombol "Proses Validasi" pada dokumen tersebut agar berkas terkunci dan tidak bisa diproses oleh admin lain di saat yang bersamaan.</li>
-                    <li>Lakukan pemeriksaan data. Bandingkan "Data Lama" (jika ada) dengan "Data Baru" yang diajukan oleh desa.</li>
-                    <li>Periksa juga dokumen lampiran (seperti Sertifikat Tanah atau Bukti Kepemilikan) untuk memastikan kelengkapan syarat.</li>
-                    <li>Jika ada data atau lampiran yang salah, tuliskan alasan penolakan pada kolom catatan, lalu klik tombol "Tolak".</li>
-                    <li>Jika semua data sudah benar dan lengkap, klik tombol "Setujui" untuk menyelesaikan proses verifikasi.</li>
+                    <li>Buka menu "Antrean Verifikasi" melalui menu navigasi di sebelah kiri.</li>
+                    <li>Cari dokumen SPOP yang berstatus "Menunggu Verifikasi" pada tabel. Perhatikan juga kolom "Jenis Layanan" (Perekaman Data Baru, Mutasi, Perubahan Data, atau Hapus).</li>
+                    <li>Klik tombol "Proses Verifikasi" pada dokumen tersebut agar berkas terkunci dan tidak diproses ganda oleh admin lain.</li>
+                    <li>Lakukan pemeriksaan data secara saksama. Untuk layanan seperti Mutasi dan Perubahan Data, sistem akan menampilkan perbandingan antara "Data Asal" dan "Data Baru". Untuk layanan Hapus, pastikan kesesuaian antara profil asal yang akan dihapus dengan bukti pendukung.</li>
+                    <li>Periksa juga kesesuaian dokumen lampiran pada tab lampiran untuk memastikan kelengkapan syarat pengajuan.</li>
+                    <li>Jika ada ketidaksesuaian, tuliskan alasan penolakan secara jelas pada kolom catatan penolakan, lalu klik tombol "Tolak".</li>
+                    <li>Jika seluruh data dan dokumen pendukung sudah benar dan sah, klik tombol "Setujui" untuk menyelesaikan proses verifikasi dokumen.</li>
                   </ol>
                 </div>
               </details>
@@ -169,10 +169,11 @@ function HelpPage({ role }) {
                   <span>Pengajuan SPOP merupakan langkah awal untuk memperbarui data wajib pajak. Cara mengisi formulir tersebut adalah:</span>
                   <ol className="list-decimal pl-4 space-y-1">
                     <li>Buka menu "Formulir SPOP" melalui menu navigasi di sebelah kiri.</li>
-                    <li>Pada Langkah 1, pilih Jenis Transaksi yang sesuai (misalnya Pendaftaran Baru atau Mutasi), dan masukkan Nomor Objek Pajak (NOP) secara teliti.</li>
-                    <li>Pada Langkah 2, isi kelengkapan data Subjek Pajak (pemilik), termasuk Nomor Induk Kependudukan (NIK) dan detail alamat domisili.</li>
-                    <li>Pada Langkah 3, masukkan detail fisik Objek Pajak, yang mencakup luas tanah dan luas bangunan yang ada.</li>
-                    <li>Pada Langkah 4, unggah file dokumen pendukung (seperti foto Sertifikat Tanah). Setelah dipastikan benar, klik tombol "Kirim" agar dokumen masuk ke dalam antrean pusat untuk diperiksa.</li>
+                    <li>Pada Langkah 1, pilih salah satu dari 3 Kategori Transaksi utama: <strong>Perekaman Baru</strong>, <strong>Pemutakhiran Data</strong>, atau <strong>Penghapusan Data</strong>. Kemudian pilih rincian jenis transaksi (misalnya Murni, Mutasi, Perubahan Data, Hapus, dll).</li>
+                    <li>Untuk layanan selain Perekaman Murni, Anda diwajibkan mencari data berdasarkan Nomor Objek Pajak (NOP) asal terlebih dahulu dengan menekan tombol <strong>Cari Data Objek Pajak</strong>.</li>
+                    <li>Pada Langkah 2, isi atau mutakhirkan kelengkapan data Subjek Pajak, termasuk Nomor Induk Kependudukan (NIK), NPWPD, Email, Pekerjaan, dan alamat rinci wajib pajak. (Langkah ini dapat terlewati otomatis pada layanan tertentu seperti Perubahan Data).</li>
+                    <li>Pada Langkah 3 & 4, lengkapi detail fisik Objek Pajak, seperti luas tanah, kondisi, beserta data rincian setiap bangunannya (jika ada). Khusus layanan Hapus, Anda akan langsung diarahkan ke halaman konfirmasi karena tidak ada penginputan data objek/subjek baru.</li>
+                    <li>Langkah terakhir adalah mengunggah file dokumen pendukung (seperti foto KTP, Sertifikat Tanah, atau Surat Keterangan). Setelah dipastikan benar, centang kotak persetujuan dan klik tombol "Kirim dan Ajukan SPOP" agar masuk antrean pusat.</li>
                   </ol>
                 </div>
               </details>
@@ -323,11 +324,12 @@ function AppContent() {
         </Route>
         
         <Route path="/draft-spop" element={<DraftSPOP />} />
-        <Route path="/riwayat-spop" element={<RiwayatSPOP />} />
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
         <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
         <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
+        <Route path="/daftar-subjek" element={<DaftarSubjekPajak />} />
+        <Route path="/detail-subjek/:nik" element={<DetailSubjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />
         <Route path="/pelacakan-dokumen/:id" element={<PelacakanDokumen />} />
         <Route path="/profil" element={<ProfilPengguna role={role} />} />

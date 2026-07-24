@@ -26,6 +26,11 @@ export class TransaksiSpopController {
     return this.service.saveDraft(id, dto, req.user);
   }
 
+  @Delete(':id')
+  async deleteDraft(@Param('id') id: string, @Request() req: any) {
+    return this.service.deleteDraft(id, req.user);
+  }
+
   @Post(':id/submit')
   async submitFinal(@Param('id') id: string, @Request() req: any) {
     return this.service.finalisasiSubmit(id, req.user); // DRAFT -> MENUNGGU

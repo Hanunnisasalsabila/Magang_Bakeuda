@@ -216,7 +216,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Profil Pengguna')),
+                      appBar: AppBar(elevation: 0, backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Color(0xFF0F2C59))),
                       body: ProfileTab(
                         name: _profileName,
                         username: _profileEmail,
@@ -505,7 +505,7 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
             context,
             MaterialPageRoute(
               builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Profil Pengguna')),
+                appBar: AppBar(elevation: 0, backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Color(0xFF0F2C59))),
                 body: ProfileTab(
                   name: _profileName,
                   username: _profileEmail,

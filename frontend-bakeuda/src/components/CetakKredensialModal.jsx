@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 
 export default function CetakKredensialModal({ isOpen, onClose, users, wilayahList }) {
   const [selectedKecamatan, setSelectedKecamatan] = useState('');
-  const [namaBkd, setNamaBkd] = useState('Drs. SISWANTO, S.Pd., M.Si.');
-  const [nipBkd, setNipBkd] = useState('19700101 199003 1 001');
+  const [namaBkd, setNamaBkd] = useState('Imam Khasbulah, S.Sos., M.E.');
+  const [nipBkd, setNipBkd] = useState('');
   const [namaCamat, setNamaCamat] = useState('');
   const [nipCamat, setNipCamat] = useState('');
 
@@ -37,7 +37,6 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
   }).sort((a, b) => a.nama_desa.localeCompare(b.nama_desa)) : [];
 
   const tanggalCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const defaultPassword = `BakeudaDesa${new Date().getFullYear()}!`;
 
   // Build the print HTML content as a standalone document
   const buildPrintHTML = () => {
@@ -46,7 +45,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
         <td style="padding:8px 12px;border:1px solid #000;text-align:center;">${i + 1}</td>
         <td style="padding:8px 12px;border:1px solid #000;font-weight:600;text-transform:uppercase;">${user.nama_desa}</td>
         <td style="padding:8px 12px;border:1px solid #000;text-align:center;font-family:monospace;">${user.username}</td>
-        <td style="padding:8px 12px;border:1px solid #000;text-align:center;font-family:monospace;color:#555;">${defaultPassword}</td>
+        <td style="padding:8px 12px;border:1px solid #000;text-align:center;font-family:monospace;color:#555;">${user.username}123</td>
         <td style="padding:8px 12px;border:1px solid #000;text-align:center;width:100px;"></td>
       </tr>
     `).join('');
@@ -96,7 +95,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
 
   <div style="display:flex;justify-content:space-between;margin-top:60px;padding:0 40px;">
     <div style="text-align:center;">
-      <p style="margin-bottom:80px;">Mengetahui,<br/>Kepala BKD Kab. Purbalingga</p>
+      <p style="margin-bottom:80px;">Mengetahui,<br/>Kepala Bakeuda Kab. Purbalingga</p>
       <p style="font-weight:bold;text-decoration:underline;margin:0;">${namaBkd || '___________________________'}</p>
       <p style="font-size:13px;margin:4px 0 0;">NIP. ${nipBkd || '..................................'}</p>
     </div>
@@ -129,19 +128,18 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
     text += `Tanggal: ${tanggalCetak}\n\n`;
     text += `Yth. Bapak/Ibu Camat ${selectedKecamatan},\n`;
     text += `Berikut kami sampaikan daftar kredensial akun SIPD untuk seluruh desa/kelurahan di wilayah Kecamatan ${selectedKecamatan}.\n\n`;
-    text += `Link Akses : ${window.location.origin}\n`;
-    text += `Password   : ${defaultPassword}\n\n`;
+    text += `Link Akses : ${window.location.origin}\n\n`;
     text += `--- DAFTAR AKUN ---\n`;
     
     filteredUsers.forEach((user, i) => {
-      text += `${i + 1}. ${user.nama_desa.toUpperCase()} - Username: ${user.username}\n`;
+      text += `${i + 1}. ${user.nama_desa.toUpperCase()}\n    Username : ${user.username}\n    Password : ${user.username}123\n`;
     });
     
     text += `---\n\n`;
     text += `Mohon agar informasi ini dapat diteruskan kepada masing-masing perangkat desa/kelurahan.\n`;
     text += `Perangkat desa diharapkan segera mengubah password setelah login pertama.\n\n`;
     text += `Terima kasih.\n`;
-    text += `Admin BKD Kab. Purbalingga`;
+    text += `Admin Bakeuda Kab. Purbalingga`;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -162,10 +160,10 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
           <div className="space-y-4">
-            <h3 className="font-semibold text-base text-on-surface border-b border-outline-variant/50 pb-2">Penanda Tangan BKD</h3>
+            <h3 className="font-semibold text-base text-on-surface border-b border-outline-variant/50 pb-2">Penanda Tangan Bakeuda</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">Nama Kepala BKD</label>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">Nama Kepala Bakeuda</label>
                 <input 
                   type="text" 
                   value={namaBkd} 
@@ -174,7 +172,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
                 />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">NIP Kepala BKD</label>
+                <label className="text-sm text-on-surface-variant font-medium mb-1.5 block">NIP Kepala Bakeuda</label>
                 <input 
                   type="text" 
                   value={nipBkd} 
@@ -283,7 +281,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
                           <td className="py-2 px-4 border border-black font-semibold uppercase">{user.nama_desa}</td>
                           <td className="py-2 px-4 border border-black text-center font-mono">{user.username}</td>
                           <td className="py-2 px-4 border border-black text-center font-mono text-gray-600">
-                            {defaultPassword}
+                            {user.username}123
                           </td>
                           <td className="py-2 px-4 border border-black text-center"></td>
                         </tr>
@@ -298,7 +296,7 @@ export default function CetakKredensialModal({ isOpen, onClose, users, wilayahLi
                 
                 <div className="flex justify-between mt-16 px-12">
                   <div className="text-center">
-                    <p className="mb-24">Mengetahui,<br/>Kepala BKD Kab. Purbalingga</p>
+                    <p className="mb-24">Mengetahui,<br/>Kepala Bakeuda Kab. Purbalingga</p>
                     <p className="font-bold underline">{namaBkd || '___________________________'}</p>
                     <p className="text-sm mt-1">NIP. {nipBkd || '..................................'}</p>
                   </div>
