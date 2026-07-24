@@ -11,6 +11,7 @@ import 'daftar_objek_pajak_screen.dart';
 import 'manajemen_wilayah_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
+import 'bantuan_admin_screen.dart';
 
 // Palet warna resmi instansi
 const Color _kNavy = Color(0xFF0C2A5B);
@@ -145,42 +146,61 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
             // Header drawer: solid navy formal, tanpa foto dekoratif dummy
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
+              padding: const EdgeInsets.fromLTRB(24, 56, 24, 24),
               decoration: const BoxDecoration(
-                color: _kNavy,
-                border: Border(bottom: BorderSide(color: _kGold, width: 3)),
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0F2C59), Color(0xFF0A1D3D)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border(bottom: BorderSide(color: _kGold, width: 4)),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Image.asset(
                       'assets/logo-purbalingga.png',
-                      height: 32,
-                      width: 32,
+                      height: 36,
+                      width: 36,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Admin BKD',
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          'Super Admin Bakeuda',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
                             color: Colors.white,
-                            fontWeight: FontWeight.w700,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 2),
                         Text(
-                          'admin@purbalingga.go.id',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.85),
+                          'Purbalingga',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -271,10 +291,9 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
               title: const Text('Bantuan'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Pusat Bantuan belum tersedia.'),
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BantuanAdminScreen()),
                 );
               },
             ),

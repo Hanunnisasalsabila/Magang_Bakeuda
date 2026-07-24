@@ -156,42 +156,50 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!isEdit)
-                  TextFormField(
-                    controller: kodeWilayahCtrl,
-                    decoration: _dec(
-                      'Kode Wilayah (10 digit)',
-                      hintText: '3303011001',
+                  _labeledField(
+                    'Kode Wilayah (10 digit)',
+                    TextFormField(
+                      controller: kodeWilayahCtrl,
+                      decoration: _dec('3303011001'),
+                      keyboardType: TextInputType.number,
+                      maxLength: 10,
+                      validator: (v) =>
+                          v == null || v.length != 10 ? 'Harus 10 digit' : null,
                     ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 10,
-                    validator: (v) =>
-                        v == null || v.length != 10 ? 'Harus 10 digit' : null,
                   ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: namDesaCtrl,
-                  decoration: _dec('Nama Desa / Kelurahan'),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Wajib diisi' : null,
+                _labeledField(
+                  'Nama Desa / Kelurahan',
+                  TextFormField(
+                    controller: namDesaCtrl,
+                    decoration: _dec('Contoh: Sidanegara'),
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Wajib diisi' : null,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: kecamatanCtrl,
-                  decoration: _dec('Kecamatan'),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Wajib diisi' : null,
+                _labeledField(
+                  'Kecamatan',
+                  TextFormField(
+                    controller: kecamatanCtrl,
+                    decoration: _dec('Contoh: Kaligondang'),
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Wajib diisi' : null,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: kabupatenCtrl,
-                  decoration: _dec('Kabupaten'),
+                _labeledField(
+                  'Kabupaten',
+                  TextFormField(
+                    controller: kabupatenCtrl,
+                    decoration: _dec('Contoh: Purbalingga'),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: kodePropinsiCtrl,
-                  decoration: _dec('Kode Propinsi (2 digit)'),
-                  keyboardType: TextInputType.number,
-                  maxLength: 2,
+                _labeledField(
+                  'Kode Propinsi (2 digit)',
+                  TextFormField(
+                    controller: kodePropinsiCtrl,
+                    decoration: _dec('33'),
+                    keyboardType: TextInputType.number,
+                    maxLength: 2,
+                  ),
                 ),
               ],
             ),
@@ -305,12 +313,42 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
     }
   }
 
-  InputDecoration _dec(String label, {String? hintText}) {
+  Widget _labeledField(String label, Widget field) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          field,
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _dec(String hintText) {
     return InputDecoration(
-      labelText: label,
       hintText: hintText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      hintStyle: const TextStyle(color: Colors.black38, fontSize: 13),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF0C2A5B), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      counterText: "",
     );
   }
 
@@ -346,7 +384,7 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
                   Text(
                     'BAKEUDA Kabupaten\nPurbalingga',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       height: 1.1,
@@ -356,7 +394,7 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
                   Text(
                     'Manajemen Wilayah',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: _kGold,
                     ),
@@ -368,9 +406,9 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
           ],
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(130),
+          preferredSize: const Size.fromHeight(116),
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: _kGold, width: 3)),
@@ -592,11 +630,15 @@ class _ManajemenWilayahScreenState extends State<ManajemenWilayahScreen> {
                 ? () => setState(() => _currentPage--)
                 : null,
             icon: const Icon(Icons.chevron_left),
-            label: const Text('Sebelumnnya'),
+            label: const Text('Sebelumnya'),
           ),
-          Text(
-            'Halaman $_currentPage dari $totalPages',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          Expanded(
+            child: Text(
+              'Halaman $_currentPage dari $totalPages',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           TextButton.icon(
             onPressed: _currentPage < totalPages
