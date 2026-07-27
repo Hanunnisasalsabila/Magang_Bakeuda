@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotifikasiController } from './notifikasi.controller';
+import { NotifikasiController } from './notifikasi.controller.js';
 
 describe('NotifikasiController', () => {
   let controller: NotifikasiController;
