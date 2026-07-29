@@ -796,7 +796,7 @@ export class TransaksiSpopService {
             jenis_konstruksi: bng.konstruksi === 'Baja' ? JenisKonstruksi.BAJA : (bng.konstruksi === 'Beton' ? JenisKonstruksi.BETON : (bng.konstruksi === 'Batu Bata' ? JenisKonstruksi.BATU_BATA : JenisKonstruksi.KAYU)),
             jenis_atap: bng.atap === 'Genting/Beton' ? JenisAtap.DECRABON_BETON_GLAZUR : (bng.atap === 'Asbes' ? JenisAtap.ASBES : JenisAtap.SENG),
             kode_dinding: bng.dinding === 'Bata/Beton' ? JenisDinding.BATU_BATA_CONBLOK : (bng.dinding === 'Kayu' ? JenisDinding.KAYU : JenisDinding.SENG),
-            kode_lantai: bng.lantai === 'Marmer' ? JenisLantai.MARMER : (bng.lantai === 'Keramik' ? JenisLantai.KERAMIK : JenisLantai.SEMEN),
+            kode_lantai: bng.lantai === 'Marmer' ? JenisLantai.MARMER : (bng.lantai === 'Keramik' ? JenisLantai.KERAMIK : (bng.lantai === 'Teraso' ? JenisLantai.TERASO : (bng.lantai === 'Ubin PC/Papan' ? JenisLantai.UBIN_PC_PAPAN : (bng.lantai === 'Tanah' ? JenisLantai.TANAH : JenisLantai.SEMEN)))),
             kode_langit_langit: bng.langitLangit === 'Eternit' ? JenisLangitLangit.AKUSTIK_JATI : JenisLangitLangit.TRIPLEK_ASBES_BAMBU,
           }
         });

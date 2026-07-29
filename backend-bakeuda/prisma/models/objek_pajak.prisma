@@ -43,6 +43,7 @@ enum JenisLantai {
   TERASO // 3. Teraso
   UBIN_PC_PAPAN // 4. Ubin PC/Papan
   SEMEN // 5. Semen
+  TANAH // 6. Tanah
 }
 
 enum JenisLangitLangit {
