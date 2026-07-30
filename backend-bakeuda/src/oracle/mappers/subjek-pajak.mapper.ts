@@ -57,7 +57,9 @@ export interface PrismaSubjekPajakUpsert {
   blok_kav_no_subjek: string | null;
   rw: string | null;
   rt: string | null;
-  kode_wilayah: string;
+  kelurahan_wp: string | null;
+  kecamatan_wp: string | null;
+  kabupaten_wp: string | null;
   kode_pos: string | null;
   created_by: string;
   oracle_synced_at: Date;
@@ -79,11 +81,10 @@ function trimOrNull(val: string | null | undefined): string | null {
  * Transform 1 row Oracle DAT_SUBJEK_PAJAK ke format Prisma SubjekPajak upsert.
  *
  * @param row     — Row dari Oracle query
- * @param kodeWilayahFallback — Kode wilayah fallback jika tidak bisa di-resolve dari alamat
+ * @param fallbackUserId — User ID fallback untuk created_by
  */
 export function mapOracleSubjekToPrisma(
   row: OracleSubjekPajak,
-  kodeWilayahFallback: string,
   fallbackUserId: string,
 ): PrismaSubjekPajakUpsert {
   const subjekId = trimOrNull(row.SUBJEK_PAJAK_ID) ?? '';
@@ -106,7 +107,9 @@ export function mapOracleSubjekToPrisma(
     blok_kav_no_subjek: trimOrNull(row.BLOK_KAV_NO_WP),
     rw: trimOrNull(row.RW_WP),
     rt: trimOrNull(row.RT_WP),
-    kode_wilayah: kodeWilayahFallback,
+    kelurahan_wp: trimOrNull(row.KELURAHAN_WP),
+    kecamatan_wp: trimOrNull(row.KECAMATAN_WP),
+    kabupaten_wp: trimOrNull(row.KOTA_WP),
     kode_pos: trimOrNull(row.KD_POS_WP),
     created_by: fallbackUserId,
     oracle_synced_at: new Date(),
@@ -131,6 +134,9 @@ export function mapPrismaSubjekToOracle(prismaData: {
   blok_kav_no_subjek?: string | null;
   rw?: string | null;
   rt?: string | null;
+  kelurahan_wp?: string | null;
+  kecamatan_wp?: string | null;
+  kabupaten_wp?: string | null;
   kode_pos?: string | null;
 }): Record<string, unknown> {
   // Reverse enum map
@@ -149,6 +155,9 @@ export function mapPrismaSubjekToOracle(prismaData: {
     BLOK_KAV_NO_WP: prismaData.blok_kav_no_subjek ?? null,
     RW_WP: prismaData.rw ? prismaData.rw.replace(/^0+/, '').padStart(2, '0').substring(0, 2) : null,
     RT_WP: prismaData.rt ? prismaData.rt.replace(/^0+/, '').padStart(2, '0').substring(0, 2) : null,
+    KELURAHAN_WP: prismaData.kelurahan_wp ?? null,
+    KECAMATAN_WP: prismaData.kecamatan_wp ?? null,
+    KOTA_WP: prismaData.kabupaten_wp ?? null,
     KD_POS_WP: prismaData.kode_pos ?? null,
     TELP_WP: prismaData.no_hp ?? null,
     NPWP: prismaData.npwp ?? null,
@@ -157,3 +166,4 @@ export function mapPrismaSubjekToOracle(prismaData: {
     EMAIL: prismaData.email ?? null,
   };
 }
+

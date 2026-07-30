@@ -22,7 +22,6 @@ model Wilayah {
   users        User[]
   pejabat      PejabatDesa[]
   objek_pajak  ObjekPajak[]
-  subjek_pajak SubjekPajak[]
 
   kode_sektor String? @db.VarChar(2)
   sektor      Sektor? @relation(fields: [kode_sektor], references: [kode_sektor])

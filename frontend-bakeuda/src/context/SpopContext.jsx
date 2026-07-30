@@ -149,9 +149,9 @@ export const SpopProvider = ({ children }) => {
           blokKav: subjek.blok_kav_no_subjek || '',
           rt: subjek.rt || '',
           rw: subjek.rw || '',
-          kelurahan: subjek.kelurahan || '',
-          kecamatan: subjek.kecamatan || '',
-          kabupaten: subjek.kabupaten || '',
+          kelurahan: subjek.kelurahan_wp || subjek.kelurahan || '',
+          kecamatan: subjek.kecamatan_wp || subjek.kecamatan || '',
+          kabupaten: subjek.kabupaten_wp || subjek.kabupaten || '',
           kodePos: subjek.kode_pos || '',
           
           alamatObjek: detailTujuan.jalan_op_baru || '',
@@ -469,6 +469,7 @@ export const SpopProvider = ({ children }) => {
       const res = await api.post('/transaksi-spop', payload);
       const newId = res.data?.data?.id_transaksi || res.data?.id_transaksi;
       if (newId) {
+        setIdTransaksi(newId); // Prevent SpopLayout from triggering loading=true
         if (!location.pathname.includes(newId)) {
           const basePath = location.pathname.split('/').filter(Boolean);
           // if it ends with an empty id, or no id, replace it

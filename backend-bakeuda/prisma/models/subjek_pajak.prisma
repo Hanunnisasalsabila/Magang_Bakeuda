@@ -28,7 +28,9 @@ model SubjekPajak {
   blok_kav_no_subjek String?   @db.VarChar(50)
   rw                 String?   @db.VarChar(5)
   rt                 String?   @db.VarChar(5)
-  kode_wilayah       String    @db.VarChar(10) // FK ke Wilayah
+  kelurahan_wp       String?   @db.VarChar(100) // Teks bebas — WP bisa berdomisili di mana saja
+  kecamatan_wp       String?   @db.VarChar(100)
+  kabupaten_wp       String?   @db.VarChar(100)
   kode_pos           String?   @db.VarChar(5)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
@@ -39,7 +41,6 @@ model SubjekPajak {
   oracle_source    Boolean   @default(false) // true = data berasal dari Oracle sync
 
   // ── Relasi ──
-  wilayah     Wilayah      @relation(fields: [kode_wilayah], references: [kode_wilayah])
   user        User         @relation("CreatedByUser", fields: [created_by], references: [id_user])
   objek_pajak ObjekPajak[]
 

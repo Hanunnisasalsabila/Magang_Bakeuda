@@ -357,7 +357,7 @@ export class TransaksiSpopService {
         detail_asal: {
           include: {
             objek_asal: {
-              include: { subjek_pajak: { include: { wilayah: true } }, wilayah: true }
+              include: { subjek_pajak: true, wilayah: true }
             }
           }
         },
@@ -379,7 +379,7 @@ export class TransaksiSpopService {
         detail_asal: {
           include: { 
             objek_asal: {
-              include: { subjek_pajak: { include: { wilayah: true } }, wilayah: true }
+              include: { subjek_pajak: true, wilayah: true }
             }
           }
         },
@@ -701,7 +701,7 @@ export class TransaksiSpopService {
 
   // --- EKSEKUSI DATA MASTER ---
 
-  private async upsertSubjek(tx: Prisma.TransactionClient, t: any, transaksiUserId: string, fallbackKodeWilayah: string | null) {
+  private async upsertSubjek(tx: Prisma.TransactionClient, t: any, transaksiUserId: string) {
     let nikSubjek = t.nik_calon_subjek;
 
     if (t.calon_subjek_json) {
@@ -720,7 +720,9 @@ export class TransaksiSpopService {
           blok_kav_no_subjek: subjekTemp.blok_kav_no_subjek,
           rt: subjekTemp.rt,
           rw: subjekTemp.rw,
-          kode_wilayah: subjekTemp.kode_wilayah || fallbackKodeWilayah || '0000000000',
+          kelurahan_wp: subjekTemp.kelurahan || null,
+          kecamatan_wp: subjekTemp.kecamatan || null,
+          kabupaten_wp: subjekTemp.kabupaten || null,
           kode_pos: subjekTemp.kode_pos,
         },
         create: {
@@ -735,7 +737,9 @@ export class TransaksiSpopService {
           blok_kav_no_subjek: subjekTemp.blok_kav_no_subjek,
           rt: subjekTemp.rt,
           rw: subjekTemp.rw,
-          kode_wilayah: subjekTemp.kode_wilayah || fallbackKodeWilayah || '0000000000',
+          kelurahan_wp: subjekTemp.kelurahan || null,
+          kecamatan_wp: subjekTemp.kecamatan || null,
+          kabupaten_wp: subjekTemp.kabupaten || null,
           kode_pos: subjekTemp.kode_pos,
           created_by: transaksiUserId,
         }
@@ -842,7 +846,7 @@ export class TransaksiSpopService {
   private async eksekusiBaru(tx: Prisma.TransactionClient, transaksi: TransaksiSpopWithDetail, currentUser: CurrentUser, dto: VerifikasiBakeudaDto) {
     const t = transaksi.detail_tujuan[0];
     const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
-    const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
+    const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
     if (!dto.kode_blok) throw new BadRequestException('Kode blok wajib diisi untuk penetapan NOP baru');
@@ -882,7 +886,7 @@ export class TransaksiSpopService {
     const nopAsal = transaksi.detail_asal[0].nop_asal!;
     const t = transaksi.detail_tujuan[0];
 
-    const nikBaru = await this.upsertSubjek(tx, t, transaksi.id_user, transaksi.pengaju.kode_wilayah);
+    const nikBaru = await this.upsertSubjek(tx, t, transaksi.id_user);
 
     await tx.objekPajak.update({ where: { nop: nopAsal }, data: { nik_subjek: nikBaru } });
 
@@ -930,7 +934,7 @@ export class TransaksiSpopService {
     const hasilNop: string[] = [];
     for (const t of transaksi.detail_tujuan) {
       const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
-      const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
+      const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
       if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
 
@@ -995,7 +999,7 @@ export class TransaksiSpopService {
 
     // 3. Buat NOP baru hasil gabungan
     const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
-    const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user, kodeWilayah);
+    const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
 

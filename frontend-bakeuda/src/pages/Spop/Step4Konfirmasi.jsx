@@ -63,9 +63,9 @@ export default function Step4Konfirmasi() {
                 alamat: data.subjek_pajak?.alamat_jalan,
                 rt: data.subjek_pajak?.rt,
                 rw: data.subjek_pajak?.rw,
-                kabupaten: data.subjek_pajak?.kabupaten,
-                kelurahan: data.subjek_pajak?.kelurahan,
-                kecamatan: data.subjek_pajak?.kecamatan,
+                kabupaten: data.subjek_pajak?.kabupaten_wp || data.subjek_pajak?.kabupaten,
+                kelurahan: data.subjek_pajak?.kelurahan_wp || data.subjek_pajak?.kelurahan,
+                kecamatan: data.subjek_pajak?.kecamatan_wp || data.subjek_pajak?.kecamatan,
                 alamatObjek: data.jalan_op,
                 luasTanah: data.luas_tanah,
                 rtObjek: data.rt_op,
@@ -625,18 +625,27 @@ export default function Step4Konfirmasi() {
         </div>
       </section>
 
-      <div className="flex justify-end pt-8 border-t border-outline-variant gap-3">
-        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row justify-end pt-8 border-t border-outline-variant gap-3">
+        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2 shrink-0">
           Kembali
         </button>
-        <button type="button" onClick={handleSave} disabled={isSubmitting || !formData.persetujuan} className={`px-6 py-2.5 rounded-full font-bold shadow-md transition-all flex items-center gap-2 ${!formData.persetujuan ? 'bg-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'}`}>
-          {isSubmitting ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-          ) : (
-            <span className="material-symbols-outlined text-[20px]">save</span>
-          )}
-          Simpan & Ajukan
-        </button>
+        {spopData && !['DRAFT', 'REVISI'].includes(spopData.status_ajuan) ? (
+          <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 flex items-center gap-4">
+            <span className="text-sm">Berkas ini sudah diajukan (status: <strong>{spopData.status_ajuan}</strong>) dan tidak bisa diubah lagi.</span>
+            <button onClick={() => navigate('/dashboard-desa')} className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shrink-0">
+              Lihat Dashboard
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={handleSave} disabled={isSubmitting || !formData.persetujuan} className={`px-6 py-2.5 rounded-full font-bold shadow-md transition-all flex items-center justify-center gap-2 shrink-0 ${!formData.persetujuan ? 'bg-gray-300 text-on-surface-variant cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90'}`}>
+            {isSubmitting ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+            ) : (
+              <span className="material-symbols-outlined text-[20px]">save</span>
+            )}
+            Simpan & Ajukan
+          </button>
+        )}
       </div>
 
       {/* BANGUNAN MODAL */}

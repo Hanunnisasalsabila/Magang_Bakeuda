@@ -791,9 +791,9 @@ export default function FormulirSPOP() {
     try {
       const payload = buildPayload(true);
       if (id) {
-        await api.put(`/transaksi-spop/${id}`, payload);
+        await api.post(`/transaksi-spop/draft/${id}`, payload);
       } else {
-        await api.post('/transaksi-spop/draft', payload);
+        await api.post('/transaksi-spop', payload); // Draft creation is done at root POST endpoint with isDraft flag handled by payload or backend
       }
       setToast({ show: true, message: 'Draft berhasil disimpan ke akun Anda.', type: 'success' });
       setTimeout(() => navigate('/dashboard-desa'), 2000);
@@ -890,12 +890,9 @@ export default function FormulirSPOP() {
     try {
       let response;
       if (id) {
-        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
-        // Tunggu bentar buat ensure transaksi API nya complete kl put sblmnya, tp 
-        // kl di handle submit, sebenarnya PUT sblm patch/ajukan bisa dilakukan:
-        // Wait, since handleSubmit only submits to backend, I should put the payload first then ajukan.
-        await api.put(`/transaksi-spop/${id}`, payload);
-        response = await api.patch(`/transaksi-spop/${id}/ajukan`);
+        // Save draft first before submitting
+        await api.post(`/transaksi-spop/draft/${id}`, payload);
+        response = await api.post(`/transaksi-spop/${id}/submit`);
       } else {
         response = await api.post('/transaksi-spop', payload);
       }

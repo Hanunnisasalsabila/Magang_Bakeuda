@@ -308,6 +308,11 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
               // Handle title based on NOP availability
               String nopStr =
                   detail?['nop_generated'] ?? detail?['no_persil_baru'] ?? '';
+              
+              if (type == 'PECAH' || type == 'GABUNG' || type == 'BARU' || nopStr.contains('...')) {
+                nopStr = ''; // Force empty so it shows (NOP Belum Tersedia)
+              }
+
               String titleStr = 'Pengajuan $type';
               String nopDisplay = nopStr.isEmpty || nopStr == 'Menunggu NOP'
                   ? '(NOP Belum Tersedia)'

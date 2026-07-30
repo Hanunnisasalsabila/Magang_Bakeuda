@@ -10,9 +10,6 @@ import { CreateSubjekPajakDto } from './dto/create-subjek-pajak.dto.js';
 import { UpdateSubjekPajakDto } from './dto/update-subjek-pajak.dto.js';
 import {
   CurrentUser,
-  resolveWilayahForCreate,
-  buildWilayahScope,
-  assertWilayahAccess,
 } from '../common/wilayah-scope.helper.js';
 
 @Injectable()
@@ -24,8 +21,6 @@ export class SubjekPajakService {
   // ─────────────────────────────────────────
 
   async create(dto: CreateSubjekPajakDto, currentUser: CurrentUser) {
-    const kodeWilayah = resolveWilayahForCreate(dto.kode_wilayah, currentUser);
-
     const existing = await this.prisma.subjekPajak.findUnique({
       where: { nik: dto.nik },
     });
@@ -37,7 +32,6 @@ export class SubjekPajakService {
     const subjek = await this.prisma.subjekPajak.create({
       data: {
         ...dto,
-        kode_wilayah: kodeWilayah,
         created_by: currentUser.id_user,
       },
       include: {
@@ -66,7 +60,9 @@ export class SubjekPajakService {
         blok_kav_no_subjek: subjek.blok_kav_no_subjek,
         rw: subjek.rw,
         rt: subjek.rt,
-        kode_wilayah: subjek.kode_wilayah,
+        kelurahan_wp: subjek.kelurahan_wp,
+        kecamatan_wp: subjek.kecamatan_wp,
+        kabupaten_wp: subjek.kabupaten_wp,
         kode_pos: subjek.kode_pos,
         created_at: subjek.created_at,
         updated_at: subjek.updated_at,
@@ -100,7 +96,6 @@ export class SubjekPajakService {
             wilayah: { select: { nama_desa: true, kecamatan: true } }
           },
         },
-        wilayah: true,
       },
     });
     if (!subjek) throw new NotFoundException('Subjek pajak tidak ditemukan');
@@ -109,8 +104,7 @@ export class SubjekPajakService {
       if (!currentUser.kode_wilayah) {
         throw new ForbiddenException('User DESA belum terikat ke wilayah manapun');
       }
-      const hasAccess = subjek.kode_wilayah === currentUser.kode_wilayah || 
-                        subjek.objek_pajak.some(op => op.kode_wilayah === currentUser.kode_wilayah);
+      const hasAccess = subjek.objek_pajak.some(op => op.kode_wilayah === currentUser.kode_wilayah);
       if (!hasAccess) {
         throw new ForbiddenException('Anda tidak memiliki akses ke data subjek pajak ini');
       }
@@ -140,10 +134,7 @@ export class SubjekPajakService {
     // 1. Wilayah scope
     if (currentUser.role === 'DESA') {
       andConditions.push({
-        OR: [
-          { kode_wilayah: currentUser.kode_wilayah },
-          { objek_pajak: { some: { kode_wilayah: currentUser.kode_wilayah } } }
-        ]
+        objek_pajak: { some: { kode_wilayah: currentUser.kode_wilayah } }
       });
     }
 
@@ -171,7 +162,6 @@ export class SubjekPajakService {
         where: whereClause,
         include: {
           user: { select: { nama_lengkap: true } },
-          wilayah: true,
         },
         take: safeLimit,
         skip,
@@ -208,13 +198,11 @@ export class SubjekPajakService {
       if (!currentUser.kode_wilayah) {
         throw new ForbiddenException('User DESA belum terikat ke wilayah manapun');
       }
-      if (existing.kode_wilayah !== currentUser.kode_wilayah) {
-        const hasObject = await this.prisma.objekPajak.findFirst({
-          where: { nik_subjek: nik, kode_wilayah: currentUser.kode_wilayah }
-        });
-        if (!hasObject) {
-          throw new ForbiddenException('Anda tidak memiliki akses untuk mengubah data subjek pajak ini');
-        }
+      const hasObject = await this.prisma.objekPajak.findFirst({
+        where: { nik_subjek: nik, kode_wilayah: currentUser.kode_wilayah }
+      });
+      if (!hasObject) {
+        throw new ForbiddenException('Anda tidak memiliki akses untuk mengubah data subjek pajak ini');
       }
     }
 
@@ -224,7 +212,7 @@ export class SubjekPajakService {
     const updated = await this.prisma.subjekPajak.update({
       where: { nik },
       data: updateData,
-      include: { user: { select: { nama_lengkap: true } }, wilayah: true },
+      include: { user: { select: { nama_lengkap: true } } },
     });
 
     const { user, created_by, ...rest } = updated;
@@ -242,11 +230,20 @@ export class SubjekPajakService {
   async delete(nik: string, currentUser: CurrentUser) {
     const existing = await this.prisma.subjekPajak.findUnique({
       where: { nik },
-      include: { objek_pajak: { select: { nop: true } } },
+      include: { objek_pajak: { select: { nop: true, kode_wilayah: true } } },
     });
     if (!existing) throw new NotFoundException('Subjek pajak tidak ditemukan');
 
-    assertWilayahAccess(currentUser, existing.kode_wilayah);
+    // Cek akses: DESA hanya bisa hapus jika punya objek pajak di wilayahnya
+    if (currentUser.role === 'DESA') {
+      if (!currentUser.kode_wilayah) {
+        throw new ForbiddenException('User DESA belum terikat ke wilayah manapun');
+      }
+      const hasObjekInWilayah = existing.objek_pajak.some(op => op.kode_wilayah === currentUser.kode_wilayah);
+      if (!hasObjekInWilayah && existing.objek_pajak.length > 0) {
+        throw new ForbiddenException('Anda tidak memiliki akses untuk menghapus data subjek pajak ini');
+      }
+    }
 
     if (existing.objek_pajak.length > 0) {
       throw new BadRequestException(

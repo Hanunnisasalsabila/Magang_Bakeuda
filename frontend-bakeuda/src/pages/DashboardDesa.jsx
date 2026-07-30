@@ -74,8 +74,8 @@ export default function DashboardDesa() {
   }, []);
 
 
-  const formatNOP = (nopStr) => {
-    if (!nopStr || nopStr.includes('...')) {
+  const formatNOP = (nopStr, type) => {
+    if (!nopStr || nopStr.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') {
       return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>;
     }
     const clean = nopStr.replace(/\D/g, '');
@@ -201,7 +201,7 @@ export default function DashboardDesa() {
                   recentSubmissions.map((sub, i) => (
                     <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-lowest/50' : ''}`}>
                       <td className="px-6 py-4">
-                        <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1">{formatNOP(sub.nop)}</p>
+                        <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1">{formatNOP(sub.nop, sub.type)}</p>
                         <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{sub.name}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

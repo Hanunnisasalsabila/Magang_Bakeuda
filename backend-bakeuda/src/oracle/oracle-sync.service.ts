@@ -335,12 +335,6 @@ export class OracleSyncService implements OnModuleInit {
       const rows = await this.oracle.query<OracleSubjekPajak>(sql, params);
       this.logger.log(`[DAT_SUBJEK_PAJAK] Retrieved ${rows.length} rows from Oracle. Starting upsert...`);
 
-      let fallbackWilayah = '3303000000';
-      const defaultWilayah = await this.prisma.wilayah.findFirst();
-      if (defaultWilayah) {
-        fallbackWilayah = defaultWilayah.kode_wilayah;
-      }
-      
       let fallbackUserId = 'SYSTEM_ORACLE_SYNC';
       const defaultUser = await this.prisma.user.findFirst();
       if (defaultUser) {
@@ -349,27 +343,14 @@ export class OracleSyncService implements OnModuleInit {
       
       let count = 0;
       for (const row of rows) {
-        const data = mapOracleSubjekToPrisma(row, fallbackWilayah, fallbackUserId); // default fallback
+        const data = mapOracleSubjekToPrisma(row, fallbackUserId);
         if (!data.nik) continue;
         
-        try {
-          await this.prisma.subjekPajak.upsert({
-            where: { nik: data.nik },
-            update: data,
-            create: data,
-          });
-        } catch (e: any) {
-          if (e.code === 'P2003') {
-            data.kode_wilayah = fallbackWilayah;
-            await this.prisma.subjekPajak.upsert({
-              where: { nik: data.nik },
-              update: data,
-              create: data,
-            });
-          } else {
-            throw e;
-          }
-        }
+        await this.prisma.subjekPajak.upsert({
+          where: { nik: data.nik },
+          update: data,
+          create: data,
+        });
         count++;
         if (count % 1000 === 0) {
           this.logger.log(`[DAT_SUBJEK_PAJAK] Synced ${count} / ${rows.length} records...`);
@@ -676,14 +657,11 @@ export class OracleSyncService implements OnModuleInit {
       if (subjekId) {
         const spRows = await this.oracle.query<OracleSubjekPajak>(`SELECT * FROM DAT_SUBJEK_PAJAK WHERE SUBJEK_PAJAK_ID = :id`, { id: subjekId });
         if (spRows.length > 0) {
-           let fallbackWilayah = '3303000000';
-           const defaultWilayah = await this.prisma.wilayah.findFirst();
-           if (defaultWilayah) fallbackWilayah = defaultWilayah.kode_wilayah;
            let fallbackUserId = 'SYSTEM_ORACLE_SYNC';
            const defaultUser = await this.prisma.user.findFirst();
            if (defaultUser) fallbackUserId = defaultUser.id_user;
            
-           const spData = mapOracleSubjekToPrisma(spRows[0], fallbackWilayah, fallbackUserId);
+           const spData = mapOracleSubjekToPrisma(spRows[0], fallbackUserId);
            if (spData.nik) {
              await this.prisma.subjekPajak.upsert({ where: { nik: spData.nik }, update: spData, create: spData });
            }

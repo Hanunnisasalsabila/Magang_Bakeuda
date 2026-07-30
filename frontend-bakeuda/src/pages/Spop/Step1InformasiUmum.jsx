@@ -49,8 +49,8 @@ export default function Step1InformasiUmum() {
             jumlahBangunan: (obj.jumlah_bangunan !== undefined && obj.jumlah_bangunan !== null) ? obj.jumlah_bangunan.toString() : prev.jumlahBangunan,
             luasBangunan: (obj.luas_bangunan !== undefined && obj.luas_bangunan !== null) ? obj.luas_bangunan.toString() : prev.luasBangunan,
             alamatObjek: obj.jalan_op || prev.alamatObjek,
-            kelurahanObjek: obj.wilayah?.nama_kelurahan || prev.kelurahanObjek,
-            kecamatanObjek: obj.wilayah?.nama_kecamatan || prev.kecamatanObjek,
+            kelurahanObjek: obj.wilayah?.nama_desa || prev.kelurahanObjek,
+            kecamatanObjek: obj.wilayah?.kecamatan || prev.kecamatanObjek,
             rtObjek: obj.rt_op || prev.rtObjek,
             rwObjek: obj.rw_op || prev.rwObjek,
             batasUtara: obj.batas_utara || prev.batasUtara,
@@ -77,8 +77,9 @@ export default function Step1InformasiUmum() {
             blokKav: obj.subjek_pajak?.blok_kav_no_subjek || prev.blokKav,
             rt: obj.subjek_pajak?.rt ? obj.subjek_pajak.rt.padStart(3, '0') : prev.rt,
             rw: obj.subjek_pajak?.rw ? obj.subjek_pajak.rw.padStart(3, '0') : prev.rw,
-            kelurahan: obj.subjek_pajak?.wilayah?.nama_kelurahan || prev.kelurahan,
-            kecamatan: obj.subjek_pajak?.wilayah?.nama_kecamatan || prev.kecamatan,
+            kelurahan: obj.subjek_pajak?.kelurahan_wp || obj.subjek_pajak?.kelurahan || prev.kelurahan,
+            kecamatan: obj.subjek_pajak?.kecamatan_wp || obj.subjek_pajak?.kecamatan || prev.kecamatan,
+            kabupaten: obj.subjek_pajak?.kabupaten_wp || obj.subjek_pajak?.kabupaten || prev.kabupaten,
             kodePos: obj.subjek_pajak?.kode_pos || prev.kodePos
           }));
         }
