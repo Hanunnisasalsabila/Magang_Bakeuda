@@ -27,7 +27,7 @@ export default function DashboardDesa() {
           api.get('/transaksi-spop'),
           api.get('/auth/me').catch(() => ({ data: { data: null } }))
         ]);
-        
+
         const dataStats = statsRes.data.data;
         setStats([
           { title: 'Total SPOP Dikirim', value: dataStats.totalDikirim.toString(), icon: 'receipt_long', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', trend: 'Lihat semua pengajuan →', trendColor: 'text-gray-500', trendIcon: 'trending_up', borderHover: 'hover:border-blue-500', link: '/monitoring-pajak' },
@@ -46,8 +46,8 @@ export default function DashboardDesa() {
             nameToDisplay = item.detail_asal[0].objek_asal?.subjek_pajak?.nama_subjek || nameToDisplay;
           }
 
-          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
-            ? nameToDisplay 
+          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA')
+            ? nameToDisplay
             : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama');
 
           return {
@@ -60,7 +60,7 @@ export default function DashboardDesa() {
           };
         });
         setRecentSubmissions(formattedList);
-        
+
         if (userRes.data?.data) {
           setUserInfo(userRes.data.data);
         }
@@ -80,7 +80,7 @@ export default function DashboardDesa() {
     }
     const clean = nopStr.replace(/\D/g, '');
     if (clean.length === 18) {
-      return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+      return `${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}`;
     }
     return nopStr;
   };
@@ -110,10 +110,10 @@ export default function DashboardDesa() {
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
-              SISTEM INFORMASI PAJAK DAERAH
+              SISTEM MANAJEMEN PAJAK BUMI BANGUNAN
             </span>
             <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
-              SPOP DIGITAL V.2.0
+              SIMPBB DIGITAL V.2.0
             </span>
           </div>
         </div>
@@ -132,118 +132,118 @@ export default function DashboardDesa() {
                 </span>
               </div>
             </div>
-            
+
             <p className="text-3xl font-extrabold text-gray-900 leading-none">{stat.value}</p>
           </div>
         ))}
       </div>
 
 
-        {/* Recent Submissions Table */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
-          <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
-            <div>
-              <h3 className="font-bold text-on-surface text-lg">
-                Pengajuan SPOP Terbaru
-              </h3>
-              <p className="font-label-sm text-on-surface-variant mt-1">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => {
-                  loadDraft(null);
-                  navigate('/spop');
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                <span>Buat SPOP Baru</span>
-              </button>
-              <button
-                onClick={() => navigate('/monitoring-pajak')}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-outline text-on-surface hover:bg-surface-container-low rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
-                <span>Lihat Semua</span>
-              </button>
-            </div>
+      {/* Recent Submissions Table */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+        <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center bg-surface-container-low/50">
+          <div>
+            <h3 className="font-bold text-on-surface text-lg">
+              Pengajuan SPOP Terbaru
+            </h3>
+            <p className="font-label-sm text-on-surface-variant mt-1">Daftar riwayat pengajuan Anda akhir-akhir ini</p>
           </div>
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left min-w-max">
-              <thead>
-                <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
-                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
-                    NOP / Nama Subjek
-                  </th>
-                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
-                    Jenis Transaksi
-                  </th>
-                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
-                    Tanggal
-                  </th>
-                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center pl-12">
-                    Aksi
-                  </th>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                loadDraft(null);
+                navigate('/spop');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              <span>Buat SPOP Baru</span>
+            </button>
+            <button
+              onClick={() => navigate('/monitoring-pajak')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-outline text-on-surface hover:bg-surface-container-low rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+              <span>Lihat Semua</span>
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto flex-1">
+          <table className="w-full text-left min-w-max">
+            <thead>
+              <tr className="bg-surface-container-low/50 text-on-surface-variant font-label-sm uppercase tracking-wider text-[11px]">
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
+                  NOP / Nama Subjek
+                </th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap">
+                  Jenis Transaksi
+                </th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
+                  Tanggal
+                </th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center">
+                  Status
+                </th>
+                <th className="px-6 py-3 font-bold border-b border-outline-variant whitespace-nowrap text-center pl-12">
+                  Aksi
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/30 text-on-surface">
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
+                    <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
+                    <span>Memuat data pengajuan...</span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/30 text-on-surface">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-12 text-on-surface-variant flex flex-col items-center gap-3">
-                      <span className="material-symbols-outlined animate-spin text-3xl text-primary">refresh</span>
-                      <span>Memuat data pengajuan...</span>
+              ) : recentSubmissions.length > 0 ? (
+                recentSubmissions.map((sub, i) => (
+                  <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-lowest/50' : ''}`}>
+                    <td className="px-6 py-4">
+                      <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1">{formatNOP(sub.nop, sub.type)}</p>
+                      <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{sub.name}</p>
                     </td>
-                  </tr>
-                ) : recentSubmissions.length > 0 ? (
-                  recentSubmissions.map((sub, i) => (
-                    <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-lowest/50' : ''}`}>
-                      <td className="px-6 py-4">
-                        <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1">{formatNOP(sub.nop, sub.type)}</p>
-                        <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{sub.name}</p>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-label-sm text-on-surface-variant">
-                          {sub.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
-                        <p className="font-label-sm text-on-surface-variant">{sub.date}</p>
-                      </td>
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
-                        <StatusBadge status={sub.status} />
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
-                        <div className="flex items-center justify-end">
-                          <button
-                            onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/spop/informasi-umum/${sub.id}` : `/pelacakan-dokumen/${sub.id}`)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">
-                              {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'edit' : 'visibility'}
-                            </span>
-                            {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'Edit' : 'Detail'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center py-12 text-gray-400">
-                      <div className="flex flex-col items-center gap-2 opacity-60">
-                        <span className="material-symbols-outlined text-4xl">inbox</span>
-                        <p>Belum ada pengajuan SPOP terbaru.</p>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="font-label-sm text-on-surface-variant">
+                        {sub.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <p className="font-label-sm text-on-surface-variant">{sub.date}</p>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <StatusBadge status={sub.status} />
+                    </td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={() => navigate((sub.status === 'Draft' || sub.status === 'Revisi') ? `/spop/informasi-umum/${sub.id}` : `/pelacakan-dokumen/${sub.id}`)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border border-outline-variant text-primary rounded-lg text-xs font-bold hover:bg-surface-container-lowest hover:border-primary transition-colors focus:outline-none"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">
+                            {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'edit' : 'visibility'}
+                          </span>
+                          {(sub.status === 'Draft' || sub.status === 'Revisi') ? 'Edit' : 'Detail'}
+                        </button>
                       </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center py-12 text-gray-400">
+                    <div className="flex flex-col items-center gap-2 opacity-60">
+                      <span className="material-symbols-outlined text-4xl">inbox</span>
+                      <p>Belum ada pengajuan SPOP terbaru.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
     </main>
   );
 }

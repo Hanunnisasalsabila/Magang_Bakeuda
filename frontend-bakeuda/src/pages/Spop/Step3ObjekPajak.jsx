@@ -6,7 +6,6 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
-import DraftConfirmModal from '../../components/DraftConfirmModal';
 import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
@@ -152,7 +151,6 @@ const MemoizedMap = React.memo(({ center, koordinatPolygon, setFormData, referen
 export default function Step3ObjekPajak() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, updateCompletion } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
@@ -657,7 +655,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               maxLength={50}
-              value={currentData.noPersil}
+              value={currentData.noPersil || ''}
               onChange={(e) => handleTextChange('noPersil', e)}
               className="w-full h-11 border border-outline-variant rounded px-4 font-data-mono bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
               placeholder="No. persil"
@@ -668,7 +666,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               maxLength={255}
-              value={currentData.alamatObjek}
+              value={currentData.alamatObjek || ''}
               onChange={(e) => handleTextChange('alamatObjek', e)}
               className={`w-full h-11 border ${getError('alamatObjek') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 bg-white shadow-sm outline-none`}
               placeholder="Nama jalan dan nomor objek pajak"
@@ -684,7 +682,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               maxLength={50}
-              value={currentData.blokKavObjek}
+              value={currentData.blokKavObjek || ''}
               onChange={(e) => handleTextChange('blokKavObjek', e)}
               className="w-full h-11 border border-outline-variant rounded px-4 bg-white focus:border-primary focus:ring-1 focus:ring-primary shadow-sm outline-none"
               placeholder="Blok A / No. 1"
@@ -695,7 +693,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               maxLength={3}
-              value={currentData.rwObjek}
+              value={currentData.rwObjek || ''}
               onChange={(e) => handleTextChange('rwObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
               className={`w-full h-11 border ${getError('rwObjek') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
               placeholder="000"
@@ -707,7 +705,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               maxLength={3}
-              value={currentData.rtObjek}
+              value={currentData.rtObjek || ''}
               onChange={(e) => handleTextChange('rtObjek', { target: { value: e.target.value.replace(/\D/g, '') } })}
               className={`w-full h-11 border ${getError('rtObjek') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 text-center font-data-mono bg-white shadow-sm outline-none`}
               placeholder="000"
@@ -773,7 +771,7 @@ export default function Step3ObjekPajak() {
             <input
               type="text"
               inputMode="decimal"
-              value={currentData.luasTanah}
+              value={currentData.luasTanah || ''}
               readOnly={isGabung || formData.transaksi === 'PERUBAHAN_DATA'}
               onChange={(e) => {
                 if (!isGabung && formData.transaksi !== 'PERUBAHAN_DATA') {
@@ -1113,7 +1111,7 @@ export default function Step3ObjekPajak() {
         <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
           Simpan Draft
         </button>
-        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate(formData.transaksi === 'PERUBAHAN_DATA' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/subjek-pajak/${idTransaksi || ''}`)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className="px-6 py-2.5 bg-primary text-white rounded-full font-bold hover:bg-primary/90 shadow-md transition-all flex items-center gap-2">
@@ -1124,15 +1122,6 @@ export default function Step3ObjekPajak() {
           )}
         </button>
       </div>
-
-      <DraftConfirmModal
-        isOpen={showDraftModal}
-        onClose={() => setShowDraftModal(false)}
-        onDiscard={() => navigate(formData.transaksi === 'PERUBAHAN_DATA' ? `/spop/informasi-umum/${idTransaksi || ''}` : `/spop/subjek-pajak/${idTransaksi || ''}`)}
-        onSave={async () => {
-          await handleSaveDraft();
-        }}
-      />
     </div>
   );
 }

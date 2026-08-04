@@ -4,14 +4,12 @@ import { IMaskInput } from 'react-imask';
 import { useSpop } from '../../context/SpopContext';
 import SegmentedNOPInput from '../../components/SegmentedNOPInput';
 import ToastNotification from '../../components/ToastNotification';
-import DraftConfirmModal from '../../components/DraftConfirmModal';
 import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
 export default function Step1InformasiUmum() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [nopData, setNopData] = useState(null);
   const [nopLoading, setNopLoading] = useState(false);
@@ -608,7 +606,7 @@ export default function Step1InformasiUmum() {
         <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
           Simpan Draft
         </button>
-        <button type="button" onClick={() => setShowDraftModal(true)} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={() => navigate('/dashboard-desa')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className={`px-6 py-2.5 ${formData.transaksi === 'HAPUS' ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'} text-white rounded-full font-bold shadow-md transition-all flex items-center gap-2`}>
@@ -622,16 +620,6 @@ export default function Step1InformasiUmum() {
           {formData.transaksi === 'HAPUS' ? 'Lanjut Konfirmasi Penghapusan' : 'Simpan Data'}
         </button>
       </div>
-
-      <DraftConfirmModal
-        isOpen={showDraftModal}
-        onClose={() => setShowDraftModal(false)}
-        onDiscard={() => navigate('/dashboard-desa')}
-        onSave={async () => {
-          await handleSaveDraft();
-          // handleSaveDraft already navigates to '/draft-spop'
-        }}
-      />
     </div>
   );
 }

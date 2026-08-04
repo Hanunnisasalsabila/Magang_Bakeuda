@@ -7,7 +7,7 @@ import WilayahDropdown from '../../components/WilayahDropdown';
 import api from '../../utils/axios';
 
 export default function Step2SubjekPajak() {
-  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi } = useSpop();
+  const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, loadDraft } = useSpop();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showDraftModal, setShowDraftModal] = useState(false);
@@ -116,7 +116,11 @@ export default function Step2SubjekPajak() {
           id: Date.now() + Math.random(),
           nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
           alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
-          isKuasa: false, lampiran: []
+          isKuasa: false, lampiran: [],
+          // Initialize Objek Pajak fields for the new Pecahan
+          alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', noPersil: '',
+          kelurahanObjek: '', kecamatanObjek: '', kodeWilayahObjek: '',
+          luasTanah: '', zonaNilaiTanah: '', jenisTanah: '', jumlahBangunan: '0'
         }
       ]
     }));
@@ -164,6 +168,7 @@ export default function Step2SubjekPajak() {
       if (!data.rw || !/^\d{2,3}$/.test(data.rw)) { newErrors[`${prefix}rw`] = 'RW harus 2-3 digit'; hasError = true; }
       if (!data.kecamatan) { newErrors[`${prefix}kecamatan`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahan) { newErrors[`${prefix}kelurahan`] = 'Kelurahan wajib dipilih'; hasError = true; }
+      if (!data.kabupaten) { newErrors[`${prefix}kabupaten`] = 'Kabupaten/Kota wajib diisi'; hasError = true; }
       if (!data.statusWp) { newErrors[`${prefix}statusWp`] = 'Status WP wajib dipilih'; hasError = true; }
       if (!data.pekerjaan) { newErrors[`${prefix}pekerjaan`] = 'Pekerjaan wajib dipilih'; hasError = true; }
     };
@@ -334,7 +339,7 @@ export default function Step2SubjekPajak() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           <div className="space-y-2 md:col-span-2">
-            <label className="font-label-sm text-primary block">NAMA SUBJEK PAJAK</label>
+            <label className="font-label-sm text-primary block">NAMA SUBJEK PAJAK <span className="text-error">*</span></label>
             <input
               type="text"
               maxLength={100}
@@ -494,7 +499,7 @@ export default function Step2SubjekPajak() {
           {/* Baris 1: Alamat + Blok/Kav */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold block">Alamat (Jalan)</label>
+              <label className="text-sm text-on-surface-variant font-bold block">Alamat (Jalan) <span className="text-error">*</span></label>
               <input
                 type="text"
                 maxLength={255}
@@ -521,7 +526,7 @@ export default function Step2SubjekPajak() {
           {/* Baris 2: RW + RT + Kecamatan + Kelurahan (satu baris) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold">RW</label>
+              <label className="text-sm text-on-surface-variant font-bold">RW <span className="text-error">*</span></label>
               <input
                 type="text"
                 maxLength={3}
@@ -533,7 +538,7 @@ export default function Step2SubjekPajak() {
               {getError('rw') && <p className="text-error text-[12px]">{getError('rw')}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold">RT</label>
+              <label className="text-sm text-on-surface-variant font-bold">RT <span className="text-error">*</span></label>
               <input
                 type="text"
                 maxLength={3}
@@ -545,7 +550,7 @@ export default function Step2SubjekPajak() {
               {getError('rt') && <p className="text-error text-[12px]">{getError('rt')}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold">Kecamatan</label>
+              <label className="text-sm text-on-surface-variant font-bold">Kecamatan <span className="text-error">*</span></label>
               <input
                 type="text"
                 value={currentData.kecamatan || ''}
@@ -556,7 +561,7 @@ export default function Step2SubjekPajak() {
               {getError('kecamatan') && <p className="text-error text-[12px]">{getError('kecamatan')}</p>}
             </div>
             <div className="space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold">Kelurahan/Desa</label>
+              <label className="text-sm text-on-surface-variant font-bold">Kelurahan/Desa <span className="text-error">*</span></label>
               <input
                 type="text"
                 value={currentData.kelurahan || ''}
@@ -571,14 +576,15 @@ export default function Step2SubjekPajak() {
           {/* Baris 3: Kabupaten (readonly) + Kode Pos */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="md:col-span-3 space-y-1">
-              <label className="text-sm text-on-surface-variant font-bold block">Kabupaten / Kota</label>
+              <label className="text-sm text-on-surface-variant font-bold block">Kabupaten / Kota <span className="text-error">*</span></label>
               <input
                 type="text"
                 value={currentData.kabupaten || ''}
                 onChange={(e) => handleTextChange('kabupaten', e.target.value)}
-                className="w-full h-11 border border-outline-variant rounded-md px-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-gray-400"
+                className={`w-full h-11 border ${getError('kabupaten') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded-md px-4 outline-none placeholder-gray-400`}
                 placeholder="Nama Kabupaten/Kota"
               />
+              {getError('kabupaten') && <p className="text-error text-[12px]">{getError('kabupaten')}</p>}
             </div>
             <div className="space-y-1">
               <label className="text-sm text-on-surface-variant font-bold flex items-center gap-1">Kode Pos <span className="text-gray-400 font-normal text-[11px]">(Opsional)</span></label>
@@ -616,7 +622,10 @@ export default function Step2SubjekPajak() {
       <DraftConfirmModal
         isOpen={showDraftModal}
         onClose={() => setShowDraftModal(false)}
-        onDiscard={() => navigate(`/spop/informasi-umum/${idTransaksi || ''}`)}
+        onDiscard={() => {
+          loadDraft(idTransaksi);
+          navigate(`/spop/informasi-umum/${idTransaksi || ''}`);
+        }}
         onSave={async () => {
           await handleSaveDraft();
         }}

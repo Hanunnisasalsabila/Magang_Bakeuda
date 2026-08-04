@@ -27,7 +27,7 @@ export default function DashboardAdmin() {
           api.get('/users'),
           api.get('/objek-pajak/stats')
         ]);
-        
+
         const dataStats = statsRes.data.data;
         const totalObj = (objekStatsRes && objekStatsRes.data && objekStatsRes.data.data) ? objekStatsRes.data.data.total : 0;
         setBentoCards([
@@ -57,8 +57,8 @@ export default function DashboardAdmin() {
             nameToDisplay = item.detail_asal[0].objek_asal?.subjek_pajak?.nama_subjek || nameToDisplay;
           }
 
-          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
-            ? nameToDisplay 
+          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA')
+            ? nameToDisplay
             : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama');
 
           return {
@@ -69,8 +69,8 @@ export default function DashboardAdmin() {
             jenis_layanan: item.jenis_transaksi ? item.jenis_transaksi.replace(/_/g, ' ') : '-',
             status: (item.status_ajuan === 'MENUNGGU' || item.status_ajuan === 'PROSES') ? 'Menunggu Verifikasi' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan,
             time: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-        };
-      });
+          };
+        });
         setActivities(formattedList);
       } catch (error) {
         console.error("Gagal mengambil data dashboard admin:", error);
@@ -89,12 +89,12 @@ export default function DashboardAdmin() {
       const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - dayOfWeek);
-      startOfWeek.setHours(0,0,0,0);
-      
+      startOfWeek.setHours(0, 0, 0, 0);
+
       const counts = [0, 0, 0, 0, 0, 0, 0];
       const labels = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
       const fullLabels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-      
+
       transactions.forEach(t => {
         const d = new Date(t.tanggal_pengajuan);
         if (d >= startOfWeek) {
@@ -104,7 +104,7 @@ export default function DashboardAdmin() {
           }
         }
       });
-      
+
       const maxCount = Math.max(...counts, 5); // Minimum scale of 5
       return counts.map((count, i) => ({
         label: labels[i],
@@ -116,7 +116,7 @@ export default function DashboardAdmin() {
       const currentMonth = today.getMonth();
       const currentYear = today.getFullYear();
       const counts = [0, 0, 0, 0];
-      
+
       transactions.forEach(t => {
         const d = new Date(t.tanggal_pengajuan);
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
@@ -126,7 +126,7 @@ export default function DashboardAdmin() {
           counts[week]++;
         }
       });
-      
+
       const maxCount = Math.max(...counts, 5);
       return counts.map((count, i) => ({
         label: `MG ${i + 1}`,
@@ -153,7 +153,7 @@ export default function DashboardAdmin() {
     }
     const clean = nopStr.replace(/\D/g, '');
     if (clean.length === 18) {
-      return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+      return `${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}`;
     }
     return nopStr;
   };
@@ -179,10 +179,10 @@ export default function DashboardAdmin() {
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="px-3 py-1 bg-blue-100 text-blue-800 text-[10px] font-bold tracking-widest rounded">
-            SISTEM INFORMASI PAJAK DAERAH
+            SISTEM MANAJEMENT PAJAK BUMI BANGUNAN
           </span>
           <span className="px-3 py-1 border border-blue-200 text-blue-700 text-[10px] font-bold tracking-widest rounded">
-            SPOP DIGITAL V.2.0
+            SIMPBB Digital  V.2.0
           </span>
         </div>
       </div>
@@ -190,14 +190,14 @@ export default function DashboardAdmin() {
       {/* Bento Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {bentoCards.map((card, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             {...(card.link ? { onClick: () => navigate(card.link), title: `Lihat Detail ${card.title}` } : {})}
             className={`bg-white border border-gray-200 p-6 rounded-lg relative overflow-hidden shadow-sm flex flex-col justify-between ${card.link ? 'hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group' : ''}`}
           >
             {/* Background shape */}
             <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full -z-10 ${card.link ? 'group-hover:scale-110 transition-transform' : ''} ${card.badgeColor.includes('error') ? 'bg-red-50' : card.badgeColor.includes('secondary') ? 'bg-blue-50' : 'bg-gray-50'}`}></div>
-            
+
             <div className="flex justify-between items-start mb-4">
               <div className={`p-3 rounded-lg shadow-sm ${card.bgIcon.replace('bg-surface-container text-primary', 'bg-blue-100 text-blue-700').replace('bg-error-container text-error', 'bg-red-100 text-red-700')}`}>
                 <span className="material-symbols-outlined text-[24px]">{card.icon}</span>
@@ -350,7 +350,7 @@ export default function DashboardAdmin() {
                     <td className="px-6 py-4 text-right whitespace-nowrap pl-12">
                       <div className="flex items-center justify-end">
                         <button
-                          onClick={() => navigate('/detail-review/' + act.id )}
+                          onClick={() => navigate('/detail-review/' + act.id)}
                           className="px-4 py-2 bg-white text-primary border border-outline-variant hover:border-primary hover:bg-primary/5 rounded-lg transition-all font-bold text-xs shadow-sm flex items-center gap-1.5"
                         >
                           <span className="material-symbols-outlined text-[16px]">plagiarism</span>

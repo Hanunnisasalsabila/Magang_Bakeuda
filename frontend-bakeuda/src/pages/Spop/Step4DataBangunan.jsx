@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSpop } from '../../context/SpopContext';
-import DraftConfirmModal from '../../components/DraftConfirmModal';
 import api from '../../utils/axios';
 
 
@@ -94,7 +93,7 @@ export default function Step4DataBangunan() {
 
   const navigate = useNavigate();
   const { id_transaksi } = useParams();
-  const { spopData, formData: ctxFormData, setFormData: setCtxFormData, saveDraft, idTransaksi: ctxId, completionStatus, updateCompletion } = useSpop();
+  const { spopData, formData: ctxFormData, setFormData: setCtxFormData, saveDraft, idTransaksi: ctxId, completionStatus, updateCompletion, loadDraft } = useSpop();
 
   const parsedTotal = ctxFormData?.jumlahBangunan ? parseInt(ctxFormData.jumlahBangunan, 10) : 1;
   const currentId = ctxId || id_transaksi || '';
@@ -133,7 +132,6 @@ export default function Step4DataBangunan() {
   const [nomorBangunan, setNomorBangunan] = useState(1);
   const [totalBangunan, setTotalBangunan] = useState(parsedTotal);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDraftModal, setShowDraftModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const [bangunanList, setBangunanList] = useState([]);
@@ -971,7 +969,7 @@ export default function Step4DataBangunan() {
             </button>
             <button
               type="button"
-              onClick={() => setShowDraftModal(true)}
+              onClick={() => navigate(`/spop/objek-pajak/${currentId}`)}
               className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2"
             >
               Kembali
@@ -1000,14 +998,6 @@ export default function Step4DataBangunan() {
         </div>
       </div>
 
-      <DraftConfirmModal
-        isOpen={showDraftModal}
-        onClose={() => setShowDraftModal(false)}
-        onDiscard={() => navigate(`/spop/objek-pajak/${currentId}`)}
-        onSave={async () => {
-          await handleSaveDraft();
-        }}
-      />
     </div>
   );
 }
