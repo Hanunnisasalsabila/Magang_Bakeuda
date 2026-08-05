@@ -153,7 +153,8 @@ export class TransaksiSpopService {
           user_id: admin.id_user,
           title: 'Pengajuan SPOP Baru',
           message: `Desa telah mengajukan transaksi SPOP baru.`,
-          type: 'SPOP_SUBMITTED'
+          type: 'SPOP_SUBMITTED',
+          reference_id: transaksi.id_transaksi
         });
       }
     }
@@ -512,7 +513,8 @@ export class TransaksiSpopService {
       user_id: transaksi.id_user,
       title: 'SPOP Disetujui',
       message: `Pengajuan SPOP Anda telah disetujui oleh Bakeuda.`,
-      type: 'SPOP_APPROVED'
+      type: 'SPOP_APPROVED',
+      reference_id: idTransaksi
     });
 
     return { success: true, message: 'Transaksi disetujui dan data berhasil diproses', data: hasil };
@@ -575,7 +577,8 @@ export class TransaksiSpopService {
         user_id: transaksi.id_user,
         title: 'SPOP Perlu Revisi',
         message: `Bakeuda meminta revisi pada pengajuan Anda: ${catatan}`,
-        type: 'SPOP_REJECTED'
+        type: 'SPOP_REJECTED',
+        reference_id: idTransaksi
       });
     }
 

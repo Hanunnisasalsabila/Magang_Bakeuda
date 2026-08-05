@@ -21,13 +21,14 @@ export class NotifikasiService {
     });
   }
 
-  async create(data: { user_id: string; title: string; message: string; type?: string }) {
+  async create(data: { user_id: string; title: string; message: string; type?: string; reference_id?: string }) {
     return this.prisma.notifikasi.create({
       data: {
         user_id: data.user_id,
         title: data.title,
         message: data.message,
         type: data.type || 'INFO',
+        reference_id: data.reference_id,
       },
     });
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/notifikasi_service.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
-
+import 'pelacakan_dokumen_detail_screen.dart';
 const Color _kNavy = Color(0xFF0F2C59);
 const Color _kGold = Color(0xFFE8B831);
 
@@ -173,7 +173,19 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                             ),
                           ],
                         ),
-                        onTap: () => _markAsRead(notif['id'], index),
+                        onTap: () {
+                          _markAsRead(notif['id'], index);
+                          if (notif['reference_id'] != null && notif['reference_id'].toString().isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PelacakanDokumenDetailScreen(
+                                  idTransaksi: notif['reference_id'],
+                                ),
+                              ),
+                            );
+                          }
+                        },
                       );
                     },
                   ),

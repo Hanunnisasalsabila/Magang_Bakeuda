@@ -199,21 +199,21 @@ export default function Step3ObjekPajak() {
                 });
               }
             }).catch(console.error);
+          }
 
-            api.get('/referensi-blok?kode_wilayah=' + user.kode_wilayah).then(res => {
-              const dataBlok = res.data.data;
-              if (dataBlok && dataBlok.length > 0) {
-                setBlokOptions(dataBlok);
-                setIsManualBlok(false);
-              } else {
-                setBlokOptions([]);
-                setIsManualBlok(true);
-              }
-            }).catch(() => {
+          api.get('/referensi-blok?kode_wilayah=' + user.kode_wilayah).then(res => {
+            const dataBlok = res.data.data;
+            if (dataBlok && dataBlok.length > 0) {
+              setBlokOptions(dataBlok);
+              setIsManualBlok(false);
+            } else {
               setBlokOptions([]);
               setIsManualBlok(true);
-            });
-          }
+            }
+          }).catch(() => {
+            setBlokOptions([]);
+            setIsManualBlok(true);
+          });
         }
       } catch (e) { }
     }
