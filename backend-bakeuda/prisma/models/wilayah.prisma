@@ -22,6 +22,7 @@ model Wilayah {
   users        User[]
   pejabat      PejabatDesa[]
   objek_pajak  ObjekPajak[]
+  blok         ReferensiBlok[]
 
   kode_sektor String? @db.VarChar(2)
   sektor      Sektor? @relation(fields: [kode_sektor], references: [kode_sektor])
@@ -29,4 +30,19 @@ model Wilayah {
   @@unique([kode_propinsi, kode_dati2, kode_kecamatan, kode_kelurahan])
   @@index([kode_kecamatan])
   @@map("wilayah")
+}
+
+model ReferensiBlok {
+  id_blok      String   @id @default(uuid())
+  kode_wilayah String   @db.VarChar(10) // FK ke Wilayah
+  kode_blok    String   @db.VarChar(3)
+  keterangan   String?  @db.VarChar(100)
+  sumber_data  String   @default("MANUAL") // "MANUAL" atau "ORACLE_SYNC"
+  created_at   DateTime @default(now())
+
+  wilayah Wilayah @relation(fields: [kode_wilayah], references: [kode_wilayah])
+
+  @@unique([kode_wilayah, kode_blok])
+  @@index([kode_wilayah])
+  @@map("referensi_blok")
 }

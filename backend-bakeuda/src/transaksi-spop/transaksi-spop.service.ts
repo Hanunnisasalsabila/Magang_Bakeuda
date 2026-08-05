@@ -849,16 +849,17 @@ export class TransaksiSpopService {
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
-    if (!dto.kode_blok) throw new BadRequestException('Kode blok wajib diisi untuk penetapan NOP baru');
     if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penetapan NOP baru');
 
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
+    const kodeBlok = t.kode_blok_baru || '001';
+
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
 
     const objek = await tx.objekPajak.create({
       data: {
         nop,
         kode_wilayah: kodeWilayah,
-        kode_blok: dto.kode_blok,
+        kode_blok: kodeBlok,
         no_urut: nop.substring(13, 17),
         kode_jenis_op: dto.kode_jenis_op,
         nik_subjek: nikSubjek,
@@ -874,6 +875,12 @@ export class TransaksiSpopService {
         koordinat_polygon: t.koordinat_polygon as any,
         status_aktif: true,
       },
+    });
+
+    await tx.referensiBlok.upsert({
+      where: { kode_wilayah_kode_blok: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok } },
+      create: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok, sumber_data: 'MANUAL' },
+      update: {},
     });
 
     await this.upsertLspop(tx, t, nop, false);
@@ -928,22 +935,30 @@ export class TransaksiSpopService {
       }
     }
 
-    if (!dto.kode_blok) throw new BadRequestException('Kode blok wajib diisi untuk pemecahan NOP');
     if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk pemecahan NOP');
 
+    // Ambil data objek asal SEBELUM dinonaktifkan — dipakai untuk fallback blok & alamat
+    const asal = transaksi.detail_asal[0];
+    const objekAsal = await tx.objekPajak.findUnique({ where: { nop: asal.nop_asal! } });
+    if (!objekAsal) throw new BadRequestException('Objek pajak asal tidak ditemukan');
+
     const hasilNop: string[] = [];
+    const blokDariInduk: boolean[] = [];
     for (const t of transaksi.detail_tujuan) {
       const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
       const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
       if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
 
-      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
+      const kodeBlok = t.kode_blok_baru || objekAsal.kode_blok;
+      blokDariInduk.push(!t.kode_blok_baru);
+
+      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
       await tx.objekPajak.create({
         data: {
           nop,
           kode_wilayah: kodeWilayah,
-          kode_blok: dto.kode_blok,
+          kode_blok: kodeBlok,
           no_urut: nop.substring(13, 17),
           kode_jenis_op: dto.kode_jenis_op,
           nik_subjek: nikSubjek,
@@ -955,12 +970,18 @@ export class TransaksiSpopService {
         },
       });
 
+      await tx.referensiBlok.upsert({
+        where: { kode_wilayah_kode_blok: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok } },
+        create: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok, sumber_data: 'MANUAL' },
+        update: {},
+      });
+
       await this.upsertLspop(tx, t, nop, false);
 
       await tx.detailTransaksiTujuan.update({ where: { id_detail_tujuan: t.id_detail_tujuan }, data: { nop_generated: nop } });
       hasilNop.push(nop);
     }
-    return { nop_asal_dinonaktifkan: transaksi.detail_asal.map((a) => a.nop_asal), nop_baru: hasilNop };
+    return { nop_asal_dinonaktifkan: transaksi.detail_asal.map((a) => a.nop_asal), nop_baru: hasilNop, blok_dari_induk: blokDariInduk };
   }
 
   // GABUNG — REVISI: luas tanah/bangunan dihitung OTOMATIS dari total NOP asal,
@@ -994,7 +1015,6 @@ export class TransaksiSpopService {
       }
     }
 
-    if (!dto.kode_blok) throw new BadRequestException('Kode blok wajib diisi untuk penggabungan NOP');
     if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penggabungan NOP');
 
     // 3. Buat NOP baru hasil gabungan
@@ -1003,13 +1023,15 @@ export class TransaksiSpopService {
 
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
 
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: dto.kode_blok, kode_jenis_op: dto.kode_jenis_op }, tx);
+    const kodeBlok = t.kode_blok_baru || objekAsalPertama?.kode_blok || '001';
+
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
 
     const objekBaru = await tx.objekPajak.create({
       data: {
         nop,
         kode_wilayah: kodeWilayah,
-        kode_blok: dto.kode_blok,
+        kode_blok: kodeBlok,
         no_urut: nop.substring(13, 17),
         kode_jenis_op: dto.kode_jenis_op,
         nik_subjek: nikSubjek,
@@ -1024,6 +1046,12 @@ export class TransaksiSpopService {
       },
     });
 
+    await tx.referensiBlok.upsert({
+      where: { kode_wilayah_kode_blok: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok } },
+      create: { kode_wilayah: kodeWilayah, kode_blok: kodeBlok, sumber_data: 'MANUAL' },
+      update: {},
+    });
+
     await this.upsertLspop(tx, t, nop, false);
 
     await tx.detailTransaksiTujuan.update({ where: { id_detail_tujuan: t.id_detail_tujuan }, data: { nop_generated: nop } });
@@ -1033,6 +1061,8 @@ export class TransaksiSpopService {
       nop_baru: nop,
       luas_tanah_hasil: finalLuasTanah,
       luas_bangunan_hasil: finalLuasBangunan,
+      kode_blok_dipakai: kodeBlok,
+      blok_dari_fallback: !t.kode_blok_baru,
       alamat_dipakai: objekBaru.jalan_op,
       alamat_dari_fallback: !t.jalan_op_baru,  // true kalau DESA tidak isi manual, dipakai dari fallback
     };

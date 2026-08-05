@@ -249,12 +249,17 @@ export default function DetailReviewSPOP() {
   }, [data, allWilayah]);
 
 
-  // Auto-fill kodeBlok for PECAH from NOP Induk
+  // Auto-fill kodeBlok for PECAH from NOP Induk or from submitted BARU
   useEffect(() => {
-    if (isBakeuda && data?.status_ajuan === 'PROSES' && data?.jenis_transaksi === 'PECAH') {
-      const nopAsal = data?.detail_asal?.[0]?.nop_asal;
-      if (nopAsal && nopAsal.length >= 13 && !kodeBlok) {
-        setKodeBlok(nopAsal.substring(10, 13));
+    if (isBakeuda && data?.status_ajuan === 'PROSES') {
+      const submittedKodeBlok = data?.detail_tujuan?.[0]?.kode_blok_baru;
+      if (submittedKodeBlok && submittedKodeBlok.length === 3 && !kodeBlok) {
+        setKodeBlok(submittedKodeBlok);
+      } else if (data?.jenis_transaksi === 'PECAH') {
+        const nopAsal = data?.detail_asal?.[0]?.nop_asal;
+        if (nopAsal && nopAsal.length >= 13 && !kodeBlok) {
+          setKodeBlok(nopAsal.substring(10, 13));
+        }
       }
     }
   }, [data, isBakeuda, kodeBlok]);
@@ -973,8 +978,8 @@ export default function DetailReviewSPOP() {
                         <input
                           type="text" inputMode="numeric" maxLength={3}
                           value={kodeBlok}
-                          onChange={(e) => setKodeBlok(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                          className="w-full border border-gray-300 rounded-md px-3 py-2 text-center font-mono font-bold text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          disabled
+                          className="w-full border border-gray-200 rounded-md px-3 py-2 text-center font-mono font-bold text-lg bg-gray-50 text-gray-600"
                           placeholder="001"
                         />
                       </div>

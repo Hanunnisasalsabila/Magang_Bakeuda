@@ -113,6 +113,7 @@ export default function FormulirSPOP() {
     alamatObjek: '',
     noPersil: '',
     blokKavObjek: '',
+    kodeBlokBaru: '',
     rwObjek: '',
     rtObjek: '',
     kelurahanObjek: '',
@@ -140,6 +141,10 @@ export default function FormulirSPOP() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  
+  // Referensi Blok
+  const [blokOptions, setBlokOptions] = useState([]);
+  const [isManualBlok, setIsManualBlok] = useState(false);
 
   const handleFileUpload = async (e, explicitJenis = null) => {
     const file = e.target.files[0];
@@ -524,7 +529,21 @@ export default function FormulirSPOP() {
                 kelurahanObjek: w.nama_desa
               }));
             }
-          }).catch(console.error);
+          });
+          
+          api.get('/referensi-blok?kode_wilayah=' + user.kode_wilayah).then(res => {
+            const dataBlok = res.data.data;
+            if (dataBlok && dataBlok.length > 0) {
+              setBlokOptions(dataBlok);
+              setIsManualBlok(false);
+            } else {
+              setBlokOptions([]);
+              setIsManualBlok(true);
+            }
+          }).catch(() => {
+            setBlokOptions([]);
+            setIsManualBlok(true);
+          });
         }
       } catch (e) { }
     }
@@ -644,6 +663,12 @@ export default function FormulirSPOP() {
       if (!jalanOpVal || jalanOpVal.length < 5 || jalanOpVal.length > 255 || !/^[a-zA-Z0-9\s.,\-/]+$/.test(jalanOpVal)) {
         newErrors.alamatObjek = 'Jalan OP 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
+      
+      if (formData.transaksi === 'BARU') {
+        if (!formData.kodeBlokBaru || formData.kodeBlokBaru.length !== 3) {
+          newErrors.kodeBlokBaru = 'Kode blok wajib diisi dengan 3 karakter';
+        }
+      }
 
       if (!formData.rtObjek || !/^\d{2,3}$/.test(formData.rtObjek)) newErrors.rtObjek = 'RT wajib 2-3 digit angka';
       if (!formData.rwObjek || !/^\d{2,3}$/.test(formData.rwObjek)) newErrors.rwObjek = 'RW wajib 2-3 digit angka';
@@ -762,6 +787,7 @@ export default function FormulirSPOP() {
       },
       objek_pajak_sementara: {
         jalan_op: formData.alamatObjek || '',
+        kode_blok_baru: formData.kodeBlokBaru || undefined,
         blok_kav_no_op: formData.blokKavObjek || undefined,
         rt_op: formData.rtObjek || undefined,
         rw_op: formData.rwObjek || undefined,
@@ -1509,6 +1535,64 @@ export default function FormulirSPOP() {
                       placeholder="Contoh: Jl. Merdeka No. 45"
                     />
                     {errors.alamatObjek && <p className="text-error text-[12px]">{errors.alamatObjek}</p>}
+                  </div>
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="font-label-sm text-primary block">
+                      KODE BLOK (3 DIGIT)
+                      {formData.transaksi === 'BARU' && <span className="text-error ml-1">*</span>}
+                    </label>
+                    {isManualBlok ? (
+              <div className="flex flex-col space-y-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
+                  value={formData.kodeBlokBaru || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    handleTextChange('kodeBlokBaru', { ...e, target: { ...e.target, value: val } });
+                  }}
+                  className={`w-full h-11 border ${errors.kodeBlokBaru ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none uppercase`}
+                  placeholder="001"
+                />
+                {blokOptions.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsManualBlok(false);
+                      handleTextChange('kodeBlokBaru', { target: { value: '' } });
+                    }} 
+                    className="text-primary text-xs underline text-left w-max"
+                  >
+                    Batal Tambah Manual
+                  </button>
+                )}
+              </div>
+            ) : (
+              <select
+                value={formData.kodeBlokBaru || ''}
+                onChange={(e) => {
+                  if (e.target.value === 'ADD_NEW') {
+                    setIsManualBlok(true);
+                    handleTextChange('kodeBlokBaru', { ...e, target: { ...e.target, value: '' } });
+                  } else {
+                    handleTextChange('kodeBlokBaru', e);
+                  }
+                }}
+                className={`w-full h-11 border ${errors.kodeBlokBaru ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none appearance-none cursor-pointer`}
+              >
+                <option value="" disabled>Pilih Blok...</option>
+                {blokOptions.map((b) => (
+                  <option key={b.id_blok || b.kode_blok} value={b.kode_blok}>
+                    {b.kode_blok} {b.keterangan ? `- ${b.keterangan}` : ''}
+                  </option>
+                ))}
+                <option value="ADD_NEW" className="font-bold text-primary">+ Tambah Blok Baru</option>
+              </select>
+            )}
+                    {formData.transaksi === 'BARU' && !formData.kodeBlokBaru && (
+                      <p className="text-error text-[12px]">Kode blok wajib diisi</p>
+                    )}
                   </div>
                   <div className="md:col-span-4 space-y-2">
                     <label className="font-label-sm text-on-surface-variant flex items-center gap-1">BLOK/KAV/NOMOR <span className="text-on-surface-variant font-normal text-[11px] ml-1 flex-none">(Opsional)</span></label>

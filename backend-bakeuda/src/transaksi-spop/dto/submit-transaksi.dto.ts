@@ -42,7 +42,7 @@ export class DetailTujuanInputDto {
 
   @IsOptional() @IsString() jalan_op_baru?: string;
   @IsOptional() @IsString() kode_wilayah_baru?: string;
-  @IsOptional() @IsString() kode_blok_baru?: string;
+  @IsOptional() @IsString() @Length(1, 3) kode_blok_baru?: string;
   @IsOptional() @IsString() no_persil_baru?: string;
   @IsOptional() @IsString() rt_op_baru?: string;
   @IsOptional() @IsString() rw_op_baru?: string;

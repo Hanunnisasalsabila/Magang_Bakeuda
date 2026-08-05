@@ -333,6 +333,7 @@ export const SpopProvider = ({ children }) => {
         jenis_tanah_baru: mergedData.jenisTanah || undefined,
         jalan_op_baru: mergedData.alamatObjek || '',
         kode_wilayah_baru: mergedData.kodeWilayahObjek || undefined,
+        kode_blok_baru: mergedData.kodeBlokBaru || undefined,
         blok_kav_no_baru: mergedData.blokKavObjek || undefined,
         no_persil_baru: mergedData.noPersil || undefined,
         rt_op_baru: mergedData.rtObjek || undefined,

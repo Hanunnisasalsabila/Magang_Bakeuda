@@ -337,19 +337,7 @@ export default function ProfilPengguna({ role }) {
                   Edit
                 </button>
               )}
-              {isDesa && (
-                <button
-                  onClick={() => {
-                    setEditForm({ name: profileData.name, nip: profileData.nip === '-' ? '' : profileData.nip });
-                    setShowDesaEditModal(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-primary text-sm font-medium hover:bg-primary/5 active:scale-95 rounded-lg transition-all border border-primary/20"
-                  title="Edit Profil"
-                >
-                  <span className="material-symbols-outlined text-[16px]">edit</span>
-                  Edit
-                </button>
-              )}
+
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">

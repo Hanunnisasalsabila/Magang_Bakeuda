@@ -154,6 +154,10 @@ export default function Step3ObjekPajak() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const navigate = useNavigate();
 
+  // Referensi Blok
+  const [blokOptions, setBlokOptions] = useState([]);
+  const [isManualBlok, setIsManualBlok] = useState(false);
+
   const isPecah = formData.transaksi === 'PECAH';
   const isGabung = formData.transaksi === 'GABUNG';
   const [activeTab, setActiveTab] = useState(0);
@@ -195,6 +199,20 @@ export default function Step3ObjekPajak() {
                 });
               }
             }).catch(console.error);
+
+            api.get('/referensi-blok?kode_wilayah=' + user.kode_wilayah).then(res => {
+              const dataBlok = res.data.data;
+              if (dataBlok && dataBlok.length > 0) {
+                setBlokOptions(dataBlok);
+                setIsManualBlok(false);
+              } else {
+                setBlokOptions([]);
+                setIsManualBlok(true);
+              }
+            }).catch(() => {
+              setBlokOptions([]);
+              setIsManualBlok(true);
+            });
           }
         }
       } catch (e) { }
@@ -526,6 +544,12 @@ export default function Step3ObjekPajak() {
 
     const validateData = (data, prefix = '') => {
       if (!data.alamatObjek) { newErrors[`${prefix}alamatObjek`] = 'Alamat Objek wajib diisi'; hasError = true; }
+      if (formData.transaksi === 'BARU') {
+        if (!data.kodeBlokBaru || data.kodeBlokBaru.length !== 3) {
+          newErrors[`${prefix}kodeBlokBaru`] = 'Kode blok wajib 3 karakter';
+          hasError = true;
+        }
+      }
       if (!data.rtObjek) { newErrors[`${prefix}rtObjek`] = 'RT wajib diisi'; hasError = true; }
       if (!data.rwObjek) { newErrors[`${prefix}rwObjek`] = 'RW wajib diisi'; hasError = true; }
       if (!data.kecamatanObjek) { newErrors[`${prefix}kecamatanObjek`] = 'Kecamatan wajib dipilih'; hasError = true; }
@@ -676,7 +700,64 @@ export default function Step3ObjekPajak() {
         </div>
 
         {/* Baris 2: Blok/Kav + RW + RT */}
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+          <div className="md:col-span-2 space-y-1">
+            <label className="text-sm text-primary font-bold">
+              KODE BLOK (3 DIGIT)
+              {formData.transaksi === 'BARU' && <span className="text-error ml-1">*</span>}
+            </label>
+            {isManualBlok ? (
+              <div className="flex flex-col space-y-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
+                  value={currentData.kodeBlokBaru || ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    handleTextChange('kodeBlokBaru', { ...e, target: { ...e.target, value: val } });
+                  }}
+                  className={`w-full h-11 border ${getError('kodeBlokBaru') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none uppercase`}
+                  placeholder="001"
+                />
+                {blokOptions.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsManualBlok(false);
+                      handleTextChange('kodeBlokBaru', { target: { value: '' } });
+                    }} 
+                    className="text-primary text-xs underline text-left w-max"
+                  >
+                    Batal Tambah Manual
+                  </button>
+                )}
+              </div>
+            ) : (
+              <select
+                value={currentData.kodeBlokBaru || ''}
+                onChange={(e) => {
+                  if (e.target.value === 'ADD_NEW') {
+                    setIsManualBlok(true);
+                    handleTextChange('kodeBlokBaru', { ...e, target: { ...e.target, value: '' } });
+                  } else {
+                    handleTextChange('kodeBlokBaru', e);
+                  }
+                }}
+                className={`w-full h-11 border ${getError('kodeBlokBaru') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono bg-white shadow-sm outline-none appearance-none cursor-pointer`}
+              >
+                <option value="" disabled>Pilih Blok...</option>
+                {blokOptions.map((b) => (
+                  <option key={b.id_blok || b.kode_blok} value={b.kode_blok}>
+                    {b.kode_blok} {b.keterangan ? `- ${b.keterangan}` : ''}
+                  </option>
+                ))}
+                <option value="ADD_NEW" className="font-bold text-primary">+ Tambah Blok Baru</option>
+              </select>
+            )}
+            {getError('kodeBlokBaru') && <p className="text-error text-[12px]">{getError('kodeBlokBaru')}</p>}
+          </div>
+
           <div className="md:col-span-2 space-y-1">
             <label className="text-sm text-on-surface-variant font-bold">BLOK/KAV/NOMOR <span className="text-gray-400 font-normal text-[11px]">(Opsional)</span></label>
             <input

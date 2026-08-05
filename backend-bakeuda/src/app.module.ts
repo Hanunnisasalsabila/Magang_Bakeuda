@@ -20,6 +20,7 @@ import { ReferensiDbkbModule } from './referensi-dbkb/referensi-dbkb.module.js';
 import { ReferensiNilaiFasilitasModule } from './referensi-nilai-fasilitas/referensi-nilai-fasilitas.module.js';
 import { ActivitiesModule } from './activities/activities.module.js';
 import { NotifikasiModule } from './notifikasi/notifikasi.module.js';
+import { ReferensiBlokModule } from './referensi-blok/referensi-blok.module.js';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { NotifikasiModule } from './notifikasi/notifikasi.module.js';
     ReferensiNilaiFasilitasModule,
     ActivitiesModule,
     NotifikasiModule,
+    ReferensiBlokModule,
   ],
   controllers: [AppController],
   providers: [AppService],
