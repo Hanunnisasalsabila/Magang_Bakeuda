@@ -98,6 +98,11 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
 
       setState(() {
         _transaksi = data;
+        
+        final tujuanList = data['detail_tujuan'] as List?;
+        if (tujuanList != null && tujuanList.isNotEmpty) {
+          _kodeBlok = tujuanList[0]['kode_blok_baru']?.toString() ?? '';
+        }
       });
     } on DioException catch (e) {
       setState(() {
@@ -137,13 +142,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
 
     if (needsNOP) {
       if (_kodeBlok.isEmpty || _kodeBlok.length != 3) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kode Blok harus 3 digit!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
+        // Just let backend handle fallback
       }
     }
 
@@ -1642,26 +1641,24 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                             ),
                                             isDense: true,
                                             filled: true,
-                                            fillColor: Colors.white,
+                                            fillColor: Colors.grey.shade100, // Abu-abu karena dikunci
                                             contentPadding:
                                                 const EdgeInsets.symmetric(
                                                   horizontal: 12,
                                                   vertical: 12,
                                                 ),
                                             counterText: '',
-                                            hintText: '001',
+                                            hintText: '-',
                                             hintStyle: TextStyle(
                                               color: Colors.grey.shade400,
                                             ),
                                           ),
-                                          keyboardType: TextInputType.number,
-                                          maxLength: 3,
+                                          controller: TextEditingController(text: _kodeBlok),
+                                          enabled: false, // KUNCI!
                                           style: const TextStyle(
                                             fontSize: 13,
                                             color: Colors.black87,
                                           ),
-                                          onChanged: (val) =>
-                                              setState(() => _kodeBlok = val),
                                         ),
                                       ],
                                     ),
@@ -1684,7 +1681,7 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                         Container(
                                           height: 40,
                                           decoration: BoxDecoration(
-                                            color: Colors.white,
+                                            color: Colors.grey.shade100,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -1692,79 +1689,14 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                               color: Colors.grey.shade200,
                                             ),
                                           ),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () => setState(
-                                                    () => _kodeJenisOp = '0',
-                                                  ),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: _kodeJenisOp == '0'
-                                                          ? const Color(
-                                                              0xFF0C2A5B,
-                                                            )
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            7,
-                                                          ),
-                                                    ),
-                                                    alignment: Alignment.center,
-                                                    child: Text(
-                                                      'Bumi',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            _kodeJenisOp == '0'
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                        color:
-                                                            _kodeJenisOp == '0'
-                                                            ? Colors.white
-                                                            : Colors.black87,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: GestureDetector(
-                                                  onTap: () => setState(
-                                                    () => _kodeJenisOp = '1',
-                                                  ),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: _kodeJenisOp == '1'
-                                                          ? const Color(
-                                                              0xFF0C2A5B,
-                                                            )
-                                                          : Colors.transparent,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            7,
-                                                          ),
-                                                    ),
-                                                    alignment: Alignment.center,
-                                                    child: Text(
-                                                      'Bgn',
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        fontWeight:
-                                                            _kodeJenisOp == '1'
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                        color:
-                                                            _kodeJenisOp == '1'
-                                                            ? Colors.white
-                                                            : Colors.black87,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
+                                          alignment: Alignment.center,
+                                          child: const Text(
+                                            '0',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black54,
+                                            ),
                                           ),
                                         ),
                                       ],

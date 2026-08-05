@@ -83,6 +83,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   final _nopBersamaController = TextEditingController();
   final _noSpptLamaController = TextEditingController();
   final _alasanHapusController = TextEditingController();
+  final _kodeBlokController = TextEditingController();
+  
+  String? _kodeBlok;
+  List<String> _blokOptions = [];
+  bool _isFetchingBlok = false;
   
   @override
   void initState() {
@@ -99,6 +104,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       final data = res['data'];
       if (data['kode_wilayah'] != null && data['kode_wilayah'].toString().isNotEmpty) {
         final kode = data['kode_wilayah'].toString();
+        _fetchBlokOptions(kode);
         final match = WilayahData.data.where((w) => w['kode_wilayah'] == kode);
         if (match.isNotEmpty) {
           final w = match.first;
@@ -109,6 +115,25 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           });
         }
       }
+    }
+  }
+
+  Future<void> _fetchBlokOptions(String kodeWilayah) async {
+    updateFormState(() {
+      _isFetchingBlok = true;
+      _blokOptions = [];
+    });
+    try {
+      final res = await ApiService().dio.get('/referensi-blok?kode_wilayah=$kodeWilayah');
+      if (res.data != null && res.data['data'] != null) {
+        final dataBlok = res.data['data'] as List;
+        updateFormState(() {
+          _blokOptions = dataBlok.map((e) => e['kode_blok'].toString()).toList();
+          _isFetchingBlok = false;
+        });
+      }
+    } catch (e) {
+      updateFormState(() => _isFetchingBlok = false);
     }
   }
 
@@ -158,6 +183,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                   'luasTanah': t['luas_tanah_baru']?.toString() ?? '',
                   'jenisTanah': t['jenis_tanah_baru'] ?? 'TANAH_BANGUNAN',
                   'jalanOp': t['jalan_op_baru'] ?? '',
+                  'kodeBlok': t['kode_blok_baru'] ?? '',
                   'blokKav': t['blok_kav_no_baru'] ?? '',
                   'rtOp': t['rt_op_baru'] ?? '',
                   'rwOp': t['rw_op_baru'] ?? '',
@@ -193,6 +219,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
              }
              _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
              _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
+             _kodeBlok = tujuan['kode_blok_baru']?.toString();
+             _kodeBlokController.text = _kodeBlok ?? '';
              _blokKavController.text = tujuan['blok_kav_no_baru'] ?? '';
              _rtOpController.text = tujuan['rt_op_baru'] ?? '';
              _rwOpController.text = tujuan['rw_op_baru'] ?? '';
@@ -373,6 +401,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     _nopBersamaController.dispose();
     _noSpptLamaController.dispose();
     _alasanHapusController.dispose();
+    _kodeBlokController.dispose();
+    _mapController.dispose();
     _namaWpController.dispose();
     _nikController.dispose();
     _npwpController.dispose();
@@ -692,6 +722,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           'jumlah_bangunan_baru': jmlBng,
           'jenis_tanah_baru': p['jenisTanah'] ?? 'TANAH_BANGUNAN',
           'jalan_op_baru': p['jalanOp'] ?? '',
+          if ((p['kodeBlok'] ?? '').toString().isNotEmpty) 'kode_blok_baru': p['kodeBlok'],
           if ((p['blokKav'] as String).isNotEmpty) 'blok_kav_no_baru': p['blokKav'],
           if ((p['rtOp'] as String).isNotEmpty) 'rt_op_baru': p['rtOp'],
           if ((p['rwOp'] as String).isNotEmpty) 'rw_op_baru': p['rwOp'],
@@ -811,6 +842,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         'jumlah_bangunan_baru': jmlBangunan,
         'jenis_tanah_baru': _jenisTanah == 'TANAH_DAN_BANGUNAN' ? 'TANAH_BANGUNAN' : _jenisTanah,
         'jalan_op_baru': _jalanOpController.text,
+        if (_kodeBlok != null && _kodeBlok!.isNotEmpty) 'kode_blok_baru': _kodeBlok,
         if (_blokKavController.text.isNotEmpty) 'blok_kav_no_baru': _blokKavController.text,
         if (_rtOpController.text.isNotEmpty) 'rt_op_baru': _rtOpController.text,
         if (_rwOpController.text.isNotEmpty) 'rw_op_baru': _rwOpController.text,

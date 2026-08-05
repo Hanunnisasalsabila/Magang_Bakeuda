@@ -148,6 +148,7 @@ extension _Step2Extension on _SpopFormScreenState {
         Row(
           children: [
             Expanded(
+              flex: 3,
               child: CustomDropdown<String>(
                 label: 'Kelurahan Objek *',
                 value: _getValidKelurahan(
@@ -184,8 +185,30 @@ extension _Step2Extension on _SpopFormScreenState {
                 validator: (v) => v == null || v.isEmpty ? '*' : null,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
+              flex: 2,
+              child: _blokOptions.isNotEmpty
+                  ? CustomDropdown<String>(
+                      label: 'Kode Blok *',
+                      value: _blokOptions.contains(_kodeBlok) ? _kodeBlok : null,
+                      items: _blokOptions
+                          .map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14))))
+                          .toList(),
+                      onChanged: (v) => updateFormState(() => _kodeBlok = v),
+                      validator: (v) => v == null || v.isEmpty ? '*' : null,
+                    )
+                  : CustomTextField(
+                      controller: _kodeBlokController,
+                      label: 'Kode Blok *',
+                      hintText: 'Mis: 001',
+                      onChanged: (v) => updateFormState(() => _kodeBlok = v),
+                      inputFormatters: [LengthLimitingTextInputFormatter(3)],
+                    ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
               child: CustomTextField(
                 controller: _blokKavController,
                 label: 'Blok/Kav/No',

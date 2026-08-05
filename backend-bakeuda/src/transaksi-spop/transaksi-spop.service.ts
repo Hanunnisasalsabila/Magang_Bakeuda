@@ -852,11 +852,9 @@ export class TransaksiSpopService {
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
 
     if (!kodeWilayah) throw new BadRequestException('Kode wilayah tidak ditemukan');
-    if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penetapan NOP baru');
-
     const kodeBlok = t.kode_blok_baru || '001';
 
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: '0' }, tx);
 
     const objek = await tx.objekPajak.create({
       data: {
@@ -864,7 +862,7 @@ export class TransaksiSpopService {
         kode_wilayah: kodeWilayah,
         kode_blok: kodeBlok,
         no_urut: nop.substring(13, 17),
-        kode_jenis_op: dto.kode_jenis_op,
+        kode_jenis_op: '0',
         nik_subjek: nikSubjek,
         no_persil: t.no_persil_baru,
         jalan_op: t.jalan_op_baru ?? '',
@@ -938,8 +936,6 @@ export class TransaksiSpopService {
       }
     }
 
-    if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk pemecahan NOP');
-
     // Ambil data objek asal SEBELUM dinonaktifkan — dipakai untuk fallback blok & alamat
     const asal = transaksi.detail_asal[0];
     const objekAsal = await tx.objekPajak.findUnique({ where: { nop: asal.nop_asal! } });
@@ -956,14 +952,14 @@ export class TransaksiSpopService {
       const kodeBlok = t.kode_blok_baru || objekAsal.kode_blok;
       blokDariInduk.push(!t.kode_blok_baru);
 
-      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
+      const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: '0' }, tx);
       await tx.objekPajak.create({
         data: {
           nop,
           kode_wilayah: kodeWilayah,
           kode_blok: kodeBlok,
           no_urut: nop.substring(13, 17),
-          kode_jenis_op: dto.kode_jenis_op,
+          kode_jenis_op: '0',
           nik_subjek: nikSubjek,
           jalan_op: t.jalan_op_baru ?? '',
           jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
@@ -1018,8 +1014,6 @@ export class TransaksiSpopService {
       }
     }
 
-    if (!dto.kode_jenis_op) throw new BadRequestException('Kode jenis OP wajib diisi untuk penggabungan NOP');
-
     // 3. Buat NOP baru hasil gabungan
     const kodeWilayah = dto.kode_wilayah || (t as any).kode_wilayah_baru || transaksi.pengaju.kode_wilayah;
     const nikSubjek = await this.upsertSubjek(tx, t, transaksi.id_user);
@@ -1028,7 +1022,7 @@ export class TransaksiSpopService {
 
     const kodeBlok = t.kode_blok_baru || objekAsalPertama?.kode_blok || '001';
 
-    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: dto.kode_jenis_op }, tx);
+    const nop = await this.nopGenerator.generateNop({ kode_wilayah: kodeWilayah, kode_blok: kodeBlok, kode_jenis_op: '0' }, tx);
 
     const objekBaru = await tx.objekPajak.create({
       data: {
@@ -1036,7 +1030,7 @@ export class TransaksiSpopService {
         kode_wilayah: kodeWilayah,
         kode_blok: kodeBlok,
         no_urut: nop.substring(13, 17),
-        kode_jenis_op: dto.kode_jenis_op,
+        kode_jenis_op: '0',
         nik_subjek: nikSubjek,
         jalan_op: t.jalan_op_baru || objekAsalPertama?.jalan_op || '',   // FALLBACK di sini
         blok_kav_no: t.blok_kav_no_baru || objekAsalPertama?.blok_kav_no || undefined,
