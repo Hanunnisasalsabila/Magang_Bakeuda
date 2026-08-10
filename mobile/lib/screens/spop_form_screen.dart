@@ -52,6 +52,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   int _currentPecahanBangunanIdx = 1;
   int _jumlahPecahan = 2;         // minimum 2
   List<Map<String, dynamic>> _pecahanList = [];
+  String _kodeBlokIndukPecah = '';
   void updateFormState(VoidCallback fn) {
     if (mounted) {
       setState(fn);
@@ -343,6 +344,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         'dataBangunan': <Map<String, dynamic>>[],
         'lampiran': <Map<String, dynamic>>[],
         'selectedJenisDokumen': 'KTP',
+        'kodeBlokBaru': _kodeBlokIndukPecah,
       });
     }
     if (_pecahanList.length > count) {
@@ -722,10 +724,10 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           'jumlah_bangunan_baru': jmlBng,
           'jenis_tanah_baru': p['jenisTanah'] ?? 'TANAH_BANGUNAN',
           'jalan_op_baru': p['jalanOp'] ?? '',
-          if ((p['kodeBlok'] ?? '').toString().isNotEmpty) 'kode_blok_baru': p['kodeBlok'],
-          if ((p['blokKav'] as String).isNotEmpty) 'blok_kav_no_baru': p['blokKav'],
-          if ((p['rtOp'] as String).isNotEmpty) 'rt_op_baru': p['rtOp'],
-          if ((p['rwOp'] as String).isNotEmpty) 'rw_op_baru': p['rwOp'],
+          'kode_blok_baru': p['kodeBlokBaru'] ?? '',
+          'blok_kav_no_baru': p['blokKav'] ?? '',
+          'rt_op_baru': p['rtOp'] ?? '',
+          'rw_op_baru': p['rwOp'] ?? '',
           'kelurahan_op_baru': p['kelurahanOp'] ?? '',
           'kecamatan_op_baru': p['kecamatanOp'] ?? '',
           if ((p['batasUtara'] as String).isNotEmpty) 'batas_utara': p['batasUtara'],
@@ -1075,6 +1077,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           }
           if (obj['luas_tanah'] != null) {
             _luasTanahController.text = obj['luas_tanah'].toString();
+          }
+          if (obj['kode_blok'] != null) {
+            _kodeBlokIndukPecah = obj['kode_blok'].toString();
+          } else {
+            _kodeBlokIndukPecah = '';
           }
         } catch (e) {
            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengambil data NOP Asal: $e'), backgroundColor: Colors.red));

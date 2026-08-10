@@ -11,6 +11,8 @@ import 'pelacakan_dokumen_screen.dart';
 import 'login_screen.dart';
 import 'draft_spop_screen.dart';
 import 'data_objek_pajak_screen.dart';
+import 'daftar_subjek_pajak_screen.dart';
+import 'daftar_objek_pajak_screen.dart';
 import '../services/auth_service.dart';
 import '../services/notifikasi_service.dart';
 import '../services/api_service.dart';
@@ -422,6 +424,32 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                             profileName: _profileName,
                             profileEmail: _profileEmail,
                           ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.people_outline,
+                    title: 'Daftar Subjek Pajak',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DaftarSubjekPajakScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.landscape_outlined,
+                    title: 'Daftar Objek Pajak',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DaftarObjekPajakScreen(),
                         ),
                       );
                     },

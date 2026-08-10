@@ -78,6 +78,19 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
     return status.replaceAll('_', ' ');
   }
 
+  String _formatNOP(String nop, String type, String status) {
+    if ((nop.isEmpty || nop.contains('...') || nop == 'Menunggu NOP' || type == 'BARU' || type == 'PECAH' || type == 'GABUNG') && status != 'DISETUJUI') {
+      return '(NOP Belum Tersedia)';
+    }
+    if (nop.isEmpty || nop.contains('...')) return '(NOP Belum Tersedia)';
+    
+    final clean = nop.replaceAll(RegExp(r'\D'), '');
+    if (clean.length == 18) {
+      return 'NOP. ${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}';
+    }
+    return 'NOP. $nop';
+  }
+
   // Greeting handled directly in build method.
 
   String _getGreeting() {
@@ -104,9 +117,7 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
               onRefresh: _fetchData,
               color: theme.colorScheme.primary,
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 24,
@@ -297,26 +308,28 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final trx = _recentTransactions[index];
-              final detailTujuanRaw = trx['detail_tujuan'];
-              final detail = detailTujuanRaw is List ? detailTujuanRaw.firstOrNull : (detailTujuanRaw is Map ? detailTujuanRaw : null);
               final status = trx['status_ajuan'] ?? 'UNKNOWN';
               final statusColor = _getStatusColor(status, theme.colorScheme);
               final type =
                   trx['jenis_transaksi']?.toString().replaceAll('_', ' ') ??
                   'SPOP';
 
-              // Handle title based on NOP availability
-              String nopStr =
-                  detail?['nop_generated'] ?? detail?['no_persil_baru'] ?? '';
-              
-              if (type == 'PECAH' || type == 'GABUNG' || type == 'BARU' || nopStr.contains('...')) {
-                nopStr = ''; // Force empty so it shows (NOP Belum Tersedia)
+              List<String> nops = [];
+              if (type == 'HAPUS' && trx['detail_asal'] is List && (trx['detail_asal'] as List).isNotEmpty) {
+                for (var d in trx['detail_asal']) {
+                  String n = d['nop_asal'] ?? '';
+                  nops.add(_formatNOP(n, type, status));
+                }
+              } else if (trx['detail_tujuan'] is List && (trx['detail_tujuan'] as List).isNotEmpty) {
+                for (var d in trx['detail_tujuan']) {
+                  String n = d['nop_generated'] ?? d['no_persil_baru'] ?? '';
+                  nops.add(_formatNOP(n, type, status));
+                }
+              } else {
+                nops.add('(NOP Belum Tersedia)');
               }
 
               String titleStr = 'Pengajuan $type';
-              String nopDisplay = nopStr.isEmpty || nopStr == 'Menunggu NOP'
-                  ? '(NOP Belum Tersedia)'
-                  : 'NOP. $nopStr';
 
               // Dynamic description based on status
               String descStr = 'Berkas SPOP sedang diproses dalam antrean.';
@@ -398,16 +411,21 @@ class _DesaDashboardTabState extends State<DesaDashboardTab> {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      nopDisplay,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontStyle: nopDisplay.contains('Belum Tersedia') ? FontStyle.italic : FontStyle.normal,
-                                        color: Colors.grey.shade600,
+                                    ...nops.map((nopDisplay) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      child: Text(
+                                        nopDisplay,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontStyle: nopDisplay.contains('Belum') ? FontStyle.italic : FontStyle.normal,
+                                          color: nopDisplay.contains('Belum') ? Colors.grey.shade500 : Colors.grey.shade700,
+                                          fontWeight: nopDisplay.contains('Belum') ? FontWeight.normal : FontWeight.w600,
+                                          fontFamily: nopDisplay.contains('Belum') ? null : 'monospace',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                    )),
                                   ],
                                 ),
                               ),
