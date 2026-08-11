@@ -81,17 +81,10 @@ export class TransaksiSpopService {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
         }
-        
-        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
-          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
-          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
-          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
-          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
-        }
       }
     }
 
-    // Validasi soft warning selisih luas — KHUSUS PECAH (GABUNG tidak perlu, luas dihitung otomatis)
+    // Validasi soft warning selisih luas — untuk PECAH dan GABUNG
     const peringatanValidasi = await this.hitungPeringatanValidasiLuas(dto);
 
     const statusAjuan = asDraft ? 'DRAFT' : 'MENUNGGU';
@@ -219,13 +212,6 @@ export class TransaksiSpopService {
           if (foundNops.get(n) === false) {
             throw new BadRequestException(`NOP Asal (${n}) sudah berstatus nonaktif.`);
           }
-        }
-        
-        if (dto.jenis_transaksi === 'GABUNG' && dto.detail_tujuan?.length) {
-          const totalLuas = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
-          const totalBng = found.reduce((sum, f) => sum + Number(f.luas_bangunan || 0), 0);
-          dto.detail_tujuan[0].luas_tanah_baru = totalLuas;
-          dto.detail_tujuan[0].luas_bangunan_baru = totalBng;
         }
       }
     }
@@ -643,21 +629,36 @@ export class TransaksiSpopService {
   }
 
   /**
-   * Hitung peringatan validasi selisih luas tanah — khusus PECAH.
+   * Hitung peringatan validasi selisih luas tanah — untuk PECAH dan GABUNG.
    * Dipanggil dari submitPengajuan() DAN saveDraft() supaya tidak duplikasi logic.
    */
   private async hitungPeringatanValidasiLuas(dto: SubmitTransaksiDto): Promise<string | null> {
-    if (dto.jenis_transaksi !== 'PECAH' || !dto.detail_asal?.length || !dto.detail_tujuan?.length) {
+    if (!dto.detail_asal?.length || !dto.detail_tujuan?.length) {
       return null;
     }
 
-    const objekAsal = await this.prisma.objekPajak.findUnique({ where: { nop: dto.detail_asal[0].nop_asal } });
-    if (!objekAsal) return null;
+    if (dto.jenis_transaksi === 'PECAH') {
+      const objekAsal = await this.prisma.objekPajak.findUnique({ where: { nop: dto.detail_asal[0].nop_asal } });
+      if (!objekAsal) return null;
 
-    const totalLuasTujuan = dto.detail_tujuan.reduce((sum, t) => sum + Number(t.luas_tanah_baru), 0);
-    const hasil = validasiSelisihLuasPecah(Number(objekAsal.luas_tanah), totalLuasTujuan);
+      const totalLuasTujuan = dto.detail_tujuan.reduce((sum, t) => sum + Number(t.luas_tanah_baru), 0);
+      const hasil = validasiSelisihLuasPecah(Number(objekAsal.luas_tanah), totalLuasTujuan, 'PECAH');
+      return hasil.ada_selisih ? hasil.pesan : null;
+    }
 
-    return hasil.ada_selisih ? hasil.pesan : null;
+    if (dto.jenis_transaksi === 'GABUNG') {
+      const nopAsalList = dto.detail_asal.map(a => a.nop_asal);
+      const found = await this.prisma.objekPajak.findMany({
+        where: { nop: { in: nopAsalList } },
+        select: { luas_tanah: true },
+      });
+      const totalLuasAsal = found.reduce((sum, f) => sum + Number(f.luas_tanah || 0), 0);
+      const luasTujuanBaru = Number(dto.detail_tujuan[0].luas_tanah_baru || 0);
+      const hasil = validasiSelisihLuasPecah(totalLuasAsal, luasTujuanBaru, 'GABUNG');
+      return hasil.ada_selisih ? hasil.pesan : null;
+    }
+
+    return null;
   }
 
   private validateByJenisTransaksi(jenis: JenisTransaksi, dto: SubmitTransaksiDto) {

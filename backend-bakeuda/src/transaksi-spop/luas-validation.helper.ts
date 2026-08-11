@@ -1,5 +1,5 @@
 /**
- * Helper validasi selisih luas tanah — khusus transaksi PECAH.
+ * Helper validasi selisih luas tanah — untuk transaksi PECAH dan GABUNG.
  *
  * Soft warning: transaksi TETAP diterima, tapi sistem memberi peringatan
  * eksplisit supaya BAKEUDA sadar saat reviu kalau ada selisih signifikan.
@@ -17,14 +17,16 @@ export interface HasilValidasiLuas {
 const TOLERANSI_PERSEN = 2;
 
 /**
- * Bandingkan total luas hasil pemecahan dengan luas asal.
+ * Bandingkan luas referensi (asal) dengan luas tujuan (hasil pecah/gabung).
  * Return pesan peringatan kalau selisih > toleransi, null kalau wajar.
  *
- * Khusus PECAH saja — GABUNG tidak perlu karena luas dihitung otomatis dari total NOP asal.
+ * - PECAH: luasAsal = luas NOP induk, totalLuasTujuan = jumlah luas semua pecahan.
+ * - GABUNG: luasAsal = jumlah luas semua NOP asal, totalLuasTujuan = luas tujuan baru yang dimasukkan pengguna.
  */
 export function validasiSelisihLuasPecah(
   luasAsal: number,
   totalLuasTujuan: number,
+  jenisTransaksi: 'PECAH' | 'GABUNG' = 'PECAH',
 ): HasilValidasiLuas {
   if (luasAsal <= 0) {
     return { ada_selisih: false, pesan: null, luas_asal: luasAsal, luas_tujuan: totalLuasTujuan, selisih_persen: 0 };
@@ -38,12 +40,15 @@ export function validasiSelisihLuasPecah(
   }
 
   const arah = totalLuasTujuan > luasAsal ? 'lebih besar' : 'lebih kecil';
+  const labelAsal = jenisTransaksi === 'GABUNG' ? 'total luas NOP asal' : 'luas asal';
+  const labelTujuan = jenisTransaksi === 'GABUNG' ? 'luas hasil penggabungan' : 'total luas hasil pemecahan';
 
   return {
     ada_selisih: true,
-    pesan: `Peringatan: total luas hasil pemecahan (${totalLuasTujuan} m²) ${arah} ${selisihPersen.toFixed(1)}% dibanding luas asal (${luasAsal} m²). Mohon diperiksa kembali sebelum disetujui.`,
+    pesan: `Peringatan: ${labelTujuan} (${totalLuasTujuan} m²) ${arah} ${selisihPersen.toFixed(1)}% dibanding ${labelAsal} (${luasAsal} m²). Mohon diperiksa kembali sebelum disetujui.`,
     luas_asal: luasAsal,
     luas_tujuan: totalLuasTujuan,
     selisih_persen: selisihPersen,
   };
 }
+

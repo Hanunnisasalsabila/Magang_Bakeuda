@@ -320,6 +320,10 @@ export default function Step3ObjekPajak() {
           }
         }
 
+        if (totalLuas > 0) {
+          setLuasInduk(totalLuas);
+        }
+
         setFormData(prev => {
           const updates = { ...prev };
           let changed = false;
@@ -649,44 +653,65 @@ export default function Step3ObjekPajak() {
                 </div>
               ))}
             </div>
-            {luasInduk > 0 && (() => {
-              const totalPecahan = formData.pecahanList?.reduce((acc, p) => acc + parseFloat(p.luasTanah || 0), 0) || 0;
-              const selisih = Math.abs(totalPecahan - luasInduk);
-              const selisihPersen = luasInduk > 0 ? ((selisih / luasInduk) * 100).toFixed(1) : 0;
-              const isExceed = totalPecahan > luasInduk;
-              const isLess = totalPecahan < luasInduk;
-              const isMatch = totalPecahan === luasInduk || (selisih / luasInduk * 100) <= 2;
-
-              let panelClass, iconText, selisihText;
-              if (isMatch && !isExceed) {
-                panelClass = 'bg-green-50 border-green-300 text-green-800';
-                iconText = '✅';
-                selisihText = selisih === 0 ? 'Luas pecahan sudah sesuai dengan luas induk.' : `Selisih ${selisihPersen}% (${selisih.toFixed(0)} m²) — masih dalam toleransi wajar.`;
-              } else if (isExceed) {
-                panelClass = 'bg-red-50 border-red-300 text-red-800';
-                iconText = '🔴';
-                selisihText = `Luas pecahan MELEBIHI induk sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Mohon diperiksa kembali.`;
-              } else {
-                panelClass = 'bg-amber-50 border-amber-300 text-amber-800';
-                iconText = '🟡';
-                selisihText = `Luas pecahan KURANG dari induk sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Pastikan sisa lahan sudah diperhitungkan.`;
-              }
-
-              return (
-                <div className={`mt-3 p-3 border rounded-lg text-sm flex flex-col gap-2 ${panelClass}`}>
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <span className="font-bold">Luas Induk: {luasInduk} m²</span>
-                    <span className="font-bold">Total Pecahan: {totalPecahan} m²</span>
-                  </div>
-                  <div className="flex items-start gap-1.5 text-xs">
-                    <span className="mt-0.5">{iconText}</span>
-                    <span className="font-semibold">{selisihText}</span>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         )}
+
+        {/* Panel Peringatan Validasi Luas (PECAH & GABUNG) */}
+        {luasInduk > 0 && (() => {
+          let comparisonTarget = 0;
+          let labelInduk = '';
+          let labelComparison = '';
+          let isPecah = formData.transaksi === 'PECAH';
+          let isGabungLocal = formData.transaksi === 'GABUNG';
+          
+          if (isPecah) {
+            comparisonTarget = formData.pecahanList?.reduce((acc, p) => acc + parseFloat(p.luasTanah || 0), 0) || 0;
+            labelInduk = 'Luas Induk';
+            labelComparison = 'Total Pecahan';
+          } else if (isGabungLocal) {
+            comparisonTarget = parseFloat(currentData.luasTanah || 0);
+            labelInduk = 'Total Luas Asal';
+            labelComparison = 'Luas Baru';
+          } else {
+            return null;
+          }
+
+          const selisih = Math.abs(comparisonTarget - luasInduk);
+          const selisihPersen = luasInduk > 0 ? ((selisih / luasInduk) * 100).toFixed(1) : 0;
+          const isExceed = comparisonTarget > luasInduk;
+          const isLess = comparisonTarget < luasInduk;
+          const isMatch = comparisonTarget === luasInduk || (selisih / luasInduk * 100) <= 2;
+
+          let panelClass, iconText, selisihText;
+          const unitContext = isPecah ? 'pecahan' : 'baru (penggabungan)';
+          
+          if (isMatch && !isExceed) {
+            panelClass = 'bg-green-50 border-green-300 text-green-800';
+            iconText = '✅';
+            selisihText = selisih === 0 ? `Luas ${unitContext} sudah sesuai dengan asal.` : `Selisih ${selisihPersen}% (${selisih.toFixed(0)} m²) — masih dalam toleransi wajar.`;
+          } else if (isExceed) {
+            panelClass = 'bg-red-50 border-red-300 text-red-800';
+            iconText = '🔴';
+            selisihText = `Luas ${unitContext} MELEBIHI asal sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Mohon diperiksa kembali.`;
+          } else {
+            panelClass = 'bg-amber-50 border-amber-300 text-amber-800';
+            iconText = '🟡';
+            selisihText = `Luas ${unitContext} KURANG dari asal sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Pastikan sisa lahan sudah diperhitungkan.`;
+          }
+
+          return (
+            <div className={`p-3 border rounded-lg text-sm flex flex-col gap-2 mb-6 ${panelClass}`}>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <span className="font-bold">{labelInduk}: {luasInduk} m²</span>
+                <span className="font-bold">{labelComparison}: {comparisonTarget} m²</span>
+              </div>
+              <div className="flex items-start gap-1.5 text-xs">
+                <span className="mt-0.5">{iconText}</span>
+                <span className="font-semibold">{selisihText}</span>
+              </div>
+            </div>
+          );
+        })()}
 
 
         {/* Baris 1: No.Persil + Alamat */}
@@ -870,13 +895,13 @@ export default function Step3ObjekPajak() {
               type="text"
               inputMode="decimal"
               value={currentData.luasTanah || ''}
-              readOnly={isGabung || formData.transaksi === 'PERUBAHAN_DATA'}
+              readOnly={formData.transaksi === 'PERUBAHAN_DATA'}
               onChange={(e) => {
-                if (!isGabung && formData.transaksi !== 'PERUBAHAN_DATA') {
+                if (formData.transaksi !== 'PERUBAHAN_DATA') {
                   handleTextChange('luasTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '') } })
                 }
               }}
-              className={`w-full h-12 border ${getError('luasTanah') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono shadow-sm outline-none ${isGabung || formData.transaksi === 'PERUBAHAN_DATA' ? 'bg-surface-container-low cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
+              className={`w-full h-12 border ${getError('luasTanah') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono shadow-sm outline-none ${formData.transaksi === 'PERUBAHAN_DATA' ? 'bg-surface-container-low cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}
               placeholder="Contoh: 150"
             />
             {getError('luasTanah') && <p className="text-error text-[12px]">{getError('luasTanah')}</p>}

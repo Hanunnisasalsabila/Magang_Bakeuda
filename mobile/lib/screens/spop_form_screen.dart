@@ -89,6 +89,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   String? _kodeBlok;
   List<String> _blokOptions = [];
   bool _isFetchingBlok = false;
+  double _totalLuasAsalGabung = 0.0;
   
   @override
   void initState() {
@@ -622,12 +623,31 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
 
     setState(() => _isLoading = true);
+    _totalLuasAsalGabung = 0.0;
     try {
+      // Hitung total luas dari semua NOP asal yang valid
+      for (var ctrl in _nopAsalControllers) {
+        final nop = ctrl.text.replaceAll('.', '').trim();
+        if (nop.length == 18) {
+          try {
+            final obj = await _spopService.getObjekPajakByNop(nop);
+            if (obj != null && obj['luas_tanah'] != null) {
+              _totalLuasAsalGabung += double.tryParse(obj['luas_tanah'].toString()) ?? 0.0;
+            }
+          } catch (e) {
+            debugPrint('Failed to get luas for NOP asal $nop');
+          }
+        }
+      }
       final obj = await _spopService.getObjekPajakByNop(firstNop);
       if (obj != null) {
         setState(() {
           _fetchedObjekPajak = obj;
-          if (obj['luas_tanah'] != null) _luasTanahController.text = obj['luas_tanah'].toString();
+          if (_totalLuasAsalGabung > 0) {
+            _luasTanahController.text = _totalLuasAsalGabung.toString();
+          } else if (obj['luas_tanah'] != null) {
+            _luasTanahController.text = obj['luas_tanah'].toString();
+          }
           if (obj['jalan_op'] != null) _jalanOpController.text = obj['jalan_op'].toString();
           if (obj['blok_kav_no_op'] != null) _blokKavController.text = obj['blok_kav_no_op'].toString();
           if (obj['rt_op'] != null) _rtOpController.text = obj['rt_op'].toString();
@@ -832,8 +852,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           luasBngTotal += double.tryParse(b['luasBangunan']?.toString() ?? '0') ?? 0;
         }
       }
-      // For GABUNG, luas_tanah_baru = 0 (backend auto-sums from NOP asal)
-      final luasTanah = jenis == 'GABUNG' ? 0.0 : (double.tryParse(_luasTanahController.text) ?? 0.0);
+      // Allow user input for luas_tanah for GABUNG
+      final luasTanah = double.tryParse(_luasTanahController.text) ?? 0.0;
 
       detailTujuan = [{
         if (!isPerubahanData) 'nik_calon_subjek': _nikController.text,
@@ -1132,13 +1152,42 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         setState(() => _currentStep = 2);
       }
     } else if (_currentStep == 2) {
-      int jmlBangunan = int.tryParse(_jmlBangunanController.text) ?? 0;
-      if (jmlBangunan > 0) {
-        _initBangunanList(jmlBangunan);
-        setState(() => _currentStep = 3);
-      } else {
-        setState(() => _currentStep = 4);
+      if (_jenisLayanan == 'GABUNG') {
+        double luasTujuanBaru = double.tryParse(_luasTanahController.text) ?? 0;
+        double selisih = (luasTujuanBaru - _totalLuasAsalGabung).abs();
+        double selisihPersen = _totalLuasAsalGabung > 0 ? (selisih / _totalLuasAsalGabung) * 100 : 0;
+        
+        if (selisihPersen > 2) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Informasi Selisih Luas', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+              content: Text(
+                'Total Luas NOP Asal: ${_totalLuasAsalGabung.toStringAsFixed(0)} m²\n'
+                'Luas Baru: ${luasTujuanBaru.toStringAsFixed(0)} m²\n'
+                'Selisih: ${selisih.toStringAsFixed(0)} m² (${selisihPersen.toStringAsFixed(1)}%)\n\n'
+                'Apakah Anda yakin ingin melanjutkan?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Periksa Kembali'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _proceedFromStep2();
+                  },
+                  child: const Text('Lanjutkan'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
       }
+      _proceedFromStep2();
     } else if (_currentStep == 3) {
       int jmlBangunan = int.tryParse(_jmlBangunanController.text) ?? 0;
       if (_currentBangunanIndex < jmlBangunan) {
@@ -1154,6 +1203,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       setState(() => _currentStep = 5);
     } else if (_currentStep == 5) {
       _submitForm();
+    }
+  }
+
+  void _proceedFromStep2() {
+    int jmlBangunan = int.tryParse(_jmlBangunanController.text) ?? 0;
+    if (jmlBangunan > 0) {
+      _initBangunanList(jmlBangunan);
+      setState(() => _currentStep = 3);
+    } else {
+      setState(() => _currentStep = 4);
     }
   }
 
