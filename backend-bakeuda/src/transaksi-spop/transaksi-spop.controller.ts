@@ -101,9 +101,11 @@ export class TransaksiSpopController {
     }),
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
   }))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Request() req) {
     if (!file) throw new BadRequestException('File tidak ditemukan');
-    const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    const fileUrl = `${protocol}://${host}/uploads/${file.filename}`;
     return { url_file: fileUrl };
   }
 

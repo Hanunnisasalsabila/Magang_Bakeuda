@@ -555,11 +555,23 @@ export class TransaksiSpopService {
 
   async tolak(idTransaksi: string, catatan: string, currentUser: CurrentUser) {
     await this.pastikanSedangDireviuOleh(idTransaksi, currentUser);
+    const transaksi = await this.prisma.transaksiSpop.findUnique({ where: { id_transaksi: idTransaksi } });
     const updated = await this.prisma.transaksiSpop.update({
       where: { id_transaksi: idTransaksi },
       data: { status_ajuan: 'DITOLAK', catatan_bakeuda: catatan, id_verifikator: currentUser.id_user, verified_at: new Date(), locked_by: null, locked_at: null },
     });
     await this.catatRiwayat(idTransaksi, 'PROSES', 'DITOLAK', currentUser.id_user, catatan);
+
+    if (transaksi) {
+      await this.notifikasiService.create({
+        user_id: transaksi.id_user,
+        title: 'SPOP Ditolak',
+        message: `Pengajuan SPOP Anda ditolak oleh Bakeuda: ${catatan}`,
+        type: 'SPOP_REJECTED',
+        reference_id: idTransaksi
+      });
+    }
+
     return { success: true, data: updated };
   }
 
