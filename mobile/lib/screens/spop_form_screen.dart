@@ -1157,7 +1157,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     }
   }
 
-  void _nextPecahanStep() {
+  void _nextPecahanStep() async {
     final p = _pecahanList[_currentPecahanIdx - 1];
     final jmlBng = int.tryParse(p['jumlahBangunan']?.toString() ?? '0') ?? 0;
 
@@ -1168,15 +1168,72 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
       double luasInduk = double.tryParse(_luasTanahController.text) ?? 0;
       
-      if (totalLuas > luasInduk) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Total luas tanah pecahan ($totalLuas m²) melebihi luas induk ($luasInduk m²).'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 4),
-          )
+      if (luasInduk > 0 && totalLuas != luasInduk) {
+        final selisih = (totalLuas - luasInduk).abs();
+        final selisihPersen = (selisih / luasInduk * 100).toStringAsFixed(1);
+        final isExceed = totalLuas > luasInduk;
+
+        final shouldContinue = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            title: Row(
+              children: [
+                Icon(
+                  isExceed ? Icons.warning_amber_rounded : Icons.info_outline_rounded,
+                  color: isExceed ? Colors.red.shade700 : Colors.amber.shade700,
+                ),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('Informasi Selisih Luas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSelisihRow('Luas Induk', '${luasInduk.toStringAsFixed(0)} m²'),
+                const SizedBox(height: 6),
+                _buildSelisihRow('Total Pecahan', '${totalLuas.toStringAsFixed(0)} m²'),
+                const Divider(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isExceed ? Colors.red.shade50 : Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isExceed ? Colors.red.shade200 : Colors.amber.shade200),
+                  ),
+                  child: Text(
+                    isExceed
+                        ? 'Luas pecahan MELEBIHI induk sebesar ${selisih.toStringAsFixed(0)} m² ($selisihPersen%).\nMohon diperiksa kembali.'
+                        : 'Luas pecahan KURANG dari induk sebesar ${selisih.toStringAsFixed(0)} m² ($selisihPersen%).\nPastikan sisa lahan sudah diperhitungkan.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isExceed ? Colors.red.shade800 : Colors.amber.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Periksa Kembali'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Lanjutkan'),
+              ),
+            ],
+          ),
         );
-        return; 
+
+        if (shouldContinue != true) return;
       }
     }
 
@@ -1208,6 +1265,16 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         }
       }
     });
+  }
+
+  Widget _buildSelisihRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+      ],
+    );
   }
 
   void _prevStep() {

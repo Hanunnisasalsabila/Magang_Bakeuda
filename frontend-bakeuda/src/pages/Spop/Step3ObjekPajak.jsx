@@ -573,8 +573,7 @@ export default function Step3ObjekPajak() {
       }
 
       if (totalLuasPecahan > luasInduk && luasInduk > 0) {
-        setToast({ show: true, message: `Total Luas Pecahan (${totalLuasPecahan} m²) melebihi Luas Induk (${luasInduk} m²)!`, type: 'error' });
-        return;
+        setToast({ show: true, message: `Perhatian: Total Luas Pecahan (${totalLuasPecahan} m²) melebihi Luas Induk (${luasInduk} m²). Selisih: ${(totalLuasPecahan - luasInduk).toFixed(0)} m²`, type: 'warning' });
       }
     } else {
       validateData(formData, '');
@@ -652,19 +651,37 @@ export default function Step3ObjekPajak() {
             </div>
             {luasInduk > 0 && (() => {
               const totalPecahan = formData.pecahanList?.reduce((acc, p) => acc + parseFloat(p.luasTanah || 0), 0) || 0;
+              const selisih = Math.abs(totalPecahan - luasInduk);
+              const selisihPersen = luasInduk > 0 ? ((selisih / luasInduk) * 100).toFixed(1) : 0;
               const isExceed = totalPecahan > luasInduk;
+              const isLess = totalPecahan < luasInduk;
+              const isMatch = totalPecahan === luasInduk || (selisih / luasInduk * 100) <= 2;
+
+              let panelClass, iconText, selisihText;
+              if (isMatch && !isExceed) {
+                panelClass = 'bg-green-50 border-green-300 text-green-800';
+                iconText = '✅';
+                selisihText = selisih === 0 ? 'Luas pecahan sudah sesuai dengan luas induk.' : `Selisih ${selisihPersen}% (${selisih.toFixed(0)} m²) — masih dalam toleransi wajar.`;
+              } else if (isExceed) {
+                panelClass = 'bg-red-50 border-red-300 text-red-800';
+                iconText = '🔴';
+                selisihText = `Luas pecahan MELEBIHI induk sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Mohon diperiksa kembali.`;
+              } else {
+                panelClass = 'bg-amber-50 border-amber-300 text-amber-800';
+                iconText = '🟡';
+                selisihText = `Luas pecahan KURANG dari induk sebesar ${selisih.toFixed(0)} m² (${selisihPersen}%). Pastikan sisa lahan sudah diperhitungkan.`;
+              }
+
               return (
-                <div className={`mt-3 p-3 border rounded-lg text-sm flex flex-col gap-1 ${isExceed ? 'bg-error-container border-error text-on-error-container' : 'bg-blue-50 border-blue-200 text-blue-800'
-                  }`}>
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold">Total Luas Induk: {luasInduk} m²</span>
-                    <span className={isExceed ? 'font-bold text-error' : ''}>Total Pecahan: {totalPecahan} m²</span>
+                <div className={`mt-3 p-3 border rounded-lg text-sm flex flex-col gap-2 ${panelClass}`}>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <span className="font-bold">Luas Induk: {luasInduk} m²</span>
+                    <span className="font-bold">Total Pecahan: {totalPecahan} m²</span>
                   </div>
-                  {isExceed && (
-                    <span className="text-xs font-bold mt-1 text-error">
-                      ⚠️ Total Luas Pecahan ({totalPecahan} m²) tidak boleh melebihi Luas Induk ({luasInduk} m²)!
-                    </span>
-                  )}
+                  <div className="flex items-start gap-1.5 text-xs">
+                    <span className="mt-0.5">{iconText}</span>
+                    <span className="font-semibold">{selisihText}</span>
+                  </div>
                 </div>
               );
             })()}
