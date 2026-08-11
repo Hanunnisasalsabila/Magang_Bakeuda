@@ -722,16 +722,63 @@ export default function DaftarObjekPajak() {
               {/* Peta */}
               {(() => {
                 const poly = selectedObject.koordinat_polygon;
-                const coords = Array.isArray(poly)
-                  ? poly
-                  : (poly?.coordinates?.[0] || null);
-                const leafletCoords = coords
-                  ? coords.map(c => Array.isArray(c[0]) ? c[0].map(p => [p[1], p[0]]) : [c[1], c[0]])
-                  : null;
-                const center = leafletCoords
-                  ? [leafletCoords.reduce((s, p) => s + p[0], 0) / leafletCoords.length,
-                     leafletCoords.reduce((s, p) => s + p[1], 0) / leafletCoords.length]
-                  : [-7.3906, 109.3647]; // Default: Purbalingga
+                let leafletCoords = null;
+                let center = [-7.3906, 109.3647];
+                let isValid = false;
+                let flatPoints = [];
+
+                try {
+                  if (poly) {
+                    // Raw coordinates array from GeoJSON
+                    let rawCoords = Array.isArray(poly) ? poly : (poly.coordinates || []);
+                    
+                    // Recursive function to flip [lng, lat] to [lat, lng] while preserving array structure
+                    const flipCoords = (arr) => {
+                      if (arr && typeof arr === 'object' && !Array.isArray(arr) && 'lat' in arr && 'lng' in arr) {
+                        return [Number(arr.lat), Number(arr.lng)];
+                      }
+                      if (Array.isArray(arr)) {
+                        if (arr.length === 2 && typeof arr[0] === 'number' && typeof arr[1] === 'number') {
+                          return [arr[1], arr[0]];
+                        }
+                        return arr.map(flipCoords);
+                      }
+                      return arr;
+                    };
+                    
+                    leafletCoords = flipCoords(rawCoords);
+
+                    // Flatten just for calculating center
+                    const flatten = (arr) => {
+                      if (arr && typeof arr === 'object' && !Array.isArray(arr) && 'lat' in arr && 'lng' in arr) {
+                        flatPoints.push([Number(arr.lat), Number(arr.lng)]);
+                      } else if (Array.isArray(arr)) {
+                        if (arr.length === 2 && typeof arr[0] === 'number' && typeof arr[1] === 'number') {
+                          flatPoints.push(arr);
+                        } else {
+                          arr.forEach(flatten);
+                        }
+                      }
+                    };
+                    flatten(leafletCoords);
+
+                    if (flatPoints.length > 0) {
+                      let sumLat = 0, sumLng = 0;
+                      flatPoints.forEach(p => { sumLat += p[0]; sumLng += p[1]; });
+                      center = [sumLat / flatPoints.length, sumLng / flatPoints.length];
+                      if (!isNaN(center[0]) && !isNaN(center[1])) {
+                        isValid = true;
+                      }
+                    }
+                  }
+                } catch(e) {
+                  console.error('Error parsing coordinates', e);
+                }
+
+                if (!isValid) {
+                  leafletCoords = null;
+                  center = [-7.3906, 109.3647];
+                }
 
                 return (
                   <div className="h-52 w-full relative">
@@ -746,15 +793,17 @@ export default function DaftarObjekPajak() {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; OpenStreetMap'
                       />
-                      {leafletCoords ? (
+                      {leafletCoords && flatPoints.length >= 3 ? (
                         <Polygon positions={leafletCoords} pathOptions={{ color: '#16a34a', fillColor: '#16a34a', fillOpacity: 0.25, weight: 2 }} />
+                      ) : leafletCoords && flatPoints.length > 0 ? (
+                        <Marker position={flatPoints[0]} />
                       ) : (
                         <Marker position={center} />
                       )}
                     </MapContainer>
                     {!leafletCoords && (
                       <div className="absolute inset-0 flex items-end justify-center pb-2 pointer-events-none">
-                        <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium">Koordinat polygon belum tersedia</span>
+                        <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full font-medium shadow-sm">Koordinat polygon belum tersedia / valid</span>
                       </div>
                     )}
                   </div>

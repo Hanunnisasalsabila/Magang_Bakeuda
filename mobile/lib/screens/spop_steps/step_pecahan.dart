@@ -272,6 +272,29 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       Row(children: [
         Expanded(child: TextFormField(key: ValueKey('blokKav_${_currentPecahanIdx}'), initialValue: p['blokKav'] as String, decoration: _dec('Blok/Kav'), onChanged: (v) => _setP('blokKav', v))),
         const SizedBox(width: 8),
+        Expanded(
+          child: _blokOptions.isNotEmpty
+            ? DropdownButtonFormField<String>(
+                isExpanded: true,
+                key: ValueKey('kodeBlokBaru_${_currentPecahanIdx}'),
+                initialValue: _blokOptions.contains(p['kodeBlokBaru'] as String) ? p['kodeBlokBaru'] as String : null,
+                decoration: _dec('Kode Blok *'),
+                items: _blokOptions.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+                onChanged: (v) => _setP('kodeBlokBaru', v ?? ''),
+                validator: (v) => (v == null || v.isEmpty) ? '*' : null,
+              )
+            : TextFormField(
+                key: ValueKey('kodeBlokBaru_${_currentPecahanIdx}'),
+                initialValue: p['kodeBlokBaru'] as String,
+                decoration: _dec('Kode Blok *'),
+                inputFormatters: [LengthLimitingTextInputFormatter(3)],
+                onChanged: (v) => _setP('kodeBlokBaru', v),
+                validator: (v) => (v == null || v.isEmpty) ? '*' : null,
+              ),
+        ),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
         Expanded(child: TextFormField(key: ValueKey('rtOp_${_currentPecahanIdx}'), initialValue: p['rtOp'] as String, decoration: _dec('RT'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rtOp', v))),
         const SizedBox(width: 8),
         Expanded(child: TextFormField(key: ValueKey('rwOp_${_currentPecahanIdx}'), initialValue: p['rwOp'] as String, decoration: _dec('RW'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rwOp', v))),

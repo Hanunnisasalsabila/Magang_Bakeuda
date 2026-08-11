@@ -63,32 +63,32 @@ export default function AntreanVerifikasi() {
         }
 
         const formatted = allData.map(item => {
-          let nopRaw = item.detail_tujuan[0]?.nop_generated || '..................';
-          let nameToDisplay = item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek || '';
-          let addressToDisplay = item.detail_tujuan?.[0]?.jalan_op_baru || item.detail_tujuan?.[0]?.jenis_tanah_baru?.replace('_', ' ') || '-';
-          let kelurahanToDisplay = item.detail_tujuan?.[0]?.kelurahan_op_baru || '-';
-          let kecamatanToDisplay = item.detail_tujuan?.[0]?.kecamatan_op_baru || '-';
+          let details = [];
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.length > 0) {
+            details = item.detail_asal.map(d => ({
+              nop: d.nop_asal || '..................',
+              name: d.objek_asal?.subjek_pajak?.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+              address: d.objek_asal?.subjek_pajak?.alamat_jalan || d.objek_asal?.jalan_op || '-',
+              kelurahan: d.objek_asal?.wilayah?.nama_desa || '-',
+              kecamatan: d.objek_asal?.wilayah?.kecamatan || '-'
+            }));
+          } else if (item.detail_tujuan?.length > 0) {
+            details = item.detail_tujuan.map(d => ({
+              nop: d.nop_generated || '..................',
+              name: d.calon_subjek_json?.nama_subjek && d.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA' ? d.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
+              address: d.jalan_op_baru || d.jenis_tanah_baru?.replace('_', ' ') || '-',
+              kelurahan: d.kelurahan_op_baru || '-',
+              kecamatan: d.kecamatan_op_baru || '-'
+            }));
+          } else {
+            details = [{
+              nop: '..................',
+              name: item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama',
+              address: '-', kelurahan: '-', kecamatan: '-'
+            }];
+          }
+
           let jenisLayanan = item.jenis_transaksi ? item.jenis_transaksi.replace(/_/g, ' ') : '-';
-
-          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.[0]) {
-            const objekAsal = item.detail_asal[0].objek_asal;
-            nopRaw = item.detail_asal[0].nop_asal || nopRaw;
-            nameToDisplay = objekAsal?.subjek_pajak?.nama_subjek || nameToDisplay;
-            addressToDisplay = objekAsal?.subjek_pajak?.alamat_jalan || objekAsal?.jalan_op || '-';
-            kelurahanToDisplay = objekAsal?.wilayah?.nama_desa || '-';
-            kecamatanToDisplay = objekAsal?.wilayah?.kecamatan || '-';
-          }
-
-          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA') 
-            ? nameToDisplay 
-            : (item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama');
-          const clean = nopRaw.replace(/\D/g, '');
-          let nopFormatted = nopRaw;
-          if (clean.length === 18) {
-            nopFormatted = `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
-          } else if (nopRaw.includes('...')) {
-            nopFormatted = 'Menunggu penetapan';
-          }
 
           // Tentukan status badge dan aksi
           let badgeStatus = 'Menunggu Verifikasi';
@@ -109,14 +109,15 @@ export default function AntreanVerifikasi() {
 
           return {
             id: item.id_transaksi,
-            nop: nopFormatted,
-            name: nameToDisplay,
+            details: details,
+            nopList: details.map(d => d.nop).join(', '),
+            name: details.map(d => d.name).join(', '),
             userId: item.pengaju?.nama_lengkap ? `Pengaju: ${item.pengaju.nama_lengkap}` : '-',
             jenisLayanan: jenisLayanan,
-            address: addressToDisplay,
+            address: details.map(d => d.address).join(', '),
             rtRw: '',
-            kelurahan: kelurahanToDisplay,
-            kecamatan: kecamatanToDisplay,
+            kelurahan: details[0]?.kelurahan || '-',
+            kecamatan: details[0]?.kecamatan || '-',
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             time: new Date(item.tanggal_pengajuan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
             status: badgeStatus,
@@ -165,9 +166,21 @@ export default function AntreanVerifikasi() {
     const matchesKel = kelurahan === 'Semua Desa' || (item.kelurahan || '').trim().toLowerCase() === kelurahan.trim().toLowerCase();
     const matchesSearch =
       item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.address.toLowerCase().includes(search.toLowerCase());
+      item.address.toLowerCase().includes(search.toLowerCase()) ||
+      item.nopList.toLowerCase().includes(search.toLowerCase());
     return matchesKec && matchesKel && matchesSearch;
   });
+
+  const formatNOP = (nopRaw, type, status) => {
+    if ((!nopRaw || nopRaw.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+      return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>;
+    }
+    const clean = nopRaw.replace(/\D/g, '');
+    if (clean.length === 18) {
+      return `${clean.substring(0,2)}.${clean.substring(2,4)}.${clean.substring(4,7)}.${clean.substring(7,10)}.${clean.substring(10,13)}.${clean.substring(13,17)}.${clean.substring(17,18)}`;
+    }
+    return nopRaw;
+  };
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -293,28 +306,44 @@ export default function AntreanVerifikasi() {
                     }`}
                   >
                     <td className="px-6 py-4 font-bold text-on-surface">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-mono text-sm font-bold text-primary whitespace-nowrap">
-                        {item.nop === 'Menunggu penetapan' ? (
-                          <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>
-                        ) : (
-                          item.nop
-                        )}
+                    <td className="px-6 py-4 align-top">
+                      <div className="flex flex-col gap-3">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-10 flex items-center relative">
+                            {dIdx > 0 && <div className="absolute -top-1.5 left-0 right-0 h-px bg-outline-variant/40" />}
+                            <div className="font-mono text-sm font-bold text-primary whitespace-nowrap">
+                              {formatNOP(d.nop, item.jenisLayanan, item.rawStatus)}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-on-surface">{item.name}</p>
-                      <p className="text-[12px] text-on-surface-variant">{item.userId}</p>
+                    <td className="px-6 py-4 align-top">
+                      <div className="flex flex-col gap-3">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-10 flex flex-col justify-center relative">
+                            {dIdx > 0 && <div className="absolute -top-1.5 left-0 right-0 h-px bg-outline-variant/40" />}
+                            <p className="font-bold text-on-surface whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title={d.name}>{d.name}</p>
+                            {dIdx === 0 && <p className="text-[12px] text-on-surface-variant absolute -bottom-3 left-0">{item.userId}</p>}
+                          </div>
+                        ))}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="font-bold text-on-surface-variant text-sm whitespace-nowrap">{item.jenisLayanan}</span>
+                    <td className="px-6 py-4 align-top">
+                      <span className="font-bold text-on-surface-variant text-sm whitespace-nowrap mt-1 inline-block">{item.jenisLayanan}</span>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-on-surface">{item.address}</p>
-                      <p className="text-[12px] text-on-surface-variant">{item.rtRw}</p>
+                    <td className="px-6 py-4 align-top">
+                      <div className="flex flex-col gap-3">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-10 flex items-center relative">
+                            {dIdx > 0 && <div className="absolute -top-1.5 left-0 right-0 h-px bg-outline-variant/40" />}
+                            <p className="text-on-surface text-sm overflow-hidden text-ellipsis max-w-[180px]" title={d.address}>{d.address}</p>
+                          </div>
+                        ))}
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-on-surface uppercase font-semibold">{item.kecamatan} / {item.kelurahan}</span>
+                    <td className="px-6 py-4 align-top">
+                      <span className="text-on-surface uppercase font-semibold text-xs mt-1.5 inline-block">{item.kecamatan} / {item.kelurahan}</span>
                     </td>
                     <td className="px-6 py-4">
                       <p className={`text-on-surface ${item.urgent ? 'font-bold' : ''}`}>{item.date}</p>

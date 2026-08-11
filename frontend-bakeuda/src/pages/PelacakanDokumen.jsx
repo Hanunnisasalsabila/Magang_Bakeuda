@@ -80,12 +80,17 @@ export default function PelacakanDokumen() {
     );
   }
 
-  const detailTujuan = dataTransaksi.detail_tujuan?.[0] || {};
-  const nop = detailTujuan.nop_generated || detailTujuan.no_persil_baru || 'Menunggu NOP';
-
-  const calonSubjek = detailTujuan.calon_subjek_json || {};
-
-
+  const formatNOP = (nopStr, type, status) => {
+    if ((!nopStr || nopStr.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+      return 'Menunggu penetapan';
+    }
+    if (!nopStr) return '-';
+    const clean = nopStr.replace(/\D/g, '');
+    if (clean.length === 18) {
+      return `${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}`;
+    }
+    return nopStr;
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -216,57 +221,81 @@ export default function PelacakanDokumen() {
                 </div>
                 <div className="grid grid-cols-[140px_1fr] items-start">
                   <p className="text-on-surface-variant text-sm font-medium">NOP</p>
-                  <p className="font-data-mono font-bold text-on-surface text-sm">{nop}</p>
+                  <div className="flex flex-col gap-1">
+                    {(dataTransaksi.detail_tujuan || []).map((dt, idx) => (
+                      <p key={idx} className="font-data-mono font-bold text-on-surface text-sm">
+                        {formatNOP(dt.nop_generated, dataTransaksi.jenis_transaksi, dataTransaksi.status_ajuan)}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card: Detail Pemohon */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">person</span>
+          {dataTransaksi.detail_tujuan?.map((detail, idx) => {
+            const cs = detail.calon_subjek_json || {};
+            return (
+              <div key={`pemohon-${idx}`} className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[18px]">person</span>
+                  </div>
+                  <h3 className="font-bold text-on-surface tracking-wide">
+                    Detail Pemohon {dataTransaksi.detail_tujuan.length > 1 ? `(Pecahan ${idx + 1})` : ''}
+                  </h3>
+                </div>
+                <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
+                  <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
+                  <p className="font-bold text-on-surface">{cs.nama_subjek || dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
+
+                  <p className="text-on-surface-variant font-medium">No. Telepon/HP</p>
+                  <p className="font-bold text-on-surface">{cs.no_hp || dataTransaksi.pengaju?.no_hp_pengaju || '-'}</p>
+
+                  <p className="text-on-surface-variant font-medium">Alamat</p>
+                  <p className="font-bold text-on-surface">{cs.alamat_jalan || dataTransaksi.pengaju?.alamat_pengaju || '-'}</p>
+
+                  {idx === 0 && (
+                    <>
+                      <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
+                      <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
+                    </>
+                  )}
+                </div>
               </div>
-              <h3 className="font-bold text-on-surface tracking-wide">Detail Pemohon</h3>
-            </div>
-            <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
-              <p className="text-on-surface-variant font-medium">Nama Pemohon</p>
-              <p className="font-bold text-on-surface">{dataTransaksi.nama_pengaju || dataTransaksi.pengaju?.nama_lengkap || '-'}</p>
-
-              <p className="text-on-surface-variant font-medium">No. Telepon/HP</p>
-              <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.no_hp_pengaju || calonSubjek.no_hp || '-'}</p>
-
-              <p className="text-on-surface-variant font-medium">Alamat</p>
-              <p className="font-bold text-on-surface">{dataTransaksi.pengaju?.alamat_pengaju || calonSubjek.alamat_jalan || '-'}</p>
-
-              <p className="text-on-surface-variant font-medium">Bertindak Selaku</p>
-              <p className="font-bold text-on-surface">{dataTransaksi.menggunakan_kuasa ? 'Kuasa' : 'Wajib Pajak (Pemilik)'}</p>
-            </div>
-          </div>
+            );
+          })}
 
           {/* Card: Detail Objek Pajak */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-            <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-700 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">landscape</span>
+          {dataTransaksi.detail_tujuan?.map((detail, idx) => (
+            <div key={`objek-${idx}`} className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+              <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-green-500/10 text-green-700 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[18px]">landscape</span>
+                </div>
+                <h3 className="font-bold text-on-surface tracking-wide">
+                  Detail Objek Pajak {dataTransaksi.detail_tujuan.length > 1 ? `(Pecahan ${idx + 1})` : ''}
+                </h3>
               </div>
-              <h3 className="font-bold text-on-surface tracking-wide">Detail Objek Pajak</h3>
-            </div>
-            <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
-              <p className="text-on-surface-variant font-medium">Letak Objek</p>
-              <p className="font-bold text-on-surface">
-                {detailTujuan.jalan_op_baru || '-'} RT {detailTujuan.rt_op_baru || '-'}/RW {detailTujuan.rw_op_baru || '-'}<br />
-                KEL. {detailTujuan.kelurahan_op_baru || '-'}, KEC. {detailTujuan.kecamatan_op_baru || '-'}
-              </p>
+              <div className="p-6 grid grid-cols-[140px_1fr] gap-y-3 gap-x-4 text-sm">
+                <p className="text-on-surface-variant font-medium">NOP</p>
+                <p className="font-bold text-on-surface font-data-mono">{formatNOP(detail.nop_generated, dataTransaksi.jenis_transaksi, dataTransaksi.status_ajuan)}</p>
 
-              <p className="text-on-surface-variant font-medium">Luas Tanah</p>
-              <p className="font-bold text-on-surface">{detailTujuan.luas_tanah_baru || 0} M&sup2;</p>
+                <p className="text-on-surface-variant font-medium">Letak Objek</p>
+                <p className="font-bold text-on-surface">
+                  {detail.jalan_op_baru || '-'} RT {detail.rt_op_baru || '-'}/RW {detail.rw_op_baru || '-'}<br />
+                  KEL. {detail.kelurahan_op_baru || '-'}, KEC. {detail.kecamatan_op_baru || '-'}
+                </p>
 
-              <p className="text-on-surface-variant font-medium">Luas Bangunan</p>
-              <p className="font-bold text-on-surface">{detailTujuan.luas_bangunan_baru || 0} M&sup2; ({detailTujuan.jumlah_bangunan_baru || 0} Unit)</p>
+                <p className="text-on-surface-variant font-medium">Luas Tanah</p>
+                <p className="font-bold text-on-surface">{detail.luas_tanah_baru || 0} M&sup2;</p>
+
+                <p className="text-on-surface-variant font-medium">Luas Bangunan</p>
+                <p className="font-bold text-on-surface">{detail.luas_bangunan_baru || 0} M&sup2; ({detail.jumlah_bangunan_baru || 0} Unit)</p>
+              </div>
             </div>
-          </div>
+          ))}
 
           {/* Card: Syarat Pengajuan */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">

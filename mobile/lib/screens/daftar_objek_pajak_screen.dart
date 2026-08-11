@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/objek_pajak_service.dart';
 import '../services/export_service.dart';
 import 'package:intl/intl.dart';
+import 'detail_objek_pajak_screen.dart';
 
 class DaftarObjekPajakScreen extends StatefulWidget {
   const DaftarObjekPajakScreen({super.key});
@@ -312,62 +313,85 @@ class _DaftarObjekPajakScreenState extends State<DaftarObjekPajakScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                             color: theme.colorScheme.surface,
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          nop,
-                                          style: theme.textTheme.bodySmall?.copyWith(
-                                            color: theme.colorScheme.primary,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: 'monospace',
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DetailObjekPajakScreen(nop: nop),
+                                  ),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            nop,
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: 'monospace',
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: (isAktif ? Colors.green : theme.colorScheme.error).withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          isAktif ? 'Aktif' : 'Tidak Aktif',
-                                          style: TextStyle(
-                                            color: isAktif ? Colors.green : theme.colorScheme.error,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: (isAktif ? Colors.green : theme.colorScheme.error).withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            isAktif ? 'Aktif' : 'Tidak Aktif',
+                                            style: TextStyle(
+                                              color: isAktif ? Colors.green : theme.colorScheme.error,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(nama, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.location_on_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
+                                        const SizedBox(width: 4),
+                                        Expanded(child: Text('$jalan${desa.isNotEmpty ? ', $desa' : ''}${kecamatan.isNotEmpty ? ', Kec. $kecamatan' : ''}',
+                                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 12,
+                                      children: [
+                                        _buildChipInfo('Tanah', '$luasTanah m²', Icons.landscape_outlined, theme),
+                                        _buildChipInfo('Bangunan', '$luasBgn m²', Icons.home_outlined, theme),
+                                        _buildChipInfo('Diperbarui', _fmtDate(d['updated_at']), Icons.calendar_today_outlined, theme),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text('Lihat Detail', style: TextStyle(color: theme.colorScheme.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                                          const SizedBox(width: 4),
+                                          Icon(Icons.arrow_forward_ios, size: 12, color: theme.colorScheme.primary),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(nama, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(Icons.location_on_outlined, size: 13, color: theme.colorScheme.onSurfaceVariant),
-                                      const SizedBox(width: 4),
-                                      Expanded(child: Text('$jalan${desa.isNotEmpty ? ', $desa' : ''}${kecamatan.isNotEmpty ? ', Kec. $kecamatan' : ''}',
-                                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant))),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 12,
-                                    children: [
-                                      _buildChipInfo('Tanah', '$luasTanah m²', Icons.landscape_outlined, theme),
-                                      _buildChipInfo('Bangunan', '$luasBgn m²', Icons.home_outlined, theme),
-                                      _buildChipInfo('Diperbarui', _fmtDate(d['updated_at']), Icons.calendar_today_outlined, theme),
-                                    ],
-                                  ),
-                                ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );

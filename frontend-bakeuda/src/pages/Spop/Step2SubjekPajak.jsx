@@ -27,7 +27,8 @@ export default function Step2SubjekPajak() {
             id: Date.now() + Math.random(),
             nik: '', nama: '', npwp: '', noTelp: '', statusWp: '', pekerjaan: '', email: '',
             alamat: '', blokKav: '', rt: '', rw: '', kelurahan: '', kecamatan: '', kabupaten: '', kodePos: '',
-            isKuasa: false, lampiran: []
+            isKuasa: false, lampiran: [],
+            kodeBlokBaru: prev.kodeBlokInduk || ''
           });
         }
         return { ...prev, pecahanList: newList };
@@ -120,7 +121,8 @@ export default function Step2SubjekPajak() {
           // Initialize Objek Pajak fields for the new Pecahan
           alamatObjek: '', blokKavObjek: '', rtObjek: '', rwObjek: '', noPersil: '',
           kelurahanObjek: '', kecamatanObjek: '', kodeWilayahObjek: '',
-          luasTanah: '', zonaNilaiTanah: '', jenisTanah: '', jumlahBangunan: '0'
+          luasTanah: '', zonaNilaiTanah: '', jenisTanah: '', jumlahBangunan: '0',
+          kodeBlokBaru: prev.kodeBlokInduk || ''
         }
       ]
     }));

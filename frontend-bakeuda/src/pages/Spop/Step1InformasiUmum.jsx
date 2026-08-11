@@ -108,6 +108,9 @@ export default function Step1InformasiUmum() {
         setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal sudah tidak aktif (nonaktif)' }));
       } else {
         setNopAsalErrors(prev => ({ ...prev, [idx]: null }));
+        if (idx === 0 && data.kode_blok) {
+          setFormData(prev => ({ ...prev, kodeBlokInduk: data.kode_blok }));
+        }
       }
     } catch (e) {
       setNopAsalErrors(prev => ({ ...prev, [idx]: 'NOP Asal tidak terdaftar di database' }));

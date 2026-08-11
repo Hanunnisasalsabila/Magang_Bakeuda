@@ -38,25 +38,28 @@ export default function DashboardDesa() {
 
         const rawList = listRes.data.data;
         const formattedList = rawList.slice(0, 5).map(item => {
-          let nopToDisplay = item.detail_tujuan?.[0]?.nop_generated || '............-.......';
-          let nameToDisplay = item.detail_tujuan?.[0]?.calon_subjek_json?.nama_subjek || '';
-
-          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.[0]) {
-            nopToDisplay = item.detail_asal[0].nop_asal || nopToDisplay;
-            nameToDisplay = item.detail_asal[0].objek_asal?.subjek_pajak?.nama_subjek || nameToDisplay;
+          let details = [];
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.length > 0) {
+            details = item.detail_asal.map(d => ({
+              nop: d.nop_asal || '............-.......',
+              name: d.objek_asal?.subjek_pajak?.nama_subjek || item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama'
+            }));
+          } else if (item.detail_tujuan?.length > 0) {
+            details = item.detail_tujuan.map(d => ({
+              nop: d.nop_generated || '............-.......',
+              name: d.calon_subjek_json?.nama_subjek && d.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA' ? d.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama')
+            }));
+          } else {
+             details = [{ nop: '............-.......', name: item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama' }];
           }
-
-          nameToDisplay = (nameToDisplay && nameToDisplay.toUpperCase() !== 'TANPA NAMA')
-            ? nameToDisplay
-            : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama');
 
           return {
             id: item.id_transaksi,
-            nop: nopToDisplay,
-            name: nameToDisplay,
+            details: details,
             type: item.jenis_transaksi,
             date: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-            status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'PROSES' ? 'Diproses' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan
+            status: item.status_ajuan === 'MENUNGGU' ? 'Menunggu Verifikasi' : item.status_ajuan === 'PROSES' ? 'Diproses' : item.status_ajuan === 'DISETUJUI' ? 'Disetujui' : item.status_ajuan === 'REVISI' ? 'Revisi' : item.status_ajuan === 'DRAFT' ? 'Draft' : item.status_ajuan === 'DITOLAK' ? 'Ditolak' : item.status_ajuan,
+            statusRaw: item.status_ajuan
           };
         });
         setRecentSubmissions(formattedList);
@@ -74,10 +77,11 @@ export default function DashboardDesa() {
   }, []);
 
 
-  const formatNOP = (nopStr, type) => {
-    if (!nopStr || nopStr.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') {
+  const formatNOP = (nopStr, type, status) => {
+    if ((!nopStr || nopStr.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
       return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>;
     }
+    if (!nopStr) return '-';
     const clean = nopStr.replace(/\D/g, '');
     if (clean.length === 18) {
       return `${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}`;
@@ -201,8 +205,15 @@ export default function DashboardDesa() {
                 recentSubmissions.map((sub, i) => (
                   <tr key={i} className={`hover:bg-surface-container-low transition-colors ${i % 2 === 1 ? 'bg-surface-container-lowest/50' : ''}`}>
                     <td className="px-6 py-4">
-                      <p className="font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1">{formatNOP(sub.nop, sub.type)}</p>
-                      <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{sub.name}</p>
+                      <div className="flex flex-col gap-3">
+                        {sub.details.map((d, dIdx) => (
+                          <div key={dIdx} className="flex flex-col relative">
+                            {dIdx > 0 && <div className="absolute -top-1.5 left-0 right-0 h-px bg-outline-variant/40" />}
+                            <p className={`font-data-mono font-bold text-primary text-sm whitespace-nowrap mb-1 ${dIdx > 0 ? 'mt-1.5' : ''}`}>{formatNOP(d.nop, sub.type, sub.statusRaw)}</p>
+                            <p className="font-label-md font-bold text-on-surface whitespace-nowrap">{d.name}</p>
+                          </div>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="font-label-sm text-on-surface-variant">

@@ -8,6 +8,7 @@ import 'tabs/verifikasi_spop_tab.dart';
 import 'tabs/riwayat_spop_tab.dart';
 import 'akun_desa_screen.dart';
 import 'daftar_objek_pajak_screen.dart';
+import 'daftar_subjek_pajak_screen.dart';
 import 'manajemen_wilayah_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
@@ -301,6 +302,46 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 );
               },
             ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Text(
+                'DATA PAJAK DAERAH',
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.people_outline, color: _kNavy),
+              title: const Text('Daftar Subjek Pajak'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DaftarSubjekPajakScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.landscape_outlined, color: _kNavy),
+              title: const Text('Daftar Objek Pajak'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DaftarObjekPajakScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.fact_check_outlined, color: _kNavy),
               title: const Text('Antrean Verifikasi'),

@@ -67,6 +67,19 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     return status.replaceAll('_', ' ');
   }
 
+  String _formatNOP(String nop, String type, String status) {
+    if ((nop.isEmpty || nop.contains('...') || nop == 'Menunggu NOP' || type == 'BARU' || type == 'PECAH' || type == 'GABUNG') && status != 'DISETUJUI') {
+      return '(NOP Belum Tersedia)';
+    }
+    if (nop.isEmpty || nop.contains('...')) return '(NOP Belum Tersedia)';
+    
+    final clean = nop.replaceAll(RegExp(r'\D'), '');
+    if (clean.length == 18) {
+      return 'NOP. ${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}';
+    }
+    return 'NOP. $nop';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -127,7 +140,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: const Color(0xFFE2E8F0),
-              ), // Light grey border
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,10 +375,23 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
               final trx = _recentTransactions[index];
               final detailTujuanRaw = trx['detail_tujuan'];
               final detail = detailTujuanRaw is List ? detailTujuanRaw.firstOrNull : (detailTujuanRaw is Map ? detailTujuanRaw : null);
-              final nop =
-                  detail?['nop_generated'] ??
-                  detail?['no_persil_baru'] ??
-                  'Menunggu NOP';
+              final type = trx['jenis_transaksi'] ?? 'SPOP';
+              final status = trx['status_ajuan'] ?? 'UNKNOWN';
+
+              List<String> nops = [];
+              if (type == 'HAPUS' && trx['detail_asal'] is List && (trx['detail_asal'] as List).isNotEmpty) {
+                for (var d in trx['detail_asal']) {
+                  String n = d['nop_asal'] ?? '';
+                  nops.add(_formatNOP(n, type, status));
+                }
+              } else if (trx['detail_tujuan'] is List && (trx['detail_tujuan'] as List).isNotEmpty) {
+                for (var d in trx['detail_tujuan']) {
+                  String n = d['nop_generated'] ?? d['no_persil_baru'] ?? '';
+                  nops.add(_formatNOP(n, type, status));
+                }
+              } else {
+                nops.add('(NOP Belum Tersedia)');
+              }
                   
               final String? subjekName = (detail?['calon_subjek_json'] as Map?)?['nama_subjek']?.toString();
               String name = 'Tanpa Nama';
@@ -392,9 +418,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                   }
                 }
               }
-              final status = trx['status_ajuan'] ?? 'UNKNOWN';
               final statusColor = _getStatusColor(status, theme.colorScheme);
-              final type = trx['jenis_transaksi'] ?? 'SPOP';
 
               return Container(
                 padding: const EdgeInsets.all(16),
@@ -436,15 +460,19 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'ID: $nop • $name',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 11,
+                          ...nops.map((nopDisplay) => Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              'ID: $nopDisplay • $name',
+                              style: TextStyle(
+                                color: nopDisplay.contains('Belum') ? Colors.grey.shade500 : theme.colorScheme.onSurfaceVariant,
+                                fontStyle: nopDisplay.contains('Belum') ? FontStyle.italic : FontStyle.normal,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          )),
                         ],
                       ),
                     ),

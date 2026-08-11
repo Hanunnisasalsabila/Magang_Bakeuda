@@ -8,13 +8,16 @@ const STATUS_FILTER = [
   { value: 'DITOLAK', label: 'Ditolak', icon: 'cancel', color: 'text-red-700 bg-red-50 border-red-200' },
 ];
 
-function formatNOP(nopRaw) {
-  if (!nopRaw || nopRaw.includes('...')) return 'Menunggu penetapan';
+function formatNOP(nopRaw, type, status) {
+  if ((!nopRaw || nopRaw.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+    return 'Menunggu penetapan';
+  }
+  if (!nopRaw) return '-';
   const clean = nopRaw.replace(/\D/g, '');
   if (clean.length === 18) {
-    return clean;
+    return `${clean.substring(0, 2)}.${clean.substring(2, 4)}.${clean.substring(4, 7)}.${clean.substring(7, 10)}.${clean.substring(10, 13)}.${clean.substring(13, 17)}.${clean.substring(17, 18)}`;
   }
-  return nopRaw.replace(/\./g, '');
+  return nopRaw;
 }
 
 export default function RiwayatPersetujuan() {
@@ -38,33 +41,35 @@ export default function RiwayatPersetujuan() {
         ]);
 
         const mapItem = (item, status) => {
-          const isHapus = item.jenis_transaksi === 'HAPUS';
-          let detail, calonSubjek, alamatJalan;
-          let nopRaw = '';
-
-          if (isHapus && item.detail_asal?.length > 0) {
-            const asal = item.detail_asal[0].objek_asal || {};
-            calonSubjek = asal.subjek_pajak || {};
-            detail = {
-              kelurahan_op_baru: asal.wilayah?.nama_desa,
-              kecamatan_op_baru: asal.wilayah?.kecamatan,
-            };
-            alamatJalan = calonSubjek.alamat_jalan;
-            nopRaw = item.detail_asal[0].nop_asal;
+          let details = [];
+          if (item.jenis_transaksi === 'HAPUS' && item.detail_asal?.length > 0) {
+            details = item.detail_asal.map(d => ({
+              nop: d.nop_asal || '..................',
+              namaSubjek: d.objek_asal?.subjek_pajak?.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
+              alamat: d.objek_asal?.subjek_pajak?.alamat_jalan || d.objek_asal?.jalan_op || '-',
+              namaDesa: d.objek_asal?.wilayah?.nama_desa || '-',
+              kecamatan: d.objek_asal?.wilayah?.kecamatan || '-'
+            }));
+          } else if (item.detail_tujuan?.length > 0) {
+            details = item.detail_tujuan.map(d => ({
+              nop: d.nop_generated || '..................',
+              namaSubjek: d.calon_subjek_json?.nama_subjek && d.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA' ? d.calon_subjek_json?.nama_subjek : (item.pengaju?.nama_lengkap || item.nama_pengaju || '-'),
+              alamat: d.calon_subjek_json?.alamat_jalan || d.calon_subjek_json?.alamat || '-',
+              namaDesa: d.kelurahan_op_baru || '-',
+              kecamatan: d.kecamatan_op_baru || '-'
+            }));
           } else {
-            detail = item.detail_tujuan?.[0] || {};
-            calonSubjek = detail.calon_subjek_json || {};
-            alamatJalan = calonSubjek.alamat_jalan || calonSubjek.alamat;
-            nopRaw = detail.nop_generated || '';
+            details = [{ nop: '..................', namaSubjek: '-', alamat: '-', namaDesa: '-', kecamatan: '-' }];
           }
 
           return {
             id: item.id_transaksi,
-            nop: formatNOP(nopRaw),
-            namaSubjek: calonSubjek.nama_subjek || item.pengaju?.nama_lengkap || item.nama_pengaju || '-',
-            namaDesa: detail.kelurahan_op_baru || '-',
-            kecamatan: detail.kecamatan_op_baru || '-',
-            alamat: alamatJalan || '-',
+            jenis_transaksi: item.jenis_transaksi,
+            details: details,
+            nopList: details.map(d => d.nop).join(', '),
+            namaSubjekList: details.map(d => d.namaSubjek).join(', '),
+            namaDesaList: details.map(d => d.namaDesa).join(', '),
+            kecamatanFirst: details[0]?.kecamatan || '-',
             tanggalDiajukan: new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesai: new Date(item.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
             tanggalSelesaiRaw: new Date(item.updated_at),
@@ -94,10 +99,10 @@ export default function RiwayatPersetujuan() {
   const filtered = allData.filter(item => {
     const matchStatus = statusFilter === 'SEMUA' || item.status === statusFilter;
     const matchSearch =
-      item.namaSubjek.toLowerCase().includes(search.toLowerCase()) ||
-      item.nop.toLowerCase().includes(search.toLowerCase()) ||
-      item.namaDesa.toLowerCase().includes(search.toLowerCase());
-    const matchKec = kecamatan ? item.kecamatan === kecamatan : true;
+      item.namaSubjekList.toLowerCase().includes(search.toLowerCase()) ||
+      item.nopList.toLowerCase().includes(search.toLowerCase()) ||
+      item.namaDesaList.toLowerCase().includes(search.toLowerCase());
+    const matchKec = kecamatan ? item.kecamatanFirst === kecamatan : true;
     return matchStatus && matchSearch && matchKec;
   });
 
@@ -271,23 +276,54 @@ export default function RiwayatPersetujuan() {
                     onClick={() => navigate(`/detail-review/${item.id}`)}
                   >
                     <td className="py-2.5 px-3 text-center text-gray-400 text-xs">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td className="py-2.5 px-3">
-                      {item.nop === 'Menunggu penetapan' ? (
-                        <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200 whitespace-nowrap">Menunggu penetapan</span>
-                      ) : (
-                        <span className="font-mono text-sm font-bold text-primary whitespace-nowrap">{item.nop}</span>
-                      )}
+                    <td className="py-2.5 px-3 align-top">
+                      <div className="flex flex-col gap-2">
+                        {item.details.map((d, dIdx) => {
+                          const fNop = formatNOP(d.nop, item.jenis_transaksi, item.status);
+                          return (
+                            <div key={dIdx} className="h-7 flex items-center relative">
+                              {dIdx > 0 && <div className="absolute -top-1 left-0 right-0 h-px bg-outline-variant/40" />}
+                              {fNop === 'Menunggu penetapan' ? (
+                                <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200 whitespace-nowrap">Menunggu penetapan</span>
+                              ) : (
+                                <span className="font-mono text-sm font-bold text-primary whitespace-nowrap">{fNop}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </td>
-                    <td className="py-2.5 px-3 whitespace-nowrap pr-8">
-                      <p className="font-medium text-gray-900 text-sm">{item.namaSubjek}</p>
+                    <td className="py-2.5 px-3 whitespace-nowrap pr-8 align-top">
+                      <div className="flex flex-col gap-2">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-7 flex items-center relative">
+                             {dIdx > 0 && <div className="absolute -top-1 left-0 right-0 h-px bg-outline-variant/40" />}
+                             <p className="font-medium text-gray-900 text-sm overflow-hidden text-ellipsis max-w-[150px]" title={d.namaSubjek}>{d.namaSubjek}</p>
+                          </div>
+                        ))}
+                      </div>
                     </td>
-                    <td className="py-2.5 px-3 text-gray-600 text-xs whitespace-nowrap">
-                      {item.namaDesa}, {item.kecamatan}
+                    <td className="py-2.5 px-3 text-gray-600 text-xs whitespace-nowrap align-top">
+                      <div className="flex flex-col gap-2">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-7 flex items-center relative">
+                             {dIdx > 0 && <div className="absolute -top-1 left-0 right-0 h-px bg-outline-variant/40" />}
+                             {d.namaDesa}, {d.kecamatan}
+                          </div>
+                        ))}
+                      </div>
                     </td>
-                    <td className="py-2.5 px-3 text-left">
-                      <span className="text-xs text-gray-600 whitespace-nowrap" title={item.alamat}>
-                        {item.alamat?.length > 20 ? item.alamat.substring(0, 20) + '...' : item.alamat}
-                      </span>
+                    <td className="py-2.5 px-3 text-left align-top">
+                      <div className="flex flex-col gap-2">
+                        {item.details.map((d, dIdx) => (
+                          <div key={dIdx} className="h-7 flex items-center relative">
+                             {dIdx > 0 && <div className="absolute -top-1 left-0 right-0 h-px bg-outline-variant/40" />}
+                             <span className="text-xs text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" title={d.alamat}>
+                               {d.alamat?.length > 20 ? d.alamat.substring(0, 20) + '...' : d.alamat}
+                             </span>
+                          </div>
+                        ))}
+                      </div>
                     </td>
                     <td className="py-2.5 px-3 text-center text-xs text-gray-400 whitespace-nowrap">{item.tanggalDiajukan}</td>
                     <td className="py-2.5 px-3 text-center text-xs text-gray-600 whitespace-nowrap">{item.tanggalSelesai}</td>
