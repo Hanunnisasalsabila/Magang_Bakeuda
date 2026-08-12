@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1018,7 +1019,23 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                   final ImagePicker picker = ImagePicker();
                   final XFile? image = await picker.pickImage(source: ImageSource.camera);
                   if (image != null) {
-                    _processPickedFile(image.path, image.name, forcedJenisDokumen);
+                    CroppedFile? croppedFile = await ImageCropper().cropImage(
+                      sourcePath: image.path,
+                      uiSettings: [
+                        AndroidUiSettings(
+                            toolbarTitle: 'Sesuaikan Foto',
+                            toolbarColor: Theme.of(context).primaryColor,
+                            toolbarWidgetColor: Colors.white,
+                            initAspectRatio: CropAspectRatioPreset.original,
+                            lockAspectRatio: false),
+                        IOSUiSettings(
+                          title: 'Sesuaikan Foto',
+                        ),
+                      ],
+                    );
+                    if (croppedFile != null) {
+                      _processPickedFile(croppedFile.path, image.name, forcedJenisDokumen);
+                    }
                   }
                 },
               ),
