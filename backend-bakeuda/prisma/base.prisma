@@ -1,5 +1,24 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+generator docs {
+  provider = "node node_modules/prisma-docs-generator"
+  output   = "../docs-kamus-data"
+}
+
+// ✅ Tambahkan blok generator ERD di sini
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../ERD_Bakeuda.svg" // Akan disimpan di luar folder prisma
+  theme    = "forest" 
+}
+
+generator markdown {
+  provider = "prisma-markdown"
+  output   = "../Kamus_Data_Bakeuda.md" // File akan muncul di luar folder prisma
+  title    = "Kamus Data Database SPOP PBB-P2"
 }
 
 datasource db {

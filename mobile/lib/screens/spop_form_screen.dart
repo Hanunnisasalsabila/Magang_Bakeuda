@@ -45,6 +45,8 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   Map<String, dynamic>? _fetchedObjekPajak;
   String _selectedJenisDokumen = 'KTP';
   String? _transaksiId;
+  String? _statusAjuan;
+  String? _catatanRevisi;
 
   // ── PECAH mode state ──
   bool _isPecahMode = false;
@@ -147,6 +149,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       setState(() {
         _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
         _menggunakanKuasa = d['menggunakan_kuasa'] ?? false;
+        _statusAjuan = d['status_ajuan'];
+        _catatanRevisi = d['catatan_bakeuda'];
+        _currentStep = 1; // Skip step 0
+        
+        final lampObj = d['lampiran'];
+        final List<Map<String, String>> tempLamp = [];
+        if (lampObj != null && lampObj is Map) {
+          void parseLamp(String key, String jenis) {
+            final list = lampObj[key];
+            if (list != null && list is List) {
+              for (var url in list) {
+                if (url.toString().isNotEmpty) {
+                  tempLamp.add({'jenis_dokumen': jenis, 'url_file': url.toString()});
+                }
+              }
+            }
+          }
+          parseLamp('url_ktp', 'KTP');
+          parseLamp('url_sertifikat', 'Sertifikat Hak Milik');
+          parseLamp('url_ajb', 'Akte Jual Beli');
+          parseLamp('url_imb', 'Izin Mendirikan Bangunan');
+          parseLamp('url_surat_kuasa', 'Surat Kuasa');
+          parseLamp('url_pendukung_lokasi', 'Pendukung Lainnya');
+        }
         
         final nopAsalList = d['detail_asal'] as List?;
         if (nopAsalList != null && nopAsalList.isNotEmpty) {
@@ -218,8 +244,17 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                 _rwController.text = subjek['rw'] ?? '';
                 _kelurahanWpController.text = subjek['kelurahan'] ?? '';
                 _kecamatanWpController.text = subjek['kecamatan'] ?? '';
+                _kabupatenWpController.text = subjek['kabupaten'] ?? '';
                 _kodePosController.text = subjek['kode_pos'] ?? '';
+                
+                // Set dropdown values if they are valid
+                final swp = subjek['status_wp'];
+                if (swp != null && _statusWpOptions.any((o) => o['value'] == swp)) _statusWp = swp;
+                
+                final pkj = subjek['pekerjaan'];
+                if (pkj != null && _pekerjaanOptions.any((o) => o['value'] == pkj)) _pekerjaan = pkj;
              }
+             _jenisTanah = tujuan['jenis_tanah_baru'] ?? 'TANAH_BANGUNAN';
              _luasTanahController.text = (tujuan['luas_tanah_baru'] ?? '').toString();
              _jalanOpController.text = tujuan['jalan_op_baru'] ?? '';
              _kodeBlok = tujuan['kode_blok_baru']?.toString();
@@ -232,6 +267,26 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
              _kelurahanOpController.text = (kelOpB != null && kelOpB.isNotEmpty) ? kelOpB : (_isOpWilayahPatented ? _kelurahanOpController.text : '');
              _kecamatanOpController.text = (kecOpB != null && kecOpB.isNotEmpty) ? kecOpB : (_isOpWilayahPatented ? _kecamatanOpController.text : '');
              
+             _batasUtaraController.text = tujuan['batas_utara'] ?? '';
+             _batasSelatanController.text = tujuan['batas_selatan'] ?? '';
+             _batasTimurController.text = tujuan['batas_timur'] ?? '';
+             _batasBaratController.text = tujuan['batas_barat'] ?? '';
+             _latController.text = tujuan['latitude']?.toString() ?? '-7.3934';
+             _lngController.text = tujuan['longitude']?.toString() ?? '109.3663';
+             
+             if (tujuan['koordinat_polygon'] != null) {
+                _polygonPoints.clear();
+                final poly = tujuan['koordinat_polygon'];
+                if (poly is List) {
+                  for (var pt in poly) {
+                    _polygonPoints.add(LatLng(
+                      double.tryParse(pt['lat']?.toString() ?? '0') ?? 0,
+                      double.tryParse(pt['lng']?.toString() ?? '0') ?? 0,
+                    ));
+                  }
+                }
+             }
+             
              _jmlBangunanController.text = tujuan['jumlah_bangunan_baru']?.toString() ?? '0';
              final bngList = tujuan['data_bangunan_json'];
              if (bngList != null && bngList is List) {
@@ -239,6 +294,27 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                     bngList.map((e) => Map<String, dynamic>.from(e as Map))
                 );
              }
+           }
+           
+           // Distribute Lampiran
+           if (_jenisLayanan == 'PECAH') {
+             for (var doc in tempLamp) {
+               final rawUrl = doc['url_file'] as String;
+               if (rawUrl.startsWith('PECAHAN_')) {
+                 final parts = rawUrl.split('::');
+                 if (parts.length > 1) {
+                   final pNum = int.tryParse(parts[0].replaceAll('PECAHAN_', '')) ?? 1;
+                   if (pNum >= 1 && pNum <= _pecahanList.length) {
+                     (_pecahanList[pNum - 1]['lampiran'] as List).add({
+                       'jenis_dokumen': doc['jenis_dokumen'],
+                       'url_file': parts.sublist(1).join('::'),
+                     });
+                   }
+                 }
+               }
+             }
+           } else {
+             _lampiran.addAll(tempLamp);
            }
         }
       });
@@ -932,6 +1008,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('✅ Draft berhasil disimpan!'), backgroundColor: Colors.green),
         );
+        Navigator.pop(context, true); // Kembali ke halaman sebelumnya
       }
     } catch (e) {
       if (mounted) {
@@ -1501,6 +1578,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         key: _formKey,
         child: Column(
           children: [
+            if ((_statusAjuan == 'REVISI' || _statusAjuan == 'PERLU_PERBAIKAN') && _currentStep < 5)
+              Container(
+                margin: const EdgeInsets.only(left: 16, right: 16, top: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Catatan Revisi dari Bakeuda', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_catatanRevisi ?? 'Tidak ada catatan.', style: TextStyle(color: Colors.orange.shade900, fontSize: 13)),
+                  ],
+                ),
+              ),
             // Linear Progress Indicator
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),

@@ -417,7 +417,7 @@ class _MonitoringPajakTabState extends State<MonitoringPajakTab> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const SpopFormScreen(),
+                          builder: (_) => SpopFormScreen(idTransaksi: idTransaksi),
                         ),
                       );
                     } else {
