@@ -430,6 +430,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
               top: 10,
               right: 10,
               child: FloatingActionButton.small(
+                heroTag: null,
                 onPressed: () => setState(() => _isSatellite = !_isSatellite),
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 child: Icon(
@@ -787,7 +788,29 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       updateFormState(() => _pecahanList[_currentPecahanIdx - 1]['lampiran'] = updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅ $name diunggah untuk Pecahan $_currentPecahanIdx')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Upload Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Dokumen $jenis diunggah untuk Pecahan $_currentPecahanIdx', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {

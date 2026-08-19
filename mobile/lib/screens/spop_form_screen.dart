@@ -97,6 +97,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   @override
   void initState() {
     super.initState();
+    _transaksiId = widget.idTransaksi;
     _loadUserProfile();
     if (widget.idTransaksi != null) {
       _loadDraftData();
@@ -148,6 +149,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
       setState(() {
         _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        if (_jenisLayanan == 'HAPUS') {
+          _selectedKategori = 'PENGHAPUSAN';
+        } else if (_jenisLayanan == 'MUTASI' || _jenisLayanan == 'PERUBAHAN_DATA') {
+          _selectedKategori = 'PEMUTAKHIRAN';
+        } else {
+          _selectedKategori = 'BARU';
+        }
         _menggunakanKuasa = d['menggunakan_kuasa'] ?? false;
         _statusAjuan = d['status_ajuan'];
         _catatanRevisi = d['catatan_bakeuda'];
@@ -1132,7 +1140,29 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅ $name berhasil diunggah')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Upload Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Dokumen ${forcedJenisDokumen ?? _selectedJenisDokumen} berhasil ditambahkan.', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {

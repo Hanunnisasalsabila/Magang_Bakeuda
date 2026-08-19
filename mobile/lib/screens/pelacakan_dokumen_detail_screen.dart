@@ -199,8 +199,12 @@ class _PelacakanDokumenDetailScreenState extends State<PelacakanDokumenDetailScr
         
         if (namaPemohon == '-') {
            namaPemohon = tujuan['calon_subjek_json']?['nama_subjek'] ?? '-';
-           noHpPemohon = tujuan['calon_subjek_json']?['no_hp'] ?? noHpPemohon;
-           alamatPemohon = tujuan['calon_subjek_json']?['alamat_jalan'] ?? alamatPemohon;
+        }
+        if (noHpPemohon == '-') {
+           noHpPemohon = tujuan['calon_subjek_json']?['no_hp'] ?? '-';
+        }
+        if (alamatPemohon == '-') {
+           alamatPemohon = tujuan['calon_subjek_json']?['alamat_jalan'] ?? '-';
         }
       }
     }
