@@ -97,6 +97,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   @override
   void initState() {
     super.initState();
+    _transaksiId = widget.idTransaksi;
     _loadUserProfile();
     if (widget.idTransaksi != null) {
       _loadDraftData();
@@ -148,10 +149,23 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       final d = await _spopService.getDetailTransaksi(widget.idTransaksi!);
       setState(() {
         _jenisLayanan = d['jenis_transaksi'] ?? 'BARU';
+        if (_jenisLayanan == 'HAPUS') {
+          _selectedKategori = 'PENGHAPUSAN';
+        } else if (_jenisLayanan == 'MUTASI' || _jenisLayanan == 'PERUBAHAN_DATA') {
+          _selectedKategori = 'PEMUTAKHIRAN';
+        } else {
+          _selectedKategori = 'BARU';
+        }
         _menggunakanKuasa = d['menggunakan_kuasa'] ?? false;
         _statusAjuan = d['status_ajuan'];
         _catatanRevisi = d['catatan_bakeuda'];
-        _currentStep = 1; // Skip step 0
+        if (_jenisLayanan == 'HAPUS') {
+          _currentStep = 4; // Skip step 1, 2, 3
+        } else if (_jenisLayanan == 'PERUBAHAN_DATA') {
+          _currentStep = 2;
+        } else {
+          _currentStep = 1; // Skip step 0
+        }
         
         final lampObj = d['lampiran'];
         final List<Map<String, String>> tempLamp = [];
@@ -180,6 +194,12 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
            for (var asal in nopAsalList) {
              _nopAsalControllers.add(TextEditingController(text: asal['nop_asal'] ?? ''));
            }
+           if (_jenisLayanan == 'HAPUS' || _jenisLayanan == 'MUTASI' || _jenisLayanan == 'PERUBAHAN_DATA') {
+             _nopUtamaController.text = nopAsalList[0]['nop_asal'] ?? '';
+             if (_jenisLayanan == 'HAPUS') {
+               _fetchNopData(); // Auto fetch to populate resi UI for HAPUS
+             }
+           }
         }
         if (_nopAsalControllers.isEmpty) {
            _nopAsalControllers.add(TextEditingController());
@@ -195,13 +215,13 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                final subjek = t['calon_subjek_json'] ?? {};
                final bng = t['data_bangunan_json'] as List? ?? [];
                _pecahanList.add({
-                  'namaWp': subjek['nama_subjek'] ?? '',
-                  'nik': subjek['nik'] ?? '',
+                  'namaWp': subjek['nama_subjek'] == 'TANPA NAMA' ? '' : (subjek['nama_subjek'] ?? ''),
+                  'nik': subjek['nik'] == '0000000000000000' ? '' : (subjek['nik'] ?? ''),
                   'statusWp': subjek['status_wp'],
                   'pekerjaan': subjek['pekerjaan'],
                   'npwp': subjek['npwp'] ?? '',
                   'noHp': subjek['no_hp'] ?? '',
-                  'alamatWp': subjek['alamat_jalan'] ?? '',
+                  'alamatWp': subjek['alamat_jalan'] == 'TANPA ALAMAT' ? '' : (subjek['alamat_jalan'] ?? ''),
                   'rt': subjek['rt'] ?? '',
                   'rw': subjek['rw'] ?? '',
                   'kelurahan': subjek['kelurahan'] ?? '',
@@ -212,7 +232,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
                   'luasTanah': t['luas_tanah_baru']?.toString() ?? '',
                   'jenisTanah': t['jenis_tanah_baru'] ?? 'TANAH_BANGUNAN',
                   'jalanOp': t['jalan_op_baru'] ?? '',
-                  'kodeBlok': t['kode_blok_baru'] ?? '',
+                  'kodeBlokBaru': t['kode_blok_baru'] ?? '',
                   'blokKav': t['blok_kav_no_baru'] ?? '',
                   'rtOp': t['rt_op_baru'] ?? '',
                   'rwOp': t['rw_op_baru'] ?? '',
@@ -235,11 +255,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
              final tujuan = tujuanList[0];
              final subjek = tujuan['calon_subjek_json'];
              if (subjek != null) {
-                _namaWpController.text = subjek['nama_subjek'] ?? '';
-                _nikController.text = subjek['nik'] ?? '';
+                _namaWpController.text = subjek['nama_subjek'] == 'TANPA NAMA' ? '' : (subjek['nama_subjek'] ?? '');
+                _nikController.text = subjek['nik'] == '0000000000000000' ? '' : (subjek['nik'] ?? '');
                 _npwpController.text = subjek['npwp'] ?? '';
                 _noHpController.text = subjek['no_hp'] ?? '';
-                _alamatWpController.text = subjek['alamat_jalan'] ?? '';
+                _alamatWpController.text = subjek['alamat_jalan'] == 'TANPA ALAMAT' ? '' : (subjek['alamat_jalan'] ?? '');
                 _rtController.text = subjek['rt'] ?? '';
                 _rwController.text = subjek['rw'] ?? '';
                 _kelurahanWpController.text = subjek['kelurahan'] ?? '';
@@ -633,6 +653,17 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           if (obj['batas_timur'] != null) _batasTimurController.text = obj['batas_timur'].toString();
           if (obj['batas_barat'] != null) _batasBaratController.text = obj['batas_barat'].toString();
           
+          if (obj['subjek_pajak'] != null) {
+            final subjek = obj['subjek_pajak'];
+            final nama = subjek['nama_subjek'] ?? subjek['nama'];
+            if (nama != null) _namaWpController.text = nama.toString();
+            if (subjek['nik'] != null) _nikController.text = subjek['nik'].toString();
+            if (subjek['npwp'] != null) _npwpController.text = subjek['npwp'].toString();
+            if (subjek['alamat_jalan'] != null) _alamatWpController.text = subjek['alamat_jalan'].toString();
+            if (subjek['rt'] != null) _rtController.text = subjek['rt'].toString();
+            if (subjek['rw'] != null) _rwController.text = subjek['rw'].toString();
+          }
+          
           if (obj['koordinat_polygon'] != null) {
              _polygonPoints.clear();
              try {
@@ -668,7 +699,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Data Objek Pajak berhasil ditemukan & diisi otomatis'), backgroundColor: Colors.green),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text('Pencarian Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('Data Objek Pajak ditemukan & diisi otomatis.', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+              elevation: 4,
+            ),
           );
         }
       } else {
@@ -737,10 +791,17 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           if (obj['batas_timur'] != null) _batasTimurController.text = obj['batas_timur'].toString();
           if (obj['batas_barat'] != null) _batasBaratController.text = obj['batas_barat'].toString();
           
-          if (obj['nama_wp'] != null) _namaWpController.text = obj['nama_wp'].toString();
-          if (obj['jalan_wp'] != null) _alamatWpController.text = obj['jalan_wp'].toString();
-          if (obj['rt_wp'] != null) _rtController.text = obj['rt_wp'].toString();
-          if (obj['rw_wp'] != null) _rwController.text = obj['rw_wp'].toString();
+          if (obj['subjek_pajak'] != null) {
+            final subjek = obj['subjek_pajak'];
+            debugPrint('Prefilling subjek: $subjek');
+            final nama = subjek['nama_subjek'] ?? subjek['nama'];
+            if (nama != null) _namaWpController.text = nama.toString();
+            if (subjek['nik'] != null) _nikController.text = subjek['nik'].toString();
+            if (subjek['npwp'] != null) _npwpController.text = subjek['npwp'].toString();
+            if (subjek['alamat_jalan'] != null) _alamatWpController.text = subjek['alamat_jalan'].toString();
+            if (subjek['rt'] != null) _rtController.text = subjek['rt'].toString();
+            if (subjek['rw'] != null) _rwController.text = subjek['rw'].toString();
+          }
           
           if (obj['koordinat_polygon'] != null) {
              _polygonPoints.clear();
@@ -756,7 +817,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('✅ Data berhasil di-prefill dari NOP Asal pertama'), backgroundColor: Colors.green),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text('Prefill Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        Text('Data berhasil ditarik dari NOP Asal pertama.', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
+              elevation: 4,
+            ),
           );
         }
       }
@@ -934,7 +1018,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
 
       detailTujuan = [{
         if (!isPerubahanData) 'nik_calon_subjek': _nikController.text,
-        if (!isPerubahanData) 'calon_subjek_json': calonSubjekJson,
+        'calon_subjek_json': calonSubjekJson,
         if (isPerubahanData && nop.length >= 18) 'nop_generated': nop,
         'luas_tanah_baru': luasTanah,
         'luas_bangunan_baru': luasBngTotal,
@@ -1006,7 +1090,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Draft berhasil disimpan!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.save_outlined, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('Draft Tersimpan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Progres pengisian formulir berhasil disimpan.', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+            elevation: 4,
+          ),
         );
         Navigator.pop(context, true); // Kembali ke halaman sebelumnya
       }
@@ -1046,7 +1153,30 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ Formulir SPOP berhasil diajukan ke BKD!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('Pengajuan Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Formulir SPOP Anda telah berhasil diajukan.', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 4),
+            elevation: 4,
+          ),
         );
         Navigator.pop(context, true);
       }
@@ -1132,7 +1262,29 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅ $name berhasil diunggah')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Upload Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Dokumen ${forcedJenisDokumen ?? _selectedJenisDokumen} berhasil ditambahkan.', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {

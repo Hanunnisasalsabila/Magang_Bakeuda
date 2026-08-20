@@ -114,8 +114,10 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       _sectionTitle('Data Subjek Pajak'),
       const SizedBox(height: 12),
       TextFormField(
-        key: ValueKey('namaWp_${_currentPecahanIdx}_${p['namaWp']}'),
+        key: ValueKey('namaWp_${_currentPecahanIdx}'),
         initialValue: p['namaWp'] as String,
+        textCapitalization: TextCapitalization.characters,
+        inputFormatters: [UpperCaseTextFormatter()],
         decoration: _dec('Nama Lengkap WP *'),
         onChanged: (v) => _setP('namaWp', v),
         validator: (v) => (v?.isEmpty ?? true) ? 'Wajib diisi' : null,
@@ -167,6 +169,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
         initialValue: p['noHp'] as String,
         decoration: _dec('No. Telepon (Opsional)'),
         keyboardType: TextInputType.phone,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(13)],
         onChanged: (v) => _setP('noHp', v),
       ),
       const SizedBox(height: 16),
@@ -181,9 +184,9 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextFormField(key: ValueKey('rt_${_currentPecahanIdx}'), initialValue: p['rt'] as String, decoration: _dec('RT'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rt', v))),
+        Expanded(child: TextFormField(key: ValueKey('rt_${_currentPecahanIdx}'), initialValue: p['rt'] as String, decoration: _dec('RT'), keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], onChanged: (v) => _setP('rt', v))),
         const SizedBox(width: 8),
-        Expanded(child: TextFormField(key: ValueKey('rw_${_currentPecahanIdx}'), initialValue: p['rw'] as String, decoration: _dec('RW'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rw', v))),
+        Expanded(child: TextFormField(key: ValueKey('rw_${_currentPecahanIdx}'), initialValue: p['rw'] as String, decoration: _dec('RW'), keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], onChanged: (v) => _setP('rw', v))),
         const SizedBox(width: 8),
         Expanded(child: TextFormField(key: ValueKey('kodePos_${_currentPecahanIdx}'), initialValue: p['kodePos'] as String, decoration: _dec('Kode Pos'), keyboardType: TextInputType.number, inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(5)], onChanged: (v) => _setP('kodePos', v))),
       ]),
@@ -209,9 +212,11 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ),
       const SizedBox(height: 12),
       TextFormField(
+        key: ValueKey('kabupaten_${_currentPecahanIdx}'),
         initialValue: p['kabupaten'] as String,
-        decoration: _dec('Kabupaten'),
-        readOnly: true,
+        decoration: _dec('Kabupaten *'),
+        onChanged: (v) => _setP('kabupaten', v),
+        validator: (v) => (v?.isEmpty ?? true) ? 'Wajib' : null,
       ),
     ]);
   }
@@ -295,9 +300,9 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextFormField(key: ValueKey('rtOp_${_currentPecahanIdx}'), initialValue: p['rtOp'] as String, decoration: _dec('RT'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rtOp', v))),
+        Expanded(child: TextFormField(key: ValueKey('rtOp_${_currentPecahanIdx}'), initialValue: p['rtOp'] as String, decoration: _dec('RT'), keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], onChanged: (v) => _setP('rtOp', v))),
         const SizedBox(width: 8),
-        Expanded(child: TextFormField(key: ValueKey('rwOp_${_currentPecahanIdx}'), initialValue: p['rwOp'] as String, decoration: _dec('RW'), keyboardType: TextInputType.number, onChanged: (v) => _setP('rwOp', v))),
+        Expanded(child: TextFormField(key: ValueKey('rwOp_${_currentPecahanIdx}'), initialValue: p['rwOp'] as String, decoration: _dec('RW'), keyboardType: TextInputType.number, inputFormatters: [LengthLimitingTextInputFormatter(3), FilteringTextInputFormatter.digitsOnly], onChanged: (v) => _setP('rwOp', v))),
       ]),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
@@ -430,6 +435,7 @@ extension _StepPecahanExtension on _SpopFormScreenState {
               top: 10,
               right: 10,
               child: FloatingActionButton.small(
+                heroTag: null,
                 onPressed: () => setState(() => _isSatellite = !_isSatellite),
                 backgroundColor: Theme.of(context).colorScheme.surface,
                 child: Icon(
@@ -787,7 +793,29 @@ extension _StepPecahanExtension on _SpopFormScreenState {
       updateFormState(() => _pecahanList[_currentPecahanIdx - 1]['lampiran'] = updated);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅ $name diunggah untuk Pecahan $_currentPecahanIdx')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Upload Berhasil', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('Dokumen $jenis diunggah untuk Pecahan $_currentPecahanIdx', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     } catch (e) {

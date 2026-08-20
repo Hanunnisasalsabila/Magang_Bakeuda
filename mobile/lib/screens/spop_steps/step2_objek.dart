@@ -420,6 +420,7 @@ extension _Step2Extension on _SpopFormScreenState {
                 top: 10,
                 right: 10,
                 child: FloatingActionButton.small(
+                  heroTag: null,
                   onPressed: () =>
                       updateFormState(() => _isSatellite = !_isSatellite),
                   backgroundColor: Theme.of(context).colorScheme.surface,

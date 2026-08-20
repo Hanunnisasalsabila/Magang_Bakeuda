@@ -324,7 +324,7 @@ export default function AntreanVerifikasi() {
                           <div key={dIdx} className="h-10 flex flex-col justify-center relative">
                             {dIdx > 0 && <div className="absolute -top-1.5 left-0 right-0 h-px bg-outline-variant/40" />}
                             <p className="font-bold text-on-surface whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title={d.name}>{d.name}</p>
-                            {dIdx === 0 && <p className="text-[12px] text-on-surface-variant absolute -bottom-3 left-0">{item.userId}</p>}
+                            {dIdx === 0 && <p className="text-[11px] leading-tight text-on-surface-variant truncate w-full max-w-[200px]" title={item.userId}>{item.userId}</p>}
                           </div>
                         ))}
                       </div>

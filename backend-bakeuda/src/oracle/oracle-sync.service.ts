@@ -211,6 +211,9 @@ export class OracleSyncService implements OnModuleInit {
 
   @Cron(CronExpression.EVERY_30_MINUTES)
   async handleAutomaticBackfill() {
+    const isEnabled = this.config.get<string>('ORACLE_SYNC_ENABLED') === 'true';
+    if (!isEnabled) return;
+    
     this.logger.log('Running automatic backfill via Cron (Every 30 Minutes)');
     await this.backfillSync('CRON');
   }

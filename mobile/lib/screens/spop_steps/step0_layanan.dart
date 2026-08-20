@@ -349,42 +349,52 @@ extension _Step0Extension on _SpopFormScreenState {
           ),
           const Divider(),
           const SizedBox(height: 8),
-          Row(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('NOP', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(_nopUtamaController.text, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Alamat Objek Pajak', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(obj['jalan_op']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Status', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
-                      child: Text('Aktif', style: TextStyle(fontSize: 12, color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+              const Text('NOP', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(_nopUtamaController.text, style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              
+              const Text('Subjek Pajak (NIK)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(obj['subjek_pajak']?['nik']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              
+              const Text('Alamat Objek Pajak', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text(obj['jalan_op']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              
+              const Text('Luas Tanah / Bangunan', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              Text('${obj['luas_tanah'] ?? '-'} m² / $displayLuasBng m²', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Jenis Tanah', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Text(obj['jenis_tanah']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Subjek Pajak (NIK)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(obj['subjek_pajak']?['nik']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Luas Tanah / Bangunan', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text('${obj['luas_tanah'] ?? '-'} m² / $displayLuasBng m²', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('Jenis Tanah', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    Text(obj['jenis_tanah']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Status', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        Container(
+                          margin: const EdgeInsets.only(top: 2),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(4)),
+                          child: Text('Aktif', style: TextStyle(fontSize: 12, color: Colors.green.shade800, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

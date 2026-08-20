@@ -83,6 +83,7 @@ export default function Sidebar({ role, activePath, handleLogout, isOpen, onClos
       { path: '/manajemen-akun-desa', label: 'Manajemen Pengguna', icon: 'manage_accounts' },
       { path: '/manajemen-wilayah', label: 'Manajemen Wilayah', icon: 'map' },
       { path: '/daftar-objek', label: 'Data Objek Pajak', icon: 'database' },
+      { path: '/daftar-subjek', label: 'Daftar Subjek Pajak', icon: 'recent_actors' },
       { path: '/antrean-verifikasi', label: 'Antrean Verifikasi', icon: 'fact_check' },
       { path: '/detail-review', label: 'Pemeriksaan Berkas', icon: 'rate_review' },
       { path: '/riwayat-persetujuan', label: 'Riwayat Keputusan', icon: 'task_alt' },
