@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'server_config.dart';
 
 class ApiService {
   late final Dio _dio;
@@ -8,7 +8,7 @@ class ApiService {
 
   ApiService() {
     _dio = Dio(BaseOptions(
-      baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api',
+      baseUrl: ServerConfig.instance.currentUrl,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
     ));
@@ -31,4 +31,9 @@ class ApiService {
   }
 
   Dio get dio => _dio;
+
+  /// Memperbarui baseUrl secara live (setelah user mengubah pengaturan server)
+  void refreshBaseUrl() {
+    _dio.options.baseUrl = ServerConfig.instance.currentUrl;
+  }
 }

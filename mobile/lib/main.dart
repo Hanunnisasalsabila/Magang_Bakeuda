@@ -3,13 +3,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/server_config.dart';
 
 Future<void> main() async {
   // Pastikan binding terinisialisasi sebelum menjalankan kode async di main
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load file .env untuk mengambil API_BASE_URL
+  // Load file .env untuk mengambil API_BASE_URL default
   await dotenv.load(fileName: ".env");
+  
+  // Load konfigurasi server kustom (jika ada yang tersimpan)
+  await ServerConfig.instance.init();
   
   // Inisialisasi format tanggal bahasa Indonesia
   await initializeDateFormatting('id', null);

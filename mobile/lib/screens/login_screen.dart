@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/server_config.dart';
 import '../models/role_constants.dart';
 import '../models/user.dart';
 import '../widgets/custom_button.dart';
@@ -145,6 +146,110 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showServerConfigDialog() {
+    final urlController = TextEditingController(text: ServerConfig.instance.currentUrl);
+    final isCustom = ServerConfig.instance.isCustomUrl;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.dns_rounded, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Text('Pengaturan Server', style: TextStyle(fontSize: 16)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Masukkan alamat server backend.\nContoh: http://192.168.1.100:3000/api',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: urlController,
+                decoration: InputDecoration(
+                  labelText: 'URL API',
+                  hintText: 'http://ip-address:3000/api',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.link),
+                  suffixIcon: isCustom
+                      ? IconButton(
+                          icon: const Icon(Icons.restore, color: Colors.orange),
+                          tooltip: 'Reset ke default (.env)',
+                          onPressed: () {
+                            urlController.text = ServerConfig.instance.defaultUrl;
+                          },
+                        )
+                      : null,
+                ),
+                keyboardType: TextInputType.url,
+                style: const TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              if (isCustom)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: Colors.blue.shade700),
+                      const SizedBox(width: 4),
+                      Text('Menggunakan URL kustom', style: TextStyle(fontSize: 11, color: Colors.blue.shade700)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            if (isCustom)
+              TextButton(
+                onPressed: () async {
+                  await ServerConfig.instance.resetToDefault();
+                  if (mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('✅ Dikembalikan ke URL default'), backgroundColor: Colors.green),
+                    );
+                  }
+                },
+                child: const Text('Reset Default'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newUrl = urlController.text.trim();
+                if (newUrl.isEmpty) return;
+                await ServerConfig.instance.setCustomUrl(newUrl);
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ Server diubah ke: $newUrl'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isCheckingAuth) {
@@ -212,7 +317,19 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           
           SafeArea(
-            child: Center(
+            child: Stack(
+              children: [
+                // Tombol Pengaturan Server (pojok kanan atas)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.settings, color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5), size: 22),
+                    tooltip: 'Pengaturan Server',
+                    onPressed: _showServerConfigDialog,
+                  ),
+                ),
+                Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 child: CustomCard(
@@ -344,10 +461,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
+            ), // Center
+          ], // Stack children
+        ), // Stack
+      ), // SafeArea
+        ], // Scaffold body Stack children
+      ), // Scaffold body Stack
+    ); // Scaffold
   }
 }

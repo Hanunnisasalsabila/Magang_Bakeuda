@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/user.dart';
+import 'server_config.dart';
 
 class AuthService {
   final Dio _dio = Dio()..interceptors.add(LogInterceptor(
@@ -14,9 +14,7 @@ class AuthService {
   ));
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  String get _baseUrl {
-    return dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:3000/api';
-  }
+  String get _baseUrl => ServerConfig.instance.currentUrl;
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
