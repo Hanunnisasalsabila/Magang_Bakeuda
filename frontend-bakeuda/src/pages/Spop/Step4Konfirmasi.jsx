@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
-import api from '../../utils/axios';
+import api, { resolveFileUrl } from '../../utils/axios';
 
 // Fix leaflet icon issues
 delete L.Icon.Default.prototype._getIconUrl;
@@ -526,7 +526,7 @@ export default function Step4Konfirmasi() {
                   <div>
                     <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
                     <button type="button" onClick={() => { 
-                      setPreviewImage(doc.url_file);
+                      setPreviewImage(resolveFileUrl(doc.url_file));
                       let docUid = doc.uid;
                       if (!docUid) {
                         docUid = Math.random().toString(36).substring(2, 9);

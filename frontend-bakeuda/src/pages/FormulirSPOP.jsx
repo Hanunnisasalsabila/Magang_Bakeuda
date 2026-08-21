@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import PaperHeader from '../components/PaperHeader';
 import SegmentedNOPInput from '../components/SegmentedNOPInput';
-import api from '../utils/axios';
+import api, { resolveFileUrl } from '../utils/axios';
 import ToastNotification from '../components/ToastNotification';
 
 // Fix leaflet icon issues in React
@@ -664,10 +664,8 @@ export default function FormulirSPOP() {
         newErrors.alamatObjek = 'Jalan OP 5-255 karakter, hanya huruf, angka, spasi, . , - /';
       }
       
-      if (formData.transaksi === 'BARU') {
-        if (!formData.kodeBlokBaru || formData.kodeBlokBaru.length !== 3) {
-          newErrors.kodeBlokBaru = 'Kode blok wajib diisi dengan 3 karakter';
-        }
+      if (!formData.kodeBlokBaru || formData.kodeBlokBaru.length !== 3) {
+        newErrors.kodeBlokBaru = 'Kode blok wajib diisi dengan 3 karakter';
       }
 
       if (!formData.rtObjek || !/^\d{2,3}$/.test(formData.rtObjek)) newErrors.rtObjek = 'RT wajib 2-3 digit angka';
@@ -1538,8 +1536,7 @@ export default function FormulirSPOP() {
                   </div>
                   <div className="md:col-span-4 space-y-2">
                     <label className="font-label-sm text-primary block">
-                      KODE BLOK (3 DIGIT)
-                      {formData.transaksi === 'BARU' && <span className="text-error ml-1">*</span>}
+                      KODE BLOK (3 DIGIT) <span className="text-error ml-1">*</span>
                     </label>
                     {isManualBlok ? (
               <div className="flex flex-col space-y-1">
@@ -1590,7 +1587,7 @@ export default function FormulirSPOP() {
                 <option value="ADD_NEW" className="font-bold text-primary">+ Tambah Blok Baru</option>
               </select>
             )}
-                    {formData.transaksi === 'BARU' && !formData.kodeBlokBaru && (
+                    {!formData.kodeBlokBaru && (
                       <p className="text-error text-[12px]">Kode blok wajib diisi</p>
                     )}
                   </div>
@@ -2062,7 +2059,7 @@ export default function FormulirSPOP() {
                           <span className="material-symbols-outlined text-primary">description</span>
                           <div>
                             <p className="font-bold text-sm text-on-surface">{doc.jenis_dokumen} #{idx + 1}</p>
-                            <a href={doc.url_file} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dokumen</a>
+                            <a href={resolveFileUrl(doc.url_file)} target="_blank" rel="noreferrer" className="text-xs text-secondary hover:underline">Lihat Pratinjau Dokumen</a>
                           </div>
                         </div>
                         <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../utils/axios';
+import api, { resolveFileUrl } from '../utils/axios';
 import { MapContainer, TileLayer, Polygon, Marker, LayersControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -881,7 +881,7 @@ export default function DetailReviewSPOP() {
                         <td className="p-3 text-center border-r border-gray-200">{idx + 1}</td>
                         <td className="p-3 font-bold text-gray-800 border-r border-gray-200">{lamp.jenis_dokumen}</td>
                         <td className="p-3 text-center">
-                          <a href={lamp.url_file} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">
+                          <a href={resolveFileUrl(lamp.url_file)} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">
                             {lamp.url_file?.toLowerCase().endsWith('.pdf') ? 'LIHAT PDF' : 'LIHAT GAMBAR'}
                           </a>
                         </td>
@@ -889,7 +889,7 @@ export default function DetailReviewSPOP() {
                       {lamp.url_file && lamp.url_file.match(/\.(jpeg|jpg|gif|png)$/i) && (
                         <tr className="border-b border-gray-200">
                           <td colSpan="3" className="p-4 bg-gray-100 text-center">
-                            <img src={lamp.url_file} alt={lamp.jenis_dokumen} className="max-h-96 mx-auto border border-gray-300 shadow-sm" />
+                            <img src={resolveFileUrl(lamp.url_file)} alt={lamp.jenis_dokumen} className="max-h-96 mx-auto border border-gray-300 shadow-sm" />
                           </td>
                         </tr>
                       )}

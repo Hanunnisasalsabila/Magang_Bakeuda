@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../utils/axios';
+import api, { resolveFileUrl } from '../utils/axios';
 
 export default function PelacakanDokumen() {
   const navigate = useNavigate();
@@ -324,7 +324,7 @@ export default function PelacakanDokumen() {
                         </td>
                         <td className="px-6 py-3 text-center">
                           <a
-                            href={lampiran.url_file}
+                            href={resolveFileUrl(lampiran.url_file)}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary transition-colors rounded-lg font-bold text-xs"

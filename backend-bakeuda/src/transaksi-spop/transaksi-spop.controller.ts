@@ -103,10 +103,10 @@ export class TransaksiSpopController {
   }))
   async uploadFile(@UploadedFile() file: Express.Multer.File, @Request() req) {
     if (!file) throw new BadRequestException('File tidak ditemukan');
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.headers['x-forwarded-host'] || req.get('host');
-    const fileUrl = `${protocol}://${host}/uploads/${file.filename}`;
-    return { url_file: fileUrl };
+    // Simpan hanya path relatif agar fleksibel saat IP/domain berubah.
+    // Frontend yang akan merangkai Base URL + path relatif ini secara dinamis.
+    const relativePath = `/uploads/${file.filename}`;
+    return { url_file: relativePath };
   }
 
 }

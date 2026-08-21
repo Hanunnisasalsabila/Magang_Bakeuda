@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
+import '../services/server_config.dart';
 
 class DetailReviewSpopScreen extends StatefulWidget {
   final String idTransaksi;
@@ -1167,7 +1168,8 @@ class _DetailReviewSpopScreenState extends State<DetailReviewSpopScreen> {
                                   ...lampirans.asMap().entries.map((entry) {
                                     final idx = entry.key;
                                     final l = entry.value;
-                                    final url = l['url_file']?.toString() ?? '';
+                                    final rawUrl = l['url_file']?.toString() ?? '';
+                                    final url = ServerConfig.instance.resolveFileUrl(rawUrl);
                                     final isImage = url.toLowerCase().endsWith('.png') || url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg');
                                     return Container(
                                       decoration: BoxDecoration(

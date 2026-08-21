@@ -115,7 +115,7 @@ export class TransaksiSpopService {
             luas_tanah_baru: t.luas_tanah_baru ?? 0,
             luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
             jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-            jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
+            jenis_tanah_baru: t.jenis_tanah_baru as any,
             koordinat_polygon: t.koordinat_polygon as any,
             calon_subjek_json: t.calon_subjek_json as any,
             data_bangunan_json: t.data_bangunan_json as any
@@ -247,7 +247,7 @@ export class TransaksiSpopService {
                 luas_tanah_baru: t.luas_tanah_baru ?? 0,
                 luas_bangunan_baru: t.luas_bangunan_baru ?? 0,
                 jumlah_bangunan_baru: t.jumlah_bangunan_baru ?? 0,
-                jenis_tanah_baru: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
+                jenis_tanah_baru: t.jenis_tanah_baru as any,
                 koordinat_polygon: t.koordinat_polygon as any,
                 calon_subjek_json: t.calon_subjek_json as any,
                 data_bangunan_json: t.data_bangunan_json as any
@@ -702,6 +702,8 @@ export class TransaksiSpopService {
       case 'PERUBAHAN_DATA':
         if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru <= 0)
           throw new BadRequestException('Luas tanah wajib diisi untuk perubahan data.');
+        if (!tujuan?.jenis_tanah_baru)
+          throw new BadRequestException('Jenis tanah wajib diisi untuk perubahan data.');
         break;
 
       case 'HAPUS':
@@ -727,8 +729,8 @@ export class TransaksiSpopService {
         where: { nik: nikToSave },
         update: {
           nama_subjek: subjekTemp.nama_subjek || subjekTemp.nama || 'TANPA NAMA',
-          pekerjaan: subjekTemp.pekerjaan || Pekerjaan.LAINNYA,
-          status_wp: subjekTemp.status_wp || StatusWp.PEMILIK,
+          pekerjaan: subjekTemp.pekerjaan as any,
+          status_wp: subjekTemp.status_wp as any,
           npwp: subjekTemp.npwp,
           no_hp: subjekTemp.no_hp,
           email: subjekTemp.email,
@@ -744,8 +746,8 @@ export class TransaksiSpopService {
         create: {
           nik: nikToSave,
           nama_subjek: subjekTemp.nama_subjek || subjekTemp.nama || 'TANPA NAMA',
-          pekerjaan: subjekTemp.pekerjaan || Pekerjaan.LAINNYA,
-          status_wp: subjekTemp.status_wp || StatusWp.PEMILIK,
+          pekerjaan: subjekTemp.pekerjaan as any,
+          status_wp: subjekTemp.status_wp as any,
           npwp: subjekTemp.npwp,
           no_hp: subjekTemp.no_hp,
           email: subjekTemp.email,
@@ -786,9 +788,27 @@ export class TransaksiSpopService {
         }
 
         let kode_jpb = '01';
-        if (bng.jenisPenggunaan === 'Perkantoran Swasta') kode_jpb = '02';
-        else if (bng.jenisPenggunaan === 'Pabrik') kode_jpb = '03';
-        else if (bng.jenisPenggunaan === 'Toko/Apotik/Pasar/Ruko') kode_jpb = '04';
+        const jpbMap: Record<string, string> = {
+          'Perumahan': '01',
+          'Perkantoran Swasta': '02',
+          'Pabrik': '03',
+          'Toko/Apotik/Pasar/Ruko': '04',
+          'Rumah Sakit/Klinik': '05',
+          'Olah Raga/Rekreasi': '06',
+          'Hotel/Wisma': '07',
+          'Bengkel/Gudang/Pertanian': '08',
+          'Gedung Pemerintah': '09',
+          'Lain-lain': '10',
+          'Bangunan Tidak Kena Pajak': '11',
+          'Bangunan Parkir': '12',
+          'Apartemen': '13',
+          'Pompa Bensin': '14',
+          'Tangki Minyak': '15',
+          'Gedung Sekolah': '16',
+        };
+        if (bng.jenisPenggunaan && jpbMap[bng.jenisPenggunaan]) {
+          kode_jpb = jpbMap[bng.jenisPenggunaan];
+        }
 
         const existingJpb = await tx.referensiJenisPenggunaanBangunan.findUnique({ where: { kode_jpb } });
         if (!existingJpb) {
@@ -817,7 +837,7 @@ export class TransaksiSpopService {
             jenis_atap: bng.atap === 'Genting/Beton' ? JenisAtap.DECRABON_BETON_GLAZUR : (bng.atap === 'Asbes' ? JenisAtap.ASBES : JenisAtap.SENG),
             kode_dinding: bng.dinding === 'Bata/Beton' ? JenisDinding.BATU_BATA_CONBLOK : (bng.dinding === 'Kayu' ? JenisDinding.KAYU : JenisDinding.SENG),
             kode_lantai: bng.lantai === 'Marmer' ? JenisLantai.MARMER : (bng.lantai === 'Keramik' ? JenisLantai.KERAMIK : (bng.lantai === 'Teraso' ? JenisLantai.TERASO : (bng.lantai === 'Ubin PC/Papan' ? JenisLantai.UBIN_PC_PAPAN : (bng.lantai === 'Tanah' ? JenisLantai.TANAH : JenisLantai.SEMEN)))),
-            kode_langit_langit: bng.langitLangit === 'Eternit' ? JenisLangitLangit.AKUSTIK_JATI : JenisLangitLangit.TRIPLEK_ASBES_BAMBU,
+            kode_langit_langit: bng.langitLangit === 'Eternit' ? JenisLangitLangit.AKUSTIK_JATI : (bng.langitLangit === 'Tidak Ada' ? JenisLangitLangit.TIDAK_ADA : JenisLangitLangit.TRIPLEK_ASBES_BAMBU),
           }
         });
 
@@ -882,7 +902,7 @@ export class TransaksiSpopService {
         blok_kav_no: t.blok_kav_no_baru,
         rw_op: t.rw_op_baru,
         rt_op: t.rt_op_baru,
-        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
+        jenis_tanah: t.jenis_tanah_baru as any,
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? 0,
         jumlah_bangunan: t.jumlah_bangunan_baru ?? 0,
@@ -927,7 +947,7 @@ export class TransaksiSpopService {
       data: {
         luas_tanah: t.luas_tanah_baru,
         luas_bangunan: t.luas_bangunan_baru ?? undefined,
-        jenis_tanah: t.jenis_tanah_baru ?? 'TANAH_KOSONG' as any,
+        jenis_tanah: t.jenis_tanah_baru as any,
         jalan_op: t.jalan_op_baru ?? undefined,
         koordinat_polygon: t.koordinat_polygon != null ? (t.koordinat_polygon as any) : undefined,
       },

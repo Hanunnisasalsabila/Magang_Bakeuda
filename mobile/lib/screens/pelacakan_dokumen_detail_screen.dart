@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
+import '../services/server_config.dart';
 
 class PelacakanDokumenDetailScreen extends StatefulWidget {
   final String idTransaksi;
@@ -323,8 +324,9 @@ class _PelacakanDokumenDetailScreenState extends State<PelacakanDokumenDetailScr
             title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             trailing: InkWell(
               onTap: () async {
-                final url = l['url_file']?.toString();
-                if (url != null && url.isNotEmpty) {
+                final rawUrl = l['url_file']?.toString();
+                if (rawUrl != null && rawUrl.isNotEmpty) {
+                  final url = ServerConfig.instance.resolveFileUrl(rawUrl);
                   final uri = Uri.parse(url);
                   if (await canLaunchUrl(uri)) {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);

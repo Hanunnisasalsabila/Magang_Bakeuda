@@ -4,7 +4,7 @@ import { useSpop } from '../../context/SpopContext';
 import ToastNotification from '../../components/ToastNotification';
 import DraftConfirmModal from '../../components/DraftConfirmModal';
 import WilayahDropdown from '../../components/WilayahDropdown';
-import api from '../../utils/axios';
+import api, { resolveFileUrl } from '../../utils/axios';
 
 export default function Step2SubjekPajak() {
   const { formData, setFormData, errors, setErrors, saveDraft, idTransaksi, loadDraft } = useSpop();
@@ -397,7 +397,7 @@ export default function Step2SubjekPajak() {
                           <span className="material-symbols-outlined text-primary">description</span>
                           <div>
                             <p className="font-bold text-sm text-on-surface">Surat Kuasa</p>
-                            <a href={suratKuasa.url_file} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
+                            <a href={resolveFileUrl(suratKuasa.url_file)} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
                               <span className="material-symbols-outlined text-[14px]">visibility</span>
                               Lihat Pratinjau Dokumen
                             </a>

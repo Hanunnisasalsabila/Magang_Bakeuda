@@ -548,11 +548,9 @@ export default function Step3ObjekPajak() {
 
     const validateData = (data, prefix = '') => {
       if (!data.alamatObjek) { newErrors[`${prefix}alamatObjek`] = 'Alamat Objek wajib diisi'; hasError = true; }
-      if (formData.transaksi === 'BARU') {
-        if (!data.kodeBlokBaru || data.kodeBlokBaru.length !== 3) {
-          newErrors[`${prefix}kodeBlokBaru`] = 'Kode blok wajib 3 karakter';
-          hasError = true;
-        }
+      if (!data.kodeBlokBaru || data.kodeBlokBaru.length !== 3) {
+        newErrors[`${prefix}kodeBlokBaru`] = 'Kode blok wajib 3 karakter';
+        hasError = true;
       }
       if (!data.rtObjek) { newErrors[`${prefix}rtObjek`] = 'RT wajib diisi'; hasError = true; }
       if (!data.rwObjek) { newErrors[`${prefix}rwObjek`] = 'RW wajib diisi'; hasError = true; }
@@ -745,8 +743,7 @@ export default function Step3ObjekPajak() {
         <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
           <div className="md:col-span-2 space-y-1">
             <label className="text-sm text-primary font-bold">
-              KODE BLOK (3 DIGIT)
-              {formData.transaksi === 'BARU' && <span className="text-error ml-1">*</span>}
+              KODE BLOK (3 DIGIT) <span className="text-error ml-1">*</span>
             </label>
             {isManualBlok ? (
               <div className="flex flex-col space-y-1">

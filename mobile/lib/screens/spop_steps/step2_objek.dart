@@ -204,6 +204,7 @@ extension _Step2Extension on _SpopFormScreenState {
                       hintText: 'Mis: 001',
                       onChanged: (v) => updateFormState(() => _kodeBlok = v),
                       inputFormatters: [LengthLimitingTextInputFormatter(3)],
+                      validator: (v) => v == null || v.isEmpty ? '*' : null,
                     ),
             ),
             const SizedBox(width: 8),
