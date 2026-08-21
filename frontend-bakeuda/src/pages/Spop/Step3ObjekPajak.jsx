@@ -208,11 +208,11 @@ export default function Step3ObjekPajak() {
               setIsManualBlok(false);
             } else {
               setBlokOptions([]);
-              setIsManualBlok(true);
+              setIsManualBlok(false);
             }
           }).catch(() => {
             setBlokOptions([]);
-            setIsManualBlok(true);
+            setIsManualBlok(false);
           });
         }
       } catch (e) { }

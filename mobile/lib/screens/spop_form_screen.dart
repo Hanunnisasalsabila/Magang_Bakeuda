@@ -92,6 +92,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   String? _kodeBlok;
   List<String> _blokOptions = [];
   bool _isFetchingBlok = false;
+  bool _isManualBlok = false;
   double _totalLuasAsalGabung = 0.0;
   
   @override
@@ -128,6 +129,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
     updateFormState(() {
       _isFetchingBlok = true;
       _blokOptions = [];
+      _isManualBlok = false;
     });
     try {
       final res = await ApiService().dio.get('/referensi-blok?kode_wilayah=$kodeWilayah');
@@ -136,6 +138,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
         updateFormState(() {
           _blokOptions = dataBlok.map((e) => e['kode_blok'].toString()).toList();
           _isFetchingBlok = false;
+          _isManualBlok = false;
         });
       }
     } catch (e) {

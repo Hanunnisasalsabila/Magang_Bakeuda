@@ -188,22 +188,62 @@ extension _Step2Extension on _SpopFormScreenState {
             const SizedBox(width: 8),
             Expanded(
               flex: 2,
-              child: _blokOptions.isNotEmpty
-                  ? CustomDropdown<String>(
-                      label: 'Kode Blok *',
-                      value: _blokOptions.contains(_kodeBlok) ? _kodeBlok : null,
-                      items: _blokOptions
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14))))
-                          .toList(),
-                      onChanged: (v) => updateFormState(() => _kodeBlok = v),
-                      validator: (v) => v == null || v.isEmpty ? '*' : null,
+              child: _isManualBlok
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CustomTextField(
+                          controller: _kodeBlokController,
+                          label: 'Kode Blok *',
+                          hintText: 'Mis: 001',
+                          onChanged: (v) => updateFormState(() => _kodeBlok = v),
+                          inputFormatters: [LengthLimitingTextInputFormatter(3)],
+                          validator: (v) => v == null || v.isEmpty ? '*' : null,
+                        ),
+                        if (_blokOptions.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => updateFormState(() {
+                              _isManualBlok = false;
+                              _kodeBlok = null;
+                            }),
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Batal Tambah Manual',
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 11,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     )
-                  : CustomTextField(
-                      controller: _kodeBlokController,
+                  : CustomDropdown<String>(
                       label: 'Kode Blok *',
-                      hintText: 'Mis: 001',
-                      onChanged: (v) => updateFormState(() => _kodeBlok = v),
-                      inputFormatters: [LengthLimitingTextInputFormatter(3)],
+                      value: (_blokOptions.contains(_kodeBlok) || _kodeBlok == 'ADD_NEW') ? _kodeBlok : null,
+                      items: [
+                        ..._blokOptions.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 14)))),
+                        const DropdownMenuItem(
+                          value: 'ADD_NEW',
+                          child: Text(
+                            '+ Tambah Blok Baru',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        updateFormState(() {
+                          if (v == 'ADD_NEW') {
+                            _isManualBlok = true;
+                            _kodeBlok = null;
+                            _kodeBlokController.text = '';
+                          } else {
+                            _kodeBlok = v;
+                          }
+                        });
+                      },
                       validator: (v) => v == null || v.isEmpty ? '*' : null,
                     ),
             ),
