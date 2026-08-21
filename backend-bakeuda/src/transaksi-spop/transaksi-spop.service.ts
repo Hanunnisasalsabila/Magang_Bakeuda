@@ -724,17 +724,25 @@ export class TransaksiSpopService {
 
     if (t.calon_subjek_json) {
       const subjekTemp = t.calon_subjek_json as any;
-      const nikToSave = subjekTemp.nik || nikSubjek || '0000000000000000';
+      const nikToSave = subjekTemp.nik || nikSubjek;
+      
+      if (!nikToSave) throw new BadRequestException('NIK Subjek Pajak tidak boleh kosong');
+      
+      const namaSubjekToSave = subjekTemp.nama_subjek || subjekTemp.nama;
+      if (!namaSubjekToSave) throw new BadRequestException('Nama Subjek Pajak tidak boleh kosong');
+      
+      const alamatSubjekToSave = subjekTemp.alamat_jalan || subjekTemp.alamat;
+      if (!alamatSubjekToSave) throw new BadRequestException('Alamat Subjek Pajak tidak boleh kosong');
       await tx.subjekPajak.upsert({
         where: { nik: nikToSave },
         update: {
-          nama_subjek: subjekTemp.nama_subjek || subjekTemp.nama || 'TANPA NAMA',
+          nama_subjek: namaSubjekToSave,
           pekerjaan: subjekTemp.pekerjaan as any,
           status_wp: subjekTemp.status_wp as any,
           npwp: subjekTemp.npwp,
           no_hp: subjekTemp.no_hp,
           email: subjekTemp.email,
-          alamat_jalan: subjekTemp.alamat_jalan || subjekTemp.alamat || 'TANPA ALAMAT',
+          alamat_jalan: alamatSubjekToSave,
           blok_kav_no_subjek: subjekTemp.blok_kav_no_subjek,
           rt: subjekTemp.rt,
           rw: subjekTemp.rw,
@@ -745,13 +753,13 @@ export class TransaksiSpopService {
         },
         create: {
           nik: nikToSave,
-          nama_subjek: subjekTemp.nama_subjek || subjekTemp.nama || 'TANPA NAMA',
+          nama_subjek: namaSubjekToSave,
           pekerjaan: subjekTemp.pekerjaan as any,
           status_wp: subjekTemp.status_wp as any,
           npwp: subjekTemp.npwp,
           no_hp: subjekTemp.no_hp,
           email: subjekTemp.email,
-          alamat_jalan: subjekTemp.alamat_jalan || subjekTemp.alamat || 'TANPA ALAMAT',
+          alamat_jalan: alamatSubjekToSave,
           blok_kav_no_subjek: subjekTemp.blok_kav_no_subjek,
           rt: subjekTemp.rt,
           rw: subjekTemp.rw,
@@ -764,7 +772,7 @@ export class TransaksiSpopService {
       });
       nikSubjek = nikToSave;
     }
-    return nikSubjek || '0000000000000000';
+    return nikSubjek;
   }
 
   private async upsertLspop(tx: Prisma.TransactionClient, t: any, finalNop: string, isMutasiAtauPerubahan: boolean) {
