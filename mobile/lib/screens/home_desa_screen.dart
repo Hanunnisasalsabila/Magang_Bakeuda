@@ -18,6 +18,7 @@ import '../services/notifikasi_service.dart';
 import '../services/api_service.dart';
 import 'notifikasi_screen.dart';
 import 'dart:async';
+import 'bantuan_desa_screen.dart';
 
 const Color _kNavy = Color(0xFF0F2C59);
 const Color _kGold = Color(0xFFE8B831);
@@ -483,9 +484,10 @@ class _HomeDesaScreenState extends State<HomeDesaScreen> {
                     title: 'Pusat Bantuan',
                     onTap: () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Pusat Bantuan belum tersedia.'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const BantuanDesaScreen(),
                         ),
                       );
                     },

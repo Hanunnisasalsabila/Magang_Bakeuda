@@ -4,6 +4,7 @@ import '../../services/auth_service.dart';
 import '../login_screen.dart';
 import '../change_password_screen.dart';
 import '../bantuan_admin_screen.dart';
+import '../bantuan_desa_screen.dart';
 
 const Color _kNavy = Color(0xFF0C2A5B);
 const Color _kGold = Color(0xFFC9A227);
@@ -613,9 +614,10 @@ class _ProfileTabState extends State<ProfileTab> {
                               ),
                             );
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Pusat Bantuan belum tersedia.'),
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BantuanDesaScreen(),
                               ),
                             );
                           }

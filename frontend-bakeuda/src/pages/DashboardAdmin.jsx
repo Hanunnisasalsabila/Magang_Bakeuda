@@ -17,6 +17,7 @@ export default function DashboardAdmin() {
   const [activities, setActivities] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,6 +31,7 @@ export default function DashboardAdmin() {
 
         const dataStats = statsRes.data.data;
         const totalObj = (objekStatsRes && objekStatsRes.data && objekStatsRes.data.data) ? objekStatsRes.data.data.total : 0;
+        setPendingCount(dataStats.menunggu || 0);
         setBentoCards([
           { title: 'Total Pengajuan', value: (dataStats.totalDikirim || 0).toString(), icon: 'description', badgeText: 'Semua Data', badgeColor: 'text-secondary', meta: 'Jumlah keseluruhan berkas', bgIcon: 'bg-surface-container text-primary', link: '/riwayat-persetujuan' },
           { title: 'Antrean Verifikasi', value: (dataStats.menunggu || 0).toString(), icon: 'fact_check', badgeText: 'Prioritas', badgeColor: 'text-error font-bold', meta: 'Menunggu proses persetujuan', bgIcon: 'bg-error-container text-error', link: '/antrean-verifikasi' },
@@ -399,6 +401,11 @@ export default function DashboardAdmin() {
         className="fixed bottom-8 right-8 bg-primary text-on-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40"
       >
         <span className="material-symbols-outlined">fact_check</span>
+        {pendingCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
+            {pendingCount}
+          </span>
+        )}
       </button>
     </div>
   );
