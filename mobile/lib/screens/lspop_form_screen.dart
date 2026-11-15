@@ -4,6 +4,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
 import '../services/transaksi_spop_service.dart';
+import '../utils/formatters.dart';
 
 class LspopFormScreen extends StatefulWidget {
   /// Jika [idTransaksiSpop] diisi, LSPOP ini akan dikirim bersamaan sebagai bagian dari transaksi SPOP tersebut.
@@ -119,7 +120,7 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
       'jenisTransaksi': _jenisTransaksi,
       if (_jumlahBngController.text.isNotEmpty) 'jumlahBng': _jumlahBngController.text,
       'jenisPenggunaan': _jenisPenggunaan,
-      'luasBangunan': double.tryParse(_luasBangunanController.text) ?? 0.0,
+      'luasBangunan': LuasInputFormatter.parse(_luasBangunanController.text),
       if (_jumlahLantaiController.text.isNotEmpty) 'jumlahLantai': int.tryParse(_jumlahLantaiController.text),
       if (_tahunDibangunController.text.isNotEmpty) 'tahunDibangun': _tahunDibangunController.text,
       if (_tahunDirenovasiController.text.isNotEmpty) 'tahunDirenovasi': _tahunDirenovasiController.text,
@@ -251,7 +252,17 @@ class _LspopFormScreenState extends State<LspopFormScreen> {
           children: [
             _buildDropdown('Jenis Penggunaan', _jenisPenggunaan, _penggunaanOptions, (v) => setState(() => _jenisPenggunaan = v!)),
             Row(children: [
-              Expanded(child: CustomTextField(controller: _luasBangunanController, label: 'Luas (m²) *', keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? '*' : null)),
+              Expanded(
+                child: CustomTextField(
+                  controller: _luasBangunanController,
+                  label: 'Luas (m²) *',
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    LuasInputFormatter(),
+                  ],
+                  validator: (v) => LuasInputFormatter.validate(v, emptyMsg: '*'),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(child: CustomTextField(controller: _jumlahLantaiController, label: 'Jml Lantai', keyboardType: TextInputType.number)),
             ]),

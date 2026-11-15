@@ -140,12 +140,17 @@ export class TransaksiSpopService {
     );
 
     if (!asDraft) {
+      const pengajuUser = await this.prisma.user.findUnique({
+        where: { id_user: currentUser.id_user },
+        select: { nama_lengkap: true },
+      });
+      const namaPengaju = pengajuUser?.nama_lengkap || 'Perangkat Desa';
       const bakeudaAdmins = await this.prisma.user.findMany({ where: { role: 'BAKEUDA', is_active: true } });
       for (const admin of bakeudaAdmins) {
         await this.notifikasiService.create({
           user_id: admin.id_user,
           title: 'Pengajuan SPOP Baru',
-          message: `Desa telah mengajukan transaksi SPOP baru.`,
+          message: `${namaPengaju} telah mengajukan berkas SPOP baru (${transaksi.jenis_transaksi}) yang menunggu verifikasi.`,
           type: 'SPOP_SUBMITTED',
           reference_id: transaksi.id_transaksi
         });
@@ -311,6 +316,21 @@ export class TransaksiSpopService {
     });
 
     await this.catatRiwayat(idTransaksi, transaksi.status_ajuan, 'MENUNGGU', currentUser.id_user, 'Berkas disubmit dan menunggu verifikasi');
+
+    const isRevisi = transaksi.status_ajuan === 'REVISI';
+    const namaDesa = transaksi.pengaju?.nama_lengkap || 'Perangkat Desa';
+    const bakeudaAdmins = await this.prisma.user.findMany({ where: { role: 'BAKEUDA', is_active: true } });
+    for (const admin of bakeudaAdmins) {
+      await this.notifikasiService.create({
+        user_id: admin.id_user,
+        title: isRevisi ? 'Perbaikan SPOP Diajukan Ulang' : 'Pengajuan SPOP Baru',
+        message: isRevisi
+          ? `${namaDesa} telah mengirim ulang perbaikan berkas SPOP (${transaksi.jenis_transaksi}) untuk diverifikasi.`
+          : `${namaDesa} telah mengajukan berkas SPOP baru (${transaksi.jenis_transaksi}) yang menunggu verifikasi.`,
+        type: 'SPOP_SUBMITTED',
+        reference_id: idTransaksi,
+      });
+    }
 
     return { success: true, message: 'Berkas berhasil diajukan', data: updated };
   }
@@ -666,8 +686,8 @@ export class TransaksiSpopService {
 
     switch (jenis) {
       case 'BARU':
-        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru <= 0)
-          throw new BadRequestException('Luas tanah wajib diisi untuk pendaftaran baru.');
+        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru < 1)
+          throw new BadRequestException('Luas tanah wajib diisi minimal 1 m² untuk pendaftaran baru.');
         if (!tujuan?.jenis_tanah_baru)
           throw new BadRequestException('Jenis tanah wajib dipilih untuk pendaftaran baru.');
         if (!tujuan?.calon_subjek_json)
@@ -678,8 +698,8 @@ export class TransaksiSpopService {
         if (!dto.detail_tujuan?.length)
           throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
         for (const t of dto.detail_tujuan) {
-          if (!t.luas_tanah_baru || t.luas_tanah_baru <= 0)
-            throw new BadRequestException('Luas tanah setiap tujuan wajib diisi.');
+          if (!t.luas_tanah_baru || t.luas_tanah_baru < 1)
+            throw new BadRequestException('Luas tanah setiap tujuan wajib diisi minimal 1 m².');
           if (!t.jenis_tanah_baru)
             throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
         }
@@ -689,6 +709,8 @@ export class TransaksiSpopService {
         if (!dto.detail_tujuan?.length)
           throw new BadRequestException('Detail tujuan wajib ada untuk transaksi ini.');
         for (const t of dto.detail_tujuan) {
+          if (!t.luas_tanah_baru || t.luas_tanah_baru < 1)
+            throw new BadRequestException('Luas tanah setiap tujuan wajib diisi minimal 1 m².');
           if (!t.jenis_tanah_baru)
             throw new BadRequestException('Jenis tanah setiap tujuan wajib dipilih.');
         }
@@ -700,8 +722,8 @@ export class TransaksiSpopService {
         break;
 
       case 'PERUBAHAN_DATA':
-        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru <= 0)
-          throw new BadRequestException('Luas tanah wajib diisi untuk perubahan data.');
+        if (!tujuan?.luas_tanah_baru || tujuan.luas_tanah_baru < 1)
+          throw new BadRequestException('Luas tanah wajib diisi minimal 1 m² untuk perubahan data.');
         if (!tujuan?.jenis_tanah_baru)
           throw new BadRequestException('Jenis tanah wajib diisi untuk perubahan data.');
         break;

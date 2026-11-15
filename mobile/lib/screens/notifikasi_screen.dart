@@ -3,11 +3,13 @@ import '../services/notifikasi_service.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 import 'pelacakan_dokumen_detail_screen.dart';
+import 'detail_review_spop_screen.dart';
 const Color _kNavy = Color(0xFF0F2C59);
 const Color _kGold = Color(0xFFE8B831);
 
 class NotifikasiScreen extends StatefulWidget {
-  const NotifikasiScreen({super.key});
+  final bool isAdmin;
+  const NotifikasiScreen({super.key, this.isAdmin = false});
 
   @override
   State<NotifikasiScreen> createState() => _NotifikasiScreenState();
@@ -176,12 +178,17 @@ class _NotifikasiScreenState extends State<NotifikasiScreen> {
                         onTap: () {
                           _markAsRead(notif['id'], index);
                           if (notif['reference_id'] != null && notif['reference_id'].toString().isNotEmpty) {
+                            final isForAdmin = widget.isAdmin || notif['type'] == 'SPOP_SUBMITTED';
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => PelacakanDokumenDetailScreen(
-                                  idTransaksi: notif['reference_id'],
-                                ),
+                                builder: (_) => isForAdmin
+                                    ? DetailReviewSpopScreen(
+                                        idTransaksi: notif['reference_id'],
+                                      )
+                                    : PelacakanDokumenDetailScreen(
+                                        idTransaksi: notif['reference_id'],
+                                      ),
                               ),
                             );
                           }

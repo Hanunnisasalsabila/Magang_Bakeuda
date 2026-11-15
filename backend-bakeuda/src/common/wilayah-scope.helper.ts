@@ -2,6 +2,7 @@ import { ForbiddenException, BadRequestException } from '@nestjs/common';
 
 export interface CurrentUser {
   id_user: string;
+  username?: string;
   role: 'DESA' | 'BAKEUDA';
   kode_wilayah: string | null;
 }

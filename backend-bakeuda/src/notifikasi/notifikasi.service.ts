@@ -9,6 +9,7 @@ export class NotifikasiService {
   constructor(private prisma: PrismaService) { }
 
   async findAllForUser(userId: string) {
+    if (!userId) return [];
     return this.prisma.notifikasi.findMany({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
@@ -16,6 +17,7 @@ export class NotifikasiService {
   }
 
   async countUnread(userId: string) {
+    if (!userId) return 0;
     return this.prisma.notifikasi.count({
       where: { user_id: userId, is_read: false },
     });
@@ -34,6 +36,7 @@ export class NotifikasiService {
   }
 
   async markAsRead(id: string, userId: string) {
+    if (!userId) return { count: 0 };
     return this.prisma.notifikasi.updateMany({
       where: { id, user_id: userId },
       data: { is_read: true },
@@ -41,6 +44,7 @@ export class NotifikasiService {
   }
 
   async markAllAsRead(userId: string) {
+    if (!userId) return { count: 0 };
     return this.prisma.notifikasi.updateMany({
       where: { user_id: userId, is_read: false },
       data: { is_read: true },

@@ -241,12 +241,11 @@ extension _StepPecahanExtension on _SpopFormScreenState {
           initialValue: p['luasTanah'] as String,
           decoration: _dec('Luas Tanah (m²) *'),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            LuasInputFormatter(),
+          ],
           onChanged: (v) => _setP('luasTanah', v),
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Wajib';
-            if ((double.tryParse(v) ?? 0) <= 0) return 'Harus > 0';
-            return null;
-          },
+          validator: (v) => LuasInputFormatter.validate(v, emptyMsg: 'Wajib'),
         )),
         const SizedBox(width: 12),
         Expanded(child: DropdownButtonFormField<String>(
@@ -558,8 +557,9 @@ extension _StepPecahanExtension on _SpopFormScreenState {
           dd('jenisPenggunaan', 'Jenis Penggunaan', Constants.jenisPenggunaanBangunan),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: tf('luasBangunan', 'Luas (m²) *', TextInputType.number,
-              val: (v) { if (v == null || v.isEmpty) return 'Wajib'; if ((double.tryParse(v) ?? 0) <= 0) return '> 0'; return null; })),
+            Expanded(child: tf('luasBangunan', 'Luas (m²) *', const TextInputType.numberWithOptions(decimal: true),
+              fmt: [LuasInputFormatter()],
+              val: (v) => LuasInputFormatter.validate(v, emptyMsg: 'Wajib'))),
             const SizedBox(width: 12),
             Expanded(child: tf('jumlahLantai', 'Jml Lantai *', TextInputType.number,
               fmt: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],

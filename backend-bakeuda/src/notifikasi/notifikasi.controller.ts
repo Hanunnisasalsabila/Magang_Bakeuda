@@ -16,7 +16,7 @@ export class NotifikasiController {
 
   @Get()
   async getNotifikasi(@Request() req: any) {
-    const userId = req.user.userId;
+    const userId = req.user.id_user || req.user.userId;
     const items = await this.notifikasiService.findAllForUser(userId);
     const unreadCount = await this.notifikasiService.countUnread(userId);
     
@@ -31,14 +31,14 @@ export class NotifikasiController {
 
   @Patch('read-all')
   async markAllAsRead(@Request() req: any) {
-    const userId = req.user.userId;
+    const userId = req.user.id_user || req.user.userId;
     await this.notifikasiService.markAllAsRead(userId);
     return { success: true, message: 'All notifications marked as read' };
   }
 
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string, @Request() req: any) {
-    const userId = req.user.userId;
+    const userId = req.user.id_user || req.user.userId;
     await this.notifikasiService.markAsRead(id, userId);
     return { success: true, message: 'Notification marked as read' };
   }

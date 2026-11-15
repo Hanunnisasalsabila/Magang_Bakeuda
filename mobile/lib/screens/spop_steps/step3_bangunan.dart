@@ -28,13 +28,13 @@ extension _Step3Extension on _SpopFormScreenState {
             Row(children: [
               Expanded(child: CustomTextField(
                 controller: TextEditingController(text: b['luasBangunan']?.toString())..selection = TextSelection.collapsed(offset: (b['luasBangunan']?.toString() ?? '').length),
-                label: 'Luas (m²) *', keyboardType: TextInputType.number,
+                label: 'Luas (m²) *',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  LuasInputFormatter(),
+                ],
                 onChanged: (v) => updateB('luasBangunan', v),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Wajib diisi';
-                  if ((double.tryParse(v) ?? 0) <= 0) return 'Harus > 0';
-                  return null;
-                },
+                validator: (v) => LuasInputFormatter.validate(v),
               )),
               const SizedBox(width: 12),
               Expanded(child: CustomTextField(

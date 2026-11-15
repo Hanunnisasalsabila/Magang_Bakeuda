@@ -883,7 +883,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
           (p['dataBangunan'] as List).map((e) => Map<String, dynamic>.from(e as Map))
         );
         for (var b in dataBng) {
-          luasBngTotal += double.tryParse(b['luasBangunan']?.toString() ?? '0') ?? 0;
+          luasBngTotal += LuasInputFormatter.parse(b['luasBangunan']?.toString());
         }
         final jmlBng = int.tryParse(p['jumlahBangunan']?.toString() ?? '0') ?? 0;
 
@@ -903,7 +903,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
             if ((p['noHp'] as String).isNotEmpty) 'no_hp': p['noHp'],
             if ((p['kodePos'] as String).isNotEmpty) 'kode_pos': p['kodePos'],
           },
-          'luas_tanah_baru': double.tryParse(p['luasTanah']?.toString() ?? '0') ?? 0.0,
+          'luas_tanah_baru': LuasInputFormatter.parse(p['luasTanah']?.toString()),
           'luas_bangunan_baru': luasBngTotal,
           'jumlah_bangunan_baru': jmlBng,
           'jenis_tanah_baru': p['jenisTanah'] ?? 'TANAH_BANGUNAN',
@@ -1013,11 +1013,11 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       int jmlBangunan = int.tryParse(_jmlBangunanController.text) ?? 0;
       if (jmlBangunan > 0 && _dataBangunanList.isNotEmpty) {
         for (var b in _dataBangunanList) {
-          luasBngTotal += double.tryParse(b['luasBangunan']?.toString() ?? '0') ?? 0;
+          luasBngTotal += LuasInputFormatter.parse(b['luasBangunan']?.toString());
         }
       }
       // Allow user input for luas_tanah for GABUNG
-      final luasTanah = double.tryParse(_luasTanahController.text) ?? 0.0;
+      final luasTanah = LuasInputFormatter.parse(_luasTanahController.text);
 
       detailTujuan = [{
         if (!isPerubahanData) 'nik_calon_subjek': _nikController.text,
@@ -1402,7 +1402,7 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
       }
     } else if (_currentStep == 2) {
       if (_jenisLayanan == 'GABUNG') {
-        double luasTujuanBaru = double.tryParse(_luasTanahController.text) ?? 0;
+        double luasTujuanBaru = LuasInputFormatter.parse(_luasTanahController.text);
         double selisih = (luasTujuanBaru - _totalLuasAsalGabung).abs();
         double selisihPersen = _totalLuasAsalGabung > 0 ? (selisih / _totalLuasAsalGabung) * 100 : 0;
         
@@ -1466,15 +1466,24 @@ class _SpopFormScreenState extends State<SpopFormScreen> {
   }
 
   void _nextPecahanStep() async {
+    if (_pecahanSubStep < 3) {
+      if (!_formKey.currentState!.validate()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mohon lengkapi/perbaiki form'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+    }
+
     final p = _pecahanList[_currentPecahanIdx - 1];
     final jmlBng = int.tryParse(p['jumlahBangunan']?.toString() ?? '0') ?? 0;
 
     if (_pecahanSubStep == 3 && _currentPecahanIdx == _jumlahPecahan) {
       double totalLuas = 0;
       for (var pecahan in _pecahanList) {
-        totalLuas += double.tryParse(pecahan['luasTanah']?.toString() ?? '0') ?? 0;
+        totalLuas += LuasInputFormatter.parse(pecahan['luasTanah']?.toString());
       }
-      double luasInduk = double.tryParse(_luasTanahController.text) ?? 0;
+      double luasInduk = LuasInputFormatter.parse(_luasTanahController.text);
       
       if (luasInduk > 0 && totalLuas != luasInduk) {
         final selisih = (totalLuas - luasInduk).abs();

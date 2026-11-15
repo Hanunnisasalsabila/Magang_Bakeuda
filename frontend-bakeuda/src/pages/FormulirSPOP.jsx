@@ -310,6 +310,11 @@ export default function FormulirSPOP() {
     if (['nik', 'npwp', 'noTelp', 'rt', 'rw', 'kodePos', 'rtObjek', 'rwObjek', 'jumlahBangunan'].includes(field)) {
       val = val.replace(/\D/g, '');
     }
+    if (field === 'luasTanah') {
+      const clean = val.replace(/[^0-9.,]/g, '').replace(/^[0.,]+/, '');
+      const match = clean.match(/^([1-9]\d*)([.,]\d{0,2})?/);
+      val = match ? `${match[1]}${match[2] || ''}` : '';
+    }
 
     // Uppercase untuk nama
     if (field === 'nama') {
@@ -689,7 +694,15 @@ export default function FormulirSPOP() {
         newErrors.noPersil = 'Maks 50 karakter, hanya huruf, angka, spasi, strip, titik, /';
       }
 
-      if (!formData.luasTanah || parseFloat(formData.luasTanah) <= 0) newErrors.luasTanah = 'Luas Tanah wajib diisi dengan angka > 0';
+      const rawLuas = String(formData.luasTanah || '').trim();
+      const parsedLuas = parseFloat(rawLuas.replace(',', '.'));
+      if (!rawLuas || isNaN(parsedLuas) || parsedLuas < 1) {
+        newErrors.luasTanah = 'Luas Tanah wajib diisi minimal 1 m² (tidak boleh 0)';
+      } else if (/[.,]$/.test(rawLuas)) {
+        newErrors.luasTanah = 'Angka di belakang koma wajib diisi';
+      } else if (/[.,]0+$/.test(rawLuas)) {
+        newErrors.luasTanah = 'Angka di belakang koma tidak boleh 0';
+      }
       if (!formData.jenisTanah) newErrors.jenisTanah = 'Pilih Jenis Tanah';
 
       const jb = parseInt(formData.jumlahBangunan || '0');
@@ -791,7 +804,7 @@ export default function FormulirSPOP() {
         rw_op: formData.rwObjek || undefined,
         kelurahan_op: formData.kelurahanObjek || formData.kelurahan || '',
         kecamatan_op: formData.kecamatanObjek || formData.kecamatan || '',
-        luas_tanah: formData.luasTanah ? Number(formData.luasTanah) : undefined,
+        luas_tanah: formData.luasTanah ? parseFloat(String(formData.luasTanah).replace(',', '.')) : undefined,
         luas_bangunan: 0,
         jumlah_bangunan: formData.jenisTanah === 'TANAH_BANGUNAN' ? (parseInt(formData.jumlahBangunan) || undefined) : undefined,
         jenis_tanah: formData.jenisTanah || undefined,
@@ -1230,7 +1243,6 @@ export default function FormulirSPOP() {
                       onChange={(e) => handleTextChange('nik', e)}
                       className={`w-full h-12 border ${errors.nik ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono text-lg tracking-widest bg-white transition-all shadow-sm`}
                       placeholder="Masukkan 16 digit NIK"
-                      maxLength={16}
                     />
                     {errors.nik && <p className="text-error text-[12px]">{errors.nik}</p>}
                   </div>
@@ -1658,10 +1670,10 @@ export default function FormulirSPOP() {
                   <div className="space-y-2">
                     <label className="font-label-sm text-primary block">LUAS TANAH (M²)</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.luasTanah}
                       onChange={(e) => handleTextChange('luasTanah', e)}
-                      onWheel={(e) => e.target.blur()}
                       className={`w-full h-12 border ${errors.luasTanah ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary'} rounded px-4 font-data-mono bg-white shadow-sm`}
                       placeholder="Contoh: 150"
                     />

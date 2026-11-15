@@ -229,6 +229,12 @@ export default function FormulirLSPOP() {
       value = value.replace(/\D/g, '');
       if (value.length > 2) value = value.slice(0, 2);
     }
+
+    if (field === 'luasBangunan') {
+      const clean = value.replace(/[^0-9.,]/g, '').replace(/^[0.,]+/, '');
+      const match = clean.match(/^([1-9]\d*)([.,]\d{0,2})?/);
+      value = match ? `${match[1]}${match[2] || ''}` : '';
+    }
     
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -238,7 +244,15 @@ export default function FormulirLSPOP() {
     const currentYear = new Date().getFullYear();
 
     if (!formData.jenisPenggunaan) newErrors.jenisPenggunaan = 'Pilih jenis penggunaan bangunan';
-    if (!formData.luasBangunan || parseFloat(formData.luasBangunan) <= 0) newErrors.luasBangunan = 'Isi luas bangunan dengan benar';
+    const rawLuasBng = String(formData.luasBangunan || '').trim();
+    const parsedLuasBng = parseFloat(rawLuasBng.replace(',', '.'));
+    if (!rawLuasBng || isNaN(parsedLuasBng) || parsedLuasBng < 1) {
+      newErrors.luasBangunan = 'Isi luas bangunan minimal 1 m² (tidak boleh 0)';
+    } else if (/[.,]$/.test(rawLuasBng)) {
+      newErrors.luasBangunan = 'Angka di belakang koma wajib diisi';
+    } else if (/[.,]0+$/.test(rawLuasBng)) {
+      newErrors.luasBangunan = 'Angka di belakang koma tidak boleh 0';
+    }
     
     if (!formData.jumlahLantai || parseInt(formData.jumlahLantai) < 1) {
       newErrors.jumlahLantai = 'Jumlah lantai minimal 1';
@@ -343,7 +357,7 @@ export default function FormulirLSPOP() {
       if (!sanitizedData[field] || sanitizedData[field] === '') {
         sanitizedData[field] = 0;
       } else {
-        sanitizedData[field] = parseFloat(sanitizedData[field]);
+        sanitizedData[field] = parseFloat(String(sanitizedData[field]).replace(',', '.'));
       }
     });
 
@@ -636,7 +650,7 @@ export default function FormulirLSPOP() {
 
               <div className="space-y-2">
                 <label className="font-label-sm text-primary block">2. Luas Bangunan (M²)</label>
-                <input type="number" onWheel={(e) => e.target.blur()} value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
+                <input type="text" inputMode="decimal" value={formData.luasBangunan} onChange={(e) => handleTextChange('luasBangunan', e)} className="w-full h-12 border border-outline-variant rounded px-4 font-data-mono" placeholder="Contoh: 45" />
                 {errors.luasBangunan && <p className="text-error text-[12px]">{errors.luasBangunan}</p>}
               </div>
               <div className="space-y-2">

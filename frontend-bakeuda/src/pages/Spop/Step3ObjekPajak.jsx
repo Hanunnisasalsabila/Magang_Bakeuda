@@ -556,7 +556,18 @@ export default function Step3ObjekPajak() {
       if (!data.rwObjek) { newErrors[`${prefix}rwObjek`] = 'RW wajib diisi'; hasError = true; }
       if (!data.kecamatanObjek) { newErrors[`${prefix}kecamatanObjek`] = 'Kecamatan wajib dipilih'; hasError = true; }
       if (!data.kelurahanObjek) { newErrors[`${prefix}kelurahanObjek`] = 'Kelurahan wajib dipilih'; hasError = true; }
-      if (!data.luasTanah || parseFloat(data.luasTanah) <= 0) { newErrors[`${prefix}luasTanah`] = 'Luas Tanah wajib diisi'; hasError = true; }
+      const rawLuas = String(data.luasTanah || '').trim();
+      const parsedLuas = parseFloat(rawLuas.replace(',', '.'));
+      if (!rawLuas || isNaN(parsedLuas) || parsedLuas < 1) {
+        newErrors[`${prefix}luasTanah`] = 'Luas Tanah wajib diisi minimal 1 m² (tidak boleh 0)';
+        hasError = true;
+      } else if (/[.,]$/.test(rawLuas)) {
+        newErrors[`${prefix}luasTanah`] = 'Angka di belakang koma wajib diisi';
+        hasError = true;
+      } else if (/[.,]0+$/.test(rawLuas)) {
+        newErrors[`${prefix}luasTanah`] = 'Angka di belakang koma tidak boleh 0';
+        hasError = true;
+      }
       if (!data.koordinat_polygon || data.koordinat_polygon.length === 0) { newErrors[`${prefix}denahLokasi`] = 'Sket / Denah Lokasi wajib digambar pada peta'; hasError = true; }
     };
 
@@ -564,7 +575,7 @@ export default function Step3ObjekPajak() {
       let totalLuasPecahan = 0;
       formData.pecahanList?.forEach((p, idx) => {
         validateData(p, `pecahan_${idx}_`);
-        totalLuasPecahan += parseFloat(p.luasTanah || 0);
+        totalLuasPecahan += parseFloat(String(p.luasTanah || 0).replace(',', '.'));
       });
 
       setErrors(newErrors);
@@ -895,7 +906,9 @@ export default function Step3ObjekPajak() {
               readOnly={formData.transaksi === 'PERUBAHAN_DATA'}
               onChange={(e) => {
                 if (formData.transaksi !== 'PERUBAHAN_DATA') {
-                  handleTextChange('luasTanah', { target: { value: e.target.value.replace(/[^0-9.]/g, '').replace(/^0+(?=\d)/, '') } })
+                  const clean = e.target.value.replace(/[^0-9.,]/g, '').replace(/^[0.,]+/, '');
+                  const match = clean.match(/^([1-9]\d*)([.,]\d{0,2})?/);
+                  handleTextChange('luasTanah', { target: { value: match ? `${match[1]}${match[2] || ''}` : '' } });
                 }
               }}
               className={`w-full h-12 border ${getError('luasTanah') ? 'border-error ring-1 ring-error' : 'border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary'} rounded px-4 font-data-mono shadow-sm outline-none ${formData.transaksi === 'PERUBAHAN_DATA' ? 'bg-surface-container-low cursor-not-allowed text-on-surface-variant' : 'bg-white'}`}

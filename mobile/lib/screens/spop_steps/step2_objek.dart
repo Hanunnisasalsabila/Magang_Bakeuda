@@ -41,12 +41,11 @@ extension _Step2Extension on _SpopFormScreenState {
               child: CustomTextField(
                 controller: _luasTanahController,
                 label: 'Luas (m²) *',
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Wajib diisi';
-                  if ((double.tryParse(v) ?? 0) <= 0) return 'Harus > 0';
-                  return null;
-                },
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  LuasInputFormatter(),
+                ],
+                validator: (v) => LuasInputFormatter.validate(v),
               ),
             ),
           ],

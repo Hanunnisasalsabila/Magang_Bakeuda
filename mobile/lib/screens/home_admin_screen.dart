@@ -173,7 +173,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
               IconButton(
                 icon: const Icon(Icons.notifications),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiScreen()))
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotifikasiScreen(isAdmin: true)))
                       .then((_) => _fetchUnreadNotif());
                 },
               ),
