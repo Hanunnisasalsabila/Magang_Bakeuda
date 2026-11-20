@@ -313,7 +313,7 @@ function AppContent() {
           
           {/* NEW MODULAR SPOP ROUTES */}
           <Route path="/spop" element={<SpopLayout />}>
-          <Route index element={<Navigate to="informasi-umum" />} />
+          <Route index element={<Navigate to="informasi-umum" replace />} />
           <Route path="detail/:id_transaksi?" element={<SpopDetail />} />
           <Route path="informasi-umum/:id_transaksi?" element={<Step1InformasiUmum />} />
           <Route path="subjek-pajak/:id_transaksi?" element={<Step2SubjekPajak />} />
@@ -327,7 +327,7 @@ function AppContent() {
         <Route path="/antrean-verifikasi" element={<AntreanVerifikasi />} />
         <Route path="/detail-review/:id?" element={<DetailReviewSPOP />} />
         <Route path="/riwayat-persetujuan" element={<RiwayatPersetujuan />} />
-        <Route path="/daftar-objek" element={<DaftarObjekPajak />} />
+        <Route path="/daftar-objek" element={<DaftarObjekPajak role={role} />} />
         <Route path="/daftar-subjek" element={<DaftarSubjekPajak />} />
         <Route path="/detail-subjek" element={<DetailSubjekPajak />} />
         <Route path="/monitoring-pajak" element={<MonitoringObjekPajak />} />

@@ -20,6 +20,76 @@ const createNumberedIcon = (number) => L.divIcon({
   iconAnchor: [9, 9]
 });
 
+const getLampiranList = (transaksiData) => {
+  if (!transaksiData) return [];
+  const list = [];
+  const lampiranData = transaksiData.lampiran;
+
+  const parseArr = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try {
+        const p = JSON.parse(val);
+        return Array.isArray(p) ? p : [val];
+      } catch (e) {
+        return [val];
+      }
+    }
+    return [];
+  };
+
+  if (Array.isArray(lampiranData)) {
+    lampiranData.forEach((l, idx) => {
+      if (l && (l.url_file || l.url)) {
+        list.push({
+          id_dokumen: l.id_dokumen || l.id || `doc-${idx}`,
+          jenis_dokumen: l.jenis_dokumen || l.nama_dokumen || 'Dokumen Pendukung',
+          url_file: l.url_file || l.url
+        });
+      }
+    });
+  } else if (lampiranData && typeof lampiranData === 'object') {
+    const docCategories = [
+      { key: 'url_ktp', label: 'KTP / Identitas Subjek Pajak' },
+      { key: 'url_sertifikat', label: 'Sertifikat Hak Milik / Tanah' },
+      { key: 'url_ajb', label: 'Akta Jual Beli (AJB)' },
+      { key: 'url_imb', label: 'Izin Mendirikan Bangunan (IMB/PBG)' },
+      { key: 'url_surat_kuasa', label: 'Surat Kuasa' },
+      { key: 'url_pendukung_lokasi', label: 'Dokumen Pendukung Lokasi / Foto Objek' }
+    ];
+
+    docCategories.forEach(({ key, label }) => {
+      const urls = parseArr(lampiranData[key]);
+      urls.forEach((rawUrl, uIdx) => {
+        if (!rawUrl || typeof rawUrl !== 'string' || rawUrl === 'null' || rawUrl.trim() === '') return;
+        let displayLabel = label;
+        let finalUrl = rawUrl;
+        if (rawUrl.includes('::')) {
+          const [prefix, ...urlParts] = rawUrl.split('::');
+          displayLabel = `${label} (${prefix.replace(/_/g, ' ')})`;
+          finalUrl = urlParts.join('::');
+        }
+        list.push({
+          id_dokumen: `${key}-${uIdx}`,
+          jenis_dokumen: displayLabel,
+          url_file: finalUrl
+        });
+      });
+    });
+  }
+
+  if (transaksiData.url_dokumen_fisik) {
+    list.unshift({
+      id_dokumen: 'dokumen-fisik',
+      jenis_dokumen: 'Formulir Fisik SPOP (Scan / Foto Berkas)',
+      url_file: transaksiData.url_dokumen_fisik
+    });
+  }
+
+  return list;
+};
+
 export default function DetailReviewSPOP() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -32,7 +102,30 @@ export default function DetailReviewSPOP() {
   const [pejabatDesa, setPejabatDesa] = useState([]);
   const [isUploadingDokumen, setIsUploadingDokumen] = useState(false);
   const [urlDokumenFisik, setUrlDokumenFisik] = useState('');
-  const handleUploadDokumenFisik = (e) => { console.log('File selected'); };
+  const handleUploadDokumenFisik = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingDokumen(true);
+    try {
+      const uploadForm = new FormData();
+      uploadForm.append('file', file);
+      const res = await api.post('/transaksi-spop/upload', uploadForm, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      if (res.data?.url_file) {
+        setUrlDokumenFisik(res.data.url_file);
+        setData(prev => prev ? { ...prev, url_dokumen_fisik: res.data.url_file } : prev);
+        setToastMessage('Dokumen fisik berhasil diunggah');
+        setShowToast(true);
+      }
+    } catch (err) {
+      console.error('Gagal upload dokumen fisik:', err);
+      setToastMessage('Gagal mengunggah dokumen fisik');
+      setShowToast(true);
+    } finally {
+      setIsUploadingDokumen(false);
+    }
+  };
 
   const [decisionNotes, setDecisionNotes] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -138,6 +231,9 @@ export default function DetailReviewSPOP() {
           }
         }
 
+        if (fetchedData.url_dokumen_fisik) {
+          setUrlDokumenFisik(fetchedData.url_dokumen_fisik);
+        }
         setData(fetchedData);
       } catch (error) {
         console.error('Gagal mengambil detail SPOP:', error);
@@ -370,6 +466,7 @@ export default function DetailReviewSPOP() {
   }
 
   const detailTujuanList = data.detail_tujuan || [];
+  const lampiranList = getLampiranList(data);
   const isTetap = ['MUTASI', 'PERUBAHAN_DATA', 'HAPUS'].includes(data.jenis_transaksi);
   const nopAsalList = data.detail_asal?.map(a => a.nop_asal).filter(Boolean) || [];
   const nopAsal = nopAsalList.join(', ') || 'Menunggu NOP';
@@ -504,7 +601,10 @@ export default function DetailReviewSPOP() {
                     {(() => {
                       if (data.jenis_transaksi === 'BARU') {
                         const generated = detailTujuanList[0]?.nop_generated || detailTujuanList[0]?.no_persil_baru;
-                        return generated || <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
+                        if (data.status_ajuan !== 'DISETUJUI' || !generated || String(generated).endsWith('00000000')) {
+                          return <span className="text-gray-400 font-mono tracking-widest">Menunggu Penetapan NOP</span>;
+                        }
+                        return generated;
                       }
                       return nopAsal !== 'Menunggu NOP' && nopAsal ? nopAsal : <span className="text-gray-400 font-mono tracking-widest">............-.......</span>;
                     })()}
@@ -554,7 +654,7 @@ export default function DetailReviewSPOP() {
                     {data.jenis_transaksi === 'PECAH' && <span className="text-xs px-2 py-0.5 bg-white/20 rounded-full font-normal">Luas: {detailTujuan.luas_tanah_baru || 0} M&sup2;</span>}
                   </h3>
                 </div>
-                {detailTujuan.nop_generated && (
+                {detailTujuan.nop_generated && !String(detailTujuan.nop_generated).endsWith('00000000') && (
                   <div className="font-mono text-sm tracking-widest opacity-90">
                     NOP: {detailTujuan.nop_generated}
                   </div>
@@ -863,33 +963,47 @@ export default function DetailReviewSPOP() {
         <section className="border border-gray-300">
           <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 flex items-center justify-between">
             <h3 className="text-base font-bold text-blue-900 uppercase m-0">E. LAMPIRAN DOKUMEN</h3>
+            {lampiranList.length > 0 && (
+              <span className="text-xs bg-blue-100 text-blue-800 font-semibold px-2.5 py-0.5 rounded-full border border-blue-200">
+                {lampiranList.length} Dokumen Terlampir
+              </span>
+            )}
           </div>
           <div className="p-0">
-            {data.lampiran && data.lampiran.length > 0 ? (
+            {lampiranList && lampiranList.length > 0 ? (
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="p-3 text-left font-semibold text-gray-700 w-12 border-r border-gray-200">No.</th>
                     <th className="p-3 text-left font-semibold text-gray-700 border-r border-gray-200">Jenis Dokumen</th>
-                    <th className="p-3 text-center font-semibold text-gray-700">Aksi</th>
+                    <th className="p-3 text-center font-semibold text-gray-700 w-36">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.lampiran.map((lamp, idx) => (
+                  {lampiranList.map((lamp, idx) => (
                     <React.Fragment key={lamp.id_dokumen || idx}>
                       <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="p-3 text-center border-r border-gray-200">{idx + 1}</td>
+                        <td className="p-3 text-center border-r border-gray-200 text-gray-500">{idx + 1}</td>
                         <td className="p-3 font-bold text-gray-800 border-r border-gray-200">{lamp.jenis_dokumen}</td>
                         <td className="p-3 text-center">
-                          <a href={resolveFileUrl(lamp.url_file)} target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">
+                          <a
+                            href={resolveFileUrl(lamp.url_file)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-blue-700 transition-colors"
+                          >
                             {lamp.url_file?.toLowerCase().endsWith('.pdf') ? 'LIHAT PDF' : 'LIHAT GAMBAR'}
                           </a>
                         </td>
                       </tr>
-                      {lamp.url_file && lamp.url_file.match(/\.(jpeg|jpg|gif|png)$/i) && (
+                      {lamp.url_file && lamp.url_file.match(/\.(jpeg|jpg|gif|png|webp)$/i) && (
                         <tr className="border-b border-gray-200">
                           <td colSpan="3" className="p-4 bg-gray-100 text-center">
-                            <img src={resolveFileUrl(lamp.url_file)} alt={lamp.jenis_dokumen} className="max-h-96 mx-auto border border-gray-300 shadow-sm" />
+                            <img
+                              src={resolveFileUrl(lamp.url_file)}
+                              alt={lamp.jenis_dokumen}
+                              className="max-h-96 mx-auto border border-gray-300 shadow-sm rounded object-contain"
+                            />
                           </td>
                         </tr>
                       )}

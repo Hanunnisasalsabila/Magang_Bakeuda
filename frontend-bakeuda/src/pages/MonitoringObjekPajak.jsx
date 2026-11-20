@@ -57,10 +57,24 @@ export default function MonitoringObjekPajak() {
               const calonSubjek = detail?.calon_subjek_json;
               let luasBangunan = Number(detail?.luas_bangunan_baru || 0);
 
+              const rawNop = detail?.nop_generated;
+              const isNotApproved = item.status_ajuan !== 'DISETUJUI';
+              const isNewOp = ['BARU', 'PECAH', 'GABUNG'].includes(item.jenis_transaksi);
+              const isDummyNop = !rawNop || rawNop.endsWith('00000000');
+
+              let displayNop = 'Menunggu NOP';
+              if (!isNotApproved && rawNop && !isDummyNop) {
+                displayNop = rawNop;
+              } else if (!isNewOp && rawNop && !isDummyNop) {
+                displayNop = rawNop;
+              } else if (!isNewOp && item.detail_asal?.[0]?.nop_asal) {
+                displayNop = item.detail_asal[0].nop_asal;
+              }
+
               return {
                 id: item.id_transaksi,
                 id_detail: detail?.id_detail_tujuan,
-                nop: detail?.nop_generated || detail?.no_persil_baru || 'Menunggu NOP',
+                nop: displayNop,
                 name: (calonSubjek?.nama_subjek && calonSubjek?.nama_subjek.toUpperCase() !== 'TANPA NAMA') ? calonSubjek?.nama_subjek : (calonSubjek?.nama || item.pengaju?.nama_lengkap || item.nama_pengaju || 'Tanpa Nama'),
                 address: detail ? `${detail.jalan_op_baru || ''} ${detail.rt_op_baru ? 'RT ' + detail.rt_op_baru : ''} ${detail.rw_op_baru ? 'RW ' + detail.rw_op_baru : ''} ${detail.kelurahan_op_baru || ''}`.trim() : '-',
                 land: detail?.luas_tanah_baru || 0,

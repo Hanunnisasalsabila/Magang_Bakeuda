@@ -35,7 +35,7 @@ export default function DaftarSubjekPajak() {
             q: debouncedSearch
           }
         });
-        
+
         const { data, total, totalPages: tp } = res.data;
         const formattedList = Array.isArray(data) ? data.map(item => ({
           nik: item.nik,
@@ -75,7 +75,7 @@ export default function DaftarSubjekPajak() {
         <div>
           <h1 className="text-3xl text-primary font-bold mb-1">Daftar Subjek Pajak</h1>
           <p className="text-on-surface-variant text-sm">
-            Lihat seluruh daftar Subjek Pajak yang tercatat di Kabupaten Purbalingga.
+            Lihat daftar semua wajib pajak yang terdata di Kabupaten Purbalingga.
           </p>
         </div>
       </div>
@@ -163,11 +163,10 @@ export default function DaftarSubjekPajak() {
                         }}
                         title={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.' ? 'NIK Tidak Valid' : 'Detail Subjek'}
                         disabled={!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'}
-                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none mx-auto ${
-                          !obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'
-                            ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'bg-background border border-outline-variant text-primary hover:bg-surface-container-lowest hover:border-primary'
-                        }`}
+                        className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors focus:outline-none mx-auto ${!obj.nik || obj.nik.trim() === '' || obj.nik.trim() === '.'
+                          ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-background border border-outline-variant text-primary hover:bg-surface-container-lowest hover:border-primary'
+                          }`}
                       >
                         <span className="material-symbols-outlined text-[14px]">visibility</span>
                         Detail

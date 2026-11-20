@@ -53,7 +53,10 @@ export default function SpopDetail() {
   const calonSubjek = detailTujuan?.calon_subjek_json || {};
   const namaSubjek = calonSubjek?.nama || formData?.nama || '-';
   const nikSubjek = calonSubjek?.nik || formData?.nik || '-';
-  const nopDisplay = detailTujuan?.nop_generated || 'Menunggu NOP dari Bakeuda';
+  const isApproved = spopData?.status_ajuan === 'DISETUJUI';
+  const rawNop = detailTujuan?.nop_generated;
+  const isDummyNop = !rawNop || rawNop.endsWith('00000000');
+  const nopDisplay = (isApproved && !isDummyNop) ? rawNop : 'Menunggu NOP';
   const alamatObjek = [
     detailTujuan?.jalan_op_baru || formData?.alamatObjek,
     detailTujuan?.rt_op_baru ? `RT ${detailTujuan.rt_op_baru}` : (formData?.rtObjek ? `RT ${formData.rtObjek}` : ''),

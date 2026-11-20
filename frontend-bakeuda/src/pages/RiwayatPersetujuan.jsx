@@ -9,8 +9,9 @@ const STATUS_FILTER = [
 ];
 
 function formatNOP(nopRaw, type, status) {
-  if ((!nopRaw || nopRaw.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
-    return 'Menunggu penetapan';
+  const isDummyNop = !nopRaw || nopRaw.includes('...') || nopRaw.endsWith('00000000');
+  if ((isDummyNop || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+    return 'Menunggu NOP';
   }
   if (!nopRaw) return '-';
   const clean = nopRaw.replace(/\D/g, '');

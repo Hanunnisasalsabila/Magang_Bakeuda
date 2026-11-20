@@ -172,8 +172,9 @@ export default function AntreanVerifikasi() {
   });
 
   const formatNOP = (nopRaw, type, status) => {
-    if ((!nopRaw || nopRaw.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
-      return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu penetapan</span>;
+    const isDummyNop = !nopRaw || nopRaw.includes('...') || nopRaw.endsWith('00000000');
+    if ((isDummyNop || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+      return <span className="italic text-gray-500 font-normal text-xs bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200">Menunggu NOP</span>;
     }
     const clean = nopRaw.replace(/\D/g, '');
     if (clean.length === 18) {

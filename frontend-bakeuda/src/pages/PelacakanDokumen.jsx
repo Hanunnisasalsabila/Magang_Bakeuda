@@ -2,6 +2,76 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api, { resolveFileUrl } from '../utils/axios';
 
+const getLampiranList = (transaksiData) => {
+  if (!transaksiData) return [];
+  const list = [];
+  const lampiranData = transaksiData.lampiran;
+
+  const parseArr = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      try {
+        const p = JSON.parse(val);
+        return Array.isArray(p) ? p : [val];
+      } catch (e) {
+        return [val];
+      }
+    }
+    return [];
+  };
+
+  if (Array.isArray(lampiranData)) {
+    lampiranData.forEach((l, idx) => {
+      if (l && (l.url_file || l.url)) {
+        list.push({
+          id_dokumen: l.id_dokumen || l.id || `doc-${idx}`,
+          jenis_dokumen: l.jenis_dokumen || l.nama_dokumen || 'Dokumen Pendukung',
+          url_file: l.url_file || l.url
+        });
+      }
+    });
+  } else if (lampiranData && typeof lampiranData === 'object') {
+    const docCategories = [
+      { key: 'url_ktp', label: 'KTP / Identitas Subjek Pajak' },
+      { key: 'url_sertifikat', label: 'Sertifikat Hak Milik / Tanah' },
+      { key: 'url_ajb', label: 'Akta Jual Beli (AJB)' },
+      { key: 'url_imb', label: 'Izin Mendirikan Bangunan (IMB/PBG)' },
+      { key: 'url_surat_kuasa', label: 'Surat Kuasa' },
+      { key: 'url_pendukung_lokasi', label: 'Dokumen Pendukung Lokasi / Foto Objek' }
+    ];
+
+    docCategories.forEach(({ key, label }) => {
+      const urls = parseArr(lampiranData[key]);
+      urls.forEach((rawUrl, uIdx) => {
+        if (!rawUrl || typeof rawUrl !== 'string' || rawUrl === 'null' || rawUrl.trim() === '') return;
+        let displayLabel = label;
+        let finalUrl = rawUrl;
+        if (rawUrl.includes('::')) {
+          const [prefix, ...urlParts] = rawUrl.split('::');
+          displayLabel = `${label} (${prefix.replace(/_/g, ' ')})`;
+          finalUrl = urlParts.join('::');
+        }
+        list.push({
+          id_dokumen: `${key}-${uIdx}`,
+          jenis_dokumen: displayLabel,
+          url_file: finalUrl
+        });
+      });
+    });
+  }
+
+  if (transaksiData.url_dokumen_fisik) {
+    list.unshift({
+      id_dokumen: 'dokumen-fisik',
+      jenis_dokumen: 'Formulir Fisik SPOP (Scan / Foto Berkas)',
+      url_file: transaksiData.url_dokumen_fisik
+    });
+  }
+
+  return list;
+};
+
 export default function PelacakanDokumen() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -81,8 +151,9 @@ export default function PelacakanDokumen() {
   }
 
   const formatNOP = (nopStr, type, status) => {
-    if ((!nopStr || nopStr.includes('...') || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
-      return 'Menunggu penetapan';
+    const isDummyNop = !nopStr || nopStr.includes('...') || nopStr.endsWith('00000000');
+    if ((isDummyNop || type === 'BARU' || type === 'PECAH' || type === 'GABUNG') && status !== 'DISETUJUI') {
+      return 'Menunggu NOP';
     }
     if (!nopStr) return '-';
     const clean = nopStr.replace(/\D/g, '');
@@ -315,9 +386,19 @@ export default function PelacakanDokumen() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30 text-sm">
-                  {dataTransaksi.lampiran?.length > 0 ? (
-                    dataTransaksi.lampiran.map((lampiran, index) => (
-                      <tr key={lampiran.id_lampiran} className="hover:bg-surface-container-lowest transition-colors">
+                  {(() => {
+                    const lampiranList = getLampiranList(dataTransaksi);
+                    if (lampiranList.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="3" className="px-6 py-8 text-center text-on-surface-variant italic">
+                            Tidak ada lampiran dokumen.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return lampiranList.map((lampiran, index) => (
+                      <tr key={lampiran.id_dokumen || index} className="hover:bg-surface-container-lowest transition-colors">
                         <td className="px-6 py-3 text-center text-on-surface-variant font-medium">{index + 1}</td>
                         <td className="px-6 py-3 font-semibold text-on-surface capitalize">
                           {lampiran.jenis_dokumen.replace(/_/g, ' ').toLowerCase()}
@@ -334,14 +415,8 @@ export default function PelacakanDokumen() {
                           </a>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="3" className="px-6 py-8 text-center text-on-surface-variant italic">
-                        Tidak ada lampiran dokumen.
-                      </td>
-                    </tr>
-                  )}
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>

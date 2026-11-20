@@ -177,6 +177,19 @@ export default function Step1InformasiUmum() {
     }
   };
 
+  const handleKembali = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      let role = 'desa';
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) role = JSON.parse(userStr)?.role?.toLowerCase();
+      } catch (e) {}
+      navigate(role === 'bakeuda' ? '/daftar-objek' : '/dashboard-desa');
+    }
+  };
+
   const handleSave = async () => {
     // Validasi Frontend
     if (!formData.transaksi) {
@@ -609,7 +622,7 @@ export default function Step1InformasiUmum() {
         <button type="button" onClick={handleSaveDraft} disabled={isSubmitting} className="px-6 py-2.5 bg-white text-on-surface rounded-full font-bold hover:bg-surface-container-low border-2 border-outline-variant transition-all flex items-center gap-2">
           Simpan Draft
         </button>
-        <button type="button" onClick={() => navigate('/dashboard-desa')} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
+        <button type="button" onClick={handleKembali} className="px-6 py-2.5 bg-surface-container text-on-surface rounded-full font-bold hover:bg-surface-container-highest transition-all flex items-center gap-2">
           Kembali
         </button>
         <button type="button" onClick={handleSave} disabled={isSubmitting} className={`px-6 py-2.5 ${formData.transaksi === 'HAPUS' ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'} text-white rounded-full font-bold shadow-md transition-all flex items-center gap-2`}>

@@ -20,9 +20,19 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-export default function DaftarObjekPajak() {
+export default function DaftarObjekPajak({ role: propRole }) {
   const navigate = useNavigate();
   const { loadDraft } = useSpop();
+
+  const userRole = (propRole || (() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      return user?.role?.toLowerCase();
+    } catch {
+      return '';
+    }
+  })() || '').toLowerCase();
+  const isDesa = userRole === 'desa';
   const [statusVerif, setStatusVerif] = useState('');
   const [search, setSearch] = useState('');
   const [jenisTanah, setJenisTanah] = useState('');
@@ -391,16 +401,18 @@ export default function DaftarObjekPajak() {
             )}
           </div>
 
-          <button
-            onClick={() => {
-              loadDraft(null);
-              navigate('/spop');
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Tambah Objek Pajak
-          </button>
+          {isDesa && (
+            <button
+              onClick={() => {
+                loadDraft(null);
+                navigate('/spop/informasi-umum');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors shadow-sm focus:outline-none"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Tambah Objek Pajak
+            </button>
+          )}
         </div>
       </div>
 

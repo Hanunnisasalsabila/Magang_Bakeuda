@@ -45,10 +45,17 @@ export default function DashboardDesa() {
               name: d.objek_asal?.subjek_pajak?.nama_subjek || item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama'
             }));
           } else if (item.detail_tujuan?.length > 0) {
-            details = item.detail_tujuan.map(d => ({
-              nop: d.nop_generated || '............-.......',
-              name: d.calon_subjek_json?.nama_subjek && d.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA' ? d.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama')
-            }));
+            details = item.detail_tujuan.map(d => {
+              const rawNop = d.nop_generated;
+              const isNotApproved = item.status_ajuan !== 'DISETUJUI';
+              const isNewOp = ['BARU', 'PECAH', 'GABUNG'].includes(item.jenis_transaksi);
+              const isDummyNop = !rawNop || rawNop.endsWith('00000000');
+              const nopDisplay = (isNotApproved && isNewOp) || isDummyNop ? 'Menunggu NOP' : rawNop;
+              return {
+                nop: nopDisplay,
+                name: d.calon_subjek_json?.nama_subjek && d.calon_subjek_json?.nama_subjek.toUpperCase() !== 'TANPA NAMA' ? d.calon_subjek_json?.nama_subjek : (item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama')
+              };
+            });
           } else {
              details = [{ nop: '............-.......', name: item.nama_pengaju || item.pengaju?.nama_lengkap || 'Tanpa Nama' }];
           }
@@ -156,7 +163,7 @@ export default function DashboardDesa() {
             <button
               onClick={() => {
                 loadDraft(null);
-                navigate('/spop');
+                navigate('/spop/informasi-umum');
               }}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-white hover:bg-primary/90 rounded-md text-sm font-semibold transition-all shadow-sm active:scale-95"
             >
